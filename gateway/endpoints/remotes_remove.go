@@ -27,6 +27,11 @@ func (rh *RemotesRemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if rmtRmReq.Name == "" {
+		jsonifyErrf(w, http.StatusBadRequest, "empty remote name")
+		return
+	}
+
 	if err := rh.rapi.Remove(rmtRmReq.Name); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to remove remote")
 		return

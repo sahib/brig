@@ -33,23 +33,26 @@ func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !ch.validatePath(copyReq.Source, w, r) {
+	src := prefixRoot(copyReq.Source)
+	dst := prefixRoot(copyReq.Destination)
+
+	if !ch.validatePath(src, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "source path forbidden")
 		return
 	}
 
-	if !ch.validatePath(copyReq.Destination, w, r) {
+	if !ch.validatePath(dst, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "destination path forbidden")
 		return
 	}
 
-	if err := ch.fs.Copy(copyReq.Source, copyReq.Destination); err != nil {
-		log.Debugf("failed to copy %s -> %s: %v", copyReq.Source, copyReq.Destination, err)
+	if err := ch.fs.Copy(src, dst); err != nil {
+		log.Debugf("failed to copy %s -> %s: %v", src, dst, err)
 		jsonifyErrf(w, http.StatusInternalServerError, "failed to copy")
 		return
 	}
 
-	msg := fmt.Sprintf("copied »%s« to »%s«", copyReq.Source, copyReq.Destination)
+	msg := fmt.Sprintf("copied »%s« to »%s«", src, dst)
 	if !ch.commitChange(msg, w, r) {
 		return
 	}

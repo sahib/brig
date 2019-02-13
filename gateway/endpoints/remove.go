@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -32,11 +31,7 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, path := range rmReq.Paths {
-		if !strings.HasPrefix(path, "/") {
-			jsonifyErrf(w, http.StatusBadRequest, "bad path: %s (not absolute)", path)
-			return
-		}
-
+		path = prefixRoot(path)
 		if !rh.validatePath(path, w, r) {
 			jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 			return
@@ -44,8 +39,8 @@ func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paths := []string{}
-
 	for _, path := range rmReq.Paths {
+		path = prefixRoot(path)
 		if err := rh.fs.Remove(path); err != nil {
 			log.Debugf("failed to remove %s: %v", path, err)
 			jsonifyErrf(w, http.StatusBadRequest, "failed to remove")

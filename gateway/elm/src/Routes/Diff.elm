@@ -64,7 +64,15 @@ nameFromUrl url =
 
 reload : Model -> Url.Url -> Cmd Msg
 reload model url =
-    Commands.doRemoteDiff GotResponse (nameFromUrl url)
+    let
+        remoteName =
+            nameFromUrl url
+    in
+    if String.length remoteName > 0 then
+        Commands.doRemoteDiff GotResponse remoteName
+
+    else
+        Cmd.none
 
 
 

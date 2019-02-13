@@ -31,18 +31,19 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !mh.validatePath(mkdirReq.Path, w, r) {
+	path := prefixRoot(mkdirReq.Path)
+	if !mh.validatePath(path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}
 
-	if err := mh.fs.Mkdir(mkdirReq.Path, true); err != nil {
-		log.Debugf("failed to mkdir %s: %v", mkdirReq.Path, err)
+	if err := mh.fs.Mkdir(path, true); err != nil {
+		log.Debugf("failed to mkdir %s: %v", path, err)
 		jsonifyErrf(w, http.StatusInternalServerError, "failed to mkdir")
 		return
 	}
 
-	msg := fmt.Sprintf("mkdir'd »%s«", mkdirReq.Path)
+	msg := fmt.Sprintf("mkdir'd »%s«", path)
 	if !mh.commitChange(msg, w, r) {
 		return
 	}

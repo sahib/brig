@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/gateway/remotesapi"
+	"github.com/sahib/brig/net/peer"
 )
 
 // RemotesAddHandler implements http.Handler
@@ -46,6 +48,16 @@ func dedupeFolders(folders []string) []string {
 	return deduped
 }
 
+func validateFingerprint(fingerprint string, w http.ResponseWriter, r *http.Request) bool {
+	if _, err := peer.CastFingerprint(fingerprint); err != nil {
+		log.Debugf("invalid fingerprint: %v", err)
+		jsonifyErrf(w, http.StatusBadRequest, "bad fingerprint format")
+		return false
+	}
+
+	return true
+}
+
 func (rh *RemotesAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	remoteAddReq := RemoteAddRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&remoteAddReq); err != nil {
@@ -53,12 +65,14 @@ func (rh *RemotesAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !validateFingerprint(remoteAddReq.Fingerprint, w, r) {
+		return
+	}
+
 	if _, err := rh.rapi.Get(remoteAddReq.Name); err == nil {
 		jsonifyErrf(w, http.StatusBadRequest, "remote does exist already")
 		return
 	}
-
-	// TODO: validate fingerprint.
 
 	rmt := remotesapi.Remote{
 		Name:              remoteAddReq.Name,
@@ -91,6 +105,10 @@ func (rh *RemotesModifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	remoteAddReq := RemoteAddRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&remoteAddReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
+		return
+	}
+
+	if !validateFingerprint(remoteAddReq.Fingerprint, w, r) {
 		return
 	}
 

@@ -110,13 +110,17 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// and may access the path in question. The login could come
 		// from a previous login to the UI (the /get endpoint could be used separately)
 		if !gh.validatePath(nodePath, w, r) {
+			// If the user was not previously logged in the UI,
+			// we also accept basic auth for this endpoint.
+			// This way hyperlinks can be shared without having to login.
+			// Using HTTPS here is strongly recommended.
 			if !gh.checkBasicAuth(nodePath, w, r) {
 				http.Error(w, "not authorized", http.StatusUnauthorized)
 				return
 			}
 		}
 
-		//  All good. Proceed with the content.
+		// All good. Proceed with the content.
 	}
 
 	info, err := gh.fs.Stat(nodePath)

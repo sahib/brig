@@ -27,6 +27,11 @@ func (rh *RemotesSyncHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if rmtSyncReq.Name == "" {
+		jsonifyErrf(w, http.StatusBadRequest, "empty remote name")
+		return
+	}
+
 	if err := rh.rapi.Sync(rmtSyncReq.Name); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to sync")
 		return

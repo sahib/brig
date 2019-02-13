@@ -33,23 +33,27 @@ func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !mh.validatePath(moveReq.Source, w, r) {
+	src := prefixRoot(moveReq.Source)
+	dst := prefixRoot(moveReq.Destination)
+
+	if !mh.validatePath(src, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "source path forbidden")
 		return
 	}
 
-	if !mh.validatePath(moveReq.Destination, w, r) {
+	if !mh.validatePath(dst, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "destination path forbidden")
 		return
 	}
 
-	if err := mh.fs.Move(moveReq.Source, moveReq.Destination); err != nil {
-		log.Debugf("failed to move %s -> %s: %v", moveReq.Source, moveReq.Destination, err)
+	// Move does some extended checking before actually moving the file:
+	if err := mh.fs.Move(src, dst); err != nil {
+		log.Debugf("failed to move %s -> %s: %v", src, dst, err)
 		jsonifyErrf(w, http.StatusInternalServerError, "failed to move")
 		return
 	}
 
-	msg := fmt.Sprintf("moved »%s« to »%s« via gateway", moveReq.Source, moveReq.Destination)
+	msg := fmt.Sprintf("moved »%s« to »%s« via gateway", src, dst)
 	if !mh.commitChange(msg, w, r) {
 		return
 	}

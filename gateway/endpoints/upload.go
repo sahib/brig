@@ -22,6 +22,8 @@ func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	root := r.URL.Query().Get("root")
 	if root == "" {
 		root = "/"
+	} else {
+		root = prefixRoot(root)
 	}
 
 	if err := r.ParseMultipartForm(1 * 1024 * 1024); err != nil {

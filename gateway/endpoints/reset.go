@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -33,12 +32,8 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !strings.HasPrefix(resetReq.Path, "/") {
-		jsonifyErrf(w, http.StatusBadRequest, "absolute path needs to start with /")
-		return
-	}
-
-	if !rh.validatePath(resetReq.Path, w, r) {
+	path := prefixRoot(resetReq.Path)
+	if !rh.validatePath(path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}
@@ -47,24 +42,20 @@ func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if resetReq.Path == "/" {
 		err = rh.fs.Checkout(resetReq.Revision, true)
 	} else {
-		err = rh.fs.Reset(resetReq.Path, resetReq.Revision)
+		err = rh.fs.Reset(path, resetReq.Revision)
 	}
 
-	log.Debugf("reset %s to %s", resetReq.Path, resetReq.Revision)
+	log.Debugf("reset %s to %s", path, resetReq.Revision)
 	if err != nil {
-		log.Debugf("failed to reset %s to %s: %v", resetReq.Path, resetReq.Revision, err)
+		log.Debugf("failed to reset %s to %s: %v", path, resetReq.Revision, err)
 		jsonifyErrf(w, http.StatusInternalServerError, "failed to reset")
 		return
 	}
 
-	msg := fmt.Sprintf(
-		"reverted »%s« to »%s«",
-		resetReq.Path,
-		resetReq.Revision,
-	)
-
+	msg := fmt.Sprintf("reverted »%s« to »%s«", path, resetReq.Revision)
 	if !rh.commitChange(msg, w, r) {
 		return
 	}
+
 	jsonifySuccess(w)
 }

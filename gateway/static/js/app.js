@@ -8119,12 +8119,11 @@ var author$project$Routes$Diff$nameFromUrl = function (url) {
 				elm$url$Url$Parser$string),
 			url));
 };
+var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Routes$Diff$reload = F2(
 	function (model, url) {
-		return A2(
-			author$project$Commands$doRemoteDiff,
-			author$project$Routes$Diff$GotResponse,
-			author$project$Routes$Diff$nameFromUrl(url));
+		var remoteName = author$project$Routes$Diff$nameFromUrl(url);
+		return (elm$core$String$length(remoteName) > 0) ? A2(author$project$Commands$doRemoteDiff, author$project$Routes$Diff$GotResponse, remoteName) : elm$core$Platform$Cmd$none;
 	});
 var author$project$Commands$ListQuery = F2(
 	function (root, filter) {
@@ -8866,7 +8865,6 @@ var author$project$Main$eventType = function (data) {
 		return 'failed';
 	}
 };
-var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$withSubUpdate = F6(
 	function (subMsg, subModel, model, msg, subUpdate, viewStateUpdate) {
 		var _n0 = model.loginState;
@@ -21562,7 +21560,7 @@ var author$project$Modals$RemoteFolders$viewRemoteFoldersContent = function (mod
 								]),
 							_List_fromArray(
 								[
-									elm$html$Html$text('All folders')
+									elm$html$Html$text('Visible folders')
 								]))
 						])),
 					author$project$Modals$RemoteFolders$viewFolders(model.remote),

@@ -78,20 +78,22 @@ func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !hh.validatePath(histReq.Path, w, r) {
+	path := prefixRoot(histReq.Path)
+	if !hh.validatePath(path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}
 
-	hist, err := hh.fs.History(histReq.Path)
+	hist, err := hh.fs.History(path)
 	if err != nil {
-		log.Debugf("failed to check history for %s: %v", histReq.Path, err)
+		log.Debugf("failed to check history for %s: %v", path, err)
 		jsonifyErrf(w, http.StatusBadRequest, "failed to check history")
 		return
 	}
 
 	entries := []HistoryEntry{}
 	for _, change := range hist {
+		// Filter none changes, since they are only neat for debugging.
 		if change.Change == "none" {
 			continue
 		}

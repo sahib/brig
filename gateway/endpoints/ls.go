@@ -62,12 +62,12 @@ type LsResponse struct {
 	IsFiltered bool        `json:"is_filtered"`
 }
 
-func doQuery(fs *catfs.FS, req LsRequest) ([]*catfs.StatInfo, error) {
-	if req.Filter == "" {
-		return fs.List(req.Root, 1)
+func doQuery(fs *catfs.FS, root, filter string) ([]*catfs.StatInfo, error) {
+	if filter == "" {
+		return fs.List(root, 1)
 	}
 
-	return fs.Filter(req.Root, req.Filter)
+	return fs.Filter(root, filter)
 }
 
 func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -77,13 +77,14 @@ func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	info, err := lh.fs.Stat(lsReq.Root)
+	root := prefixRoot(lsReq.Root)
+	info, err := lh.fs.Stat(root)
 	if err != nil {
-		jsonifyErrf(w, http.StatusBadRequest, "failed to stat root %s: %v", lsReq.Root, err)
+		jsonifyErrf(w, http.StatusBadRequest, "failed to stat root %s: %v", root, err)
 		return
 	}
 
-	items, err := doQuery(lh.fs, lsReq)
+	items, err := doQuery(lh.fs, root, lsReq.Filter)
 	if err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to query: %v", err)
 		return

@@ -31,21 +31,23 @@ func (uh *UndeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !uh.validatePath(undelReq.Path, w, r) {
+	path := prefixRoot(undelReq.Path)
+	if !uh.validatePath(path, w, r) {
 		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
 		return
 	}
 
-	if err := uh.fs.Undelete(undelReq.Path); err != nil {
-		log.Debugf("failed to undelete %s: %v", undelReq.Path, err)
+	if err := uh.fs.Undelete(path); err != nil {
+		log.Debugf("failed to undelete %s: %v", path, err)
 		fmt.Println(err)
 		jsonifyErrf(w, http.StatusInternalServerError, "failed to undelete")
 		return
 	}
 
-	msg := fmt.Sprintf("undeleted »%s«", undelReq.Path)
+	msg := fmt.Sprintf("undeleted »%s«", path)
 	if !uh.commitChange(msg, w, r) {
 		return
 	}
+
 	jsonifySuccess(w)
 }
