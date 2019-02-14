@@ -21,6 +21,7 @@ module Commands exposing
     , doLogout
     , doMkdir
     , doMove
+    , doPin
     , doRemoteAdd
     , doRemoteDiff
     , doRemoteList
@@ -31,6 +32,7 @@ module Commands exposing
     , doReset
     , doSelfQuery
     , doUndelete
+    , doUnpin
     , doUpload
     , doWhoami
     , emptyRemote
@@ -858,4 +860,42 @@ doRemoteDiff toMsg name =
         { url = "/api/v0/remotes/diff"
         , body = Http.jsonBody <| encodeRemoteDiffQuery <| RemoteDiffQuery name
         , expect = Http.expectJson toMsg decodeDiffResponse
+        }
+
+
+
+-- PIN
+
+
+type alias PinQuery =
+    { paths : List String
+    }
+
+
+encodePinQuery : PinQuery -> E.Value
+encodePinQuery q =
+    E.object
+        [ ( "paths", E.list E.string q.paths ) ]
+
+
+decodePinResponse : D.Decoder String
+decodePinResponse =
+    D.field "message" D.string
+
+
+doPin : (Result Http.Error String -> msg) -> List String -> Cmd msg
+doPin toMsg paths =
+    Http.post
+        { url = "/api/v0/pin"
+        , body = Http.jsonBody <| encodePinQuery <| PinQuery paths
+        , expect = Http.expectJson toMsg decodePinResponse
+        }
+
+
+doUnpin : (Result Http.Error String -> msg) -> List String -> Cmd msg
+doUnpin toMsg paths =
+    Http.post
+        { url = "/api/v0/unpin"
+        , body = Http.jsonBody <| encodePinQuery <| PinQuery paths
+        , expect = Http.expectJson toMsg decodePinResponse
         }

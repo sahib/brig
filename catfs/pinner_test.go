@@ -119,3 +119,16 @@ func TestPinEntryMarshal(t *testing.T) {
 
 	require.Equal(t, pinEntry, loadedPinEntry)
 }
+
+func TestPinEmptyDir(t *testing.T) {
+	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Mkdir("/empty", true))
+
+		dir, err := fs.lkr.LookupDirectory("/empty")
+		require.Nil(t, err)
+		isPinned, isExplicit, err := fs.pinner.IsNodePinned(dir)
+		require.Nil(t, err)
+		require.True(t, isPinned)
+		require.True(t, isExplicit)
+	})
+}

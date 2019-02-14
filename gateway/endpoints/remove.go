@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // RemoveHandler implements http.Handler.
@@ -24,6 +25,10 @@ type RemoveRequest struct {
 }
 
 func (rh *RemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	rmReq := RemoveRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rmReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

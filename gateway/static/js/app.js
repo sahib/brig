@@ -9462,10 +9462,10 @@ var author$project$Routes$Ls$changeUrl = F2(
 			model,
 			{url: url});
 	});
-var author$project$Commands$RemoveQuery = function (paths) {
+var author$project$Commands$PinQuery = function (paths) {
 	return {paths: paths};
 };
-var author$project$Commands$decodeRemoveResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
+var author$project$Commands$decodePinResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
 var elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -9475,6 +9475,30 @@ var elm$json$Json$Encode$list = F2(
 				_Json_emptyArray(_Utils_Tuple0),
 				entries));
 	});
+var author$project$Commands$encodePinQuery = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'paths',
+				A2(elm$json$Json$Encode$list, elm$json$Json$Encode$string, q.paths))
+			]));
+};
+var author$project$Commands$doPin = F2(
+	function (toMsg, paths) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodePinQuery(
+						author$project$Commands$PinQuery(paths))),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodePinResponse),
+				url: '/api/v0/pin'
+			});
+	});
+var author$project$Commands$RemoveQuery = function (paths) {
+	return {paths: paths};
+};
+var author$project$Commands$decodeRemoveResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
 var author$project$Commands$encodeRemoveQuery = function (q) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -9493,6 +9517,17 @@ var author$project$Commands$doRemove = F2(
 						author$project$Commands$RemoveQuery(paths))),
 				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeRemoveResponse),
 				url: '/api/v0/remove'
+			});
+	});
+var author$project$Commands$doUnpin = F2(
+	function (toMsg, paths) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodePinQuery(
+						author$project$Commands$PinQuery(paths))),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodePinResponse),
+				url: '/api/v0/unpin'
 			});
 	});
 var author$project$Commands$HistoryQuery = function (path) {
@@ -10496,6 +10531,9 @@ var author$project$Modals$Upload$update = F2(
 	});
 var author$project$Routes$Ls$Ascending = {$: 'Ascending'};
 var author$project$Routes$Ls$Failure = {$: 'Failure'};
+var author$project$Routes$Ls$GotPinResponse = function (a) {
+	return {$: 'GotPinResponse', a: a};
+};
 var author$project$Routes$Ls$None = {$: 'None'};
 var author$project$Routes$Ls$RemoveResponse = function (a) {
 	return {$: 'RemoveResponse', a: a};
@@ -10532,6 +10570,18 @@ var author$project$Routes$Ls$setDropdownState = F3(
 		}
 	});
 var author$project$Routes$Ls$Descending = {$: 'Descending'};
+var author$project$Routes$Ls$entryPinToSortKey = function (entry) {
+	var _n0 = _Utils_Tuple2(entry.isPinned, entry.isExplicit);
+	if (_n0.a) {
+		if (_n0.b) {
+			return 2;
+		} else {
+			return 1;
+		}
+	} else {
+		return 0;
+	}
+};
 var elm$core$List$sortBy = _List_sortBy;
 var elm$core$String$toLower = _String_toLower;
 var elm$time$Time$posixToMillis = function (_n0) {
@@ -10554,6 +10604,13 @@ var author$project$Routes$Ls$sortByAscending = F2(
 					elm$core$List$sortBy,
 					function (e) {
 						return elm$time$Time$posixToMillis(e.lastModified);
+					},
+					model.entries);
+			case 'Pin':
+				return A2(
+					elm$core$List$sortBy,
+					function (e) {
+						return author$project$Routes$Ls$entryPinToSortKey(e);
 					},
 					model.entries);
 			case 'Size':
@@ -10851,6 +10908,13 @@ var author$project$Routes$Ls$update = F2(
 							{state: author$project$Routes$Ls$Failure}),
 						elm$core$Platform$Cmd$none);
 				}
+			case 'GotPinResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
 			case 'CheckboxTick':
 				var path = msg.a;
 				var isChecked = msg.b;
@@ -10862,6 +10926,22 @@ var author$project$Routes$Ls$update = F2(
 				return _Utils_Tuple2(
 					A2(author$project$Routes$Ls$updateCheckboxTickAll, isChecked, model),
 					elm$core$Platform$Cmd$none);
+			case 'PinClicked':
+				var path = msg.a;
+				var shouldBePinned = msg.b;
+				return shouldBePinned ? _Utils_Tuple2(
+					model,
+					A2(
+						author$project$Commands$doPin,
+						author$project$Routes$Ls$GotPinResponse,
+						_List_fromArray(
+							[path]))) : _Utils_Tuple2(
+					model,
+					A2(
+						author$project$Commands$doUnpin,
+						author$project$Routes$Ls$GotPinResponse,
+						_List_fromArray(
+							[path])));
 			case 'AlertMsg':
 				var state = msg.a;
 				return _Utils_Tuple2(
@@ -10871,9 +10951,9 @@ var author$project$Routes$Ls$update = F2(
 					elm$core$Platform$Cmd$none);
 			case 'HistoryMsg':
 				var subMsg = msg.a;
-				var _n4 = A2(author$project$Modals$History$update, subMsg, model.historyState);
-				var newSubModel = _n4.a;
-				var newSubCmd = _n4.b;
+				var _n5 = A2(author$project$Modals$History$update, subMsg, model.historyState);
+				var newSubModel = _n5.a;
+				var newSubCmd = _n5.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10881,9 +10961,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$HistoryMsg, newSubCmd));
 			case 'RenameMsg':
 				var subMsg = msg.a;
-				var _n5 = A2(author$project$Modals$Rename$update, subMsg, model.renameState);
-				var newSubModel = _n5.a;
-				var newSubCmd = _n5.b;
+				var _n6 = A2(author$project$Modals$Rename$update, subMsg, model.renameState);
+				var newSubModel = _n6.a;
+				var newSubCmd = _n6.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10891,9 +10971,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$RenameMsg, newSubCmd));
 			case 'MoveMsg':
 				var subMsg = msg.a;
-				var _n6 = A2(author$project$Modals$MoveCopy$update, subMsg, model.moveState);
-				var newSubModel = _n6.a;
-				var newSubCmd = _n6.b;
+				var _n7 = A2(author$project$Modals$MoveCopy$update, subMsg, model.moveState);
+				var newSubModel = _n7.a;
+				var newSubCmd = _n7.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10901,9 +10981,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$MoveMsg, newSubCmd));
 			case 'CopyMsg':
 				var subMsg = msg.a;
-				var _n7 = A2(author$project$Modals$MoveCopy$update, subMsg, model.copyState);
-				var newSubModel = _n7.a;
-				var newSubCmd = _n7.b;
+				var _n8 = A2(author$project$Modals$MoveCopy$update, subMsg, model.copyState);
+				var newSubModel = _n8.a;
+				var newSubCmd = _n8.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10911,9 +10991,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$CopyMsg, newSubCmd));
 			case 'UploadMsg':
 				var subMsg = msg.a;
-				var _n8 = A2(author$project$Modals$Upload$update, subMsg, model.uploadState);
-				var newSubModel = _n8.a;
-				var newSubCmd = _n8.b;
+				var _n9 = A2(author$project$Modals$Upload$update, subMsg, model.uploadState);
+				var newSubModel = _n9.a;
+				var newSubCmd = _n9.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10921,9 +11001,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$UploadMsg, newSubCmd));
 			case 'MkdirMsg':
 				var subMsg = msg.a;
-				var _n9 = A2(author$project$Modals$Mkdir$update, subMsg, model.mkdirState);
-				var newSubModel = _n9.a;
-				var newSubCmd = _n9.b;
+				var _n10 = A2(author$project$Modals$Mkdir$update, subMsg, model.mkdirState);
+				var newSubModel = _n10.a;
+				var newSubCmd = _n10.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10931,9 +11011,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$MkdirMsg, newSubCmd));
 			case 'RemoveMsg':
 				var subMsg = msg.a;
-				var _n10 = A2(author$project$Modals$Remove$update, subMsg, model.removeState);
-				var newSubModel = _n10.a;
-				var newSubCmd = _n10.b;
+				var _n11 = A2(author$project$Modals$Remove$update, subMsg, model.removeState);
+				var newSubModel = _n11.a;
+				var newSubCmd = _n11.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -10941,9 +11021,9 @@ var author$project$Routes$Ls$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Routes$Ls$RemoveMsg, newSubCmd));
 			default:
 				var subMsg = msg.a;
-				var _n11 = A2(author$project$Modals$Share$update, subMsg, model.shareState);
-				var newSubModel = _n11.a;
-				var newSubCmd = _n11.b;
+				var _n12 = A2(author$project$Modals$Share$update, subMsg, model.shareState);
+				var newSubModel = _n12.a;
+				var newSubCmd = _n12.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -17101,6 +17181,7 @@ var author$project$Routes$Ls$CheckboxTickAll = function (a) {
 };
 var author$project$Routes$Ls$ModTime = {$: 'ModTime'};
 var author$project$Routes$Ls$Name = {$: 'Name'};
+var author$project$Routes$Ls$Pin = {$: 'Pin'};
 var author$project$Routes$Ls$Size = {$: 'Size'};
 var author$project$Routes$Ls$SortBy = F2(
 	function (a, b) {
@@ -17946,6 +18027,65 @@ var author$project$Routes$Ls$viewEntryIcon = function (entry) {
 			_List_Nil);
 	}
 };
+var author$project$Routes$Ls$PinClicked = F2(
+	function (a, b) {
+		return {$: 'PinClicked', a: a, b: b};
+	});
+var author$project$Routes$Ls$viewPinIcon = F2(
+	function (isPinned, isExplicit) {
+		var _n0 = _Utils_Tuple2(isPinned, isExplicit);
+		if (_n0.a) {
+			if (_n0.b) {
+				return A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fa fa-map-marker'),
+							elm$html$Html$Attributes$class('text-success')
+						]),
+					_List_Nil);
+			} else {
+				return A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fa fa-map-marker-alt'),
+							elm$html$Html$Attributes$class('text-warning')
+						]),
+					_List_Nil);
+			}
+		} else {
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('fa fa-times'),
+						elm$html$Html$Attributes$class('text-danger')
+					]),
+				_List_Nil);
+		}
+	});
+var author$project$Routes$Ls$viewPinButton = F2(
+	function (model, entry) {
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Button$button,
+			_List_fromArray(
+				[
+					rundis$elm_bootstrap$Bootstrap$Button$roleLink,
+					rundis$elm_bootstrap$Bootstrap$Button$attrs(
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$disabled(
+							!A2(elm$core$List$member, 'fs.edit', model.rights)),
+							elm$html$Html$Events$onClick(
+							A2(author$project$Routes$Ls$PinClicked, entry.path, !entry.isPinned))
+						]))
+				]),
+			_List_fromArray(
+				[
+					A2(author$project$Routes$Ls$viewPinIcon, entry.isPinned, entry.isExplicit)
+				]));
+	});
 var author$project$Util$formatLastModifiedOwner = F3(
 	function (z, t, owner) {
 		return A2(
@@ -18051,6 +18191,13 @@ var author$project$Routes$Ls$entryToHtml = F4(
 					_List_Nil,
 					_List_fromArray(
 						[
+							A2(author$project$Routes$Ls$viewPinButton, model, e)
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Table$td,
+					_List_Nil,
+					_List_fromArray(
+						[
 							A3(author$project$Routes$Ls$buildActionDropdown, model, actModel, e)
 						]))
 				]));
@@ -18110,7 +18257,7 @@ var author$project$Routes$Ls$entriesToHtml = F3(
 							_List_fromArray(
 								[
 									rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
-									A2(elm$html$Html$Attributes$style, 'width', '45%'))
+									A2(elm$html$Html$Attributes$style, 'width', '37.5%'))
 								]),
 							_List_fromArray(
 								[
@@ -18121,7 +18268,7 @@ var author$project$Routes$Ls$entriesToHtml = F3(
 							_List_fromArray(
 								[
 									rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
-									A2(elm$html$Html$Attributes$style, 'width', '30%'))
+									A2(elm$html$Html$Attributes$style, 'width', '27.5%'))
 								]),
 							_List_fromArray(
 								[
@@ -18132,11 +18279,22 @@ var author$project$Routes$Ls$entriesToHtml = F3(
 							_List_fromArray(
 								[
 									rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
-									A2(elm$html$Html$Attributes$style, 'width', '10%'))
+									A2(elm$html$Html$Attributes$style, 'width', '7.5%'))
 								]),
 							_List_fromArray(
 								[
 									A3(author$project$Routes$Ls$buildSortControl, 'Size', actModel, author$project$Routes$Ls$Size)
+								])),
+							A2(
+							rundis$elm_bootstrap$Bootstrap$Table$th,
+							_List_fromArray(
+								[
+									rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
+									A2(elm$html$Html$Attributes$style, 'width', '10%'))
+								]),
+							_List_fromArray(
+								[
+									A3(author$project$Routes$Ls$buildSortControl, 'Pin', actModel, author$project$Routes$Ls$Pin)
 								])),
 							A2(
 							rundis$elm_bootstrap$Bootstrap$Table$th,
@@ -18286,37 +18444,6 @@ var author$project$Routes$Ls$viewMetaRow = F2(
 						[value]))
 				]));
 	});
-var author$project$Routes$Ls$viewPinIcon = F2(
-	function (isPinned, isExplicit) {
-		var _n0 = _Utils_Tuple2(isPinned, isExplicit);
-		if (_n0.a) {
-			if (_n0.b) {
-				return A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('text-success fa fa-check')
-						]),
-					_List_Nil);
-			} else {
-				return A2(
-					elm$html$Html$span,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('text-warning fa fa-check')
-						]),
-					_List_Nil);
-			}
-		} else {
-			return A2(
-				elm$html$Html$span,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$class('text-danger fa fa-times')
-					]),
-				_List_Nil);
-		}
-	});
 var author$project$Routes$Ls$viewViewButton = F3(
 	function (model, actModel, url) {
 		return A2(
@@ -18426,7 +18553,7 @@ var author$project$Routes$Ls$viewSingleEntry = F3(
 											A2(
 											author$project$Routes$Ls$viewMetaRow,
 											'Pinned',
-											A2(author$project$Routes$Ls$viewPinIcon, actualModel.self.isPinned, actualModel.self.isExplicit))
+											A2(author$project$Routes$Ls$viewPinButton, model, actualModel.self))
 										])),
 									A2(
 									rundis$elm_bootstrap$Bootstrap$ListGroup$li,

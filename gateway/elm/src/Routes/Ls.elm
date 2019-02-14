@@ -210,6 +210,7 @@ type SortKey
     = None
     | Name
     | ModTime
+    | Pin
     | Size
 
 
@@ -220,6 +221,7 @@ type SortDirection
 
 type Msg
     = GotResponse (Result Http.Error Commands.ListResponse)
+    | GotPinResponse (Result Http.Error String)
     | CheckboxTick String Bool
     | CheckboxTickAll Bool
     | ActionDropdownMsg Commands.Entry Dropdown.State
@@ -230,6 +232,7 @@ type Msg
     | SortBy SortDirection SortKey
     | AlertMsg Alert.Visibility
     | SearchInput String
+    | PinClicked String Bool
       -- Sub messages:
     | HistoryMsg History.Msg
     | RenameMsg Rename.Msg
@@ -271,6 +274,19 @@ sortBy model direction key =
             }
 
 
+entryPinToSortKey : Commands.Entry -> Int
+entryPinToSortKey entry =
+    case ( entry.isPinned, entry.isExplicit ) of
+        ( True, True ) ->
+            2
+
+        ( True, False ) ->
+            1
+
+        _ ->
+            0
+
+
 sortByAscending : ActualModel -> SortKey -> List Commands.Entry
 sortByAscending model key =
     case key of
@@ -279,6 +295,9 @@ sortByAscending model key =
 
         ModTime ->
             List.sortBy (\e -> Time.posixToMillis e.lastModified) model.entries
+
+        Pin ->
+            List.sortBy (\e -> entryPinToSortKey e) model.entries
 
         Size ->
             List.sortBy .size model.entries
@@ -438,11 +457,27 @@ update msg model =
                 Err _ ->
                     ( { model | state = Failure }, Cmd.none )
 
+        GotPinResponse result ->
+            case result of
+                Ok _ ->
+                    ( model, Cmd.none )
+
+                -- TODO: Error handling?
+                Err _ ->
+                    ( model, Cmd.none )
+
         CheckboxTick path isChecked ->
             ( updateCheckboxTick path isChecked model, Cmd.none )
 
         CheckboxTickAll isChecked ->
             ( updateCheckboxTickAll isChecked model, Cmd.none )
+
+        PinClicked path shouldBePinned ->
+            if shouldBePinned then
+                ( model, Commands.doPin GotPinResponse [ path ] )
+
+            else
+                ( model, Commands.doUnpin GotPinResponse [ path ] )
 
         AlertMsg state ->
             ( { model | alert = state }, Cmd.none )
@@ -573,13 +608,31 @@ viewPinIcon : Bool -> Bool -> Html msg
 viewPinIcon isPinned isExplicit =
     case ( isPinned, isExplicit ) of
         ( True, True ) ->
-            span [ class "text-success fa fa-check" ] []
+            span
+                [ class "fa fa-map-marker", class "text-success" ]
+                []
 
         ( True, False ) ->
-            span [ class "text-warning fa fa-check" ] []
+            span
+                [ class "fa fa-map-marker-alt", class "text-warning" ]
+                []
 
         _ ->
-            span [ class "text-danger fa fa-times" ] []
+            span
+                [ class "fa fa-times", class "text-danger" ]
+                []
+
+
+viewPinButton : Model -> Commands.Entry -> Html Msg
+viewPinButton model entry =
+    Button.button
+        [ Button.roleLink
+        , Button.attrs
+            [ disabled (not (List.member "fs.edit" model.rights))
+            , onClick (PinClicked entry.path (not entry.isPinned))
+            ]
+        ]
+        [ viewPinIcon entry.isPinned entry.isExplicit ]
 
 
 viewSingleEntry : Model -> ActualModel -> Time.Zone -> Html Msg
@@ -602,7 +655,7 @@ viewSingleEntry model actualModel zone =
                     ]
                 , ListGroup.li []
                     [ viewMetaRow "Pinned"
-                        (viewPinIcon actualModel.self.isPinned actualModel.self.isExplicit)
+                        (viewPinButton model actualModel.self)
                     ]
                 , ListGroup.li [ ListGroup.light ]
                     [ viewDownloadButton model actualModel model.url
@@ -834,6 +887,10 @@ entryToHtml model actModel zone e =
             ]
         , Table.td
             []
+            [ viewPinButton model e
+            ]
+        , Table.td
+            []
             [ buildActionDropdown model actModel e
             ]
         ]
@@ -887,12 +944,14 @@ entriesToHtml model zone actModel =
                     ]
                 , Table.th [ Table.cellAttr (style "width" "5%") ]
                     [ text "" ]
-                , Table.th [ Table.cellAttr (style "width" "45%") ]
+                , Table.th [ Table.cellAttr (style "width" "37.5%") ]
                     [ buildSortControl "Name" actModel Name ]
-                , Table.th [ Table.cellAttr (style "width" "30%") ]
+                , Table.th [ Table.cellAttr (style "width" "27.5%") ]
                     [ buildSortControl "Modified" actModel ModTime ]
-                , Table.th [ Table.cellAttr (style "width" "10%") ]
+                , Table.th [ Table.cellAttr (style "width" "7.5%") ]
                     [ buildSortControl "Size" actModel Size ]
+                , Table.th [ Table.cellAttr (style "width" "10%") ]
+                    [ buildSortControl "Pin" actModel Pin ]
                 , Table.th [ Table.cellAttr (style "width" "5%") ]
                     [ text "" ]
                 ]

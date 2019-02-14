@@ -277,6 +277,14 @@ func (pc *Pinner) UnpinNode(nd n.Node, explicit bool) error {
 // If `nd` is a directory, it will only return true if all children
 // are also pinned (same for second return value).
 func (pc *Pinner) IsNodePinned(nd n.Node) (bool, bool, error) {
+	// Handle special case:
+	// empty directories should count as pinned.
+	// (for the sake of the definition that a directory is pinned,
+	//  if all children are also pinned)
+	if nd.Type() == n.NodeTypeDirectory && nd.NChildren() == 0 {
+		return true, true, nil
+	}
+
 	pinCount := 0
 	explicitCount := 0
 	totalCount := 0

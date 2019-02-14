@@ -221,6 +221,8 @@ func (gw *Gateway) Start() {
 		apiRouter.Handle("/log", needsAuth(endpoints.NewLogHandler(gw.state)))
 		apiRouter.Handle("/deleted", needsAuth(endpoints.NewDeletedPathsHandler(gw.state)))
 		apiRouter.Handle("/undelete", needsAuth(endpoints.NewUndeleteHandler(gw.state)))
+		apiRouter.Handle("/pin", needsAuth(endpoints.NewPinHandler(gw.state)))
+		apiRouter.Handle("/unpin", needsAuth(endpoints.NewUnpinHandler(gw.state)))
 
 		// Remote API:
 		apiRouter.Handle("/remotes/list", needsAuth(endpoints.NewRemotesListHandler(gw.state)))

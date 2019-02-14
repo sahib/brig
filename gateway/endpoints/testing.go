@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -75,6 +76,10 @@ func (s *testState) mustRun(t *testing.T, hdl http.Handler, verb, url string, js
 	req := httptest.NewRequest(verb, url, mustEncodeBody(t, jsonBody))
 	rsw := httptest.NewRecorder()
 
+	user, err := s.userDb.Get("ali")
+	require.Nil(t, err)
+
+	req = req.WithContext(context.WithValue(req.Context(), "brig.db_user", user))
 	setSession(s.store, "ali", rsw, req)
 	hdl.ServeHTTP(rsw, req)
 	return rsw.Result()
