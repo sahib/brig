@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/remotesapi"
 )
 
@@ -24,6 +25,10 @@ type RemoteListResponse struct {
 }
 
 func (rh *RemoteListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightRemotesView) {
+		return
+	}
+
 	rmts, err := rh.rapi.List()
 	if err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

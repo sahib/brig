@@ -59,11 +59,12 @@ type alias Model =
     , alert : Util.AlertState
     , url : Url.Url
     , haveStagedChanges : Bool
+    , rights : List String
     }
 
 
-newModel : Url.Url -> Nav.Key -> Time.Zone -> Model
-newModel url key zone =
+newModel : Url.Url -> Nav.Key -> Time.Zone -> List String -> Model
+newModel url key zone rights =
     { key = key
     , state = Loading
     , zone = zone
@@ -72,6 +73,7 @@ newModel url key zone =
     , alert = Util.defaultAlertState
     , url = url
     , haveStagedChanges = False
+    , rights = rights
     }
 
 
@@ -263,7 +265,10 @@ viewCommit model commit =
                     [ Button.outlineDanger
                     , Button.attrs
                         [ onClick <| CheckoutClicked commit.hash
-                        , disabled (not model.haveStagedChanges && List.member "head" commit.tags)
+                        , disabled
+                            ((not model.haveStagedChanges && List.member "head" commit.tags)
+                                || not (List.member "fs.edit" model.rights)
+                            )
                         ]
                     ]
                     [ text "Checkout" ]

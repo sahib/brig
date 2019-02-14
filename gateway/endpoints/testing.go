@@ -52,8 +52,7 @@ func withState(t *testing.T, fn func(state *testState)) {
 	state, err := NewState(fs, rapi, cfg.Section("gateway"), NewEventsHandler(rapi), dbPath)
 	require.Nil(t, err)
 
-	state.UserDatabase().Add("ali", "ila", nil)
-
+	state.UserDatabase().Add("ali", "ila", nil, nil)
 	fn(&testState{state})
 
 	require.Nil(t, state.fs.Close())
@@ -83,5 +82,5 @@ func (s *testState) mustRun(t *testing.T, hdl http.Handler, verb, url string, js
 
 func (s *testState) mustChangeFolders(t *testing.T, folders ...string) {
 	require.Nil(t, s.userDb.Remove("ali"))
-	require.Nil(t, s.userDb.Add("ali", "ila", folders))
+	require.Nil(t, s.userDb.Add("ali", "ila", folders, nil))
 }

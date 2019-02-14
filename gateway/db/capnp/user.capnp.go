@@ -14,12 +14,12 @@ type User struct{ capnp.Struct }
 const User_TypeID = 0x861de4463c5a4a22
 
 func NewUser(s *capnp.Segment) (User, error) {
-	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 4})
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 5})
 	return User{st}, err
 }
 
 func NewRootUser(s *capnp.Segment) (User, error) {
-	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 4})
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 5})
 	return User{st}, err
 }
 
@@ -115,12 +115,37 @@ func (s User) NewFolders(n int32) (capnp.TextList, error) {
 	return l, err
 }
 
+func (s User) Rights() (capnp.TextList, error) {
+	p, err := s.Struct.Ptr(4)
+	return capnp.TextList{List: p.List()}, err
+}
+
+func (s User) HasRights() bool {
+	p, err := s.Struct.Ptr(4)
+	return p.IsValid() || err != nil
+}
+
+func (s User) SetRights(v capnp.TextList) error {
+	return s.Struct.SetPtr(4, v.List.ToPtr())
+}
+
+// NewRights sets the rights field to a newly
+// allocated capnp.TextList, preferring placement in s's segment.
+func (s User) NewRights(n int32) (capnp.TextList, error) {
+	l, err := capnp.NewTextList(s.Struct.Segment(), n)
+	if err != nil {
+		return capnp.TextList{}, err
+	}
+	err = s.Struct.SetPtr(4, l.List.ToPtr())
+	return l, err
+}
+
 // User_List is a list of User.
 type User_List struct{ capnp.List }
 
 // NewUser creates a new list of User.
 func NewUser_List(s *capnp.Segment, sz int32) (User_List, error) {
-	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 4}, sz)
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 5}, sz)
 	return User_List{l}, err
 }
 
@@ -141,21 +166,23 @@ func (p User_Promise) Struct() (User, error) {
 	return User{s}, err
 }
 
-const schema_a0b1c18bd0f965c4 = "x\xda4\xca\xb1J\xc3P\x18\xc5\xf1s\xee\x97X\x90" +
-	"\xd2\xf4BF]\x1c\x05\x0d]\xc5A\x1cD\x9c\xfa\x0d" +
-	".\xe2r5W\x83\xa4m\xcc\x8d\x14'\x07A\x04_" +
-	"\xc2W\xf0\x09D\xd0]\x07\xdf@\xf0\x19\x9c\"-d" +
-	";\xe7\xc7\x7fx\xbfgF\xf1+\x01M\xe3\x95v\xe3" +
-	"\xe8d\xf7\xe0g\xfd\x01v\x8d\xed\xbb\xff\xfb|z{" +
-	"yF\x1c\xf5\x80\xd1\xc7*\xedw\x0f\xb0_\xbf\xd8j" +
-	"/]\xe3\xe7\xee6\x93\xfc,;w\xd5\xb4\xcan\x82" +
-	"\xaf\xb7\x97s\xe78\xf8\x1a\x18\x93:\x94\x08\x88\x08X" +
-	"\xb7\x09\xe8\xa9P\x0bCK\xa6\\\xa0\xbf\x024\x17j" +
-	"eh\x8dIi\x00;Y\x94\x85P\x1bC+\x92R" +
-	"\x00{\xbd\x0fh)\xd4G\xc3d\xea&\x9e}\x18\xf6" +
-	"\xc1\xb6r!\xccgu\x8e\xe4\xd0\x85\xa2\xe3$\xb8\xb2" +
-	"\xe9\xce\xdd\xc5\xac\xcc}\x1d8\x00\xc7\xc2%\x0f\xc0\xff" +
-	"\x00\x00\x00\xff\xff\xd0\xc75\xe2"
+const schema_a0b1c18bd0f965c4 = "x\xda\\\xca\xb1J\x03A\x18\xc4\xf1\x99\xdd;\x05\x09" +
+	"\x89\x0b[*\x82\xa5\xa0!m\x10\x14\x0b\x11\xab|\x85" +
+	"\x8d\xddj\xd6D\x89\xc9q{\x12-D\x85 \x8a\x0a" +
+	"VV\x16\x0a\xbe\x80\x9d\x9d\x08\xdak\xe1\x1b\xf8\x12V" +
+	"'\x17Hc\xf7\x9f\x1f3y\xb7\xacj\xf1+\x01\xb1" +
+	"\xf1X>\xbb\xbe\xb9\xb8\xfa3}\x0e3\xc5\xfc\xdd\xff" +
+	"~^\xbd=? \x8e\xc7\x81\xda\xc7\x04\xcdw\x11_" +
+	"3\xc4|\xder\x99\xef\xbb\xa3\xaannU\xb7]\xd2" +
+	"M\xaa\x07\xc1\xa7\x0b\xc3\xaco\x04\x9f\x02\x0dR\xac\x8e" +
+	"\x80\x88\x809\x9e\x03\xe4PS\x06\x8a\x86\xb4,\xf0l" +
+	"\x0f\x90SM\xb9V4JY*\xc0\\\x16\xcf\x81\xa6" +
+	"\xdc*\x1a\xad-5`nV\x00\xb9\xd0\x94'E\x13" +
+	"E\x96\x11`\x1e\xeb\x80\xdck\xca\x8bb\xa5\xeb\xf6=" +
+	"KP,\x81y\xe2B\xe8\xf7\xd2&*k.\xb4G" +
+	"\\\x09\xae\x93\x8d\xc6\xc9N\xaf\xd3\xf4i`\x19lh" +
+	"\x0e\xb9\x0c.\xa5\xbb\xadv\xf6_\xff\x02\x00\x00\xff\xff" +
+	"\x89\xf1=\x11"
 
 func init() {
 	schemas.Register(schema_a0b1c18bd0f965c4,

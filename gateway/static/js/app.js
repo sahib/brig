@@ -4828,9 +4828,9 @@ var author$project$Main$LinkClicked = function (a) {
 var author$project$Main$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
-var author$project$Commands$WhoamiResponse = F2(
-	function (username, isLoggedIn) {
-		return {isLoggedIn: isLoggedIn, username: username};
+var author$project$Commands$WhoamiResponse = F3(
+	function (username, isLoggedIn, rights) {
+		return {isLoggedIn: isLoggedIn, rights: rights, username: username};
 	});
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
@@ -5309,13 +5309,18 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 	});
 var elm$json$Json$Decode$bool = _Json_decodeBool;
 var elm$json$Json$Decode$field = _Json_decodeField;
-var elm$json$Json$Decode$map2 = _Json_map2;
+var elm$json$Json$Decode$list = _Json_decodeList;
+var elm$json$Json$Decode$map3 = _Json_map3;
 var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Commands$decodeWhoami = A3(
-	elm$json$Json$Decode$map2,
+var author$project$Commands$decodeWhoami = A4(
+	elm$json$Json$Decode$map3,
 	author$project$Commands$WhoamiResponse,
 	A2(elm$json$Json$Decode$field, 'user', elm$json$Json$Decode$string),
-	A2(elm$json$Json$Decode$field, 'is_logged_in', elm$json$Json$Decode$bool));
+	A2(elm$json$Json$Decode$field, 'is_logged_in', elm$json$Json$Decode$bool),
+	A2(
+		elm$json$Json$Decode$field,
+		'rights',
+		elm$json$Json$Decode$list(elm$json$Json$Decode$string)));
 var elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var elm$core$Dict$empty = elm$core$Dict$RBEmpty_elm_builtin;
 var elm$core$Basics$compare = _Utils_compare;
@@ -6388,6 +6393,7 @@ var elm$core$Basics$never = function (_n0) {
 	}
 };
 var elm$json$Json$Decode$map = _Json_map1;
+var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -7445,7 +7451,18 @@ var author$project$Commands$LoginQuery = F2(
 	function (username, password) {
 		return {password: password, username: username};
 	});
-var author$project$Commands$decodeLoginResponse = A2(elm$json$Json$Decode$field, 'username', elm$json$Json$Decode$string);
+var author$project$Commands$LoginResponse = F2(
+	function (username, rights) {
+		return {rights: rights, username: username};
+	});
+var author$project$Commands$decodeLoginResponse = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Commands$LoginResponse,
+	A2(elm$json$Json$Decode$field, 'username', elm$json$Json$Decode$string),
+	A2(
+		elm$json$Json$Decode$field,
+		'rights',
+		elm$json$Json$Decode$list(elm$json$Json$Decode$string)));
 var elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
 		A3(
@@ -7560,42 +7577,73 @@ var elm$core$List$head = function (list) {
 		return elm$core$Maybe$Nothing;
 	}
 };
-var author$project$Main$viewFromUrl = function (url) {
-	var _n0 = elm$core$List$head(
-		A2(
-			elm$core$List$drop,
-			1,
-			A2(elm$core$String$split, '/', url.path)));
-	if (_n0.$ === 'Nothing') {
-		return author$project$Main$ViewNotFound;
-	} else {
-		var first = _n0.a;
-		switch (first) {
-			case 'view':
-				return author$project$Main$ViewList;
-			case 'log':
-				return author$project$Main$ViewCommits;
-			case 'remotes':
-				return author$project$Main$ViewRemotes;
-			case 'deleted':
-				return author$project$Main$ViewDeletedFiles;
-			case 'diff':
-				return author$project$Main$ViewDiff;
-			case '':
-				return author$project$Main$ViewList;
-			default:
-				return author$project$Main$ViewNotFound;
+var elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
 		}
-	}
-};
+	});
+var elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var author$project$Main$viewFromUrl = F2(
+	function (rights, url) {
+		var _n0 = elm$core$List$head(
+			A2(
+				elm$core$List$drop,
+				1,
+				A2(elm$core$String$split, '/', url.path)));
+		if (_n0.$ === 'Nothing') {
+			return author$project$Main$ViewNotFound;
+		} else {
+			var first = _n0.a;
+			switch (first) {
+				case 'view':
+					return author$project$Main$ViewList;
+				case 'log':
+					return author$project$Main$ViewCommits;
+				case 'remotes':
+					return author$project$Main$ViewRemotes;
+				case 'deleted':
+					return author$project$Main$ViewDeletedFiles;
+				case 'diff':
+					return author$project$Main$ViewDiff;
+				case '':
+					return A2(elm$core$List$member, 'fs.view', rights) ? author$project$Main$ViewList : author$project$Main$ViewRemotes;
+				default:
+					return author$project$Main$ViewNotFound;
+			}
+		}
+	});
 var author$project$Routes$Commits$Loading = {$: 'Loading'};
 var author$project$Util$Info = {$: 'Info'};
 var rundis$elm_bootstrap$Bootstrap$Alert$Closed = {$: 'Closed'};
 var rundis$elm_bootstrap$Bootstrap$Alert$closed = rundis$elm_bootstrap$Bootstrap$Alert$Closed;
 var author$project$Util$defaultAlertState = {message: '', typ: author$project$Util$Info, vis: rundis$elm_bootstrap$Bootstrap$Alert$closed};
-var author$project$Routes$Commits$newModel = F3(
-	function (url, key, zone) {
-		return {alert: author$project$Util$defaultAlertState, filter: '', haveStagedChanges: false, key: key, offset: 0, state: author$project$Routes$Commits$Loading, url: url, zone: zone};
+var author$project$Routes$Commits$newModel = F4(
+	function (url, key, zone, rights) {
+		return {alert: author$project$Util$defaultAlertState, filter: '', haveStagedChanges: false, key: key, offset: 0, rights: rights, state: author$project$Routes$Commits$Loading, url: url, zone: zone};
 	});
 var author$project$Commands$LogQuery = F3(
 	function (offset, limit, filter) {
@@ -7624,7 +7672,6 @@ var author$project$Commands$timestampToPosix = A2(
 			elm$time$Time$millisToPosix(ms));
 	},
 	elm$json$Json$Decode$int);
-var elm$json$Json$Decode$list = _Json_decodeList;
 var author$project$Commands$decodeCommit = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'index',
@@ -7695,9 +7742,9 @@ var author$project$Routes$Commits$reload = function (model) {
 		model.filter);
 };
 var author$project$Routes$DeletedFiles$Loading = {$: 'Loading'};
-var author$project$Routes$DeletedFiles$newModel = F3(
-	function (url, key, zone) {
-		return {alert: author$project$Util$defaultAlertState, filter: '', key: key, offset: 0, state: author$project$Routes$DeletedFiles$Loading, url: url, zone: zone};
+var author$project$Routes$DeletedFiles$newModel = F4(
+	function (url, key, zone, rights) {
+		return {alert: author$project$Util$defaultAlertState, filter: '', key: key, offset: 0, rights: rights, state: author$project$Routes$DeletedFiles$Loading, url: url, zone: zone};
 	});
 var author$project$Commands$DeletedFilesQuery = F3(
 	function (offset, limit, filter) {
@@ -8133,7 +8180,6 @@ var author$project$Commands$ListResponse = F3(
 	function (self, isFiltered, entries) {
 		return {entries: entries, isFiltered: isFiltered, self: self};
 	});
-var elm$json$Json$Decode$map3 = _Json_map3;
 var author$project$Commands$decodeListResponse = A4(
 	elm$json$Json$Decode$map3,
 	author$project$Commands$ListResponse,
@@ -8266,9 +8312,9 @@ var author$project$Modals$Rename$newModel = {alert: rundis$elm_bootstrap$Bootstr
 var author$project$Modals$Share$newModel = {modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, paths: _List_Nil};
 var author$project$Modals$Upload$newModel = {failed: _List_Nil, success: _List_Nil, uploads: elm$core$Dict$empty};
 var author$project$Routes$Ls$Loading = {$: 'Loading'};
-var author$project$Routes$Ls$newModel = F2(
-	function (key, url) {
-		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$closed, copyState: author$project$Modals$MoveCopy$newCopyModel, currError: '', historyState: author$project$Modals$History$newModel, key: key, mkdirState: author$project$Modals$Mkdir$newModel, moveState: author$project$Modals$MoveCopy$newMoveModel, removeState: author$project$Modals$Remove$newModel, renameState: author$project$Modals$Rename$newModel, shareState: author$project$Modals$Share$newModel, state: author$project$Routes$Ls$Loading, uploadState: author$project$Modals$Upload$newModel, url: url, zone: elm$time$Time$utc};
+var author$project$Routes$Ls$newModel = F3(
+	function (key, url, rights) {
+		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$closed, copyState: author$project$Modals$MoveCopy$newCopyModel, currError: '', historyState: author$project$Modals$History$newModel, key: key, mkdirState: author$project$Modals$Mkdir$newModel, moveState: author$project$Modals$MoveCopy$newMoveModel, removeState: author$project$Modals$Remove$newModel, renameState: author$project$Modals$Rename$newModel, rights: rights, shareState: author$project$Modals$Share$newModel, state: author$project$Routes$Ls$Loading, uploadState: author$project$Modals$Upload$newModel, url: url, zone: elm$time$Time$utc};
 	});
 var author$project$Commands$Self = F2(
 	function (name, fingerprint) {
@@ -8302,9 +8348,9 @@ var author$project$Modals$RemoteRemove$newModelWithState = F2(
 	});
 var author$project$Modals$RemoteRemove$newModel = A2(author$project$Modals$RemoteRemove$newModelWithState, '', rundis$elm_bootstrap$Bootstrap$Modal$hidden);
 var author$project$Routes$Remotes$Loading = {$: 'Loading'};
-var author$project$Routes$Remotes$newModel = F2(
-	function (key, zone) {
-		return {alert: author$project$Util$defaultAlertState, dropdowns: elm$core$Dict$empty, key: key, remoteAddState: author$project$Modals$RemoteAdd$newModel, remoteFoldersState: author$project$Modals$RemoteFolders$newModel, remoteRemoveState: author$project$Modals$RemoteRemove$newModel, self: author$project$Commands$emptySelf, state: author$project$Routes$Remotes$Loading, zone: zone};
+var author$project$Routes$Remotes$newModel = F3(
+	function (key, zone, rights) {
+		return {alert: author$project$Util$defaultAlertState, dropdowns: elm$core$Dict$empty, key: key, remoteAddState: author$project$Modals$RemoteAdd$newModel, remoteFoldersState: author$project$Modals$RemoteFolders$newModel, remoteRemoveState: author$project$Modals$RemoteRemove$newModel, rights: rights, self: author$project$Commands$emptySelf, state: author$project$Routes$Remotes$Loading, zone: zone};
 	});
 var author$project$Commands$Remote = F7(
 	function (name, folders, fingerprint, acceptAutoUpdates, isOnline, isAuthenticated, lastSeen) {
@@ -8813,16 +8859,17 @@ var author$project$Websocket$open = _Platform_outgoingPort(
 		return elm$json$Json$Encode$null;
 	});
 var elm$core$Platform$Cmd$map = _Platform_map;
-var author$project$Main$doInitAfterLogin = F2(
-	function (model, loginName) {
+var author$project$Main$doInitAfterLogin = F3(
+	function (model, loginName, rights) {
 		var newViewState = {
-			commitsState: A3(author$project$Routes$Commits$newModel, model.url, model.key, model.zone),
-			currentView: author$project$Main$viewFromUrl(model.url),
-			deletedFilesState: A3(author$project$Routes$DeletedFiles$newModel, model.url, model.key, model.zone),
+			commitsState: A4(author$project$Routes$Commits$newModel, model.url, model.key, model.zone, rights),
+			currentView: A2(author$project$Main$viewFromUrl, rights, model.url),
+			deletedFilesState: A4(author$project$Routes$DeletedFiles$newModel, model.url, model.key, model.zone, rights),
 			diffState: A3(author$project$Routes$Diff$newModel, model.key, model.url, model.zone),
-			listState: A2(author$project$Routes$Ls$newModel, model.key, model.url),
+			listState: A3(author$project$Routes$Ls$newModel, model.key, model.url, rights),
 			loginName: loginName,
-			remoteState: A2(author$project$Routes$Remotes$newModel, model.key, model.zone)
+			remoteState: A3(author$project$Routes$Remotes$newModel, model.key, model.zone, rights),
+			rights: rights
 		};
 		return _Utils_Tuple2(
 			_Utils_update(
@@ -11532,7 +11579,7 @@ var author$project$Main$update = F2(
 					var whoami = result.a;
 					var _n3 = whoami.isLoggedIn;
 					if (_n3) {
-						return A2(author$project$Main$doInitAfterLogin, model, whoami.username);
+						return A3(author$project$Main$doInitAfterLogin, model, whoami.username, whoami.rights);
 					} else {
 						return _Utils_Tuple2(
 							_Utils_update(
@@ -11554,8 +11601,8 @@ var author$project$Main$update = F2(
 			case 'GotLoginResp':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
-					var username = result.a;
-					return A2(author$project$Main$doInitAfterLogin, model, username);
+					var response = result.a;
+					return A3(author$project$Main$doInitAfterLogin, model, response.username, response.rights);
 				} else {
 					var err = result.a;
 					return _Utils_Tuple2(
@@ -11618,7 +11665,7 @@ var author$project$Main$update = F2(
 				var _n8 = model.loginState;
 				if (_n8.$ === 'LoginSuccess') {
 					var viewState = _n8.a;
-					var _n9 = author$project$Main$viewFromUrl(url);
+					var _n9 = A2(author$project$Main$viewFromUrl, viewState.rights, url);
 					switch (_n9.$) {
 						case 'ViewList':
 							return _Utils_Tuple2(
@@ -13663,36 +13710,6 @@ var author$project$Main$viewLoginForm = function (model) {
 var author$project$Routes$Commits$CheckoutClicked = function (a) {
 	return {$: 'CheckoutClicked', a: a};
 };
-var elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
-var elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Danger = {$: 'Danger'};
 var rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined = function (a) {
 	return {$: 'Outlined', a: a};
@@ -13777,7 +13794,7 @@ var author$project$Routes$Commits$viewCommit = F2(
 													elm$html$Html$Events$onClick(
 													author$project$Routes$Commits$CheckoutClicked(commit.hash)),
 													elm$html$Html$Attributes$disabled(
-													(!model.haveStagedChanges) && A2(elm$core$List$member, 'head', commit.tags))
+													((!model.haveStagedChanges) && A2(elm$core$List$member, 'head', commit.tags)) || (!A2(elm$core$List$member, 'fs.edit', model.rights)))
 												]))
 										]),
 									_List_fromArray(
@@ -14975,7 +14992,9 @@ var author$project$Routes$DeletedFiles$viewDeletedEntry = F2(
 									_List_fromArray(
 										[
 											elm$html$Html$Events$onClick(
-											author$project$Routes$DeletedFiles$UndeleteClicked(entry.path))
+											author$project$Routes$DeletedFiles$UndeleteClicked(entry.path)),
+											elm$html$Html$Attributes$disabled(
+											!A2(elm$core$List$member, 'fs.edit', model.rights))
 										]))
 								]),
 							_List_fromArray(
@@ -16713,7 +16732,7 @@ var rundis$elm_bootstrap$Bootstrap$Button$linkButton = F2(
 	});
 var author$project$Routes$Ls$viewSidebarDownloadButton = function (model) {
 	var nSelected = author$project$Routes$Ls$nSelectedItems(model);
-	var disabledClass = author$project$Routes$Ls$currIsFile(model) ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default');
+	var disabledClass = (author$project$Routes$Ls$currIsFile(model) || (!A2(elm$core$List$member, 'fs.download', model.rights))) ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default');
 	return A2(
 		rundis$elm_bootstrap$Bootstrap$Button$linkButton,
 		_List_fromArray(
@@ -16853,7 +16872,6 @@ var author$project$Routes$Ls$viewActionList = function (model) {
 		'/',
 		author$project$Routes$Ls$currRoot(model));
 	var nSelected = author$project$Routes$Ls$nSelectedItems(model);
-	var disabledClass = author$project$Routes$Ls$currIsFile(model) ? elm$html$Html$Attributes$class('disabled') : elm$html$Html$Attributes$class('btn-default');
 	return A2(
 		elm$html$Html$div,
 		_List_fromArray(
@@ -16877,7 +16895,7 @@ var author$project$Routes$Ls$viewActionList = function (model) {
 				A4(
 				author$project$Modals$Upload$buildButton,
 				model.uploadState,
-				author$project$Routes$Ls$currIsFile(model),
+				author$project$Routes$Ls$currIsFile(model) || (!A2(elm$core$List$member, 'fs.download', model.rights)),
 				root,
 				author$project$Routes$Ls$UploadMsg),
 				author$project$Routes$Ls$viewSidebarDownloadButton(model),
@@ -16908,7 +16926,7 @@ var author$project$Routes$Ls$viewActionList = function (model) {
 								author$project$Routes$Ls$MkdirMsg(author$project$Modals$Mkdir$show),
 								'fa-edit',
 								'New Folder',
-								author$project$Routes$Ls$currIsFile(model)),
+								author$project$Routes$Ls$currIsFile(model) || (!A2(elm$core$List$member, 'fs.edit', model.rights))),
 								A4(
 								author$project$Routes$Ls$buildActionButton,
 								author$project$Routes$Ls$RemoveMsg(
@@ -16916,7 +16934,7 @@ var author$project$Routes$Ls$viewActionList = function (model) {
 										author$project$Routes$Ls$selectedPaths(model))),
 								'fa-trash',
 								'Delete',
-								!nSelected)
+								(!nSelected) || (!A2(elm$core$List$member, 'fs.edit', model.rights)))
 							]))
 					])),
 				A2(
@@ -17198,6 +17216,12 @@ var author$project$Routes$Ls$HistoryClicked = function (a) {
 };
 var author$project$Routes$Ls$RemoveClicked = function (a) {
 	return {$: 'RemoveClicked', a: a};
+};
+var author$project$Routes$Ls$mayDownload = function (model) {
+	return A2(elm$core$List$member, 'fs.download', model.rights);
+};
+var author$project$Routes$Ls$mayEdit = function (model) {
+	return A2(elm$core$List$member, 'fs.edit', model.rights);
 };
 var rundis$elm_bootstrap$Bootstrap$Dropdown$DropdownItem = function (a) {
 	return {$: 'DropdownItem', a: a};
@@ -17622,8 +17646,8 @@ var rundis$elm_bootstrap$Bootstrap$Dropdown$toggle = F2(
 		return rundis$elm_bootstrap$Bootstrap$Dropdown$DropdownToggle(
 			A2(rundis$elm_bootstrap$Bootstrap$Dropdown$togglePrivate, buttonOptions, children));
 	});
-var author$project$Routes$Ls$buildActionDropdown = F2(
-	function (model, entry) {
+var author$project$Routes$Ls$buildActionDropdown = F3(
+	function (model, actModel, entry) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Dropdown$dropdown,
 			entry.dropdown,
@@ -17658,11 +17682,13 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 									author$project$Util$joinPath(
 										_List_fromArray(
 											[
-												model.self.path,
+												actModel.self.path,
 												author$project$Util$basename(entry.path)
 											]))) + '?direct=yes')),
 								elm$html$Html$Events$onClick(
-								A2(author$project$Routes$Ls$ActionDropdownMsg, entry, rundis$elm_bootstrap$Bootstrap$Dropdown$initialState))
+								A2(author$project$Routes$Ls$ActionDropdownMsg, entry, rundis$elm_bootstrap$Bootstrap$Dropdown$initialState)),
+								elm$html$Html$Attributes$disabled(
+								!author$project$Routes$Ls$mayDownload(model))
 							]),
 						_List_fromArray(
 							[
@@ -17684,11 +17710,13 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 									author$project$Util$joinPath(
 										_List_fromArray(
 											[
-												model.self.path,
+												actModel.self.path,
 												author$project$Util$basename(entry.path)
 											])))),
 								elm$html$Html$Events$onClick(
-								A2(author$project$Routes$Ls$ActionDropdownMsg, entry, rundis$elm_bootstrap$Bootstrap$Dropdown$initialState))
+								A2(author$project$Routes$Ls$ActionDropdownMsg, entry, rundis$elm_bootstrap$Bootstrap$Dropdown$initialState)),
+								elm$html$Html$Attributes$disabled(
+								!author$project$Routes$Ls$mayDownload(model))
 							]),
 						_List_fromArray(
 							[
@@ -17728,7 +17756,9 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 						_List_fromArray(
 							[
 								elm$html$Html$Events$onClick(
-								author$project$Routes$Ls$RemoveClicked(entry))
+								author$project$Routes$Ls$RemoveClicked(entry)),
+								elm$html$Html$Attributes$disabled(
+								!author$project$Routes$Ls$mayEdit(model))
 							]),
 						_List_fromArray(
 							[
@@ -17748,7 +17778,9 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 							[
 								elm$html$Html$Events$onClick(
 								author$project$Routes$Ls$RenameMsg(
-									author$project$Modals$Rename$show(entry.path)))
+									author$project$Modals$Rename$show(entry.path))),
+								elm$html$Html$Attributes$disabled(
+								!author$project$Routes$Ls$mayEdit(model))
 							]),
 						_List_fromArray(
 							[
@@ -17767,7 +17799,9 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 							[
 								elm$html$Html$Events$onClick(
 								author$project$Routes$Ls$MoveMsg(
-									author$project$Modals$MoveCopy$show(entry.path)))
+									author$project$Modals$MoveCopy$show(entry.path))),
+								elm$html$Html$Attributes$disabled(
+								!author$project$Routes$Ls$mayEdit(model))
 							]),
 						_List_fromArray(
 							[
@@ -17786,7 +17820,9 @@ var author$project$Routes$Ls$buildActionDropdown = F2(
 							[
 								elm$html$Html$Events$onClick(
 								author$project$Routes$Ls$CopyMsg(
-									author$project$Modals$MoveCopy$show(entry.path)))
+									author$project$Modals$MoveCopy$show(entry.path))),
+								elm$html$Html$Attributes$disabled(
+								!author$project$Routes$Ls$mayEdit(model))
 							]),
 						_List_fromArray(
 							[
@@ -17932,8 +17968,8 @@ var author$project$Util$formatLastModifiedOwner = F3(
 					elm$html$Html$text(owner)
 				]));
 	});
-var author$project$Routes$Ls$entryToHtml = F3(
-	function (model, zone, e) {
+var author$project$Routes$Ls$entryToHtml = F4(
+	function (model, actModel, zone, e) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Table$tr,
 			_List_Nil,
@@ -17946,7 +17982,7 @@ var author$project$Routes$Ls$entryToHtml = F3(
 						[
 							A2(
 							author$project$Routes$Ls$makeCheckbox,
-							A2(author$project$Routes$Ls$readCheckedState, model, e.path),
+							A2(author$project$Routes$Ls$readCheckedState, actModel, e.path),
 							author$project$Routes$Ls$CheckboxTick(e.path))
 						])),
 					A2(
@@ -17982,7 +18018,7 @@ var author$project$Routes$Ls$entryToHtml = F3(
 							_List_fromArray(
 								[
 									elm$html$Html$text(
-									A2(author$project$Routes$Ls$formatPath, model, e))
+									A2(author$project$Routes$Ls$formatPath, actModel, e))
 								]))
 						])),
 					A2(
@@ -18015,7 +18051,7 @@ var author$project$Routes$Ls$entryToHtml = F3(
 					_List_Nil,
 					_List_fromArray(
 						[
-							A2(author$project$Routes$Ls$buildActionDropdown, model, e)
+							A3(author$project$Routes$Ls$buildActionDropdown, model, actModel, e)
 						]))
 				]));
 	});
@@ -18028,8 +18064,8 @@ var rundis$elm_bootstrap$Bootstrap$Table$simpleThead = function (cells) {
 				A2(rundis$elm_bootstrap$Bootstrap$Table$tr, _List_Nil, cells)
 			]));
 };
-var author$project$Routes$Ls$entriesToHtml = F2(
-	function (zone, model) {
+var author$project$Routes$Ls$entriesToHtml = F3(
+	function (model, zone, actModel) {
 		return rundis$elm_bootstrap$Bootstrap$Table$table(
 			{
 				options: _List_fromArray(
@@ -18039,8 +18075,8 @@ var author$project$Routes$Ls$entriesToHtml = F2(
 					_List_Nil,
 					A2(
 						elm$core$List$map,
-						A2(author$project$Routes$Ls$entryToHtml, model, zone),
-						model.entries)),
+						A3(author$project$Routes$Ls$entryToHtml, model, actModel, zone),
+						actModel.entries)),
 				thead: rundis$elm_bootstrap$Bootstrap$Table$simpleThead(
 					_List_fromArray(
 						[
@@ -18055,7 +18091,7 @@ var author$project$Routes$Ls$entriesToHtml = F2(
 								[
 									A2(
 									author$project$Routes$Ls$makeCheckbox,
-									A2(author$project$Routes$Ls$readCheckedState, model, ''),
+									A2(author$project$Routes$Ls$readCheckedState, actModel, ''),
 									author$project$Routes$Ls$CheckboxTickAll)
 								])),
 							A2(
@@ -18078,7 +18114,7 @@ var author$project$Routes$Ls$entriesToHtml = F2(
 								]),
 							_List_fromArray(
 								[
-									A3(author$project$Routes$Ls$buildSortControl, 'Name', model, author$project$Routes$Ls$Name)
+									A3(author$project$Routes$Ls$buildSortControl, 'Name', actModel, author$project$Routes$Ls$Name)
 								])),
 							A2(
 							rundis$elm_bootstrap$Bootstrap$Table$th,
@@ -18089,7 +18125,7 @@ var author$project$Routes$Ls$entriesToHtml = F2(
 								]),
 							_List_fromArray(
 								[
-									A3(author$project$Routes$Ls$buildSortControl, 'Modified', model, author$project$Routes$Ls$ModTime)
+									A3(author$project$Routes$Ls$buildSortControl, 'Modified', actModel, author$project$Routes$Ls$ModTime)
 								])),
 							A2(
 							rundis$elm_bootstrap$Bootstrap$Table$th,
@@ -18100,7 +18136,7 @@ var author$project$Routes$Ls$entriesToHtml = F2(
 								]),
 							_List_fromArray(
 								[
-									A3(author$project$Routes$Ls$buildSortControl, 'Size', model, author$project$Routes$Ls$Size)
+									A3(author$project$Routes$Ls$buildSortControl, 'Size', actModel, author$project$Routes$Ls$Size)
 								])),
 							A2(
 							rundis$elm_bootstrap$Bootstrap$Table$th,
@@ -18180,18 +18216,22 @@ var author$project$Util$urlPrefixToString = function (url) {
 };
 var rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary = rundis$elm_bootstrap$Bootstrap$Internal$Button$Coloring(
 	rundis$elm_bootstrap$Bootstrap$Internal$Button$Outlined(rundis$elm_bootstrap$Bootstrap$Internal$Button$Primary));
-var author$project$Routes$Ls$viewDownloadButton = F2(
-	function (model, url) {
+var author$project$Routes$Ls$viewDownloadButton = F3(
+	function (model, actModel, url) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Button$linkButton,
 			_List_fromArray(
 				[
 					rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
 					rundis$elm_bootstrap$Bootstrap$Button$attrs(
-					_List_fromArray(
+					author$project$Routes$Ls$mayDownload(model) ? _List_fromArray(
 						[
 							elm$html$Html$Attributes$href(
-							author$project$Util$urlPrefixToString(url) + ('get' + (author$project$Util$urlEncodePath(model.self.path) + '?direct=yes')))
+							author$project$Util$urlPrefixToString(url) + ('get' + (author$project$Util$urlEncodePath(actModel.self.path) + '?direct=yes')))
+						]) : _List_fromArray(
+						[
+							elm$html$Html$Attributes$class('text-muted'),
+							A2(elm$html$Html$Attributes$style, 'opacity', '0.1')
 						]))
 				]),
 			_List_fromArray(
@@ -18277,18 +18317,22 @@ var author$project$Routes$Ls$viewPinIcon = F2(
 				_List_Nil);
 		}
 	});
-var author$project$Routes$Ls$viewViewButton = F2(
-	function (model, url) {
+var author$project$Routes$Ls$viewViewButton = F3(
+	function (model, actModel, url) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Button$linkButton,
 			_List_fromArray(
 				[
 					rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
 					rundis$elm_bootstrap$Bootstrap$Button$attrs(
-					_List_fromArray(
+					author$project$Routes$Ls$mayDownload(model) ? _List_fromArray(
 						[
 							elm$html$Html$Attributes$href(
-							author$project$Util$urlPrefixToString(url) + ('get' + author$project$Util$urlEncodePath(model.self.path)))
+							author$project$Util$urlPrefixToString(url) + ('get' + author$project$Util$urlEncodePath(actModel.self.path)))
+						]) : _List_fromArray(
+						[
+							elm$html$Html$Attributes$class('text-muted'),
+							A2(elm$html$Html$Attributes$style, 'opacity', '0.1')
 						]))
 				]),
 			_List_fromArray(
@@ -18390,9 +18434,9 @@ var author$project$Routes$Ls$viewSingleEntry = F3(
 										[rundis$elm_bootstrap$Bootstrap$ListGroup$light]),
 									_List_fromArray(
 										[
-											A2(author$project$Routes$Ls$viewDownloadButton, actualModel, model.url),
+											A3(author$project$Routes$Ls$viewDownloadButton, model, actualModel, model.url),
 											elm$html$Html$text(' '),
-											A2(author$project$Routes$Ls$viewViewButton, actualModel, model.url)
+											A3(author$project$Routes$Ls$viewViewButton, model, actualModel, model.url)
 										]))
 								]))
 						])),
@@ -18403,8 +18447,6 @@ var author$project$Routes$Ls$viewSingleEntry = F3(
 					_List_Nil)
 				]));
 	});
-var elm$virtual_dom$VirtualDom$lazy2 = _VirtualDom_lazy2;
-var elm$html$Html$Lazy$lazy2 = elm$virtual_dom$VirtualDom$lazy2;
 var elm$virtual_dom$VirtualDom$lazy3 = _VirtualDom_lazy3;
 var elm$html$Html$Lazy$lazy3 = elm$virtual_dom$VirtualDom$lazy3;
 var author$project$Routes$Ls$viewList = F2(
@@ -18431,7 +18473,7 @@ var author$project$Routes$Ls$viewList = F2(
 						_List_fromArray(
 							[
 								author$project$Routes$Ls$showAlert(model),
-								A3(elm$html$Html$Lazy$lazy2, author$project$Routes$Ls$entriesToHtml, zone, actualModel)
+								A4(elm$html$Html$Lazy$lazy3, author$project$Routes$Ls$entriesToHtml, model, zone, actualModel)
 							]));
 				} else {
 					return A2(
@@ -18669,7 +18711,8 @@ var author$project$Routes$Remotes$viewDropdown = F2(
 							[
 								elm$html$Html$Events$onClick(
 								author$project$Routes$Remotes$SyncClicked(remote.name)),
-								elm$html$Html$Attributes$disabled(!remote.isAuthenticated)
+								elm$html$Html$Attributes$disabled(
+								(!remote.isAuthenticated) || (!A2(elm$core$List$member, 'fs.edit', model.rights)))
 							]),
 						_List_fromArray(
 							[
@@ -18686,7 +18729,8 @@ var author$project$Routes$Remotes$viewDropdown = F2(
 						rundis$elm_bootstrap$Bootstrap$Dropdown$anchorItem,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$disabled(!remote.isAuthenticated),
+								elm$html$Html$Attributes$disabled(
+								(!remote.isAuthenticated) || (!A2(elm$core$List$member, 'fs.view', model.rights))),
 								remote.isAuthenticated ? elm$html$Html$Attributes$href(
 								'/diff/' + elm$url$Url$percentEncode(remote.name)) : elm$html$Html$Attributes$class('text-muted')
 							]),
@@ -18708,7 +18752,9 @@ var author$project$Routes$Remotes$viewDropdown = F2(
 							[
 								elm$html$Html$Events$onClick(
 								author$project$Routes$Remotes$RemoteRemoveMsg(
-									author$project$Modals$RemoteRemove$show(remote.name)))
+									author$project$Modals$RemoteRemove$show(remote.name))),
+								elm$html$Html$Attributes$disabled(
+								!A2(elm$core$List$member, 'remotes.edit', model.rights))
 							]),
 						_List_fromArray(
 							[
@@ -18902,7 +18948,9 @@ var author$project$Routes$Remotes$viewRemote = F2(
 										[
 											elm$html$Html$Events$onClick(
 											author$project$Routes$Remotes$RemoteFolderMsg(
-												author$project$Modals$RemoteFolders$show(remote)))
+												author$project$Modals$RemoteFolders$show(remote))),
+											elm$html$Html$Attributes$disabled(
+											!A2(elm$core$List$member, 'remotes.edit', model.rights))
 										]))
 								]),
 							_List_fromArray(
@@ -19138,7 +19186,9 @@ var author$project$Routes$Remotes$viewRemoteListContainer = F2(
 											_List_fromArray(
 												[
 													elm$html$Html$Events$onClick(
-													author$project$Routes$Remotes$RemoteAddMsg(author$project$Modals$RemoteAdd$show))
+													author$project$Routes$Remotes$RemoteAddMsg(author$project$Modals$RemoteAdd$show)),
+													elm$html$Html$Attributes$disabled(
+													!A2(elm$core$List$member, 'remotes.edit', model.rights))
 												]))
 										]),
 									_List_fromArray(
@@ -19432,6 +19482,10 @@ var author$project$Main$viewSidebarBottom = function (model) {
 			]));
 };
 var author$project$Main$LogoutSubmit = {$: 'LogoutSubmit'};
+var author$project$Main$hasRight = F3(
+	function (viewState, right, elements) {
+		return A2(elm$core$List$member, right, viewState.rights) ? elements : _List_Nil;
+	});
 var author$project$Main$viewToString = function (v) {
 	switch (v.$) {
 		case 'ViewList':
@@ -19459,144 +19513,176 @@ var author$project$Main$viewSidebarItems = F2(
 				[
 					elm$html$Html$Attributes$class('flex-column navbar-nav w-100 text-left')
 				]),
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$li,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('nav-item')
-						]),
+			_Utils_ap(
+				A3(
+					author$project$Main$hasRight,
+					viewState,
+					'fs.view',
 					_List_fromArray(
 						[
 							A2(
-							elm$html$Html$a,
+							elm$html$Html$li,
 							_List_fromArray(
 								[
-									isActiveClass(author$project$Main$ViewList),
-									elm$html$Html$Attributes$href(
-									author$project$Main$viewToString(author$project$Main$ViewList))
+									elm$html$Html$Attributes$class('nav-item')
 								]),
 							_List_fromArray(
 								[
 									A2(
-									elm$html$Html$span,
-									_List_Nil,
+									elm$html$Html$a,
 									_List_fromArray(
 										[
-											elm$html$Html$text('Files')
+											isActiveClass(author$project$Main$ViewList),
+											elm$html$Html$Attributes$href(
+											author$project$Main$viewToString(author$project$Main$ViewList))
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$span,
+											_List_Nil,
+											_List_fromArray(
+												[
+													elm$html$Html$text('Files')
+												]))
 										]))
 								]))
 						])),
-					A2(
-					elm$html$Html$li,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('nav-item')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$a,
-							_List_fromArray(
-								[
-									isActiveClass(author$project$Main$ViewCommits),
-									elm$html$Html$Attributes$href(
-									author$project$Main$viewToString(author$project$Main$ViewCommits))
-								]),
-							_List_fromArray(
-								[
-									A2(
-									elm$html$Html$span,
-									_List_Nil,
-									_List_fromArray(
-										[
-											elm$html$Html$text('Changelog')
-										]))
-								]))
-						])),
-					A2(
-					elm$html$Html$li,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('nav-item')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$a,
-							_List_fromArray(
-								[
-									isActiveClass(author$project$Main$ViewDeletedFiles),
-									elm$html$Html$Attributes$href(
-									author$project$Main$viewToString(author$project$Main$ViewDeletedFiles))
-								]),
+				_Utils_ap(
+					A3(
+						author$project$Main$hasRight,
+						viewState,
+						'fs.view',
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$li,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('nav-item')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$a,
+										_List_fromArray(
+											[
+												isActiveClass(author$project$Main$ViewCommits),
+												elm$html$Html$Attributes$href(
+												author$project$Main$viewToString(author$project$Main$ViewCommits))
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$span,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Changelog')
+													]))
+											]))
+									]))
+							])),
+					_Utils_ap(
+						A3(
+							author$project$Main$hasRight,
+							viewState,
+							'fs.view',
 							_List_fromArray(
 								[
 									A2(
-									elm$html$Html$span,
-									_List_Nil,
+									elm$html$Html$li,
 									_List_fromArray(
 										[
-											elm$html$Html$text('Trashbin')
+											elm$html$Html$Attributes$class('nav-item')
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$a,
+											_List_fromArray(
+												[
+													isActiveClass(author$project$Main$ViewDeletedFiles),
+													elm$html$Html$Attributes$href(
+													author$project$Main$viewToString(author$project$Main$ViewDeletedFiles))
+												]),
+											_List_fromArray(
+												[
+													A2(
+													elm$html$Html$span,
+													_List_Nil,
+													_List_fromArray(
+														[
+															elm$html$Html$text('Trashbin')
+														]))
+												]))
 										]))
-								]))
-						])),
-					A2(
-					elm$html$Html$li,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('nav-item')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$a,
-							_List_fromArray(
-								[
-									isActiveClass(author$project$Main$ViewRemotes),
-									elm$html$Html$Attributes$href(
-									author$project$Main$viewToString(author$project$Main$ViewRemotes))
-								]),
+								])),
+						_Utils_ap(
+							A3(
+								author$project$Main$hasRight,
+								viewState,
+								'remotes.view',
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$li,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('nav-item')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$a,
+												_List_fromArray(
+													[
+														isActiveClass(author$project$Main$ViewRemotes),
+														elm$html$Html$Attributes$href(
+														author$project$Main$viewToString(author$project$Main$ViewRemotes))
+													]),
+												_List_fromArray(
+													[
+														A2(
+														elm$html$Html$span,
+														_List_Nil,
+														_List_fromArray(
+															[
+																elm$html$Html$text('Remotes')
+															]))
+													]))
+											]))
+									])),
 							_List_fromArray(
 								[
 									A2(
-									elm$html$Html$span,
-									_List_Nil,
+									elm$html$Html$li,
 									_List_fromArray(
 										[
-											elm$html$Html$text('Remotes')
-										]))
-								]))
-						])),
-					A2(
-					elm$html$Html$li,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('nav-item')
-						]),
-					_List_fromArray(
-						[
-							A2(
-							elm$html$Html$a,
-							_List_fromArray(
-								[
-									elm$html$Html$Attributes$class('nav-link pl-0'),
-									elm$html$Html$Attributes$href('#'),
-									elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
-								]),
-							_List_fromArray(
-								[
-									A2(
-									elm$html$Html$span,
-									_List_Nil,
+											elm$html$Html$Attributes$class('nav-item')
+										]),
 									_List_fromArray(
 										[
-											elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
+											A2(
+											elm$html$Html$a,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('nav-link pl-0'),
+													elm$html$Html$Attributes$href('#'),
+													elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+												]),
+											_List_fromArray(
+												[
+													A2(
+													elm$html$Html$span,
+													_List_Nil,
+													_List_fromArray(
+														[
+															elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
+														]))
+												]))
 										]))
-								]))
-						]))
-				]));
+								]))))));
 	});
 var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$History$ResetClicked = F2(

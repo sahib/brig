@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // LogHandler implements http.Handler.
@@ -39,6 +40,10 @@ func matchCommit(cmt *catfs.Commit, filter string) bool {
 }
 
 func (lh *LogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsView) {
+		return
+	}
+
 	logReq := LogRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&logReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

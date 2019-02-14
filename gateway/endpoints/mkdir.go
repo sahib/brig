@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // MkdirHandler implements http.Handler.
@@ -25,6 +26,10 @@ type MkdirRequest struct {
 }
 
 func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	mkdirReq := MkdirRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&mkdirReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

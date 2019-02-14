@@ -15,6 +15,24 @@ import (
 	capnp_lib "zombiezen.com/go/capnproto2"
 )
 
+const (
+	RightDownload    = "fs.download"
+	RightFsView      = "fs.view"
+	RightFsEdit      = "fs.edit"
+	RightRemotesView = "remotes.view"
+	RightRemotesEdit = "remotes.edit"
+)
+
+var (
+	DefaultRights = []string{
+		RightDownload,
+		RightFsView,
+		RightFsEdit,
+		RightRemotesView,
+		RightRemotesEdit,
+	}
+)
+
 // UserDatabase is a badger db that stores user information,
 // using the user name as unique key.
 type UserDatabase struct {
@@ -70,7 +88,7 @@ func (ub *UserDatabase) Close() error {
 	return nil
 }
 
-func capnpToUser(data []byte) (*User, error) {
+func unmarshalUser(data []byte) (*User, error) {
 	msg, err := capnp_lib.Unmarshal(data)
 	if err != nil {
 		return nil, err
@@ -81,6 +99,10 @@ func capnpToUser(data []byte) (*User, error) {
 		return nil, err
 	}
 
+	return UserFromCapnp(capUser)
+}
+
+func UserFromCapnp(capUser capnp.User) (*User, error) {
 	capFolders, err := capUser.Folders()
 	if err != nil {
 		return nil, err
@@ -92,7 +114,23 @@ func capnpToUser(data []byte) (*User, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		folders = append(folders, folder)
+	}
+
+	capRights, err := capUser.Rights()
+	if err != nil {
+		return nil, err
+	}
+
+	rights := []string{}
+	for idx := 0; idx < capRights.Len(); idx++ {
+		right, err := capRights.At(idx)
+		if err != nil {
+			return nil, err
+		}
+
+		rights = append(rights, right)
 	}
 
 	name, err := capUser.Name()
@@ -115,15 +153,24 @@ func capnpToUser(data []byte) (*User, error) {
 		PasswordHash: passwordHash,
 		Salt:         salt,
 		Folders:      folders,
+		Rights:       rights,
 	}, nil
 }
 
-func userToCapnp(user *User) ([]byte, error) {
+func marshalUser(user *User) ([]byte, error) {
 	msg, seg, err := capnp_lib.NewMessage(capnp_lib.SingleSegment(nil))
 	if err != nil {
 		return nil, err
 	}
 
+	if _, err := UserToCapnp(user, seg); err != nil {
+		return nil, err
+	}
+
+	return msg.Marshal()
+}
+
+func UserToCapnp(user *User, seg *capnp_lib.Segment) (*capnp.User, error) {
 	capUser, err := capnp.NewRootUser(seg)
 	if err != nil {
 		return nil, err
@@ -144,6 +191,21 @@ func userToCapnp(user *User) ([]byte, error) {
 		return nil, err
 	}
 
+	capRights, err := capnp_lib.NewTextList(seg, int32(len(user.Rights)))
+	if err != nil {
+		return nil, err
+	}
+
+	for idx, right := range user.Rights {
+		if err := capRights.Set(idx, right); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := capUser.SetRights(capRights); err != nil {
+		return nil, err
+	}
+
 	if err := capUser.SetName(user.Name); err != nil {
 		return nil, err
 	}
@@ -156,7 +218,7 @@ func userToCapnp(user *User) ([]byte, error) {
 		return nil, err
 	}
 
-	return msg.Marshal()
+	return &capUser, nil
 }
 
 // User is one user that is stored in the database.
@@ -166,6 +228,7 @@ type User struct {
 	PasswordHash string
 	Salt         string
 	Folders      []string
+	Rights       []string
 }
 
 // CheckPassword checks if `password` matches the stored one.
@@ -203,7 +266,7 @@ func HashPassword(password string) (string, string, error) {
 
 // Add adds a new user to the database.
 // If the user exists already, it is overwritten.
-func (ub *UserDatabase) Add(name, password string, folders []string) error {
+func (ub *UserDatabase) Add(name, password string, folders []string, rights []string) error {
 	ub.mu.Lock()
 	defer ub.mu.Unlock()
 
@@ -216,14 +279,19 @@ func (ub *UserDatabase) Add(name, password string, folders []string) error {
 		folders = []string{"/"}
 	}
 
+	if rights == nil {
+		rights = DefaultRights
+	}
+
 	user := &User{
 		Name:         name,
 		PasswordHash: hashed,
 		Salt:         salt,
 		Folders:      folders,
+		Rights:       rights,
 	}
 
-	data, err := userToCapnp(user)
+	data, err := marshalUser(user)
 	if err != nil {
 		return err
 	}
@@ -247,7 +315,7 @@ func (ub *UserDatabase) Get(name string) (User, error) {
 		}
 
 		return item.Value(func(data []byte) error {
-			decUser, err := capnpToUser(data)
+			decUser, err := unmarshalUser(data)
 			if err != nil {
 				return err
 			}
@@ -285,7 +353,7 @@ func (ub *UserDatabase) List() ([]User, error) {
 
 		for iter.Rewind(); iter.Valid(); iter.Next() {
 			err := iter.Item().Value(func(data []byte) error {
-				user, err := capnpToUser(data)
+				user, err := unmarshalUser(data)
 				if err != nil {
 					return err
 				}

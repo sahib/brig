@@ -912,7 +912,12 @@ func handleGatewayUserAdd(ctx *cli.Context, ctl *client.Client) error {
 		folders = ctx.Args()[2:]
 	}
 
-	return ctl.GatewayUserAdd(name, password, folders)
+	rights := []string{}
+	if r := ctx.String("rights"); r != "" {
+		rights = strings.Split(r, ",")
+	}
+
+	return ctl.GatewayUserAdd(name, password, folders, rights)
 }
 
 func handleGatewayUserRemove(ctx *cli.Context, ctl *client.Client) error {
@@ -940,7 +945,7 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 		if len(users) == 0 {
 			fmt.Println("No users. Add some with »brig gw user add <name> <pass> <folders...>«")
 		} else {
-			fmt.Fprintln(tabW, "NAME\tFOLDERS\t")
+			fmt.Fprintln(tabW, "NAME\tFOLDERS\tRIGHTS\t")
 		}
 	}
 
@@ -955,9 +960,10 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t\n",
+			"%s\t%s\t%s\t\n",
 			user.Name,
 			strings.Join(user.Folders, ", "),
+			strings.Join(user.Rights, ", "),
 		)
 	}
 

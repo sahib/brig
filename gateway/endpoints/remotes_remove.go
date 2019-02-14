@@ -3,6 +3,8 @@ package endpoints
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/sahib/brig/gateway/db"
 )
 
 // RemotesRemoveHandler implements http.Handler
@@ -21,6 +23,10 @@ type RemoteRemoveRequest struct {
 }
 
 func (rh *RemotesRemoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightRemotesEdit) {
+		return
+	}
+
 	rmtRmReq := RemoteRemoveRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rmtRmReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

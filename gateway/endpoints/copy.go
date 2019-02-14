@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // CopyHandler implements http.Handler.
@@ -27,6 +28,10 @@ type CopyRequest struct {
 }
 
 func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	copyReq := CopyRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&copyReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

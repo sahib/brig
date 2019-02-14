@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // LsHandler implements http.Handler.
@@ -71,6 +72,10 @@ func doQuery(fs *catfs.FS, root, filter string) ([]*catfs.StatInfo, error) {
 }
 
 func (lh *LsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsView) {
+		return
+	}
+
 	lsReq := LsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&lsReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

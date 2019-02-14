@@ -399,6 +399,7 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 	return folder
 }
 
+// TODO: Do we really need this? Init should be able to use an existing daemon.
 func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
 	return withExit(func(ctx *cli.Context) error {
 		port, err := guessNextFreePort(ctx)

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // RemotesDiffHandler implements http.Handler
@@ -66,6 +67,10 @@ func convertPairs(pairs []catfs.DiffPair) []DiffPair {
 }
 
 func (rh *RemotesDiffHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightRemotesView) {
+		return
+	}
+
 	rmtDiffReq := RemoteDiffRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&rmtDiffReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

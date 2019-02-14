@@ -1,6 +1,7 @@
 package client
 
 import (
+	gwdb "github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/server/capnp"
 	h "github.com/sahib/brig/util/hashlib"
 	capnplib "zombiezen.com/go/capnproto2"
@@ -472,12 +473,13 @@ type GatewayUser struct {
 	PasswordHash string
 	Salt         string
 	Folders      []string
+	Rights       []string
 }
 
 // GatewayUserAdd adds a new user to the user database.
 // `folders` is a list of directories he may access. It might be empty,
 // in which case he can access everything (same as []string{"/"})
-func (ctl *Client) GatewayUserAdd(name, password string, folders []string) error {
+func (ctl *Client) GatewayUserAdd(name, password string, folders, rights []string) error {
 	call := ctl.api.GatewayUserAdd(ctl.ctx, func(p capnp.Repo_gatewayUserAdd_Params) error {
 		if err := p.SetName(name); err != nil {
 			return err
@@ -503,7 +505,22 @@ func (ctl *Client) GatewayUserAdd(name, password string, folders []string) error
 			}
 		}
 
-		return p.SetFolders(capFolders)
+		if err := p.SetFolders(capFolders); err != nil {
+			return err
+		}
+
+		capRights, err := capnplib.NewTextList(seg, int32(len(rights)))
+		if err != nil {
+			return err
+		}
+
+		for idx, right := range rights {
+			if err := capRights.Set(idx, right); err != nil {
+				return err
+			}
+		}
+
+		return p.SetRights(capRights)
 	})
 
 	_, err := call.Struct()
@@ -519,45 +536,6 @@ func (ctl *Client) GatewayUserRemove(name string) error {
 
 	_, err := call.Struct()
 	return err
-}
-
-func capUserToUser(capUser capnp.User) (*GatewayUser, error) {
-	name, err := capUser.Name()
-	if err != nil {
-		return nil, err
-	}
-
-	passwordHash, err := capUser.PasswordHash()
-	if err != nil {
-		return nil, err
-	}
-
-	salt, err := capUser.Salt()
-	if err != nil {
-		return nil, err
-	}
-
-	capFolders, err := capUser.Folders()
-	if err != nil {
-		return nil, err
-	}
-
-	folders := []string{}
-	for idx := 0; idx < capFolders.Len(); idx++ {
-		folder, err := capFolders.At(idx)
-		if err != nil {
-			return nil, err
-		}
-
-		folders = append(folders, folder)
-	}
-
-	return &GatewayUser{
-		Name:         name,
-		Salt:         salt,
-		PasswordHash: passwordHash,
-		Folders:      folders,
-	}, nil
 }
 
 // GatewayUserList lists all currently existing users.
@@ -579,12 +557,18 @@ func (ctl *Client) GatewayUserList() ([]GatewayUser, error) {
 	users := []GatewayUser{}
 	for idx := 0; idx < capUsers.Len(); idx++ {
 		capUser := capUsers.At(idx)
-		user, err := capUserToUser(capUser)
+		gwuser, err := gwdb.UserFromCapnp(capUser)
 		if err != nil {
 			return nil, err
 		}
 
-		users = append(users, *user)
+		users = append(users, GatewayUser{
+			Name:         gwuser.Name,
+			Salt:         gwuser.Salt,
+			PasswordHash: gwuser.PasswordHash,
+			Folders:      gwuser.Folders,
+			Rights:       gwuser.Rights,
+		})
 	}
 
 	return users, err

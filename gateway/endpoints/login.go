@@ -1,11 +1,13 @@
 package endpoints
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/sessions"
+	"github.com/sahib/brig/gateway/db"
 )
 
 func getUserName(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request) string {
@@ -91,8 +93,9 @@ type LoginRequest struct {
 
 // LoginResponse is what the endpoint will return.
 type LoginResponse struct {
-	Success  bool   `json:"success"`
-	Username string `json:"username"`
+	Success  bool     `json:"success"`
+	Username string   `json:"username"`
+	Rights   []string `json:"rights"`
 }
 
 func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +137,7 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonify(w, http.StatusOK, &LoginResponse{
 		Success:  true,
 		Username: loginReq.Username,
+		Rights:   dbUser.Rights,
 	})
 }
 
@@ -175,21 +179,29 @@ func NewWhoamiHandler(s *State) *WhoamiHandler {
 
 // WhoamiResponse is the response sent back by this endpoint.
 type WhoamiResponse struct {
-	IsLoggedIn bool   `json:"is_logged_in"`
-	User       string `json:"user"`
+	IsLoggedIn bool     `json:"is_logged_in"`
+	User       string   `json:"user"`
+	Rights     []string `json:"rights"`
 }
 
 func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if wh.cfg.Bool("auth.enabled") {
-		user := getUserName(wh.store, w, r)
-		if user != "" {
+		name := getUserName(wh.store, w, r)
+		if name != "" {
 			// renew the session, if already logged in:
-			setSession(wh.store, user, w, r)
+			setSession(wh.store, name, w, r)
+		}
+
+		rights := []string{}
+		user, err := wh.userDb.Get(name)
+		if err == nil {
+			rights = user.Rights
 		}
 
 		jsonify(w, http.StatusOK, WhoamiResponse{
-			IsLoggedIn: len(user) > 0,
-			User:       user,
+			IsLoggedIn: len(name) > 0,
+			User:       name,
+			Rights:     rights,
 		})
 
 		return
@@ -200,6 +212,7 @@ func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	jsonify(w, http.StatusOK, WhoamiResponse{
 		IsLoggedIn: true,
 		User:       "anon",
+		Rights:     db.DefaultRights,
 	})
 }
 
@@ -219,15 +232,40 @@ func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if _, err := am.userDb.Get(name); err != nil {
+		user, err := am.userDb.Get(name)
+		if err != nil {
 			// valid token, but invalid user.
 			// (user might have been deleted on our side)
 			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
 			return
 		}
+
+		r = r.WithContext(context.WithValue(r.Context(), "brig.db_user", user))
 	}
 
 	am.SubHandler.ServeHTTP(w, r)
+}
+
+func checkRights(w http.ResponseWriter, r *http.Request, rights ...string) bool {
+	user, ok := r.Context().Value("brig.db_user").(db.User)
+	if !ok {
+		jsonifyErrf(w, http.StatusInternalServerError, "could not cast user")
+		return false
+	}
+
+	rmap := make(map[string]bool)
+	for _, right := range user.Rights {
+		rmap[right] = true
+	}
+
+	for _, right := range rights {
+		if !rmap[right] {
+			jsonifyErrf(w, http.StatusUnauthorized, "insufficient rights")
+			return false
+		}
+	}
+
+	return true
 }
 
 // AuthMiddleware returns a new handler wrapper, that will require

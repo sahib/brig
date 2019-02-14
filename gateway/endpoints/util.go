@@ -251,6 +251,7 @@ func jsonifyErrf(w http.ResponseWriter, statusCode int, format string, data ...i
 	if statusCode >= 200 && statusCode < 400 {
 		success = true
 	} else {
+		// TODO: also pass request and output the url in this log message.
 		log.Debugf("failed to respond: %v", msg)
 	}
 

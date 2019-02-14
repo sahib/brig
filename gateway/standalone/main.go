@@ -150,7 +150,11 @@ func main() {
 		log.Fatalf("failed to open gateway: %v", err)
 	}
 
-	if err := gw.UserDatabase().Add("admin", "password", nil); err != nil {
+	if err := gw.UserDatabase().Add("admin", "password", nil, nil); err != nil {
+		log.Fatalf("failed to add user: %v", err)
+	}
+
+	if err := gw.UserDatabase().Add("guest", "guest", []string{"/endpoints"}, []string{"fs.view"}); err != nil {
 		log.Fatalf("failed to add user: %v", err)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/util"
 )
 
@@ -45,6 +46,10 @@ func matchEntry(info *catfs.StatInfo, filter string) bool {
 }
 
 func (dh *DeletedPathsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsView) {
+		return
+	}
+
 	delReq := DeletedRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&delReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

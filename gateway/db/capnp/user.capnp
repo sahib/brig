@@ -10,4 +10,5 @@ struct User {
 	passwordHash @1 :Text;
 	salt         @2 :Text;
 	folders      @3 :List(Text);
+	rights       @4 :List(Text);
 }

@@ -123,7 +123,7 @@ func RunCmdline(args []string) int {
 		{
 			Name:     "init",
 			Category: repoGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemonAlways(handleInit)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleInit, true)),
 		}, {
 			Name:     "whoami",
 			Category: netwGroup,

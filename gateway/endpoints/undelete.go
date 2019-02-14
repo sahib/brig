@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // UndeleteHandler implements http.Handler.
@@ -25,6 +26,10 @@ type UndeleteRequest struct {
 }
 
 func (uh *UndeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	undelReq := UndeleteRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&undelReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

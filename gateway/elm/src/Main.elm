@@ -50,7 +50,7 @@ main =
 
 
 type Msg
-    = GotLoginResp (Result Http.Error String)
+    = GotLoginResp (Result Http.Error Commands.LoginResponse)
     | GotWhoamiResp (Result Http.Error Commands.WhoamiResponse)
     | GotLogoutResp (Result Http.Error Bool)
     | AdjustTimeZone Time.Zone
@@ -90,6 +90,7 @@ type alias ViewState =
     , diffState : Diff.Model
     , loginName : String
     , currentView : View
+    , rights : List String
     }
 
 
@@ -141,17 +142,18 @@ withSubUpdate subMsg subModel model msg subUpdate viewStateUpdate =
             ( model, Cmd.none )
 
 
-doInitAfterLogin : Model -> String -> ( Model, Cmd Msg )
-doInitAfterLogin model loginName =
+doInitAfterLogin : Model -> String -> List String -> ( Model, Cmd Msg )
+doInitAfterLogin model loginName rights =
     let
         newViewState =
-            { listState = Ls.newModel model.key model.url
-            , commitsState = Commits.newModel model.url model.key model.zone
-            , deletedFilesState = DeletedFiles.newModel model.url model.key model.zone
-            , remoteState = Remotes.newModel model.key model.zone
+            { listState = Ls.newModel model.key model.url rights
+            , commitsState = Commits.newModel model.url model.key model.zone rights
+            , deletedFilesState = DeletedFiles.newModel model.url model.key model.zone rights
+            , remoteState = Remotes.newModel model.key model.zone rights
             , diffState = Diff.newModel model.key model.url model.zone
             , loginName = loginName
-            , currentView = viewFromUrl model.url
+            , currentView = viewFromUrl rights model.url
+            , rights = rights
             }
     in
     ( { model | loginState = LoginSuccess newViewState }
@@ -166,8 +168,8 @@ doInitAfterLogin model loginName =
     )
 
 
-viewFromUrl : Url.Url -> View
-viewFromUrl url =
+viewFromUrl : List String -> Url.Url -> View
+viewFromUrl rights url =
     case List.head <| List.drop 1 <| String.split "/" url.path of
         Nothing ->
             ViewNotFound
@@ -190,7 +192,11 @@ viewFromUrl url =
                     ViewDiff
 
                 "" ->
-                    ViewList
+                    if List.member "fs.view" rights then
+                        ViewList
+
+                    else
+                        ViewRemotes
 
                 _ ->
                     ViewNotFound
@@ -255,7 +261,7 @@ update msg model =
                     -- the list view. Take the path from the current URL.
                     case whoami.isLoggedIn of
                         True ->
-                            doInitAfterLogin model whoami.username
+                            doInitAfterLogin model whoami.username whoami.rights
 
                         False ->
                             ( { model | loginState = LoginReady "" "" }, Cmd.none )
@@ -265,10 +271,10 @@ update msg model =
 
         GotLoginResp result ->
             case result of
-                Ok username ->
+                Ok response ->
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
-                    doInitAfterLogin model username
+                    doInitAfterLogin model response.username response.rights
 
                 Err err ->
                     ( { model | loginState = LoginFailure "" "" (Util.httpErrorToString err) }, Cmd.none )
@@ -312,7 +318,7 @@ update msg model =
         UrlChanged url ->
             case model.loginState of
                 LoginSuccess viewState ->
-                    case viewFromUrl url of
+                    case viewFromUrl viewState.rights url of
                         ViewList ->
                             ( { model
                                 | url = url
@@ -666,6 +672,15 @@ viewLoginForm model =
         ]
 
 
+hasRight : ViewState -> String -> List (Html Msg) -> List (Html Msg)
+hasRight viewState right elements =
+    if List.member right viewState.rights then
+        elements
+
+    else
+        []
+
+
 viewSidebarItems : Model -> ViewState -> Html Msg
 viewSidebarItems model viewState =
     let
@@ -678,27 +693,40 @@ viewSidebarItems model viewState =
                     class "nav-link"
     in
     ul [ class "flex-column navbar-nav w-100 text-left" ]
-        [ li [ class "nav-item" ]
-            [ a [ isActiveClass ViewList, href (viewToString ViewList) ]
-                [ span [] [ text "Files" ] ]
+        (hasRight viewState
+            "fs.view"
+            [ li [ class "nav-item" ]
+                [ a [ isActiveClass ViewList, href (viewToString ViewList) ]
+                    [ span [] [ text "Files" ] ]
+                ]
             ]
-        , li [ class "nav-item" ]
-            [ a [ isActiveClass ViewCommits, href (viewToString ViewCommits) ]
-                [ span [] [ text "Changelog" ] ]
-            ]
-        , li [ class "nav-item" ]
-            [ a [ isActiveClass ViewDeletedFiles, href (viewToString ViewDeletedFiles) ]
-                [ span [] [ text "Trashbin" ] ]
-            ]
-        , li [ class "nav-item" ]
-            [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
-                [ span [] [ text "Remotes" ] ]
-            ]
-        , li [ class "nav-item" ]
-            [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
-                [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
-            ]
-        ]
+            ++ hasRight viewState
+                "fs.view"
+                [ li [ class "nav-item" ]
+                    [ a [ isActiveClass ViewCommits, href (viewToString ViewCommits) ]
+                        [ span [] [ text "Changelog" ] ]
+                    ]
+                ]
+            ++ hasRight viewState
+                "fs.view"
+                [ li [ class "nav-item" ]
+                    [ a [ isActiveClass ViewDeletedFiles, href (viewToString ViewDeletedFiles) ]
+                        [ span [] [ text "Trashbin" ] ]
+                    ]
+                ]
+            ++ hasRight viewState
+                "remotes.view"
+                [ li [ class "nav-item" ]
+                    [ a [ isActiveClass ViewRemotes, href (viewToString ViewRemotes) ]
+                        [ span [] [ text "Remotes" ] ]
+                    ]
+                ]
+            ++ [ li [ class "nav-item" ]
+                    [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                        [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
+                    ]
+               ]
+        )
 
 
 viewSidebarBottom : Model -> Html Msg

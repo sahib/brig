@@ -6,6 +6,7 @@ module Commands exposing
     , HistoryEntry
     , ListResponse
     , Log
+    , LoginResponse
     , Remote
     , Self
     , WhoamiResponse
@@ -402,6 +403,12 @@ type alias LoginQuery =
     }
 
 
+type alias LoginResponse =
+    { username : String
+    , rights : List String
+    }
+
+
 encodeLoginQuery : LoginQuery -> E.Value
 encodeLoginQuery q =
     E.object
@@ -410,12 +417,14 @@ encodeLoginQuery q =
         ]
 
 
-decodeLoginResponse : D.Decoder String
+decodeLoginResponse : D.Decoder LoginResponse
 decodeLoginResponse =
-    D.field "username" D.string
+    D.map2 LoginResponse
+        (D.field "username" D.string)
+        (D.field "rights" (D.list D.string))
 
 
-doLogin : (Result Http.Error String -> msg) -> String -> String -> Cmd msg
+doLogin : (Result Http.Error LoginResponse -> msg) -> String -> String -> Cmd msg
 doLogin toMsg user pass =
     Http.post
         { url = "/api/v0/login"
@@ -444,14 +453,16 @@ doLogout msg =
 type alias WhoamiResponse =
     { username : String
     , isLoggedIn : Bool
+    , rights : List String
     }
 
 
 decodeWhoami : D.Decoder WhoamiResponse
 decodeWhoami =
-    D.map2 WhoamiResponse
+    D.map3 WhoamiResponse
         (D.field "user" D.string)
         (D.field "is_logged_in" D.bool)
+        (D.field "rights" (D.list D.string))
 
 
 doWhoami : (Result Http.Error WhoamiResponse -> msg) -> Cmd msg

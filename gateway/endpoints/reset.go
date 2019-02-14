@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // ResetHandler implements http.Handler.
@@ -26,6 +27,10 @@ type ResetRequest struct {
 }
 
 func (rh *ResetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	resetReq := ResetRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&resetReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

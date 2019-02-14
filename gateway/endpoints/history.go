@@ -6,6 +6,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // HistoryHandler implements http.Handler
@@ -72,6 +73,10 @@ func toExternalChange(c catfs.Change) HistoryEntry {
 }
 
 func (hh *HistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsView) {
+		return
+	}
+
 	histReq := HistoryRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&histReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

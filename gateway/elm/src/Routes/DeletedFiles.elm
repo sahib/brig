@@ -58,11 +58,12 @@ type alias Model =
     , offset : Int
     , alert : Util.AlertState
     , url : Url.Url
+    , rights : List String
     }
 
 
-newModel : Url.Url -> Nav.Key -> Time.Zone -> Model
-newModel url key zone =
+newModel : Url.Url -> Nav.Key -> Time.Zone -> List String -> Model
+newModel url key zone rights =
     { key = key
     , state = Loading
     , zone = zone
@@ -70,6 +71,7 @@ newModel url key zone =
     , offset = 0
     , alert = Util.defaultAlertState
     , url = url
+    , rights = rights
     }
 
 
@@ -305,7 +307,10 @@ viewDeletedEntry model entry =
             []
             [ Button.button
                 [ Button.outlineSuccess
-                , Button.attrs [ onClick <| UndeleteClicked entry.path ]
+                , Button.attrs
+                    [ onClick <| UndeleteClicked entry.path
+                    , disabled (not (List.member "fs.edit" model.rights))
+                    ]
                 ]
                 [ text "Undelete" ]
             ]

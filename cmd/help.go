@@ -1062,6 +1062,12 @@ CAVEATS
 	},
 	"gateway.user.add": {
 		Usage: "Add a new gateway user.",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "rights,r",
+				Usage: "Comma separated list of rights of this user.",
+			},
+		},
 	},
 	"gateway.user.remove": {
 		Usage: "Remove a gateway user.",

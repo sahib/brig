@@ -13,6 +13,7 @@ import (
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/util"
 )
 
@@ -74,6 +75,18 @@ func (gh *GetHandler) checkBasicAuth(nodePath string, w http.ResponseWriter, r *
 		return false
 	}
 
+	hasRight := false
+	for _, right := range user.Rights {
+		if right == db.RightDownload {
+			hasRight = true
+			break
+		}
+	}
+
+	if !hasRight {
+		return false
+	}
+
 	isValid, err := user.CheckPassword(pass)
 	if !isValid {
 		if err != nil {
@@ -89,6 +102,26 @@ func (gh *GetHandler) checkBasicAuth(nodePath string, w http.ResponseWriter, r *
 	}
 
 	return true
+}
+
+func (gh *GetHandler) checkDownloadRight(w http.ResponseWriter, r *http.Request) bool {
+	name := getUserName(gh.store, w, r)
+	if name == "" {
+		return false
+	}
+
+	user, err := gh.userDb.Get(name)
+	if err != nil {
+		return false
+	}
+
+	for _, right := range user.Rights {
+		if right == db.RightDownload {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -116,6 +149,11 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// Using HTTPS here is strongly recommended.
 			if !gh.checkBasicAuth(nodePath, w, r) {
 				http.Error(w, "not authorized", http.StatusUnauthorized)
+				return
+			}
+		} else {
+			if !gh.checkDownloadRight(w, r) {
+				http.Error(w, "insufficient rights", http.StatusUnauthorized)
 				return
 			}
 		}

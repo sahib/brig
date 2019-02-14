@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/brig/net/peer"
 )
@@ -102,6 +103,10 @@ func NewRemotesModifyHandler(s *State) *RemotesModifyHandler {
 }
 
 func (rh *RemotesModifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightRemotesEdit) {
+		return
+	}
+
 	remoteAddReq := RemoteAddRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&remoteAddReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

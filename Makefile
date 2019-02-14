@@ -19,7 +19,7 @@ generate:
 	go generate ./...
 
 build:
-	time go install -ldflags \
+	@time go install -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
@@ -29,7 +29,6 @@ build:
 			-X $(VERSION_IMPORT).GitRev=$(GITREV) \
 		" \
 		brig.go
-	cp "$(GOBIN)/brig" .
 
 test:
 	# New go test ignores vendor/

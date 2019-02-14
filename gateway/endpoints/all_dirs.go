@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+
+	"github.com/sahib/brig/gateway/db"
 )
 
 // AllDirsHandler implements http.Handler.
@@ -28,6 +30,10 @@ type AllDirsResponse struct {
 func (ah *AllDirsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if user := getUserName(ah.store, w, r); user == "" {
 		jsonifyErrf(w, http.StatusForbidden, "bad user")
+		return
+	}
+
+	if !checkRights(w, r, db.RightFsView) {
 		return
 	}
 

@@ -74,6 +74,7 @@ type alias Model =
     , state : State
     , alert : Alert.Visibility
     , currError : String
+    , rights : List String
 
     -- Sub models (for modals and dialogs):
     , historyState : History.Model
@@ -87,13 +88,14 @@ type alias Model =
     }
 
 
-newModel : Nav.Key -> Url.Url -> Model
-newModel key url =
+newModel : Nav.Key -> Url.Url -> List String -> Model
+newModel key url rights =
     { key = key
     , url = url
     , zone = Time.utc
     , state = Loading
     , alert = Alert.closed
+    , rights = rights
     , currError = ""
     , historyState = History.newModel
     , renameState = Rename.newModel
@@ -526,33 +528,43 @@ viewMetaRow key value =
         ]
 
 
-viewDownloadButton : ActualModel -> Url.Url -> Html msg
-viewDownloadButton model url =
+viewDownloadButton : Model -> ActualModel -> Url.Url -> Html msg
+viewDownloadButton model actModel url =
     Button.linkButton
         [ Button.outlinePrimary
         , Button.attrs
-            [ href
-                (Util.urlPrefixToString url
-                    ++ "get"
-                    ++ Util.urlEncodePath model.self.path
-                    ++ "?direct=yes"
-                )
-            ]
+            (if mayDownload model then
+                [ href
+                    (Util.urlPrefixToString url
+                        ++ "get"
+                        ++ Util.urlEncodePath actModel.self.path
+                        ++ "?direct=yes"
+                    )
+                ]
+
+             else
+                [ class "text-muted", style "opacity" "0.1" ]
+            )
         ]
         [ span [ class "fas fa-download" ] [], text " Download" ]
 
 
-viewViewButton : ActualModel -> Url.Url -> Html msg
-viewViewButton model url =
+viewViewButton : Model -> ActualModel -> Url.Url -> Html msg
+viewViewButton model actModel url =
     Button.linkButton
         [ Button.outlinePrimary
         , Button.attrs
-            [ href
-                (Util.urlPrefixToString url
-                    ++ "get"
-                    ++ Util.urlEncodePath model.self.path
-                )
-            ]
+            (if mayDownload model then
+                [ href
+                    (Util.urlPrefixToString url
+                        ++ "get"
+                        ++ Util.urlEncodePath actModel.self.path
+                    )
+                ]
+
+             else
+                [ class "text-muted", style "opacity" "0.1" ]
+            )
         ]
         [ span [ class "fas fa-eye" ] [], text " View" ]
 
@@ -593,9 +605,9 @@ viewSingleEntry model actualModel zone =
                         (viewPinIcon actualModel.self.isPinned actualModel.self.isExplicit)
                     ]
                 , ListGroup.li [ ListGroup.light ]
-                    [ viewDownloadButton actualModel model.url
+                    [ viewDownloadButton model actualModel model.url
                     , text " "
-                    , viewViewButton actualModel model.url
+                    , viewViewButton model actualModel model.url
                     ]
                 ]
             ]
@@ -617,7 +629,7 @@ viewList model zone =
                 True ->
                     div []
                         [ showAlert model
-                        , Lazy.lazy2 entriesToHtml zone actualModel
+                        , Lazy.lazy3 entriesToHtml model zone actualModel
                         ]
 
                 False ->
@@ -706,8 +718,18 @@ formatPath model entry =
             Util.basename entry.path
 
 
-buildActionDropdown : ActualModel -> Commands.Entry -> Html Msg
-buildActionDropdown model entry =
+mayDownload : Model -> Bool
+mayDownload model =
+    List.member "fs.download" model.rights
+
+
+mayEdit : Model -> Bool
+mayEdit model =
+    List.member "fs.edit" model.rights
+
+
+buildActionDropdown : Model -> ActualModel -> Commands.Entry -> Html Msg
+buildActionDropdown model actModel entry =
     Dropdown.dropdown
         entry.dropdown
         { options = []
@@ -727,10 +749,11 @@ buildActionDropdown model entry =
                 [ href
                     ("/get"
                         ++ Util.urlEncodePath
-                            (Util.joinPath [ model.self.path, Util.basename entry.path ])
+                            (Util.joinPath [ actModel.self.path, Util.basename entry.path ])
                         ++ "?direct=yes"
                     )
                 , onClick (ActionDropdownMsg entry Dropdown.initialState)
+                , disabled (not (mayDownload model))
                 ]
                 [ span [ class "fa fa-md fa-file-download" ] []
                 , text " Download"
@@ -739,9 +762,10 @@ buildActionDropdown model entry =
                 [ href
                     ("/get"
                         ++ Util.urlEncodePath
-                            (Util.joinPath [ model.self.path, Util.basename entry.path ])
+                            (Util.joinPath [ actModel.self.path, Util.basename entry.path ])
                     )
                 , onClick (ActionDropdownMsg entry Dropdown.initialState)
+                , disabled (not (mayDownload model))
                 ]
                 [ span [ class "fa fa-md fa-eye" ] []
                 , text " View"
@@ -755,23 +779,30 @@ buildActionDropdown model entry =
             , Dropdown.divider
             , Dropdown.buttonItem
                 [ onClick (RemoveClicked entry)
+                , disabled (not (mayEdit model))
                 ]
                 [ span [ class "fa fa-md fa-trash" ] []
                 , text " Delete"
                 ]
             , Dropdown.divider
             , Dropdown.buttonItem
-                [ onClick (RenameMsg (Rename.show entry.path)) ]
+                [ onClick (RenameMsg (Rename.show entry.path))
+                , disabled (not (mayEdit model))
+                ]
                 [ span [ class "fa fa-md fa-file-signature" ] []
                 , text " Rename"
                 ]
             , Dropdown.buttonItem
-                [ onClick (MoveMsg (MoveCopy.show entry.path)) ]
+                [ onClick (MoveMsg (MoveCopy.show entry.path))
+                , disabled (not (mayEdit model))
+                ]
                 [ span [ class "fa fa-md fa-arrow-right" ] []
                 , text " Move"
                 ]
             , Dropdown.buttonItem
-                [ onClick (CopyMsg (MoveCopy.show entry.path)) ]
+                [ onClick (CopyMsg (MoveCopy.show entry.path))
+                , disabled (not (mayEdit model))
+                ]
                 [ span [ class "fa fa-md fa-copy" ] []
                 , text " Copy"
                 ]
@@ -779,19 +810,19 @@ buildActionDropdown model entry =
         }
 
 
-entryToHtml : ActualModel -> Time.Zone -> Commands.Entry -> Table.Row Msg
-entryToHtml model zone e =
+entryToHtml : Model -> ActualModel -> Time.Zone -> Commands.Entry -> Table.Row Msg
+entryToHtml model actModel zone e =
     Table.tr
         []
         [ Table.td []
-            [ makeCheckbox (readCheckedState model e.path) (CheckboxTick e.path)
+            [ makeCheckbox (readCheckedState actModel e.path) (CheckboxTick e.path)
             ]
         , Table.td
             [ Table.cellAttr (class "icon-column"), Table.cellAttr (onClick (RowClicked e)) ]
             [ viewEntryIcon e ]
         , Table.td
             [ Table.cellAttr (onClick (RowClicked e)) ]
-            [ a [ "/view" ++ e.path |> href ] [ text (formatPath model e) ]
+            [ a [ "/view" ++ e.path |> href ] [ text (formatPath actModel e) ]
             ]
         , Table.td
             [ Table.cellAttr (onClick (RowClicked e)) ]
@@ -803,7 +834,7 @@ entryToHtml model zone e =
             ]
         , Table.td
             []
-            [ buildActionDropdown model e
+            [ buildActionDropdown model actModel e
             ]
         ]
 
@@ -845,29 +876,29 @@ buildSortControl name model key =
         ]
 
 
-entriesToHtml : Time.Zone -> ActualModel -> Html Msg
-entriesToHtml zone model =
+entriesToHtml : Model -> Time.Zone -> ActualModel -> Html Msg
+entriesToHtml model zone actModel =
     Table.table
         { options = [ Table.hover ]
         , thead =
             Table.simpleThead
                 [ Table.th [ Table.cellAttr (style "width" "5%") ]
-                    [ makeCheckbox (readCheckedState model "") CheckboxTickAll
+                    [ makeCheckbox (readCheckedState actModel "") CheckboxTickAll
                     ]
                 , Table.th [ Table.cellAttr (style "width" "5%") ]
                     [ text "" ]
                 , Table.th [ Table.cellAttr (style "width" "45%") ]
-                    [ buildSortControl "Name" model Name ]
+                    [ buildSortControl "Name" actModel Name ]
                 , Table.th [ Table.cellAttr (style "width" "30%") ]
-                    [ buildSortControl "Modified" model ModTime ]
+                    [ buildSortControl "Modified" actModel ModTime ]
                 , Table.th [ Table.cellAttr (style "width" "10%") ]
-                    [ buildSortControl "Size" model Size ]
+                    [ buildSortControl "Size" actModel Size ]
                 , Table.th [ Table.cellAttr (style "width" "5%") ]
                     [ text "" ]
                 ]
         , tbody =
             Table.tbody []
-                (List.map (entryToHtml model zone) model.entries)
+                (List.map (entryToHtml model actModel zone) actModel.entries)
         }
 
 
@@ -993,7 +1024,7 @@ viewSidebarDownloadButton model =
             nSelectedItems model
 
         disabledClass =
-            if currIsFile model then
+            if currIsFile model || not (List.member "fs.download" model.rights) then
                 class "disabled"
 
             else
@@ -1018,18 +1049,20 @@ viewSidebarDownloadButton model =
         ]
 
 
+needsRight : Model -> String -> something -> something -> something
+needsRight model right entry default =
+    if List.member right model.rights then
+        entry
+
+    else
+        default
+
+
 viewActionList : Model -> Html Msg
 viewActionList model =
     let
         nSelected =
             nSelectedItems model
-
-        disabledClass =
-            if currIsFile model then
-                class "disabled"
-
-            else
-                class "btn-default"
 
         root =
             Maybe.withDefault "/" (currRoot model)
@@ -1039,7 +1072,11 @@ viewActionList model =
             [ class "text-muted", id "select-label" ]
             [ labelSelectedItems model nSelected ]
         , br [] []
-        , Upload.buildButton model.uploadState (currIsFile model) root UploadMsg
+        , Upload.buildButton
+            model.uploadState
+            (currIsFile model || not (List.member "fs.download" model.rights))
+            root
+            UploadMsg
         , viewSidebarDownloadButton model
         , ButtonGroup.toolbar [ class "btn-group-vertical" ]
             [ ButtonGroup.buttonGroupItem
@@ -1055,12 +1092,12 @@ viewActionList model =
                     (MkdirMsg <| Mkdir.show)
                     "fa-edit"
                     "New Folder"
-                    (currIsFile model)
+                    (currIsFile model || not (List.member "fs.edit" model.rights))
                 , buildActionButton
                     (RemoveMsg <| Remove.show (selectedPaths model))
                     "fa-trash"
                     "Delete"
-                    (nSelected == 0)
+                    (nSelected == 0 || not (List.member "fs.edit" model.rights))
                 ]
             ]
         , Html.map UploadMsg (Upload.viewUploadState model.uploadState)

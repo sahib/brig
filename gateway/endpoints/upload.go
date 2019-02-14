@@ -6,6 +6,7 @@ import (
 	"path"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // UploadHandler implements http.Handler.
@@ -19,6 +20,10 @@ func NewUploadHandler(s *State) *UploadHandler {
 }
 
 func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	root := r.URL.Query().Get("root")
 	if root == "" {
 		root = "/"

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/sahib/brig/gateway/db"
 )
 
 // MoveHandler implements http.Handler.
@@ -27,6 +28,10 @@ type MoveRequest struct {
 }
 
 func (mh *MoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightFsEdit) {
+		return
+	}
+
 	moveReq := MoveRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&moveReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")

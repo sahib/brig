@@ -3,6 +3,7 @@ package endpoints
 import (
 	"net/http"
 
+	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/remotesapi"
 )
 
@@ -23,6 +24,10 @@ type RemoteSelfResponse struct {
 }
 
 func (rh *RemoteSelfHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkRights(w, r, db.RightRemotesView) {
+		return
+	}
+
 	self, err := rh.rapi.Self()
 	if err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to get self")

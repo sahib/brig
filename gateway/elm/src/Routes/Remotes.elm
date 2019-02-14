@@ -54,14 +54,16 @@ type alias Model =
     , remoteRemoveState : RemoteRemove.Model
     , remoteFoldersState : RemoteFolders.Model
     , dropdowns : Dict.Dict String Dropdown.State
+    , rights : List String
     }
 
 
-newModel : Nav.Key -> Time.Zone -> Model
-newModel key zone =
+newModel : Nav.Key -> Time.Zone -> List String -> Model
+newModel key zone rights =
     { key = key
     , zone = zone
     , state = Loading
+    , rights = rights
     , self = Commands.emptySelf
     , remoteAddState = RemoteAdd.newModel
     , remoteRemoveState = RemoteRemove.newModel
@@ -231,11 +233,17 @@ viewDropdown model remote =
         , items =
             [ Dropdown.buttonItem
                 [ onClick (SyncClicked remote.name)
-                , disabled (not remote.isAuthenticated)
+                , disabled
+                    (not remote.isAuthenticated
+                        || not (List.member "fs.edit" model.rights)
+                    )
                 ]
                 [ span [ class "fas fa-md fa-sync-alt" ] [], text " Sync" ]
             , Dropdown.anchorItem
-                [ disabled (not remote.isAuthenticated)
+                [ disabled
+                    (not remote.isAuthenticated
+                        || not (List.member "fs.view" model.rights)
+                    )
                 , if remote.isAuthenticated then
                     href ("/diff/" ++ Url.percentEncode remote.name)
 
@@ -245,7 +253,9 @@ viewDropdown model remote =
                 [ span [ class "fas fa-md fa-search-minus" ] [], text " Diff" ]
             , Dropdown.divider
             , Dropdown.buttonItem
-                [ onClick (RemoteRemoveMsg <| RemoteRemove.show remote.name) ]
+                [ onClick (RemoteRemoveMsg <| RemoteRemove.show remote.name)
+                , disabled (not (List.member "remotes.edit" model.rights))
+                ]
                 [ span [ class "text-danger" ]
                     [ span [ class "fas fa-md fa-times" ] []
                     , text " Remove"
@@ -279,6 +289,7 @@ viewRemote model remote =
                 [ Button.roleLink
                 , Button.attrs
                     [ onClick <| RemoteFolderMsg (RemoteFolders.show remote)
+                    , disabled (not (List.member "remotes.edit" model.rights))
                     ]
                 ]
                 [ span
@@ -377,7 +388,9 @@ viewRemoteListContainer model remotes =
                 [ Button.button
                     [ Button.roleLink
                     , Button.attrs
-                        [ onClick <| RemoteAddMsg RemoteAdd.show ]
+                        [ onClick <| RemoteAddMsg RemoteAdd.show
+                        , disabled (not (List.member "remotes.edit" model.rights))
+                        ]
                     ]
                     [ span [ class "fas fa-lg fa-plus" ] []
                     , text " Add new"
