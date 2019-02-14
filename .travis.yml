@@ -12,6 +12,7 @@ install:
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
     - go get -t -v github.com/sahib/brig
+    - go get -u github.com/rakyll/gotest
     - cd $GOPATH/src/github.com/sahib/brig
     - mkdir -p ${GOPATH}/bin
     - export GOBIN=${GOPATH}/bin
@@ -20,4 +21,4 @@ install:
 script:
     - cd $GOPATH/src/github.com/sahib/brig
     - export PATH="${GOPATH}/bin:${PATH}"
-    - go test -v ./...
+    - gotest -v ./...
