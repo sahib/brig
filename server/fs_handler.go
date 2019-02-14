@@ -310,7 +310,7 @@ func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Pin(url.Path)
+		return fs.Pin(url.Path, "curr")
 	})
 }
 
@@ -323,7 +323,7 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Unpin(url.Path)
+		return fs.Unpin(url.Path, "curr")
 	})
 }
 

@@ -491,15 +491,15 @@ func TestPin(t *testing.T) {
 		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1})))
 		require.Nil(t, fs.Stage("/y", bytes.NewReader([]byte{1})))
 
-		require.Nil(t, fs.Unpin("/x"))
-		require.Nil(t, fs.Unpin("/y"))
+		require.Nil(t, fs.Unpin("/x", "curr"))
+		require.Nil(t, fs.Unpin("/y", "curr"))
 
 		isPinned, isExplicit, err := fs.IsPinned("/x")
 		require.Nil(t, err)
 		require.False(t, isPinned)
 		require.False(t, isExplicit)
 
-		require.Nil(t, fs.Pin("/x"))
+		require.Nil(t, fs.Pin("/x", "curr"))
 
 		isPinned, isExplicit, err = fs.IsPinned("/x")
 		require.Nil(t, err)
@@ -511,14 +511,14 @@ func TestPin(t *testing.T) {
 		require.False(t, isPinned)
 		require.False(t, isExplicit)
 
-		require.Nil(t, fs.Pin("/"))
+		require.Nil(t, fs.Pin("/", "curr"))
 
 		isPinned, isExplicit, err = fs.IsPinned("/")
 		require.Nil(t, err)
 		require.True(t, isPinned)
 		require.True(t, isExplicit)
 
-		require.Nil(t, fs.Unpin("/"))
+		require.Nil(t, fs.Unpin("/", "curr"))
 
 		isPinned, isExplicit, err = fs.IsPinned("/")
 		require.Nil(t, err)
