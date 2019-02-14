@@ -36,9 +36,11 @@ type Commit struct {
 
 // HistoryEntry is one entry in the response.
 type HistoryEntry struct {
-	Head   Commit `json:"head"`
-	Path   string `json:"path"`
-	Change string `json:"change"`
+	Head       Commit `json:"head"`
+	Path       string `json:"path"`
+	Change     string `json:"change"`
+	IsPinned   bool   `json:"is_pinned"`
+	IsExplicit bool   `json:"is_explicit"`
 }
 
 // HistoryResponse is the data that is sent back to the client.
@@ -69,6 +71,8 @@ func toExternalChange(c catfs.Change) HistoryEntry {
 	e.Change = c.Change
 	e.Head = toExternalCommit(c.Head)
 	e.Path = c.Path
+	e.IsPinned = c.IsPinned
+	e.IsExplicit = c.IsExplicit
 	return e
 }
 

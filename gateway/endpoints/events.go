@@ -24,7 +24,13 @@ type EventsHandler struct {
 	id         int
 	chs        map[int]chan string
 	rapi       remotesapi.RemotesAPI
+	evListener *events.Listener
 	changeOnce sync.Once
+
+	// only true while unit tests.
+	// circumvents the right check,
+	// that can't be mocked away easily.
+	testing bool
 }
 
 // NewEventsHandler returns a new EventsHandler
@@ -46,6 +52,8 @@ func (eh *EventsHandler) SetEventListener(ev *events.Listener) {
 
 		eh.Notify(ctx, "fs")
 	})
+
+	eh.evListener = ev
 }
 
 // Notify sends `msg` to all connected clients, but stops in case `ctx`
@@ -67,6 +75,15 @@ func (eh *EventsHandler) Notify(ctx context.Context, msg string) error {
 		}
 	}
 
+	// We can only trigger fs events in the gateway:
+	event := events.Event{
+		Type: events.FsEvent,
+	}
+
+	if eh.evListener != nil {
+		return eh.evListener.PublishEvent(event)
+	}
+
 	return nil
 }
 
@@ -81,8 +98,10 @@ func (eh *EventsHandler) Shutdown() {
 }
 
 func (eh *EventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !checkRights(w, r, db.RightFsView) {
-		return
+	if !eh.testing {
+		if !checkRights(w, r, db.RightFsView) {
+			return
+		}
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)

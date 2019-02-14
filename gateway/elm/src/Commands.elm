@@ -123,6 +123,8 @@ type alias HistoryEntry =
     { head : Commit
     , path : String
     , change : String
+    , isPinned : Bool
+    , isExplicit : Bool
     }
 
 
@@ -148,6 +150,8 @@ decodeHistoryEntry =
         |> DP.required "head" decodeCommit
         |> DP.required "path" D.string
         |> DP.required "change" D.string
+        |> DP.required "is_pinned" D.bool
+        |> DP.required "is_explicit" D.bool
 
 
 decodeHistory : D.Decoder (List HistoryEntry)
@@ -868,14 +872,17 @@ doRemoteDiff toMsg name =
 
 
 type alias PinQuery =
-    { paths : List String
+    { path : String
+    , revision : String
     }
 
 
 encodePinQuery : PinQuery -> E.Value
 encodePinQuery q =
     E.object
-        [ ( "paths", E.list E.string q.paths ) ]
+        [ ( "path", E.string q.path )
+        , ( "revision", E.string q.revision )
+        ]
 
 
 decodePinResponse : D.Decoder String
@@ -883,19 +890,19 @@ decodePinResponse =
     D.field "message" D.string
 
 
-doPin : (Result Http.Error String -> msg) -> List String -> Cmd msg
-doPin toMsg paths =
+doPin : (Result Http.Error String -> msg) -> String -> String -> Cmd msg
+doPin toMsg path revision =
     Http.post
         { url = "/api/v0/pin"
-        , body = Http.jsonBody <| encodePinQuery <| PinQuery paths
+        , body = Http.jsonBody <| encodePinQuery <| PinQuery path revision
         , expect = Http.expectJson toMsg decodePinResponse
         }
 
 
-doUnpin : (Result Http.Error String -> msg) -> List String -> Cmd msg
-doUnpin toMsg paths =
+doUnpin : (Result Http.Error String -> msg) -> String -> String -> Cmd msg
+doUnpin toMsg path revision =
     Http.post
         { url = "/api/v0/unpin"
-        , body = Http.jsonBody <| encodePinQuery <| PinQuery paths
+        , body = Http.jsonBody <| encodePinQuery <| PinQuery path revision
         , expect = Http.expectJson toMsg decodePinResponse
         }

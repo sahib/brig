@@ -443,6 +443,14 @@ update msg model =
             -- Depending on the event type these are currently either
             -- filesystem entries or remotes.
             case eventType event of
+                "pin" ->
+                    case model.loginState of
+                        LoginSuccess viewState ->
+                            ( model, Cmd.map ListMsg <| Ls.doListQueryFromUrl model.url )
+
+                        _ ->
+                            ( model, Cmd.none )
+
                 "fs" ->
                     case model.loginState of
                         LoginSuccess viewState ->

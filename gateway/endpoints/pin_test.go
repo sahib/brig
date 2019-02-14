@@ -23,7 +23,8 @@ func TestPinEndpointSuccess(t *testing.T) {
 			"POST",
 			"http://localhost:5000/api/v0/pin",
 			&PinRequest{
-				Paths: []string{"/file", "/dir"},
+				Path:     "/file",
+				Revision: "curr",
 			},
 		)
 
@@ -54,7 +55,8 @@ func TestPinEndpointForbidden(t *testing.T) {
 			"POST",
 			"http://localhost:5000/api/v0/pin",
 			&PinRequest{
-				Paths: []string{"/file", "/dir"},
+				Path:     "/file",
+				Revision: "curr",
 			},
 		)
 

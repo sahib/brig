@@ -27,8 +27,9 @@ func NewUnpinHandler(s *State) *PinHandler {
 
 // PinRequest is the request that is being sent to the endpoint.
 type PinRequest struct {
-	Paths []string `json:"paths"`
-	DoPin bool     `json:"do_pin"`
+	Path     string `json:"path"`
+	Revision string `json:"revision"`
+	DoPin    bool   `json:"do_pin"`
 }
 
 func (ph *PinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -42,31 +43,26 @@ func (ph *PinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, path := range pinReq.Paths {
-		path = prefixRoot(path)
-		if !ph.validatePath(path, w, r) {
-			jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
-			return
-		}
+	path := prefixRoot(pinReq.Path)
+	if !ph.validatePath(path, w, r) {
+		jsonifyErrf(w, http.StatusUnauthorized, "path forbidden")
+		return
 	}
 
-	paths := []string{}
-	for _, path := range pinReq.Paths {
-		path = prefixRoot(path)
-		op, name := ph.fs.Pin, "pin"
-		if ph.doPin == false {
-			op, name = ph.fs.Unpin, "unpin"
-		}
-
-		if err := op(path); err != nil {
-			log.Debugf("failed to %s %s: %v", name, path, err)
-			jsonifyErrf(w, http.StatusBadRequest, fmt.Sprintf("failed to %s", name))
-			return
-		}
-
-		paths = append(paths, path)
+	// Select the right operation:
+	op, name := ph.fs.Pin, "pin"
+	if ph.doPin == false {
+		op, name = ph.fs.Unpin, "unpin"
 	}
 
-	ph.evHdl.Notify(r.Context(), "fs")
+	if err := op(path, pinReq.Revision); err != nil {
+		log.Debugf("failed to %s %s: %v", name, path, err)
+		jsonifyErrf(w, http.StatusBadRequest, fmt.Sprintf("failed to %s", name))
+		return
+	}
+
+	// TODO: Does this notify other peers?
+	// Should not as pin is not a "real" fs change.
+	ph.evHdl.Notify(r.Context(), "pin")
 	jsonifySuccess(w)
 }

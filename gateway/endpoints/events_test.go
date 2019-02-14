@@ -11,6 +11,11 @@ import (
 
 func TestEvents(t *testing.T) {
 	withState(t, func(s *testState) {
+		// This is stupid. I couldn't get DialContext()
+		// to pass the user value to the actual handler.
+		// Pretty sure it was a problem on my side though...
+
+		s.evHdl.testing = true
 		dialer := wstest.NewDialer(s.evHdl)
 		conn, resp, err := dialer.Dial("ws://whatever/ws", nil)
 		require.Nil(t, err)
@@ -24,7 +29,7 @@ func TestEvents(t *testing.T) {
 				t,
 				NewMkdirHandler(s.State),
 				"POST",
-				"http://localhost:5000/api/v0/mkdir",
+				"http://localhost:5000/api/v0/events",
 				&MkdirRequest{
 					Path: "/test",
 				},

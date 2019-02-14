@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -28,6 +29,9 @@ func mustDoUpload(t *testing.T, s *testState, name string, data []byte) *http.Re
 		"/api/v0/upload?root="+url.QueryEscape(path.Dir(name)),
 		body,
 	)
+	user, err := s.userDb.Get("ali")
+	require.Nil(t, err)
+	req = req.WithContext(context.WithValue(req.Context(), "brig.db_user", user))
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	rsw := httptest.NewRecorder()

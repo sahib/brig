@@ -8297,7 +8297,9 @@ var rundis$elm_bootstrap$Bootstrap$Alert$Shown = {$: 'Shown'};
 var rundis$elm_bootstrap$Bootstrap$Alert$shown = rundis$elm_bootstrap$Bootstrap$Alert$Shown;
 var rundis$elm_bootstrap$Bootstrap$Modal$Hide = {$: 'Hide'};
 var rundis$elm_bootstrap$Bootstrap$Modal$hidden = rundis$elm_bootstrap$Bootstrap$Modal$Hide;
-var author$project$Modals$History$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, history: elm$core$Maybe$Nothing, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden};
+var author$project$Modals$History$newModel = function (rights) {
+	return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, history: elm$core$Maybe$Nothing, lastPath: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, rights: rights};
+};
 var author$project$Modals$Mkdir$Ready = {$: 'Ready'};
 var author$project$Modals$Mkdir$newModel = {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, inputName: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden, state: author$project$Modals$Mkdir$Ready};
 var author$project$Modals$MoveCopy$Copy = {$: 'Copy'};
@@ -8314,7 +8316,23 @@ var author$project$Modals$Upload$newModel = {failed: _List_Nil, success: _List_N
 var author$project$Routes$Ls$Loading = {$: 'Loading'};
 var author$project$Routes$Ls$newModel = F3(
 	function (key, url, rights) {
-		return {alert: rundis$elm_bootstrap$Bootstrap$Alert$closed, copyState: author$project$Modals$MoveCopy$newCopyModel, currError: '', historyState: author$project$Modals$History$newModel, key: key, mkdirState: author$project$Modals$Mkdir$newModel, moveState: author$project$Modals$MoveCopy$newMoveModel, removeState: author$project$Modals$Remove$newModel, renameState: author$project$Modals$Rename$newModel, rights: rights, shareState: author$project$Modals$Share$newModel, state: author$project$Routes$Ls$Loading, uploadState: author$project$Modals$Upload$newModel, url: url, zone: elm$time$Time$utc};
+		return {
+			alert: rundis$elm_bootstrap$Bootstrap$Alert$closed,
+			copyState: author$project$Modals$MoveCopy$newCopyModel,
+			currError: '',
+			historyState: author$project$Modals$History$newModel(rights),
+			key: key,
+			mkdirState: author$project$Modals$Mkdir$newModel,
+			moveState: author$project$Modals$MoveCopy$newMoveModel,
+			removeState: author$project$Modals$Remove$newModel,
+			renameState: author$project$Modals$Rename$newModel,
+			rights: rights,
+			shareState: author$project$Modals$Share$newModel,
+			state: author$project$Routes$Ls$Loading,
+			uploadState: author$project$Modals$Upload$newModel,
+			url: url,
+			zone: elm$time$Time$utc
+		};
 	});
 var author$project$Commands$Self = F2(
 	function (name, fingerprint) {
@@ -9462,10 +9480,38 @@ var author$project$Routes$Ls$changeUrl = F2(
 			model,
 			{url: url});
 	});
-var author$project$Commands$PinQuery = function (paths) {
+var author$project$Commands$PinQuery = F2(
+	function (path, revision) {
+		return {path: path, revision: revision};
+	});
+var author$project$Commands$decodePinResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
+var author$project$Commands$encodePinQuery = function (q) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'path',
+				elm$json$Json$Encode$string(q.path)),
+				_Utils_Tuple2(
+				'revision',
+				elm$json$Json$Encode$string(q.revision))
+			]));
+};
+var author$project$Commands$doPin = F3(
+	function (toMsg, path, revision) {
+		return elm$http$Http$post(
+			{
+				body: elm$http$Http$jsonBody(
+					author$project$Commands$encodePinQuery(
+						A2(author$project$Commands$PinQuery, path, revision))),
+				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodePinResponse),
+				url: '/api/v0/pin'
+			});
+	});
+var author$project$Commands$RemoveQuery = function (paths) {
 	return {paths: paths};
 };
-var author$project$Commands$decodePinResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
+var author$project$Commands$decodeRemoveResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
 var elm$json$Json$Encode$list = F2(
 	function (func, entries) {
 		return _Json_wrap(
@@ -9475,30 +9521,6 @@ var elm$json$Json$Encode$list = F2(
 				_Json_emptyArray(_Utils_Tuple0),
 				entries));
 	});
-var author$project$Commands$encodePinQuery = function (q) {
-	return elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'paths',
-				A2(elm$json$Json$Encode$list, elm$json$Json$Encode$string, q.paths))
-			]));
-};
-var author$project$Commands$doPin = F2(
-	function (toMsg, paths) {
-		return elm$http$Http$post(
-			{
-				body: elm$http$Http$jsonBody(
-					author$project$Commands$encodePinQuery(
-						author$project$Commands$PinQuery(paths))),
-				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodePinResponse),
-				url: '/api/v0/pin'
-			});
-	});
-var author$project$Commands$RemoveQuery = function (paths) {
-	return {paths: paths};
-};
-var author$project$Commands$decodeRemoveResponse = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
 var author$project$Commands$encodeRemoveQuery = function (q) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -9519,13 +9541,13 @@ var author$project$Commands$doRemove = F2(
 				url: '/api/v0/remove'
 			});
 	});
-var author$project$Commands$doUnpin = F2(
-	function (toMsg, paths) {
+var author$project$Commands$doUnpin = F3(
+	function (toMsg, path, revision) {
 		return elm$http$Http$post(
 			{
 				body: elm$http$Http$jsonBody(
 					author$project$Commands$encodePinQuery(
-						author$project$Commands$PinQuery(paths))),
+						A2(author$project$Commands$PinQuery, path, revision))),
 				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodePinResponse),
 				url: '/api/v0/unpin'
 			});
@@ -9533,23 +9555,31 @@ var author$project$Commands$doUnpin = F2(
 var author$project$Commands$HistoryQuery = function (path) {
 	return {path: path};
 };
-var author$project$Commands$HistoryEntry = F3(
-	function (head, path, change) {
-		return {change: change, head: head, path: path};
+var author$project$Commands$HistoryEntry = F5(
+	function (head, path, change, isPinned, isExplicit) {
+		return {change: change, head: head, isExplicit: isExplicit, isPinned: isPinned, path: path};
 	});
 var author$project$Commands$decodeHistoryEntry = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'change',
-	elm$json$Json$Decode$string,
+	'is_explicit',
+	elm$json$Json$Decode$bool,
 	A3(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'path',
-		elm$json$Json$Decode$string,
+		'is_pinned',
+		elm$json$Json$Decode$bool,
 		A3(
 			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'head',
-			author$project$Commands$decodeCommit,
-			elm$json$Json$Decode$succeed(author$project$Commands$HistoryEntry))));
+			'change',
+			elm$json$Json$Decode$string,
+			A3(
+				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'path',
+				elm$json$Json$Decode$string,
+				A3(
+					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'head',
+					author$project$Commands$decodeCommit,
+					elm$json$Json$Decode$succeed(author$project$Commands$HistoryEntry))))));
 var author$project$Commands$decodeHistory = A2(
 	elm$json$Json$Decode$field,
 	'entries',
@@ -9574,11 +9604,18 @@ var author$project$Commands$doHistory = F2(
 				url: '/api/v0/history'
 			});
 	});
-var author$project$Modals$History$GotHistoryResponse = function (a) {
-	return {$: 'GotHistoryResponse', a: a};
-};
+var author$project$Modals$History$GotHistoryResponse = F2(
+	function (a, b) {
+		return {$: 'GotHistoryResponse', a: a, b: b};
+	});
 var author$project$Modals$History$show = function (path) {
-	return A2(author$project$Commands$doHistory, author$project$Modals$History$GotHistoryResponse, path);
+	return A2(
+		author$project$Commands$doHistory,
+		author$project$Modals$History$GotHistoryResponse(path),
+		path);
+};
+var author$project$Modals$History$GotPinResponse = function (a) {
+	return {$: 'GotPinResponse', a: a};
 };
 var author$project$Modals$History$GotResetResponse = function (a) {
 	return {$: 'GotResetResponse', a: a};
@@ -9589,12 +9626,14 @@ var author$project$Modals$History$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
 			case 'GotHistoryResponse':
-				var result = msg.a;
+				var path = msg.a;
+				var result = msg.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
 							history: elm$core$Maybe$Just(result),
+							lastPath: path,
 							modal: rundis$elm_bootstrap$Bootstrap$Modal$shown
 						}),
 					elm$core$Platform$Cmd$none);
@@ -9612,6 +9651,26 @@ var author$project$Modals$History$update = F2(
 							model,
 							{history: elm$core$Maybe$Nothing, modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
 						elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								history: elm$core$Maybe$Just(
+									elm$core$Result$Err(err))
+							}),
+						elm$core$Platform$Cmd$none);
+				}
+			case 'GotPinResponse':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						model,
+						A2(
+							author$project$Commands$doHistory,
+							author$project$Modals$History$GotHistoryResponse(model.lastPath),
+							model.lastPath));
 				} else {
 					var err = result.a;
 					return _Utils_Tuple2(
@@ -9649,6 +9708,13 @@ var author$project$Modals$History$update = F2(
 						model,
 						{alert: vis}),
 					elm$core$Platform$Cmd$none);
+			case 'PinClicked':
+				var path = msg.a;
+				var revision = msg.b;
+				var shouldBePinned = msg.c;
+				return _Utils_Tuple2(
+					model,
+					shouldBePinned ? A3(author$project$Commands$doPin, author$project$Modals$History$GotPinResponse, path, revision) : A3(author$project$Commands$doUnpin, author$project$Modals$History$GotPinResponse, path, revision));
 			default:
 				var key = msg.a;
 				if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
@@ -10931,17 +10997,9 @@ var author$project$Routes$Ls$update = F2(
 				var shouldBePinned = msg.b;
 				return shouldBePinned ? _Utils_Tuple2(
 					model,
-					A2(
-						author$project$Commands$doPin,
-						author$project$Routes$Ls$GotPinResponse,
-						_List_fromArray(
-							[path]))) : _Utils_Tuple2(
+					A3(author$project$Commands$doPin, author$project$Routes$Ls$GotPinResponse, path, 'curr')) : _Utils_Tuple2(
 					model,
-					A2(
-						author$project$Commands$doUnpin,
-						author$project$Routes$Ls$GotPinResponse,
-						_List_fromArray(
-							[path])));
+					A3(author$project$Commands$doUnpin, author$project$Routes$Ls$GotPinResponse, path, 'curr'));
 			case 'AlertMsg':
 				var state = msg.a;
 				return _Utils_Tuple2(
@@ -11938,10 +11996,23 @@ var author$project$Main$update = F2(
 				var event = msg.a;
 				var _n13 = author$project$Main$eventType(event);
 				switch (_n13) {
-					case 'fs':
+					case 'pin':
 						var _n14 = model.loginState;
 						if (_n14.$ === 'LoginSuccess') {
 							var viewState = _n14.a;
+							return _Utils_Tuple2(
+								model,
+								A2(
+									elm$core$Platform$Cmd$map,
+									author$project$Main$ListMsg,
+									author$project$Routes$Ls$doListQueryFromUrl(model.url)));
+						} else {
+							return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+						}
+					case 'fs':
+						var _n15 = model.loginState;
+						if (_n15.$ === 'LoginSuccess') {
+							var viewState = _n15.a;
 							return _Utils_Tuple2(
 								model,
 								elm$core$Platform$Cmd$batch(
@@ -19812,6 +19883,10 @@ var author$project$Main$viewSidebarItems = F2(
 								]))))));
 	});
 var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
+var author$project$Modals$History$PinClicked = F3(
+	function (a, b, c) {
+		return {$: 'PinClicked', a: a, b: b, c: c};
+	});
 var author$project$Modals$History$ResetClicked = F2(
 	function (a, b) {
 		return {$: 'ResetClicked', a: a, b: b};
@@ -19891,6 +19966,46 @@ var author$project$Modals$History$viewChangeSet = function (change) {
 		_List_Nil,
 		author$project$Modals$History$joinChanges(changes));
 };
+var author$project$Modals$History$viewPinIcon = F2(
+	function (isPinned, isExplicit) {
+		var _n0 = _Utils_Tuple2(isPinned, isExplicit);
+		if (_n0.a) {
+			if (_n0.b) {
+				return A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fa fa-map-marker'),
+							elm$html$Html$Attributes$class('text-success')
+						]),
+					_List_Nil);
+			} else {
+				return A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fa fa-map-marker-alt'),
+							elm$html$Html$Attributes$class('text-warning')
+						]),
+					_List_Nil);
+			}
+		} else {
+			return A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('fa fa-times'),
+						elm$html$Html$Attributes$class('text-danger')
+					]),
+				_List_Nil);
+		}
+	});
+var rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroup = F2(
+	function (options, items) {
+		return rundis$elm_bootstrap$Bootstrap$ButtonGroup$renderGroup(
+			A2(rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroupItem, options, items));
+	});
+var rundis$elm_bootstrap$Bootstrap$Grid$Col$xs9 = A2(rundis$elm_bootstrap$Bootstrap$Grid$Internal$width, rundis$elm_bootstrap$Bootstrap$General$Internal$XS, rundis$elm_bootstrap$Bootstrap$Grid$Internal$Col9);
 var author$project$Modals$History$viewHistoryEntry = F3(
 	function (model, isFirst, entry) {
 		return A2(
@@ -19901,7 +20016,7 @@ var author$project$Modals$History$viewHistoryEntry = F3(
 					A2(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$md10]),
+						[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs9]),
 					_List_fromArray(
 						[
 							A2(
@@ -19940,24 +20055,49 @@ var author$project$Modals$History$viewHistoryEntry = F3(
 					A2(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
-						[rundis$elm_bootstrap$Bootstrap$Grid$Col$md2]),
-					isFirst ? _List_Nil : _List_fromArray(
+						[rundis$elm_bootstrap$Bootstrap$Grid$Col$xs3]),
+					_List_fromArray(
 						[
 							A2(
-							rundis$elm_bootstrap$Bootstrap$Button$button,
+							rundis$elm_bootstrap$Bootstrap$ButtonGroup$buttonGroup,
+							_List_Nil,
 							_List_fromArray(
 								[
-									rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
-									rundis$elm_bootstrap$Bootstrap$Button$attrs(
+									A2(
+									rundis$elm_bootstrap$Bootstrap$ButtonGroup$button,
 									_List_fromArray(
 										[
-											elm$html$Html$Events$onClick(
-											A2(author$project$Modals$History$ResetClicked, entry.path, entry.head.hash))
+											rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
+											rundis$elm_bootstrap$Bootstrap$Button$attrs(
+											_List_fromArray(
+												[
+													elm$html$Html$Events$onClick(
+													A2(author$project$Modals$History$ResetClicked, entry.path, entry.head.hash)),
+													elm$html$Html$Attributes$disabled(isFirst)
+												]))
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Revert')
+										])),
+									A2(
+									rundis$elm_bootstrap$Bootstrap$ButtonGroup$button,
+									_List_fromArray(
+										[
+											rundis$elm_bootstrap$Bootstrap$Button$outlinePrimary,
+											rundis$elm_bootstrap$Bootstrap$Button$attrs(
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$disabled(
+													!A2(elm$core$List$member, 'fs.edit', model.rights)),
+													elm$html$Html$Events$onClick(
+													A3(author$project$Modals$History$PinClicked, entry.path, entry.head.hash, !entry.isPinned))
+												]))
+										]),
+									_List_fromArray(
+										[
+											A2(author$project$Modals$History$viewPinIcon, entry.isPinned, entry.isExplicit)
 										]))
-								]),
-							_List_fromArray(
-								[
-									elm$html$Html$text('Revert')
 								]))
 						]))
 				]));

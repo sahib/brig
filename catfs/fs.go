@@ -491,6 +491,7 @@ func (fs *FS) Remove(path string) error {
 		return err
 	}
 
+	// TODO: What should remove do with the pin state?
 	_, _, err = c.Remove(fs.lkr, nd, true, true)
 	return err
 }
@@ -637,8 +638,8 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 
 // preCache makes the backend fetch the data already from the network,
 // even though it might not be needed yet.
-func (fs *FS) preCache(path string) error {
-	stream, err := fs.Cat(path)
+func (fs *FS) preCache(hash h.Hash) error {
+	stream, err := fs.bk.Cat(hash)
 	if err != nil {
 		return err
 	}
@@ -647,49 +648,61 @@ func (fs *FS) preCache(path string) error {
 	return err
 }
 
-func (fs *FS) preCacheInBackground(path string) {
+func (fs *FS) preCacheInBackground(hash h.Hash) {
 	if !fs.cfg.Bool("pre_cache.enabled") {
 		return
 	}
 
 	go func() {
-		if err := fs.preCache(path); err != nil {
-			log.Debugf("failed to pre-cache `%s`: %v", path, err)
+		if err := fs.preCache(hash); err != nil {
+			log.Debugf("failed to pre-cache `%s`: %v", hash, err)
 		}
 	}()
 }
 
 // Pin will pin the file or directory at `path` explicitly.
-func (fs *FS) Pin(path string) error {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
-	nd, err := lookupFileOrDir(fs.lkr, path)
-	if err != nil {
-		return err
-	}
-
-	if err := fs.pinner.PinNode(nd, true); err != nil {
-		return err
-	}
-
-	// Make sure the data is available:
-	// (this is some sort of `cat path > /dev/null`)
-	fs.preCacheInBackground(path)
-	return nil
+func (fs *FS) Pin(path, rev string) error {
+	return fs.doPin(path, rev, fs.pinner.PinNode)
 }
 
 // Unpin will unpin the file or directory at `path` explicitly.
-func (fs *FS) Unpin(path string) error {
+func (fs *FS) Unpin(path, rev string) error {
+	return fs.doPin(path, rev, fs.pinner.UnpinNode)
+}
+
+func (fs *FS) doPin(path, rev string, op func(nd n.Node, explicit bool) error) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	nd, err := lookupFileOrDir(fs.lkr, path)
+	cmt, err := parseRev(fs.lkr, rev)
 	if err != nil {
 		return err
 	}
 
-	return fs.pinner.UnpinNode(nd, true)
+	root, err := fs.lkr.DirectoryByHash(cmt.Root())
+	if err != nil {
+		return err
+	}
+
+	nd, err := root.Lookup(fs.lkr, path)
+	if err != nil {
+		return err
+	}
+
+	if nd == nil || nd.Type() == n.NodeTypeGhost {
+		return ie.NoSuchFile(path)
+	}
+
+	if err := op(nd, true); err != nil {
+		return err
+	}
+
+	// Make sure the data is available (if requested):
+	if nd.Type() == n.NodeTypeFile {
+		fs.preCacheInBackground(nd.BackendHash())
+	}
+
+	return nil
 }
 
 // ListExplicitPins returns all pathes that are pinned explicitly.
@@ -1345,8 +1358,20 @@ func (fs *FS) Undelete(root string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	// TODO: Fix pin state after undelete.
-	return vcs.Undelete(fs.lkr, root)
+	if fs.readOnly {
+		return ErrReadOnly
+	}
+
+	if err := vcs.Undelete(fs.lkr, root); err != nil {
+		return err
+	}
+
+	nd, err := fs.lkr.LookupModNode(root)
+	if err != nil {
+		return err
+	}
+
+	return fs.pinner.PinNode(nd, false)
 }
 
 // Head translates the "head" symbol to a ref.

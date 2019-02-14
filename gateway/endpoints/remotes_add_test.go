@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	TestFingerprint = "QmgtEcRda8Nm4RMHQCBzGGXBE2zjQqvDXHfEye1zay3f1w:W1fKKbqVAUhEXkC3yoJ92fKK1aWAuVYMmneUUvUQdDRbMq"
+)
+
 func TestRemoteAddEndpoint(t *testing.T) {
 	withState(t, func(s *testState) {
 		resp := s.mustRun(
@@ -18,7 +22,7 @@ func TestRemoteAddEndpoint(t *testing.T) {
 			&RemoteAddRequest{
 				Name:              "bob",
 				Folders:           nil,
-				Fingerprint:       "bobsfingerprint",
+				Fingerprint:       TestFingerprint,
 				AcceptAutoUpdates: true,
 			},
 		)
@@ -34,7 +38,7 @@ func TestRemoteAddEndpoint(t *testing.T) {
 		rmt, err := s.State.rapi.Get("bob")
 		require.Nil(t, err)
 		require.Equal(t, "bob", rmt.Name)
-		require.Equal(t, "bobsfingerprint", rmt.Fingerprint)
+		require.Equal(t, TestFingerprint, rmt.Fingerprint)
 		require.Equal(t, true, rmt.AcceptAutoUpdates)
 	})
 }
@@ -43,7 +47,7 @@ func TestRemoteModifyEndpoint(t *testing.T) {
 	withState(t, func(s *testState) {
 		require.Nil(t, s.State.rapi.Set(remotesapi.Remote{
 			Name:        "bob",
-			Fingerprint: "oldfingerprint",
+			Fingerprint: TestFingerprint + "xxx",
 			Folders:     []string{"/public"},
 		}))
 
@@ -55,7 +59,7 @@ func TestRemoteModifyEndpoint(t *testing.T) {
 			&RemoteAddRequest{
 				Name:              "bob",
 				Folders:           nil,
-				Fingerprint:       "bobsfingerprint",
+				Fingerprint:       TestFingerprint,
 				AcceptAutoUpdates: true,
 			},
 		)
@@ -72,7 +76,7 @@ func TestRemoteModifyEndpoint(t *testing.T) {
 		rmt, err := s.State.rapi.Get("bob")
 		require.Nil(t, err)
 		require.Equal(t, "bob", rmt.Name)
-		require.Equal(t, "bobsfingerprint", rmt.Fingerprint)
+		require.Equal(t, TestFingerprint, rmt.Fingerprint)
 		require.Equal(t, true, rmt.AcceptAutoUpdates)
 	})
 }

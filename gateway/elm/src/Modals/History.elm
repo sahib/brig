@@ -2,6 +2,7 @@ module Modals.History exposing (Model, Msg, newModel, show, subscriptions, updat
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
@@ -23,29 +24,35 @@ type alias Model =
     { modal : Modal.Visibility
     , alert : Alert.Visibility
     , history : Maybe (Result Http.Error (List Commands.HistoryEntry))
+    , rights : List String
+    , lastPath : String
     }
 
 
 type Msg
     = ModalShow
-    | GotHistoryResponse (Result Http.Error (List Commands.HistoryEntry))
+    | GotHistoryResponse String (Result Http.Error (List Commands.HistoryEntry))
     | GotResetResponse (Result Http.Error String)
+    | GotPinResponse (Result Http.Error String)
     | ResetClicked String String
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
     | ModalClose
     | KeyPress String
+    | PinClicked String String Bool
 
 
 
 -- INIT
 
 
-newModel : Model
-newModel =
+newModel : List String -> Model
+newModel rights =
     { modal = Modal.hidden
     , alert = Alert.shown
     , history = Nothing
+    , rights = rights
+    , lastPath = ""
     }
 
 
@@ -56,8 +63,14 @@ newModel =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotHistoryResponse result ->
-            ( { model | modal = Modal.shown, history = Just result }, Cmd.none )
+        GotHistoryResponse path result ->
+            ( { model
+                | modal = Modal.shown
+                , history = Just result
+                , lastPath = path
+              }
+            , Cmd.none
+            )
 
         ResetClicked path revision ->
             ( model, Commands.doReset GotResetResponse path revision )
@@ -66,6 +79,16 @@ update msg model =
             case result of
                 Ok _ ->
                     ( { model | modal = Modal.hidden, history = Nothing }, Cmd.none )
+
+                Err err ->
+                    ( { model | history = Just (Err err) }, Cmd.none )
+
+        GotPinResponse result ->
+            case result of
+                Ok _ ->
+                    -- Update the whole history to get the latest pin state.
+                    -- This is kinda wasteful and might be optimized later if we need to.
+                    ( model, Commands.doHistory (GotHistoryResponse model.lastPath) model.lastPath )
 
                 Err err ->
                     ( { model | history = Just (Err err) }, Cmd.none )
@@ -81,6 +104,15 @@ update msg model =
 
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
+
+        PinClicked path revision shouldBePinned ->
+            ( model
+            , if shouldBePinned then
+                Commands.doPin GotPinResponse path revision
+
+              else
+                Commands.doUnpin GotPinResponse path revision
+            )
 
         KeyPress key ->
             if model.modal == Modal.hidden then
@@ -132,10 +164,41 @@ viewChangeSet change =
     span [] (joinChanges changes)
 
 
+viewPinIcon : Bool -> Bool -> Html msg
+viewPinIcon isPinned isExplicit =
+    case ( isPinned, isExplicit ) of
+        ( True, True ) ->
+            span
+                [ class "fa fa-map-marker", class "text-success" ]
+                []
+
+        ( True, False ) ->
+            span
+                [ class "fa fa-map-marker-alt", class "text-warning" ]
+                []
+
+        _ ->
+            span
+                [ class "fa fa-times", class "text-danger" ]
+                []
+
+
+viewPinButton : Model -> Commands.HistoryEntry -> Html Msg
+viewPinButton model entry =
+    Button.button
+        [ Button.outlinePrimary
+        , Button.attrs
+            [ disabled (not (List.member "fs.edit" model.rights))
+            , onClick (PinClicked entry.path entry.head.hash (not entry.isPinned))
+            ]
+        ]
+        [ viewPinIcon entry.isPinned entry.isExplicit ]
+
+
 viewHistoryEntry : Model -> Bool -> Commands.HistoryEntry -> Html Msg
 viewHistoryEntry model isFirst entry =
     Grid.row []
-        [ Grid.col [ Col.md10 ]
+        [ Grid.col [ Col.xs9 ]
             [ p []
                 [ text entry.path
                 , br [] []
@@ -146,18 +209,27 @@ viewHistoryEntry model isFirst entry =
                 , span [ class "text-muted" ] [ text entry.head.msg ]
                 ]
             ]
-        , Grid.col [ Col.md2 ]
-            (if isFirst then
+        , Grid.col [ Col.xs3 ]
+            [ ButtonGroup.buttonGroup
                 []
-
-             else
-                [ Button.button
+                [ ButtonGroup.button
                     [ Button.outlinePrimary
-                    , Button.attrs [ onClick <| ResetClicked entry.path entry.head.hash ]
+                    , Button.attrs
+                        [ onClick <| ResetClicked entry.path entry.head.hash
+                        , disabled isFirst
+                        ]
                     ]
                     [ text "Revert" ]
+                , ButtonGroup.button
+                    [ Button.outlinePrimary
+                    , Button.attrs
+                        [ disabled (not (List.member "fs.edit" model.rights))
+                        , onClick (PinClicked entry.path entry.head.hash (not entry.isPinned))
+                        ]
+                    ]
+                    [ viewPinIcon entry.isPinned entry.isExplicit ]
                 ]
-            )
+            ]
         ]
 
 
@@ -217,7 +289,7 @@ view model =
 
 show : String -> Cmd Msg
 show path =
-    Commands.doHistory GotHistoryResponse path
+    Commands.doHistory (GotHistoryResponse path) path
 
 
 

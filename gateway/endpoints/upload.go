@@ -21,6 +21,7 @@ func NewUploadHandler(s *State) *UploadHandler {
 
 func (uh *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !checkRights(w, r, db.RightFsEdit) {
+		fmt.Println("BAD RIGHTS")
 		return
 	}
 

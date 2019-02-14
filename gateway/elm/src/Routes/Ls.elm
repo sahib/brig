@@ -97,7 +97,7 @@ newModel key url rights =
     , alert = Alert.closed
     , rights = rights
     , currError = ""
-    , historyState = History.newModel
+    , historyState = History.newModel rights
     , renameState = Rename.newModel
     , moveState = MoveCopy.newMoveModel
     , copyState = MoveCopy.newCopyModel
@@ -474,10 +474,10 @@ update msg model =
 
         PinClicked path shouldBePinned ->
             if shouldBePinned then
-                ( model, Commands.doPin GotPinResponse [ path ] )
+                ( model, Commands.doPin GotPinResponse path "curr" )
 
             else
-                ( model, Commands.doUnpin GotPinResponse [ path ] )
+                ( model, Commands.doUnpin GotPinResponse path "curr" )
 
         AlertMsg state ->
             ( { model | alert = state }, Cmd.none )
