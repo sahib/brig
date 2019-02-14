@@ -1063,6 +1063,26 @@ CAVEATS
 	"gateway.user.add": {
 		Usage: "Add a new gateway user.",
 		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "role-admin,a",
+				Usage: "Add this user as admin (short for »-r 'fs.view,fs.edit,fs.download,remotes.view,remotes.edit'«)",
+			},
+			cli.BoolFlag{
+				Name:  "role-editor,b",
+				Usage: "Add this user as collaborator (short for »-r 'fs.view,fs.edit,fs.download,remotes.view'«)",
+			},
+			cli.BoolFlag{
+				Name:  "role-collaborator,c",
+				Usage: "Add this user as collaborator (short for »-r 'fs.view,fs.edit,fs.download'«)",
+			},
+			cli.BoolFlag{
+				Name:  "role-viewer,d",
+				Usage: "Add this user as viewer (short for »-r 'fs.view,fs.download'«)",
+			},
+			cli.BoolFlag{
+				Name:  "role-link-only,e",
+				Usage: "Add this user as linker (short for »-r 'fs.download'«)",
+			},
 			cli.StringFlag{
 				Name:  "rights,r",
 				Usage: "Comma separated list of rights of this user.",

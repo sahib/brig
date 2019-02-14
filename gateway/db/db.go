@@ -31,6 +31,13 @@ var (
 		RightRemotesView,
 		RightRemotesEdit,
 	}
+	AllRights = map[string]bool{
+		RightDownload:    true,
+		RightFsView:      true,
+		RightFsEdit:      true,
+		RightRemotesView: true,
+		RightRemotesEdit: true,
+	}
 )
 
 // UserDatabase is a badger db that stores user information,
@@ -270,17 +277,23 @@ func (ub *UserDatabase) Add(name, password string, folders []string, rights []st
 	ub.mu.Lock()
 	defer ub.mu.Unlock()
 
-	hashed, salt, err := HashPassword(password)
-	if err != nil {
-		return err
-	}
-
-	if folders == nil {
+	if len(folders) == 0 {
 		folders = []string{"/"}
 	}
 
-	if rights == nil {
+	if len(rights) == 0 {
 		rights = DefaultRights
+	}
+
+	for _, right := range rights {
+		if !AllRights[right] {
+			return fmt.Errorf("invalid right: %s", right)
+		}
+	}
+
+	hashed, salt, err := HashPassword(password)
+	if err != nil {
+		return err
 	}
 
 	user := &User{

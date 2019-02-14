@@ -912,7 +912,35 @@ func handleGatewayUserAdd(ctx *cli.Context, ctl *client.Client) error {
 		folders = ctx.Args()[2:]
 	}
 
+	allRights := []string{
+		"fs.download",
+		"fs.view",
+		"fs.edit",
+		"remotes.view",
+		"remotes.edit",
+	}
+
 	rights := []string{}
+	if ctx.Bool("role-admin") {
+		rights = allRights
+	}
+
+	if ctx.Bool("role-editor") {
+		rights = allRights[:len(allRights)-1]
+	}
+
+	if ctx.Bool("role-collaborator") {
+		rights = allRights[:len(allRights)-2]
+	}
+
+	if ctx.Bool("role-viewer") {
+		rights = allRights[:len(allRights)-3]
+	}
+
+	if ctx.Bool("role-link-only") {
+		rights = allRights[:len(allRights)-4]
+	}
+
 	if r := ctx.String("rights"); r != "" {
 		rights = strings.Split(r, ",")
 	}
@@ -921,8 +949,13 @@ func handleGatewayUserAdd(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleGatewayUserRemove(ctx *cli.Context, ctl *client.Client) error {
-	name := ctx.Args().First()
-	return ctl.GatewayUserRemove(name)
+	for _, name := range ctx.Args() {
+		if err := ctl.GatewayUserRemove(name); err != nil {
+			fmt.Printf("Failed to remove »%s«: %v\n", name, err)
+		}
+	}
+
+	return nil
 }
 
 func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
@@ -962,8 +995,8 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 			tabW,
 			"%s\t%s\t%s\t\n",
 			user.Name,
-			strings.Join(user.Folders, ", "),
-			strings.Join(user.Rights, ", "),
+			strings.Join(user.Folders, ","),
+			strings.Join(user.Rights, ","),
 		)
 	}
 

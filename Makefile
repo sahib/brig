@@ -19,7 +19,7 @@ generate:
 	go generate ./...
 
 build:
-	@time go install -ldflags \
+	@go install -ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
