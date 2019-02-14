@@ -193,16 +193,6 @@ func RunCmdline(args []string) int {
 					Name:    "remove",
 					Aliases: []string{"rm"},
 					Action:  withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true)),
-				}, {
-					Name:   "set",
-					Action: withDaemon(handlePinSet, true),
-				}, {
-					Name:   "clear",
-					Action: withDaemon(handlePinClear, true),
-				}, {
-					Name:    "list",
-					Aliases: []string{"ls"},
-					Action:  withDaemon(handlePinList, true),
 				},
 			},
 		}, {

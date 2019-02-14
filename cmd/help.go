@@ -271,35 +271,6 @@ EXAMPLES:
 		ArgsUsage: "[<PREFIX>]",
 		Flags:     explicitPinFlags,
 	},
-	"pin.clear": {
-		Usage:     "A more powerful version of `brig pin rm`",
-		ArgsUsage: "[<PREFIX>]",
-		Complete:  completeArgsUsage,
-		Description: `Clear all explicit pins in a certain commit range
-   where path starts with PREFIX. This command is useful to get rid of old
-   pins that you likely do not need anymore. Also it's useful to unpin
-   everything and pin only certain parts with running »brig gc« afterwards.
-
-   You should be however careful not to unpin CURR or HEAD, since this might
-   lead to dataloss if »brig gc« at some point.
-`,
-		Flags: explicitPinFlags,
-	},
-	"pin.set": {
-		Usage:     "A more powerful version of `brig pin add`",
-		ArgsUsage: "[<PREFIX>]",
-		Complete:  completeBrigPath(true, true),
-		Description: `Explicitly pin all files in the range between --from and --to
-   that start with PREFIX.`,
-		Flags: explicitPinFlags,
-	},
-	"pin.remove": {
-		Usage:     "Remove a pin",
-		ArgsUsage: "<file>",
-		Complete:  completeBrigPath(true, true),
-		Description: `A node that is pinned to local storage will not be
-   deleted by the garbage collector.`,
-	},
 	"net": {
 		Usage:    "Commands to go online/offline, list other users and locate them",
 		Complete: completeSubcommands,

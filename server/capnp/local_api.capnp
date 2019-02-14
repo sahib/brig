@@ -141,12 +141,9 @@ interface FS {
     garbageCollect    @10  (aggressive :Bool) -> (freed :List(GarbageItem));
     touch             @11  (path :Text);
     exists            @12  (path :Text) -> (exists :Bool);
-    listExplicitPins  @13  (prefix :Text, from :Text, to :Text) -> (pins :List(ExplicitPin));
-    clearExplicitPins @14  (prefix :Text, from :Text, to :Text) -> (count :Int32);
-    setExplicitPins   @15  (prefix :Text, from :Text, to :Text) -> (count :Int32);
-    tar               @16  (path :Text) -> (port :Int32);
-    deletedNodes      @17  (root :Text) -> (nodes :List(StatInfo));
-    undelete          @18  (path :Text);
+    tar               @13  (path :Text) -> (port :Int32);
+    deletedNodes      @14  (root :Text) -> (nodes :List(StatInfo));
+    undelete          @15  (path :Text);
 }
 
 interface VCS {
