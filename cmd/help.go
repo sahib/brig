@@ -255,21 +255,12 @@ EXAMPLES:
 		Description: `A node that is pinned to local storage will not be
    deleted by the garbage collector.`,
 	},
-	"pin.list": {
-		Usage:    "List all explicitly pinned files in a certain commit range",
-		Complete: completeArgsUsage,
-		Description: `List all explicitly pinned files in a certain commit range.
-
-   This only shows the files (along with the latest commit it appears in) that
-   were explicitly pinned by the user. Files that were pinned by brig itself
-   (i.e. implictly when receiving it from somebody else) are not sown by this
-   command.
-
-   You can specify a certain PREFIX to list only the files in a certain directory.
-   If no PREFIX is given, all paths are shown.
-`,
-		ArgsUsage: "[<PREFIX>]",
-		Flags:     explicitPinFlags,
+	"pin.remove": {
+		Usage:     "Remove a pin",
+		ArgsUsage: "<file>",
+		Complete:  completeBrigPath(true, true),
+		Description: `A node that is pinned to local storage will not be
+   deleted by the garbage collector.`,
 	},
 	"net": {
 		Usage:    "Commands to go online/offline, list other users and locate them",

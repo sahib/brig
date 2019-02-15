@@ -16,14 +16,24 @@ import (
 )
 
 const (
-	RightDownload    = "fs.download"
-	RightFsView      = "fs.view"
-	RightFsEdit      = "fs.edit"
+	// RightDownload refers to the right to download/view a file.
+	RightDownload = "fs.download"
+	// RightFsView refers to the right to view everything related to
+	// the filesystem and history.
+	RightFsView = "fs.view"
+	// RightFsEdit refers to the right to edit the filesystem.
+	// This includes pinning.
+	RightFsEdit = "fs.edit"
+	// RightRemotesView is the right to view the remote list.
 	RightRemotesView = "remotes.view"
+	// RightRemotesEdit is the right to edit the remote list.
 	RightRemotesEdit = "remotes.edit"
 )
 
 var (
+	// DefaultRights is a list of rights that users will get
+	// if no other explicit rights are given. They are identical
+	// to the admin role currently.
 	DefaultRights = []string{
 		RightDownload,
 		RightFsView,
@@ -31,6 +41,9 @@ var (
 		RightRemotesView,
 		RightRemotesEdit,
 	}
+
+	// AllRights is a map that can be quickly used to check
+	// if a right is valid or not.
 	AllRights = map[string]bool{
 		RightDownload:    true,
 		RightFsView:      true,
@@ -109,6 +122,7 @@ func unmarshalUser(data []byte) (*User, error) {
 	return UserFromCapnp(capUser)
 }
 
+// UserFromCapnp takes a capnp.user and returns a regular User from it.
 func UserFromCapnp(capUser capnp.User) (*User, error) {
 	capFolders, err := capUser.Folders()
 	if err != nil {
@@ -177,6 +191,7 @@ func marshalUser(user *User) ([]byte, error) {
 	return msg.Marshal()
 }
 
+// UserToCapnp converts a User to a capnp.User.
 func UserToCapnp(user *User, seg *capnp_lib.Segment) (*capnp.User, error) {
 	capUser, err := capnp.NewRootUser(seg)
 	if err != nil {

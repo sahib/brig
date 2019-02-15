@@ -143,19 +143,19 @@ func (m *Mock) MakeDiff(name string) (*catfs.Diff, error) {
 			dummyNode("/missing", name, false),
 		},
 		Conflict: []catfs.DiffPair{
-			catfs.DiffPair{
+			{
 				Src: dummyNode("/conflict_src", name, false),
 				Dst: dummyNode("/conflict_dst", name, false),
 			},
 		},
 		Moved: []catfs.DiffPair{
-			catfs.DiffPair{
+			{
 				Src: dummyNode("/moved_src", name, false),
 				Dst: dummyNode("/moved_dst", name, false),
 			},
 		},
 		Merged: []catfs.DiffPair{
-			catfs.DiffPair{
+			{
 				Src: dummyNode("/merged_src", name, false),
 				Dst: dummyNode("/merged_dst", name, false),
 			},

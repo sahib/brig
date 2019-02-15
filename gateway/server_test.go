@@ -47,7 +47,7 @@ func withBasicGateway(t *testing.T, fn func(gw *Gateway, fs *catfs.FS)) {
 	gw, err := NewGateway(fs, rapi, cfg.Section("gateway"), filepath.Join(tmpDir, "users"))
 	require.Nil(t, err)
 
-	require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/"}))
+	require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/"}, nil))
 
 	gw.Start()
 
@@ -107,7 +107,7 @@ func TestGatewayNoSuchFile(t *testing.T) {
 
 func TestGatewayUnauthorizedBadFolder(t *testing.T) {
 	withBasicGateway(t, func(gw *Gateway, fs *catfs.FS) {
-		require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/public"}))
+		require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/public"}, nil))
 		exampleData := []byte("Hello world")
 		err := fs.Stage("/hello/world.png", bytes.NewReader(exampleData))
 		require.Nil(t, err, fmt.Sprintf("%v", err))

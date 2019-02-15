@@ -223,6 +223,8 @@ type authMiddleware struct {
 	SubHandler http.Handler
 }
 
+type dbUserKey string
+
 func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if am.cfg.Bool("auth.enabled") {
 		name := getUserName(am.store, w, r)
@@ -240,14 +242,14 @@ func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "brig.db_user", user))
+		r = r.WithContext(context.WithValue(r.Context(), dbUserKey("brig.db_user"), user))
 	}
 
 	am.SubHandler.ServeHTTP(w, r)
 }
 
 func checkRights(w http.ResponseWriter, r *http.Request, rights ...string) bool {
-	user, ok := r.Context().Value("brig.db_user").(db.User)
+	user, ok := r.Context().Value(dbUserKey("brig.db_user")).(db.User)
 	if !ok {
 		jsonifyErrf(w, http.StatusInternalServerError, "could not cast user")
 		return false

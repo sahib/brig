@@ -79,7 +79,7 @@ func (s *testState) mustRun(t *testing.T, hdl http.Handler, verb, url string, js
 	user, err := s.userDb.Get("ali")
 	require.Nil(t, err)
 
-	req = req.WithContext(context.WithValue(req.Context(), "brig.db_user", user))
+	req = req.WithContext(context.WithValue(req.Context(), dbUserKey("brig.db_user"), user))
 	setSession(s.store, "ali", rsw, req)
 	hdl.ServeHTTP(rsw, req)
 	return rsw.Result()

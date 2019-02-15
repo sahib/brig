@@ -23,11 +23,14 @@ type RemoteDiffRequest struct {
 	Name string `json:"name"`
 }
 
+// DiffPair is like catfs.DiffPair, but with some
+// fields removed and with json instructions.
 type DiffPair struct {
 	Src *StatInfo `json:"src"`
 	Dst *StatInfo `json:"dst"`
 }
 
+// Diff is like catfs.Diff, but json-ized.
 type Diff struct {
 	Added    []*StatInfo `json:"added"`
 	Removed  []*StatInfo `json:"removed"`
