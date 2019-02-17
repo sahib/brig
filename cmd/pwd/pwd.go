@@ -45,7 +45,7 @@ func createStrengthPrompt(password []rune, prefix string) string {
 
 	switch {
 	case strength.Entropy >= 25:
-		symbol = "⚿"
+		symbol = "✔"
 		colorFn = color.GreenString
 	case strength.Entropy >= 20:
 		symbol = "⊞"

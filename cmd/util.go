@@ -675,7 +675,7 @@ func pinStateToSymbol(isPinned, isExplicit bool) string {
 			colorFn = color.MagentaString
 		}
 
-		return colorFn("🖈")
+		return colorFn("✔")
 	}
 
 	return ""
