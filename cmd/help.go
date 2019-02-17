@@ -262,6 +262,12 @@ EXAMPLES:
 		Description: `A node that is pinned to local storage will not be
    deleted by the garbage collector.`,
 	},
+	"pin.repin": {
+		Usage:       "Recaculate pinning based on fs.repin.{quota,min_depth,max_depth}",
+		ArgsUsage:   "[<root>]",
+		Complete:    completeBrigPath(true, true),
+		Description: `This can be used to easily get rid of too old versions`,
+	},
 	"net": {
 		Usage:    "Commands to go online/offline, list other users and locate them",
 		Complete: completeSubcommands,

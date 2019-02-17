@@ -1,9 +1,9 @@
 package catfs
 
 import (
-	"fmt"
 	"sort"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
 	e "github.com/pkg/errors"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -13,12 +13,23 @@ import (
 )
 
 type partition struct {
-	PinSize         uint64
-	ShouldPin       []n.ModNode
+	PinSize uint64
+
+	// nodes that are within min_depth and should stay pinned
+	// (or are even re-pinned if needed)
+	ShouldPin []n.ModNode
+
+	// nodes that are between min_depth and max_depth.
+	// they might be unpinned if they exceed the quota.
 	QuotaCandidates []n.ModNode
+
+	// nodes that are behind max_depth.
+	// all of the are unpinned for sure.
 	DepthCandidates []n.ModNode
 }
 
+// partitionNodeHashes takes all hashes of a node and sorts them into the
+// buckets described in the partition docs.
 func (fs *FS) partitionNodeHashes(nd n.ModNode, minDepth, maxDepth int64) (*partition, error) {
 	currDepth := int64(0)
 	part := &partition{}
@@ -38,6 +49,7 @@ func (fs *FS) partitionNodeHashes(nd n.ModNode, minDepth, maxDepth int64) (*part
 		if seen[curr.BackendHash().B58String()] {
 			// We only want to have the first $n distinct versions.
 			// Sometimes the versions is duplicated though (removed, readded, moved)
+			// so we don't want to include them since the docs say "first 10 versions".
 			continue
 		}
 
@@ -74,24 +86,47 @@ func (fs *FS) partitionNodeHashes(nd n.ModNode, minDepth, maxDepth int64) (*part
 	return part, nil
 }
 
-func (fs *FS) ensurePin(entries []n.ModNode) error {
+func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
+	newlyPinned := uint64(0)
+
 	for _, nd := range entries {
-		if err := fs.pinner.PinNode(nd, false); err != nil {
-			return err
+		isPinned, _, err := fs.pinner.IsNodePinned(nd)
+		if err != nil {
+			return 0, err
+		}
+
+		if !isPinned {
+			if err := fs.pinner.PinNode(nd, false); err != nil {
+				return 0, err
+			}
+
+			newlyPinned += nd.Size()
 		}
 	}
 
-	return nil
+	return newlyPinned, nil
 }
 
-func (fs *FS) ensureUnpin(entries []n.ModNode) error {
+func (fs *FS) ensureUnpin(entries []n.ModNode) (uint64, error) {
+	savedStorage := uint64(0)
+
 	for _, nd := range entries {
-		if err := fs.pinner.UnpinNode(nd, false); err != nil {
-			return err
+		isPinned, _, err := fs.pinner.IsNodePinned(nd)
+		if err != nil {
+			return 0, err
 		}
+
+		if isPinned {
+			if err := fs.pinner.UnpinNode(nd, false); err != nil {
+				return 0, err
+			}
+
+			savedStorage += nd.Size()
+		}
+
 	}
 
-	return nil
+	return savedStorage, nil
 }
 
 func findLastPinnedIdx(pinner *Pinner, nds []n.ModNode) (int, error) {
@@ -109,12 +144,13 @@ func findLastPinnedIdx(pinner *Pinner, nds []n.ModNode) (int, error) {
 	return -1, nil
 }
 
-func (fs *FS) balanceQuota(ps []*partition, totalStorage, quota uint64) error {
+func (fs *FS) balanceQuota(ps []*partition, totalStorage, quota uint64) (uint64, error) {
 	sort.Slice(ps, func(i, j int) bool {
 		return ps[i].PinSize < ps[j].PinSize
 	})
 
 	idx, empties := 0, 0
+	savedStorage := uint64(0)
 
 	// Try to reduce the pinned storage amount until
 	// we stay below the determined quota.
@@ -128,10 +164,9 @@ func (fs *FS) balanceQuota(ps []*partition, totalStorage, quota uint64) error {
 		// Find the last index (i.e. earliest version) that is pinned.
 		lastPinIdx, err := findLastPinnedIdx(fs.pinner, cnds)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
-		fmt.Println("LAST PIN", lastPinIdx, len(cnds))
 		if lastPinIdx < 0 {
 			empties++
 			ps[idx%len(ps)].QuotaCandidates = cnds[:0]
@@ -140,22 +175,25 @@ func (fs *FS) balanceQuota(ps []*partition, totalStorage, quota uint64) error {
 
 		cnd := cnds[lastPinIdx]
 		totalStorage -= cnd.Size()
+		savedStorage += cnd.Size()
 
-		fmt.Println("UNPIN", cnd.Path())
 		if err := fs.pinner.UnpinNode(cnd, false); err != nil {
-			return err
+			return 0, err
 		}
 
 		ps[idx%len(ps)].QuotaCandidates = cnds[:lastPinIdx]
 	}
 
-	return nil
+	log.Infof("quota collector unpinned %d bytes", savedStorage)
+	return savedStorage, nil
 }
 
-func (fs *FS) repin() error {
+func (fs *FS) repin(root string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
+	// repinning doesn't modify any metadata,
+	// but still affects the filesystem.
 	if fs.readOnly {
 		return ErrReadOnly
 	}
@@ -173,15 +211,18 @@ func (fs *FS) repin() error {
 		return err
 	}
 
-	root, err := fs.lkr.Root()
+	rootNd, err := fs.lkr.LookupDirectory(root)
 	if err != nil {
 		return err
 	}
 
 	totalStorage := uint64(0)
+	savedStorage := uint64(0)
 	parts := []*partition{}
 
-	err = n.Walk(fs.lkr, root, true, func(child n.Node) error {
+	log.Infof("repin started (min=%d max=%d quota=%s)", minDepth, maxDepth, quotaSrc)
+
+	err = n.Walk(fs.lkr, rootNd, true, func(child n.Node) error {
 		if child.Type() == n.NodeTypeDirectory {
 			return nil
 		}
@@ -196,31 +237,35 @@ func (fs *FS) repin() error {
 			return err
 		}
 
-		fmt.Println(child.Path())
-		fmt.Println(" -", len(part.ShouldPin))
-		fmt.Println(" -", len(part.QuotaCandidates))
-		fmt.Println(" -", len(part.DepthCandidates))
-
-		if err := fs.ensurePin(part.ShouldPin); err != nil {
+		pinBytes, err := fs.ensurePin(part.ShouldPin)
+		if err != nil {
 			return err
 		}
 
-		if err := fs.ensureUnpin(part.DepthCandidates); err != nil {
+		unpinBytes, err := fs.ensureUnpin(part.DepthCandidates)
+		if err != nil {
 			return err
 		}
 
 		totalStorage += part.PinSize
+		savedStorage += (-pinBytes + unpinBytes)
+
 		parts = append(parts, part)
 		return nil
 	})
 
-	fmt.Println("total", totalStorage)
-
 	if err != nil {
-		return err
+		return e.Wrapf(err, "repin: walk")
 	}
 
-	return fs.balanceQuota(parts, totalStorage, quota)
+	quotaUnpins, err := fs.balanceQuota(parts, totalStorage, quota)
+	if err != nil {
+		return e.Wrapf(err, "repin: quota balance")
+	}
+
+	savedStorage += quotaUnpins
+	log.Infof("repin finished; unpinned %s", humanize.Bytes(savedStorage))
+	return nil
 }
 
 // Repin goes over all files in the filesystem and identifies files that need to be unpinned.
@@ -230,7 +275,7 @@ func (fs *FS) repin() error {
 // - fs.repin.quota: Maximum amount of pinned storage (excluding explicit pins)
 // - fs.repin.depth: How many versions of a file to keep at least. This trumps quota.
 //
-func (fs *FS) Repin() error {
-	fs.repinControl <- true
+func (fs *FS) Repin(root string) error {
+	fs.repinControl <- prefixSlash(root)
 	return nil
 }

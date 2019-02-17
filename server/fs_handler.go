@@ -310,7 +310,7 @@ func (fh *fsHandler) Pin(call capnp.FS_pin) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Pin(url.Path, "curr")
+		return fs.Pin(url.Path, "curr", true)
 	})
 }
 
@@ -323,7 +323,20 @@ func (fh *fsHandler) Unpin(call capnp.FS_unpin) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		return fs.Unpin(url.Path, "curr")
+		return fs.Unpin(url.Path, "curr", true)
+	})
+}
+
+func (fh *fsHandler) Repin(call capnp.FS_repin) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withCurrFs(func(fs *catfs.FS) error {
+		return fs.Repin(path)
 	})
 }
 

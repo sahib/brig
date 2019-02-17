@@ -55,7 +55,7 @@ func (ph *PinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		op, name = ph.fs.Unpin, "unpin"
 	}
 
-	if err := op(path, pinReq.Revision); err != nil {
+	if err := op(path, pinReq.Revision, true); err != nil {
 		log.Debugf("failed to %s %s: %v", name, path, err)
 		jsonifyErrf(w, http.StatusBadRequest, fmt.Sprintf("failed to %s", name))
 		return

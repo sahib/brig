@@ -144,6 +144,7 @@ interface FS {
     tar               @13  (path :Text) -> (port :Int32);
     deletedNodes      @14  (root :Text) -> (nodes :List(StatInfo));
     undelete          @15  (path :Text);
+    repin             @16  (path :Text);
 }
 
 interface VCS {
