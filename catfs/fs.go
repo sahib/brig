@@ -57,6 +57,9 @@ type FS struct {
 	// channel to schedule auto commits and quit the loop
 	autoCommitControl chan bool
 
+	// channel to schedule repins and quit the loop
+	repinControl chan bool
+
 	// Actual storage backend (e.g. ipfs or memory)
 	bk FsBackend
 
@@ -321,6 +324,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 		readOnly:          readOnly,
 		gcControl:         make(chan bool),
 		autoCommitControl: make(chan bool),
+		repinControl:      make(chan bool),
 		pinner:            pinCache,
 	}
 
@@ -331,6 +335,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 
 	go fs.gcLoop()
 	go fs.autoCommitLoop()
+	go fs.repinLoop()
 
 	return fs, nil
 }
@@ -381,15 +386,51 @@ func (fs *FS) autoCommitLoop() {
 	}
 }
 
+func (fs *FS) repinLoop() {
+	lastCheck := time.Now()
+	checkTicker := time.NewTicker(1 * time.Second)
+	defer checkTicker.Stop()
+
+	for {
+		select {
+		case val := <-fs.repinControl:
+			if !val {
+				log.Debugf("quitting the repin loop")
+				return
+			}
+
+			// Execute a repin immediately otherwise.
+			// (and reset the timer, so we don't get it twice)
+			if err := fs.Repin(); err != nil {
+				log.Warningf("repin failed: %v", err)
+			}
+
+			lastCheck = time.Now()
+		case <-checkTicker.C:
+			isEnabled := fs.cfg.Bool("repin.enabled")
+			if !isEnabled {
+				continue
+			}
+
+			if time.Since(lastCheck) >= fs.cfg.Duration("repin.interval") {
+				lastCheck = time.Now()
+
+				if err := fs.Repin(); err != nil {
+					log.Warningf("repin failed: %v", err)
+				}
+			}
+		}
+	}
+}
+
 // Close will clean up internal storage.
 func (fs *FS) Close() error {
-	go func() {
-		fs.gcControl <- false
-	}()
-
-	go func() {
-		fs.autoCommitControl <- false
-	}()
+	chs := []chan bool{fs.gcControl, fs.autoCommitControl, fs.repinControl}
+	for _, ch := range chs {
+		go func() {
+			ch <- false
+		}()
+	}
 
 	if err := fs.pinner.Close(); err != nil {
 		log.Warnf("Failed to close pin cache: %v", err)

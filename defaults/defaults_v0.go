@@ -153,6 +153,38 @@ var DefaultsV0 = config.DefaultMapping{
 				Docs:         "pre-cache pinned files",
 			},
 		},
+		"repin": config.DefaultMapping{
+			"enabled": config.DefaultEntry{
+				Default:      true,
+				NeedsRestart: false,
+				Docs:         "Perform repinning on old versions",
+			},
+			"interval": config.DefaultEntry{
+				Default:      "15m",
+				NeedsRestart: false,
+				Docs:         "In what time interval to trigger repinning",
+				Validator:    config.DurationValidator(),
+			},
+			"quota": config.DefaultEntry{
+				Default:      "1GB",
+				NeedsRestart: false,
+				Docs: `Maximum stored amount of pinned files to have.
+
+This quota is always enforced on commits. When the pinned storage exceeds the quota limit,
+old versions of files are unpinned first.
+`,
+			},
+			"min_depth": config.DefaultEntry{
+				Default:      1,
+				NeedsRestart: false,
+				Docs:         `Keep at least »n« versions of a pinned file, even if this would exceed the quota.`,
+			},
+			"max_depth": config.DefaultEntry{
+				Default:      10,
+				NeedsRestart: false,
+				Docs:         `Keep at max »n« versions of a pinned file and remove it even if it does not exceed quota.`,
+			},
+		},
 		"autocommit": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,
