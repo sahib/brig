@@ -44,7 +44,7 @@ func (m *Mount) Close() error {
 
 type MountTable struct{}
 
-func NewMountTable(fs *catfs.FS) *MountTable {
+func NewMountTable(fs *catfs.FS, notifier Notifier) *MountTable {
 	return nil
 }
 
