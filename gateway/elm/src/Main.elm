@@ -547,7 +547,7 @@ viewMainContent : Model -> ViewState -> List (Html Msg)
 viewMainContent model viewState =
     [ div [ class "container-fluid" ]
         [ div [ class "row wrapper" ]
-            [ aside [ class "col-12 col-md-2 p-0 bg-light" ]
+            [ aside [ class "col-12 col-md-2 p-0 bg-light tabbar" ]
                 [ nav [ class "navbar navbar-expand-md navbar-light bg-align-items-start flex-md-column flex-row" ]
                     [ a [ class "nav-link active", href "/view" ]
                         [ span [ class "fas fa-2x fa-fw fa-torii-gate logo" ] []

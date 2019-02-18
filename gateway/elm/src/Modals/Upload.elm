@@ -151,7 +151,7 @@ buildButton model currIsFile currRoot toMsg =
             class "btn-default"
         ]
         [ span [ class "fas fa-plus" ] []
-        , text "\u{00A0}\u{00A0}Upload"
+        , span [ class "d-lg-inline d-none" ] [ text "\u{00A0}\u{00A0}Upload" ]
         , input
             [ type_ "file"
             , multiple True

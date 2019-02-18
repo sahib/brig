@@ -1021,15 +1021,16 @@ viewSearchBox model =
         |> InputGroup.view
 
 
-buildActionButton : Msg -> String -> String -> Bool -> ButtonGroup.ButtonItem Msg
+buildActionButton : Msg -> String -> String -> Bool -> Html Msg
 buildActionButton msg iconName labelText isDisabled =
-    ButtonGroup.button
+    Button.button
         [ Button.block
+        , Button.small
         , Button.roleLink
         , Button.attrs [ class "text-left", disabled isDisabled, onClick msg ]
         ]
         [ span [ class "fas fa-lg", class iconName ] []
-        , span [ id "toolbar-label" ] [ text (" " ++ labelText) ]
+        , span [ class "d-lg-inline d-none" ] [ text (" " ++ labelText) ]
         ]
 
 
@@ -1092,13 +1093,13 @@ viewSidebarDownloadButton model =
     Button.linkButton
         [ Button.block
         , Button.attrs
-            [ class "text-left btn-link"
+            [ class "text-left btn-link download-btn"
             , disabledClass
             , href (buildDownloadUrl model)
             ]
         ]
         [ span [ class "fas fa-lg fa-file-download" ] []
-        , span [ id "action-btn" ]
+        , span [ id "action-btn", class "d-none d-lg-inline" ]
             [ if nSelected > 0 then
                 text " Download selected "
 
@@ -1126,22 +1127,20 @@ viewActionList model =
         root =
             Maybe.withDefault "/" (currRoot model)
     in
-    div [ class "toolbar" ]
-        [ p
-            [ class "text-muted", id "select-label" ]
-            [ labelSelectedItems model nSelected ]
-        , br [] []
-        , Upload.buildButton
-            model.uploadState
-            (currIsFile model || not (List.member "fs.download" model.rights))
-            root
-            UploadMsg
-        , viewSidebarDownloadButton model
-        , ButtonGroup.toolbar [ class "btn-group-vertical" ]
-            [ ButtonGroup.buttonGroupItem
-                [ ButtonGroup.small
-                , ButtonGroup.vertical
+    div []
+        [ div [ class "d-flex flex-lg-column flex-row" ]
+            [ p
+                [ class "text-muted", id "select-label" ]
+                [ labelSelectedItems model nSelected ]
+            , div [ class "d-flex flex-column" ]
+                [ Upload.buildButton
+                    model.uploadState
+                    (currIsFile model || not (List.member "fs.download" model.rights))
+                    root
+                    UploadMsg
+                , viewSidebarDownloadButton model
                 ]
+            , div [ class "d-flex flex-column" ]
                 [ buildActionButton
                     (ShareMsg <| Share.show (selectedPaths model))
                     "fa-share-alt"
@@ -1152,14 +1151,18 @@ viewActionList model =
                     "fa-edit"
                     "New Folder"
                     (currIsFile model || not (List.member "fs.edit" model.rights))
-                , buildActionButton
+                ]
+            , div [ class "d-flex flex-column" ]
+                [ buildActionButton
                     (RemoveMsg <| Remove.show (selectedPaths model))
                     "fa-trash"
                     "Delete"
                     (nSelected == 0 || not (List.member "fs.edit" model.rights))
                 ]
             ]
-        , Html.map UploadMsg (Upload.viewUploadState model.uploadState)
+        , div []
+            [ Html.map UploadMsg (Upload.viewUploadState model.uploadState)
+            ]
         ]
 
 

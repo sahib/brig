@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/gateway/db"
 )
 
@@ -56,9 +57,11 @@ func (ph *PinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := op(path, pinReq.Revision); err != nil {
-		log.Debugf("failed to %s %s: %v", name, path, err)
-		jsonifyErrf(w, http.StatusBadRequest, fmt.Sprintf("failed to %s", name))
-		return
+		if !ie.IsNoSuchFileError(err) {
+			log.Debugf("failed to %s %s: %v", name, path, err)
+			jsonifyErrf(w, http.StatusBadRequest, fmt.Sprintf("failed to %s", name))
+			return
+		}
 	}
 
 	// TODO: Does this notify other peers?

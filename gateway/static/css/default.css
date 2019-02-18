@@ -30,6 +30,11 @@
     .logo {
         font-size: 2em;
     }
+
+	.ls-action-toolbar {
+		color: red !important;
+		flex-direction: column;
+	}
 }
 
 @media all and (min-width: 768px) {
@@ -38,6 +43,11 @@
 		padding-bottom: 20px;
         font-size: 4em;
     }
+
+	.ls-action-toolbar {
+		color: blue !important;
+		flex-direction: row;
+	}
 }
 
 /* ---------------- */
@@ -135,9 +145,8 @@
     margin-top: 25px;
 }
 
-#main-column {
-	padding-top: 10px;
-	padding-bottom: 10px;
+#the-main {
+	height: 100%;
 }
 
 /* Remove the grey background from the breadcrumbs */
@@ -148,9 +157,6 @@
 
 .file-list-icon {
   color: #007bff;
-}
-
-#toolbar-label {
 }
 
 #share-list {
@@ -457,4 +463,8 @@ input:checked + .toggle-slider:before {
 
 .fingerprint {
     font-size: 65%;
+}
+
+.download-btn {
+	padding-top: 15px;
 }
