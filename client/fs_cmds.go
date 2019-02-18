@@ -263,6 +263,16 @@ func (cl *Client) Unpin(path string) error {
 	return err
 }
 
+// Repin schedules a repinning operation
+func (cl *Client) Repin(root string) error {
+	call := cl.api.Repin(cl.ctx, func(p capnp.FS_repin_Params) error {
+		return p.SetPath(root)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
 // Stat gives detailed information about the node at `path`.
 func (cl *Client) Stat(path string) (*StatInfo, error) {
 	call := cl.api.Stat(cl.ctx, func(p capnp.FS_stat_Params) error {

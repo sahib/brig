@@ -486,6 +486,15 @@ func handleUnpin(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Unpin(path)
 }
 
+func handleRepin(ctx *cli.Context, ctl *client.Client) error {
+	root := "/"
+	if len(ctx.Args()) > 0 {
+		root = ctx.Args().First()
+	}
+
+	return ctl.Repin(root)
+}
+
 func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 	self, err := ctl.Whoami()
 	if err != nil {

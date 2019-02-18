@@ -56,7 +56,7 @@ func (ph *PinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		op, name = ph.fs.Unpin, "unpin"
 	}
 
-	if err := op(path, pinReq.Revision); err != nil {
+	if err := op(path, pinReq.Revision, true); err != nil {
 		if !ie.IsNoSuchFileError(err) {
 			log.Debugf("failed to %s %s: %v", name, path, err)
 			jsonifyErrf(w, http.StatusBadRequest, fmt.Sprintf("failed to %s", name))
@@ -64,8 +64,6 @@ func (ph *PinHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO: Does this notify other peers?
-	// Should not as pin is not a "real" fs change.
 	ph.evHdl.Notify(r.Context(), "pin")
 	jsonifySuccess(w)
 }

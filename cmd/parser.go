@@ -190,6 +190,9 @@ func RunCmdline(args []string) int {
 					Name:   "add",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 				}, {
+					Name:   "repin",
+					Action: withDaemon(handleRepin, true),
+				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
 					Action:  withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true)),

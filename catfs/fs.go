@@ -57,6 +57,9 @@ type FS struct {
 	// channel to schedule auto commits and quit the loop
 	autoCommitControl chan bool
 
+	// channel to schedule repins and quit the loop
+	repinControl chan string
+
 	// Actual storage backend (e.g. ipfs or memory)
 	bk FsBackend
 
@@ -321,6 +324,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 		readOnly:          readOnly,
 		gcControl:         make(chan bool),
 		autoCommitControl: make(chan bool),
+		repinControl:      make(chan string),
 		pinner:            pinCache,
 	}
 
@@ -331,6 +335,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 
 	go fs.gcLoop()
 	go fs.autoCommitLoop()
+	go fs.repinLoop()
 
 	return fs, nil
 }
@@ -381,14 +386,53 @@ func (fs *FS) autoCommitLoop() {
 	}
 }
 
+func (fs *FS) repinLoop() {
+	lastCheck := time.Now()
+	checkTicker := time.NewTicker(1 * time.Second)
+	defer checkTicker.Stop()
+
+	for {
+		select {
+		case root := <-fs.repinControl:
+			if root == "" {
+				log.Debugf("quitting the repin loop")
+				return
+			}
+
+			// Execute a repin immediately otherwise.
+			// (and reset the timer, so we don't get it twice)
+			if err := fs.repin(root); err != nil {
+				log.Warningf("repin failed: %v", err)
+			}
+
+			lastCheck = time.Now()
+		case <-checkTicker.C:
+			isEnabled := fs.cfg.Bool("repin.enabled")
+			if !isEnabled {
+				continue
+			}
+
+			if time.Since(lastCheck) >= fs.cfg.Duration("repin.interval") {
+				lastCheck = time.Now()
+
+				if err := fs.repin("/"); err != nil {
+					log.Warningf("repin failed: %v", err)
+				}
+			}
+		}
+	}
+}
+
 // Close will clean up internal storage.
 func (fs *FS) Close() error {
-	go func() {
-		fs.gcControl <- false
-	}()
+	for _, ch := range []chan bool{fs.gcControl, fs.autoCommitControl} {
+		go func() {
+			ch <- false
+		}()
+	}
 
 	go func() {
-		fs.autoCommitControl <- false
+		fs.repinControl <- ""
 	}()
 
 	if err := fs.pinner.Close(); err != nil {
@@ -661,16 +705,16 @@ func (fs *FS) preCacheInBackground(hash h.Hash) {
 }
 
 // Pin will pin the file or directory at `path` explicitly.
-func (fs *FS) Pin(path, rev string) error {
-	return fs.doPin(path, rev, fs.pinner.PinNode)
+func (fs *FS) Pin(path, rev string, explicit bool) error {
+	return fs.doPin(path, rev, fs.pinner.PinNode, explicit)
 }
 
 // Unpin will unpin the file or directory at `path` explicitly.
-func (fs *FS) Unpin(path, rev string) error {
-	return fs.doPin(path, rev, fs.pinner.UnpinNode)
+func (fs *FS) Unpin(path, rev string, explicit bool) error {
+	return fs.doPin(path, rev, fs.pinner.UnpinNode, explicit)
 }
 
-func (fs *FS) doPin(path, rev string, op func(nd n.Node, explicit bool) error) error {
+func (fs *FS) doPin(path, rev string, op func(nd n.Node, explicit bool) error, explicit bool) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -693,7 +737,7 @@ func (fs *FS) doPin(path, rev string, op func(nd n.Node, explicit bool) error) e
 		return ie.NoSuchFile(path)
 	}
 
-	if err := op(nd, true); err != nil {
+	if err := op(nd, explicit); err != nil {
 		return err
 	}
 
@@ -966,7 +1010,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		return err
 	}
 
-	return fs.renewPins(oldFileCopy, newFile)
+	return fs.pinner.PinNode(newFile, false)
 }
 
 ////////////////////
