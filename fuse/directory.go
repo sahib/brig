@@ -84,7 +84,7 @@ func (dir *Directory) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Nod
 			"error": err,
 		}).Warning("fuse-mkdir failed")
 
-		return nil, fuse.ENODATA
+		return nil, fuse.EIO
 	}
 
 	notifyChange(dir.m, 100*time.Millisecond)
@@ -111,7 +111,7 @@ func (dir *Directory) Create(ctx context.Context, req *fuse.CreateRequest, resp 
 			"path":  childPath,
 			"error": err,
 		}).Warning("fuse-create failed")
-		return nil, nil, fuse.ENODATA
+		return nil, nil, fuse.EIO
 	}
 
 	fd, err := dir.m.fs.Open(childPath)
