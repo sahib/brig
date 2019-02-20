@@ -48,6 +48,7 @@ func (st *stdStream) RemoteAddr() net.Addr {
 }
 
 // Dial connects to the repo identified by `peerHash` with the protocol `protocol`.
+// XXX: Needs ipfs p2p forward /x/brig/1.0 /ip4/127.0.0.1/tcp/654321 /ipfs/$SERVER_ID
 func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
@@ -87,6 +88,9 @@ type Listener struct {
 }
 
 // Listen for all incoming connections using `protocol`.
+// XXX: Needs to call something like "ipfs p2p listen /x/brig/1.0 /ip4/127.0.0.1/tcp/123456"
+//      -> Connect to :123456
+//      -> What happens on several connections?
 func (nd *Node) Listen(protocol string) (net.Listener, error) {
 	if !nd.IsOnline() {
 		return nil, ErrIsOffline
@@ -143,6 +147,7 @@ func (lst *Listener) Close() error {
 }
 
 // Pinger handles pinging over nodes on a network level.
+// XXX: Doable.
 type Pinger struct {
 	lastSeen  time.Time
 	roundtrip time.Duration

@@ -11,6 +11,8 @@ import (
 )
 
 // Pin does the same as `ipfs pin add <hash>`
+// XXX: Issue: brig assumes it is the only instance of pin/unpin something
+//      of their nodes. Otherwise doable.
 func (nd *Node) Pin(hash h.Hash) error {
 	// Lock the store:
 	defer nd.ipfsNode.Blockstore.PinLock().Unlock()

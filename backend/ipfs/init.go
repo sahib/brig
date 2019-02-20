@@ -16,6 +16,7 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
+// XXX: Doesnt need to do anything.
 // Init creates an initialized .ipfs directory in the directory `path`.
 // The generated RSA key will have `keySize` bits.
 func Init(path string, keySize int) error {
@@ -34,6 +35,7 @@ func Init(path string, keySize int) error {
 }
 
 // ForwardLog routes all ipfs logs to a file provided by brig.
+// XXX: No op.
 func ForwardLog(w io.Writer) {
 	logWriter.Configure(logWriter.Output(w))
 	ipfsLogging.SetLevel(ipfsLogging.WARNING, "*")

@@ -19,6 +19,7 @@ func (ipf *ipfsFile) WriteTo(w io.Writer) (int64, error) {
 }
 
 // Cat returns an io.Reader that reads from ipfs.
+// XXX: Needs a seeking implementation done.
 func (nd *Node) Cat(hash h.Hash) (mio.Stream, error) {
 	fpath, err := coreiface.ParsePath(hash.B58String())
 	if err != nil {
@@ -35,6 +36,7 @@ func (nd *Node) Cat(hash h.Hash) (mio.Stream, error) {
 
 // Add reads `r` and adds it to ipfs.
 // The resulting content hash is returned.
+// XXX: Doable.
 func (nd *Node) Add(r io.Reader) (h.Hash, error) {
 	hash, err := coreunix.Add(nd.ipfsNode, r)
 	if err != nil {

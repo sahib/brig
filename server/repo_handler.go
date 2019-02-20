@@ -56,7 +56,7 @@ func (rh *repoHandler) Init(call capnp.Repo_init) error {
 	}
 
 	if !backend.IsValidName(backendName) {
-		return fmt.Errorf("Invalid backend name: %v", backendName)
+		return fmt.Errorf("invalid backend name: %v", backendName)
 	}
 
 	// Update the in-memory password.

@@ -8,6 +8,8 @@ import (
 	eventsBackend "github.com/sahib/brig/events/backend"
 )
 
+// XXX: Works.
+
 type subscription struct {
 	sub iface.PubSubSubscription
 }

@@ -25,6 +25,7 @@ func (nd *Node) addBlock(data []byte) (h.Hash, error) {
 }
 
 // PublishName makes the string `name` known in the network.
+// XXX: doable.
 func (nd *Node) PublishName(name string) error {
 	// Build all names under we can find this node:
 	fullName := "brig:" + string(name)
