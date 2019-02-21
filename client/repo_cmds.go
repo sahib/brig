@@ -32,28 +32,6 @@ func (ctl *Client) Ping() error {
 	return err
 }
 
-// Init tells the daemon to start creating the repository.
-func (ctl *Client) Init(path, owner, password, backend string) error {
-	call := ctl.api.Init(ctl.ctx, func(p capnp.Repo_init_Params) error {
-		if err := p.SetOwner(owner); err != nil {
-			return err
-		}
-
-		if err := p.SetPassword(password); err != nil {
-			return err
-		}
-
-		if err := p.SetBasePath(path); err != nil {
-			return err
-		}
-
-		return p.SetBackend(backend)
-	})
-
-	_, err := call.Struct()
-	return err
-}
-
 // MountOptions holds the possible option for a single mount.
 type MountOptions struct {
 	ReadOnly bool
@@ -451,16 +429,6 @@ func (ctl *Client) GarbageCollect(aggressive bool) ([]*GarbageItem, error) {
 func (ctl *Client) Become(who string) error {
 	call := ctl.api.Become(ctl.ctx, func(p capnp.Repo_become_Params) error {
 		return p.SetWho(who)
-	})
-
-	_, err := call.Struct()
-	return err
-}
-
-// WaitForInit waits until the server is fully functional.
-func (ctl *Client) WaitForInit() error {
-	call := ctl.api.WaitForInit(ctl.ctx, func(p capnp.Repo_waitForInit_Params) error {
-		return nil
 	})
 
 	_, err := call.Struct()

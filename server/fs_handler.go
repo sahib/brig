@@ -132,7 +132,7 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 			return err
 		}
 
-		fh.base.notifyFsChangeEventLocked()
+		fh.base.notifyFsChangeEvent()
 		return nil
 	})
 }
@@ -214,7 +214,7 @@ func (fh *fsHandler) Mkdir(call capnp.FS_mkdir) error {
 			return err
 		}
 
-		fh.base.notifyFsChangeEventLocked()
+		fh.base.notifyFsChangeEvent()
 		return nil
 	})
 }
@@ -232,7 +232,7 @@ func (fh *fsHandler) Remove(call capnp.FS_remove) error {
 			return err
 		}
 
-		fh.base.notifyFsChangeEventLocked()
+		fh.base.notifyFsChangeEvent()
 		return nil
 	})
 }
@@ -264,7 +264,7 @@ func (fh *fsHandler) Move(call capnp.FS_move) error {
 			return err
 		}
 
-		fh.base.notifyFsChangeEventLocked()
+		fh.base.notifyFsChangeEvent()
 		return nil
 	})
 }
@@ -296,7 +296,7 @@ func (fh *fsHandler) Copy(call capnp.FS_copy) error {
 			return err
 		}
 
-		fh.base.notifyFsChangeEventLocked()
+		fh.base.notifyFsChangeEvent()
 		return nil
 	})
 }
@@ -366,18 +366,11 @@ func (fh *fsHandler) Stat(call capnp.FS_stat) error {
 func (fh *fsHandler) GarbageCollect(call capnp.FS_garbageCollect) error {
 	server.Ack(call.Options)
 
-	repo, err := fh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	bk, err := fh.base.Backend()
-	if err != nil {
-		return err
-	}
+	rp := fh.base.repo
+	bk := fh.base.backend
 
 	aggressive := call.Params.Aggressive()
-	stats, err := repo.GC(bk, aggressive)
+	stats, err := rp.GC(bk, aggressive)
 	if err != nil {
 		return err
 	}
@@ -436,7 +429,7 @@ func (fh *fsHandler) Touch(call capnp.FS_touch) error {
 			return err
 		}
 
-		fh.base.notifyFsChangeEventLocked()
+		fh.base.notifyFsChangeEvent()
 		return nil
 	})
 }

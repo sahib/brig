@@ -28,22 +28,14 @@ func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 		return err
 	}
 
-	psrv, err := nh.base.PeerServer()
-	if err != nil {
-		return err
-	}
-
+	psrv := nh.base.peerServer
 	self, err := psrv.Identity()
 	if err != nil {
 		return err
 	}
 
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
 	// Compute our own fingerprint:
+	rp := nh.base.repo
 	ownPubKey, err := rp.Keyring().OwnPubKey()
 	if err != nil {
 		return err
@@ -69,40 +61,21 @@ func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 
 func (nh *netHandler) Connect(call capnp.Net_connect) error {
 	server.Ack(call.Options)
-
-	psrv, err := nh.base.PeerServer()
-	if err != nil {
-		return err
-	}
-
 	log.Infof("backend is going online...")
-	return psrv.Connect()
+	return nh.base.peerServer.Connect()
 }
 
 func (nh *netHandler) Disconnect(call capnp.Net_disconnect) error {
 	server.Ack(call.Options)
-
-	psrv, err := nh.base.PeerServer()
-	if err != nil {
-		return err
-	}
-
 	log.Infof("backend is going offline...")
-	return psrv.Disconnect()
+	return nh.base.peerServer.Disconnect()
 }
 
 func (nh *netHandler) RemoteOnlineList(call capnp.Net_remoteOnlineList) error {
 	server.Ack(call.Options)
 
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	psrv, err := nh.base.PeerServer()
-	if err != nil {
-		return err
-	}
+	rp := nh.base.repo
+	psrv := nh.base.peerServer
 
 	remotes, err := rp.Remotes.ListRemotes()
 	if err != nil {
@@ -281,11 +254,7 @@ func (nh *netHandler) RemoteByName(call capnp.Net_remoteByName) error {
 		return err
 	}
 
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
+	rp := nh.base.repo
 	rmt, err := rp.Remotes.Remote(name)
 	if err != nil {
 		return err
@@ -302,11 +271,7 @@ func (nh *netHandler) RemoteByName(call capnp.Net_remoteByName) error {
 func (nh *netHandler) RemoteAddOrUpdate(call capnp.Net_remoteAddOrUpdate) error {
 	server.Ack(call.Options)
 
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
+	rp := nh.base.repo
 	capRemote, err := call.Params.Remote()
 	if err != nil {
 		return err
@@ -326,29 +291,19 @@ func (nh *netHandler) RemoteAddOrUpdate(call capnp.Net_remoteAddOrUpdate) error 
 
 func (nh *netHandler) RemoteClear(call capnp.Net_remoteClear) error {
 	server.Ack(call.Options)
-
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	return rp.Remotes.Clear()
+	return nh.base.repo.Remotes.Clear()
 }
 
 func (nh *netHandler) RemoteRm(call capnp.Net_remoteRm) error {
 	server.Ack(call.Options)
-
-	repo, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
 
 	name, err := call.Params.Name()
 	if err != nil {
 		return err
 	}
 
-	if err := repo.Remotes.RmRemote(name); err != nil {
+	rp := nh.base.repo
+	if err := rp.Remotes.RmRemote(name); err != nil {
 		return err
 	}
 
@@ -358,12 +313,8 @@ func (nh *netHandler) RemoteRm(call capnp.Net_remoteRm) error {
 func (nh *netHandler) RemoteLs(call capnp.Net_remoteLs) error {
 	server.Ack(call.Options)
 
-	repo, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	remotes, err := repo.Remotes.ListRemotes()
+	rp := nh.base.repo
+	remotes, err := rp.Remotes.ListRemotes()
 	if err != nil {
 		return err
 	}
@@ -391,11 +342,7 @@ func (nh *netHandler) RemoteLs(call capnp.Net_remoteLs) error {
 func (nh *netHandler) RemoteUpdate(call capnp.Net_remoteUpdate) error {
 	server.Ack(call.Options)
 
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
+	rp := nh.base.repo
 	capRemote, err := call.Params.Remote()
 	if err != nil {
 		return err
@@ -428,11 +375,7 @@ func (nh *netHandler) RemoteSave(call capnp.Net_remoteSave) error {
 		remotes = append(remotes, *remote)
 	}
 
-	rp, err := nh.base.Repo()
-	if err != nil {
-		return err
-	}
-
+	rp := nh.base.repo
 	if err := rp.Remotes.SaveList(remotes); err != nil {
 		return err
 	}
@@ -452,12 +395,7 @@ func (nh *netHandler) peekAndCachePeer(peer peer.Info, mask p2pnet.LocateMask, t
 	peekCtx, cancel := context.WithTimeout(nh.base.ctx, 2*time.Second)
 	defer cancel()
 
-	psrv, err := nh.base.PeerServer()
-	if err != nil {
-		return err
-	}
-
-	// Attempt to get
+	psrv := nh.base.peerServer
 	fingerprint, remoteName, err := psrv.PeekFingerprint(peekCtx, peer.Addr)
 	if err != nil {
 		log.Warningf(
@@ -509,11 +447,7 @@ func (nh *netHandler) NetLocate(call capnp.Net_netLocate) error {
 		}
 	}
 
-	psrv, err := nh.base.PeerServer()
-	if err != nil {
-		return err
-	}
-
+	psrv := nh.base.peerServer
 	ident, err := psrv.Identity()
 	if err != nil {
 		return err

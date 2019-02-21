@@ -75,22 +75,7 @@ func switchToSyslog() {
 }
 
 func applyFstabInitially(base *base) error {
-	rp, err := base.Repo()
-	if err != nil {
-		return err
-	}
-
-	mounts, err := base.Mounts()
-	if err != nil {
-		return err
-	}
-
-	return fuse.FsTabApply(rp.Config.Section("mounts"), mounts)
-}
-
-func startNetLayer(base *base) error {
-	_, err := base.PeerServer()
-	return err
+	return fuse.FsTabApply(base.repo.Config.Section("mounts"), base.mounts)
 }
 
 // BootServer will boot up the local server.
@@ -153,7 +138,7 @@ func BootServer(
 
 	ctx := context.Background()
 	quitCh := make(chan struct{})
-	base, err := newBase(
+	base := newBase(
 		ctx,
 		int64(port),
 		basePath,
@@ -162,10 +147,6 @@ func BootServer(
 		quitCh,
 		logToStdout,
 	)
-
-	if err != nil {
-		return nil, err
-	}
 
 	lst, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -178,6 +159,7 @@ func BootServer(
 	}
 
 	go func() {
+		// Wait for a quit signal.
 		<-quitCh
 		baseServer.Quit()
 		if err := baseServer.Close(); err != nil {
@@ -185,17 +167,13 @@ func BootServer(
 		}
 	}()
 
-	// Do the rest of the init in the background.
-	// This will curently log warnings for a not yet initialized repo.
-	go func() {
-		if err := startNetLayer(base); err != nil {
-			log.Warnf("could not start the net layer yet: %v", err)
-		}
+	if err := base.loadAll(); err != nil {
+		return nil, err
+	}
 
-		if err := applyFstabInitially(base); err != nil {
-			log.Warnf("could not mount fstab mounts: %v", err)
-		}
-	}()
+	if err := applyFstabInitially(base); err != nil {
+		log.Warnf("could not mount fstab mounts: %v", err)
+	}
 
 	return &Server{
 		baseServer: baseServer,

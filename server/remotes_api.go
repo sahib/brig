@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/gateway/remotesapi"
@@ -27,12 +26,7 @@ func NewRemotesAPI(base *base) *RemotesAPI {
 // List all existing remotes.
 func (a *RemotesAPI) List() ([]*remotesapi.Remote, error) {
 	// TODO: Do this in parallel.
-	rp, err := a.base.Repo()
-	if err != nil {
-		return nil, err
-	}
-
-	rmts, err := rp.Remotes.ListRemotes()
+	rmts, err := a.base.repo.Remotes.ListRemotes()
 	if err != nil {
 		return nil, err
 	}
@@ -56,17 +50,7 @@ func (a *RemotesAPI) Get(name string) (*remotesapi.Remote, error) {
 }
 
 func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
-	rp, err := a.base.Repo()
-	if err != nil {
-		return nil, err
-	}
-
-	rmt, err := rp.Remotes.Remote(name)
-	if err != nil {
-		return nil, err
-	}
-
-	psrv, err := a.base.PeerServer()
+	rmt, err := a.base.repo.Remotes.Remote(name)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +65,7 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 		extRmt.Folders = append(extRmt.Folders, folder.Folder)
 	}
 
+	psrv := a.base.peerServer
 	pinger, err := psrv.PingMap().For(rmt.Fingerprint.Addr())
 	if err != nil {
 		// early exit: peer is not online.
@@ -106,11 +91,6 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 // Set (i.e. add or modify) a remote.
 // IsAuthenticated, IsOnline and LastSeen will be ignored.
 func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
-	rp, err := a.base.Repo()
-	if err != nil {
-		return err
-	}
-
 	fp, err := peer.CastFingerprint(rm.Fingerprint)
 	if err != nil {
 		return err
@@ -123,7 +103,7 @@ func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
 		})
 	}
 
-	err = rp.Remotes.AddOrUpdateRemote(repo.Remote{
+	err = a.base.repo.Remotes.AddOrUpdateRemote(repo.Remote{
 		Name:        rm.Name,
 		Fingerprint: fp,
 		Folders:     folders,
@@ -138,12 +118,7 @@ func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
 
 // Remove removes a remote by `name`.
 func (a *RemotesAPI) Remove(name string) error {
-	rp, err := a.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	if err := rp.Remotes.RmRemote(name); err != nil {
+	if err := a.base.repo.Remotes.RmRemote(name); err != nil {
 		return err
 	}
 
@@ -152,22 +127,12 @@ func (a *RemotesAPI) Remove(name string) error {
 
 // Self returns the identity of this repository.
 func (a *RemotesAPI) Self() (remotesapi.Identity, error) {
-	rp, err := a.base.Repo()
+	ownPubKey, err := a.base.repo.Keyring().OwnPubKey()
 	if err != nil {
 		return remotesapi.Identity{}, err
 	}
 
-	ownPubKey, err := rp.Keyring().OwnPubKey()
-	if err != nil {
-		return remotesapi.Identity{}, err
-	}
-
-	psrv, err := a.base.PeerServer()
-	if err != nil {
-		return remotesapi.Identity{}, err
-	}
-
-	identity, err := psrv.Identity()
+	identity, err := a.base.peerServer.Identity()
 	if err != nil {
 		return remotesapi.Identity{}, err
 	}
@@ -208,11 +173,5 @@ func (a *RemotesAPI) MakeDiff(name string) (*catfs.Diff, error) {
 
 // OnChange register a callback to be called once the remote list changes.
 func (a *RemotesAPI) OnChange(fn func()) {
-	rp, err := a.base.Repo()
-	if err != nil {
-		log.Errorf("failed to register callback: no repo: %v", err)
-		return
-	}
-
-	rp.Remotes.OnChange(fn)
+	a.base.repo.Remotes.OnChange(fn)
 }

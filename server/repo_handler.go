@@ -3,15 +3,12 @@ package server
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
-	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/fuse"
 	gwdb "github.com/sahib/brig/gateway/db"
 	gwcapnp "github.com/sahib/brig/gateway/db/capnp"
-	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/version"
 	capnplib "zombiezen.com/go/capnproto2"
@@ -32,60 +29,6 @@ func (rh *repoHandler) Ping(call capnp.Repo_ping) error {
 	return call.Results.SetReply("PONG")
 }
 
-func (rh *repoHandler) Init(call capnp.Repo_init) error {
-	server.Ack(call.Options)
-
-	backendName, err := call.Params.Backend()
-	if err != nil {
-		return err
-	}
-
-	initFolder, err := call.Params.BasePath()
-	if err != nil {
-		return err
-	}
-
-	password, err := call.Params.Password()
-	if err != nil {
-		return err
-	}
-
-	owner, err := call.Params.Owner()
-	if err != nil {
-		return err
-	}
-
-	if !backend.IsValidName(backendName) {
-		return fmt.Errorf("invalid backend name: %v", backendName)
-	}
-
-	// Update the in-memory password.
-	rh.base.password = password
-	rh.base.basePath = initFolder
-
-	err = repo.Init(initFolder, owner, password, backendName, rh.base.port)
-	if err != nil {
-		return e.Wrapf(err, "repo-init")
-	}
-
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	backendPath := rp.BackendPath(backendName)
-	if err := backend.InitByName(backendName, backendPath); err != nil {
-		return e.Wrapf(err, "backend-init")
-	}
-
-	// Do a first time load of the backend, so it's cached for the next time.
-	if _, err := rh.base.Backend(); err != nil {
-		return e.Wrapf(err, "backend-first-load")
-	}
-
-	return nil
-}
-
 func (rh *repoHandler) Mount(call capnp.Repo_mount) error {
 	server.Ack(call.Options)
 
@@ -104,12 +47,7 @@ func (rh *repoHandler) Mount(call capnp.Repo_mount) error {
 		return err
 	}
 
-	mounts, err := rh.base.Mounts()
-	if err != nil {
-		return err
-	}
-
-	_, err = mounts.AddMount(mountPath, mountOptions)
+	_, err = rh.base.mounts.AddMount(mountPath, mountOptions)
 	return err
 }
 
@@ -121,12 +59,7 @@ func (rh *repoHandler) Unmount(call capnp.Repo_unmount) error {
 		return err
 	}
 
-	mounts, err := rh.base.Mounts()
-	if err != nil {
-		return err
-	}
-
-	return mounts.Unmount(mountPath)
+	return rh.base.mounts.Unmount(mountPath)
 }
 
 func capMountOptionsToMountOptions(capOpts capnp.MountOptions) (fuse.MountOptions, error) {
@@ -144,11 +77,6 @@ func capMountOptionsToMountOptions(capOpts capnp.MountOptions) (fuse.MountOption
 
 func (rh *repoHandler) FstabAdd(call capnp.Repo_fstabAdd) error {
 	server.Ack(call.Options)
-
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
 
 	mountName, err := call.Params.MountName()
 	if err != nil {
@@ -170,63 +98,40 @@ func (rh *repoHandler) FstabAdd(call capnp.Repo_fstabAdd) error {
 		return err
 	}
 
-	return fuse.FsTabAdd(rp.Config.Section("mounts"), mountName, mountPath, mountOptions)
+	mountsCfg := rh.base.repo.Config.Section("mounts")
+	return fuse.FsTabAdd(mountsCfg, mountName, mountPath, mountOptions)
 }
 
 func (rh *repoHandler) FstabRemove(call capnp.Repo_fstabRemove) error {
 	server.Ack(call.Options)
-
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
 
 	mountName, err := call.Params.MountName()
 	if err != nil {
 		return err
 	}
 
-	if err := fuse.FsTabRemove(rp.Config.Section("mounts"), mountName); err != nil {
+	mountsCfg := rh.base.repo.Config.Section("mounts")
+	if err := fuse.FsTabRemove(mountsCfg, mountName); err != nil {
 		return err
 	}
 
-	return rp.SaveConfig()
+	return rh.base.repo.SaveConfig()
 }
 
 func (rh *repoHandler) FstabApply(call capnp.Repo_fstabApply) error {
 	server.Ack(call.Options)
 
-	rp, err := rh.base.Repo()
-	if err != nil {
+	mountsCfg := rh.base.repo.Config.Section("mounts")
+	if err := fuse.FsTabApply(mountsCfg, rh.base.mounts); err != nil {
 		return err
 	}
 
-	mounts, err := rh.base.Mounts()
-	if err != nil {
-		return err
-	}
-
-	if err := fuse.FsTabApply(rp.Config.Section("mounts"), mounts); err != nil {
-		return err
-	}
-
-	return rp.SaveConfig()
+	return rh.base.repo.SaveConfig()
 }
 
 func (rh *repoHandler) FstabUnmountAll(call capnp.Repo_fstabUnmountAll) error {
 	server.Ack(call.Options)
-
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	mounts, err := rh.base.Mounts()
-	if err != nil {
-		return err
-	}
-
-	return fuse.FsTabUnmountAll(rp.Config, mounts)
+	return fuse.FsTabUnmountAll(rh.base.repo.Config, rh.base.mounts)
 }
 
 func fsTabEntryToCap(entry fuse.FsTabEntry, seg *capnplib.Segment) (*capnp.FsTabEntry, error) {
@@ -254,16 +159,8 @@ func fsTabEntryToCap(entry fuse.FsTabEntry, seg *capnplib.Segment) (*capnp.FsTab
 func (rh *repoHandler) FstabList(call capnp.Repo_fstabList) error {
 	server.Ack(call.Options)
 
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	mounts, err := rh.base.Mounts()
-	if err != nil {
-		return err
-	}
-
+	rp := rh.base.repo
+	mounts := rh.base.mounts
 	entries, err := fuse.FsTabList(rp.Config, mounts)
 	if err != nil {
 		return err
@@ -290,36 +187,28 @@ func (rh *repoHandler) FstabList(call capnp.Repo_fstabList) error {
 }
 
 func (rh *repoHandler) ConfigGet(call capnp.Repo_configGet) error {
-	repo, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
 	key, err := call.Params.Key()
 	if err != nil {
 		return err
 	}
 
-	if !repo.Config.IsValidKey(key) {
+	rp := rh.base.repo
+	if !rp.Config.IsValidKey(key) {
 		return fmt.Errorf("invalid key: %v", key)
 	}
 
-	value := repo.Config.Uncast(key)
+	value := rp.Config.Uncast(key)
 	return call.Results.SetValue(value)
 }
 
 func (rh *repoHandler) ConfigDoc(call capnp.Repo_configDoc) error {
-	repo, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
 	key, err := call.Params.Key()
 	if err != nil {
 		return err
 	}
 
-	if !repo.Config.IsValidKey(key) {
+	rp := rh.base.repo
+	if !rp.Config.IsValidKey(key) {
 		return fmt.Errorf("invalid key: %v", key)
 	}
 
@@ -333,16 +222,12 @@ func (rh *repoHandler) ConfigDoc(call capnp.Repo_configDoc) error {
 }
 
 func (rh *repoHandler) ConfigSet(call capnp.Repo_configSet) error {
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
 	key, err := call.Params.Key()
 	if err != nil {
 		return err
 	}
 
+	rp := rh.base.repo
 	if !rp.Config.IsValidKey(key) {
 		return fmt.Errorf("invalid key: %v", key)
 	}
@@ -375,17 +260,13 @@ func (rh *repoHandler) configDefaultEntryToCapnp(seg *capnplib.Segment, key stri
 		return nil, err
 	}
 
-	repo, err := rh.base.Repo()
-	if err != nil {
-		return nil, err
-	}
-
-	clientVal := fmt.Sprintf("%v", repo.Config.Get(key))
+	rp := rh.base.repo
+	clientVal := fmt.Sprintf("%v", rp.Config.Get(key))
 	if err := pair.SetVal(clientVal); err != nil {
 		return nil, err
 	}
 
-	entry := repo.Config.GetDefault(key)
+	entry := rp.Config.GetDefault(key)
 	if err := pair.SetDoc(entry.Docs); err != nil {
 		return nil, err
 	}
@@ -400,12 +281,8 @@ func (rh *repoHandler) configDefaultEntryToCapnp(seg *capnplib.Segment, key stri
 }
 
 func (rh *repoHandler) ConfigAll(call capnp.Repo_configAll) error {
-	repo, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
-	all := repo.Config.Keys()
+	rp := rh.base.repo
+	all := rp.Config.Keys()
 	seg := call.Results.Segment()
 
 	capLst, err := capnp.NewConfigEntry_List(seg, int32(len(all)))
@@ -433,13 +310,9 @@ func (rh *repoHandler) Become(call capnp.Repo_become) error {
 		return err
 	}
 
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
 	// We can only be users that are present in the remote list (and owner)
 	// (This is not a technical limitation)
+	rp := rh.base.repo
 	if who != rp.Owner {
 		_, err = rp.Remotes.Remote(who)
 		if err != nil {
@@ -455,11 +328,7 @@ func (rh *repoHandler) Become(call capnp.Repo_become) error {
 func (rh *repoHandler) Version(call capnp.Repo_version) error {
 	server.Ack(call.Options)
 
-	rp, err := rh.base.Repo()
-	if err != nil {
-		return err
-	}
-
+	rp := rh.base.repo
 	name := rp.BackendName()
 	bkVersion := backend.Version(name)
 	if bkVersion == nil {
@@ -488,22 +357,6 @@ func (rh *repoHandler) Version(call capnp.Repo_version) error {
 	}
 
 	return call.Results.SetVersion(capVersion)
-}
-
-func (rh *repoHandler) WaitForInit(call capnp.Repo_waitForInit) error {
-	server.Ack(call.Options)
-
-	// Wait at max 25s for a flawless repo init:
-	for idx := 0; idx < 500; idx++ {
-		if !rh.base.BackendWasLoaded() {
-			time.Sleep(time.Millisecond * 50)
-			continue
-		}
-
-		break
-	}
-
-	return nil
 }
 
 func (rh *repoHandler) GatewayUserAdd(call capnp.Repo_gatewayUserAdd) error {
@@ -552,12 +405,8 @@ func (rh *repoHandler) GatewayUserAdd(call capnp.Repo_gatewayUserAdd) error {
 		rights = append(rights, right)
 	}
 
-	gw, err := rh.base.Gateway()
-	if err != nil {
-		return err
-	}
-
-	return gw.UserDatabase().Add(name, password, folders, rights)
+	gwDb := rh.base.gateway.UserDatabase()
+	return gwDb.Add(name, password, folders, rights)
 }
 
 func (rh *repoHandler) GatewayUserRm(call capnp.Repo_gatewayUserRm) error {
@@ -568,23 +417,15 @@ func (rh *repoHandler) GatewayUserRm(call capnp.Repo_gatewayUserRm) error {
 		return err
 	}
 
-	gw, err := rh.base.Gateway()
-	if err != nil {
-		return err
-	}
-
-	return gw.UserDatabase().Remove(name)
+	gwDb := rh.base.gateway.UserDatabase()
+	return gwDb.Remove(name)
 }
 
 func (rh *repoHandler) GatewayUserList(call capnp.Repo_gatewayUserList) error {
 	server.Ack(call.Options)
 
-	gw, err := rh.base.Gateway()
-	if err != nil {
-		return err
-	}
-
-	users, err := gw.UserDatabase().List()
+	gwDb := rh.base.gateway.UserDatabase()
+	users, err := gwDb.List()
 	if err != nil {
 		return err
 	}

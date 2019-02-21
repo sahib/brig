@@ -101,7 +101,11 @@ Have a nice day.
 	return ctl.MakeCommit("added initial README.md")
 }
 
-func handleInit(ctx *cli.Context, ctl *client.Client) error {
+func handleInit(ctx *cli.Context) error {
+	if len(ctx.Args()) == 0 {
+		return fmt.Errorf("init needs to be passed the name of the repository")
+	}
+
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
 	folder := ctx.GlobalString("repo")
@@ -118,7 +122,6 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if folder == "" {
-		// Make sure that we do not lookup the global registry:
 		folder = guessRepoFolder(ctx)
 		fmt.Printf("Guessed folder for init: %s\n", folder)
 	}
@@ -155,10 +158,31 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		password = string(pwdBytes)
 	}
 
-	if err := ctl.Init(folder, owner, password, backend); err != nil {
+	port, err := guessNextFreePort(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := Init(ctx, folder, owner, password, backend, port); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
 	}
 
+	// Start the daemon on the freshly initialized repo:
+	ctl, err := startDaemon(ctx, folder, port)
+	if err != nil {
+		return ExitCode{
+			DaemonNotResponding,
+			fmt.Sprintf("Unable to start daemon: %v", err),
+		}
+	}
+
+	// Run the actual handler:
+	defer ctl.Close()
+
+	return handleInitPost(ctx, ctl, folder)
+}
+
+func handleInitPost(ctx *cli.Context, ctl *client.Client, folder string) error {
 	if !ctx.Bool("empty") {
 		if err := createInitialReadme(ctl, folder); err != nil {
 			return err
@@ -276,12 +300,6 @@ func handleConfigDoc(ctx *cli.Context, ctl *client.Client) error {
 }
 
 func handleDaemonPing(ctx *cli.Context, ctl *client.Client) error {
-	if ctx.Bool("wait-for-init") {
-		if err := ctl.WaitForInit(); err != nil {
-			return err
-		}
-	}
-
 	count := ctx.Int("count")
 	for i := 0; i < count; i++ {
 		before := time.Now()

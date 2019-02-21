@@ -162,7 +162,7 @@ func (vcs *vcsHandler) Reset(call capnp.VCS_reset) error {
 			return err
 		}
 
-		vcs.base.notifyFsChangeEventLocked()
+		vcs.base.notifyFsChangeEvent()
 		return nil
 	})
 }
@@ -386,11 +386,7 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 		return err
 	}
 
-	rp, err := vcs.base.Repo()
-	if err != nil {
-		return err
-	}
-
+	rp := vcs.base.repo
 	if call.Params.NeedFetch() {
 		if err := vcs.base.doFetch(remoteOwner); err != nil {
 			return e.Wrapf(err, "fetch-remote")

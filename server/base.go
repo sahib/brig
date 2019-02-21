@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log/syslog"
@@ -61,14 +60,6 @@ type base struct {
 
 	conductor *conductor.Conductor
 
-	// fsLoaded is set to true once the backend is
-	// loaded/accessed the first time.
-	fsLoaded bool
-
-	// backendLoaded is set to true the first time Backend()
-	// returned successfully.
-	backendLoaded bool
-
 	// logToStdout is true when logging to stdout was explicitly requested.
 	logToStdout bool
 
@@ -124,39 +115,13 @@ func (b *base) Handle(ctx context.Context, conn net.Conn) {
 
 /////////
 
-// Repo lazily-loads the repository on disk.
-// On the next call it will be returned directly.
-func (b *base) Repo() (*repo.Repository, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.repoUnlocked()
-}
-
-func (b *base) repoUnlocked() (*repo.Repository, error) {
-	if b.repo != nil {
-		return b.repo, nil
-	}
-
-	return b.loadRepo()
-}
-
-func (b *base) loadRepo() (*repo.Repository, error) {
+func (b *base) loadRepo() error {
 	// Sanity check, so that we do not call a repo command without
 	// an initialized repo. Error early for a meaningful message here.
-	if err := repoIsInitialized(b.basePath); err != nil {
-		msg := fmt.Sprintf(
-			"Repo does not look it is initialized: %s (did you brig init?)",
-			b.basePath,
-		)
-		log.Warning(msg)
-		return nil, errors.New(msg)
-	}
-
 	rp, err := repo.Open(b.basePath, b.password)
 	if err != nil {
 		log.Warningf("Failed to load repository at `%s`: %v", b.basePath, err)
-		return nil, err
+		return err
 	}
 
 	b.repo = rp
@@ -174,95 +139,33 @@ func (b *base) loadRepo() (*repo.Repository, error) {
 		backend.ForwardLogByName(backendName, wSyslog)
 	}
 
-	return rp, nil
+	return nil
 }
 
 /////////
 
-func (b *base) Backend() (backend.Backend, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.backendUnlocked()
-}
-
-func (b *base) BackendWasLoaded() bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.backendLoaded
-}
-
-func (b *base) backendUnlocked() (backend.Backend, error) {
-	if b.backend != nil {
-		return b.backend, nil
-	}
-
-	return b.loadBackend()
-}
-
-func (b *base) loadBackend() (backend.Backend, error) {
-	rp, err := b.repoUnlocked()
-	if err != nil {
-		return nil, err
-	}
-
-	backendName := rp.BackendName()
+func (b *base) loadBackend() error {
+	backendName := b.repo.BackendName()
 	log.Infof("Loading backend `%s`", backendName)
 
-	backendPath := rp.BackendPath(backendName)
+	backendPath := b.repo.BackendPath(backendName)
 	realBackend, err := backend.FromName(backendName, backendPath)
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
-		return nil, err
+		return err
 	}
 
 	b.backend = realBackend
-	// TODO: Do we need a separate flag for that?
-	b.backendLoaded = true
-
-	// Load the gateway pretty early. It won't start unless
-	// being told so in the config. The peer server / event handler
-	// stuff later is optional.
-	if _, err := b.gatewayUnlocked(); err != nil {
-		log.Warningf("failed to start gateway: %v", err)
-	}
-
-	return realBackend, nil
+	return nil
 }
 
 /////////
 
-func (b *base) PeerServer() (*p2pnet.Server, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.peerServerUnlocked()
-}
-
-func (b *base) peerServerUnlocked() (*p2pnet.Server, error) {
-	if b.peerServer != nil {
-		return b.peerServer, nil
-	}
-
-	return b.loadPeerServer()
-}
-
-func (b *base) loadPeerServer() (*p2pnet.Server, error) {
+func (b *base) loadPeerServer() error {
 	log.Debugf("loading peer server")
-	bk, err := b.backendUnlocked()
+	srv, err := p2pnet.NewServer(b.repo, b.backend)
 	if err != nil {
-		return nil, err
-	}
-
-	rp, err := b.repoUnlocked()
-	if err != nil {
-		return nil, err
-	}
-
-	srv, err := p2pnet.NewServer(rp, bk)
-	if err != nil {
-		return nil, err
+		return err
 	}
 
 	go func() {
@@ -275,9 +178,9 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 
 	// Initially sync the ping map:
 	addrs := []string{}
-	remotes, err := rp.Remotes.ListRemotes()
+	remotes, err := b.repo.Remotes.ListRemotes()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, remote := range remotes {
@@ -286,21 +189,27 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 
 	log.Infof("syncing pingers")
 	if err := srv.PingMap().Sync(addrs); err != nil {
-		return nil, err
+		return err
 	}
 
-	self, err := bk.Identity()
+	self, err := b.backend.Identity()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b.evListenerCtx, b.evListenerCancel = context.WithCancel(context.Background())
-	b.evListener = events.NewListener(rp.Config.Section("events"), bk, self.Addr)
+	b.evListener = events.NewListener(
+		b.repo.Config.Section("events"),
+		b.backend,
+		self.Addr,
+	)
+
 	b.evListener.RegisterEventHandler(events.FsEvent, b.handleFsEvent)
 	if err := b.evListener.SetupListeners(b.evListenerCtx, addrs); err != nil {
 		log.Warningf("failed to setup event listeners: %v", err)
 	}
 
+	// TODO: That's bullshit. Set it immediately on gateway startup.
 	if b.gateway != nil {
 		b.gateway.SetEventListener(b.evListener)
 	}
@@ -315,47 +224,25 @@ func (b *base) loadPeerServer() (*p2pnet.Server, error) {
 
 	// Now that we boooted up, we should tell other users that our fs changed.
 	// It may or may not have, but other remotes judge that.
-	b.notifyFsChangeEvent(rp)
-
-	return srv, nil
+	b.notifyFsChangeEvent()
+	return nil
 }
 
 //////
 
-func (b *base) Gateway() (*gateway.Gateway, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.gatewayUnlocked()
-}
-
-func (b *base) gatewayUnlocked() (*gateway.Gateway, error) {
-	if b.gateway != nil {
-		return b.gateway, nil
-	}
-
-	return b.loadGateway()
-}
-
-func (b *base) loadGateway() (*gateway.Gateway, error) {
+func (b *base) loadGateway() error {
 	log.Debugf("loading gateway")
 
-	rp, err := b.repoUnlocked()
-	if err != nil {
-		return nil, err
-	}
-
 	rapi := NewRemotesAPI(b)
-	return b.gateway, b.withCurrFs(func(fs *catfs.FS) error {
+	return b.withCurrFs(func(fs *catfs.FS) error {
 		gateway, err := gateway.NewGateway(
 			fs,
 			rapi,
-			rp.Config.Section("gateway"),
-			filepath.Join(rp.BaseFolder, "gateway"),
+			b.repo.Config.Section("gateway"),
+			filepath.Join(b.repo.BaseFolder, "gateway"),
 		)
 
 		if err != nil {
-			b.gateway = nil
 			return err
 		}
 
@@ -367,75 +254,61 @@ func (b *base) loadGateway() (*gateway.Gateway, error) {
 
 /////////
 
-func (b *base) Mounts() (*fuse.MountTable, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
-	return b.mountsUnlocked()
-}
-
-func (b *base) mountsUnlocked() (*fuse.MountTable, error) {
-	if b.mounts != nil {
-		return b.mounts, nil
-	}
-
-	return b.loadMounts()
-}
-
 type mountNotifier struct {
 	b *base
 }
 
 func (mn mountNotifier) PublishEvent() {
-	mn.b.notifyFsChangeEventLocked()
+	mn.b.notifyFsChangeEvent()
 }
 
-func (b *base) loadMounts() (*fuse.MountTable, error) {
-	err := b.withCurrFs(func(fs *catfs.FS) error {
+func (b *base) loadMounts() error {
+	return b.withCurrFs(func(fs *catfs.FS) error {
 		b.mounts = fuse.NewMountTable(fs, mountNotifier{b: b})
 		return nil
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return b.mounts, nil
 }
 
+/////////
+
+func (b *base) loadAll() error {
+	if err := b.loadRepo(); err != nil {
+		return err
+	}
+
+	if err := b.loadBackend(); err != nil {
+		return err
+	}
+
+	if err := b.loadMounts(); err != nil {
+		return err
+	}
+
+	if err := b.loadPeerServer(); err != nil {
+		return err
+	}
+
+	if err := b.loadGateway(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/////////
+
 func (b *base) withCurrFs(fn func(fs *catfs.FS) error) error {
-	rp, err := b.repoUnlocked()
+	user := b.repo.CurrentUser()
+	fs, err := b.repo.FS(user, b.backend)
 	if err != nil {
 		return err
 	}
 
-	bk, err := b.backendUnlocked()
-	if err != nil {
-		return err
-	}
-
-	user := rp.CurrentUser()
-	fs, err := rp.FS(user, bk)
-	if err != nil {
-		return err
-	}
-
-	b.fsLoaded = true
 	return fn(fs)
 }
 
 func (b *base) withRemoteFs(owner string, fn func(fs *catfs.FS) error) error {
-	rp, err := b.repoUnlocked()
-	if err != nil {
-		return err
-	}
-
-	bk, err := b.backendUnlocked()
-	if err != nil {
-		return err
-	}
-
-	fs, err := rp.FS(owner, bk)
+	fs, err := b.repo.FS(owner, b.backend)
 	if err != nil {
 		return err
 	}
@@ -461,20 +334,10 @@ func (b *base) withFsFromPath(path string, fn func(url *URL, fs *catfs.FS) error
 }
 
 func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) error {
-	rp, err := b.Repo()
-	if err != nil {
-		return err
-	}
-
-	bk, err := b.Backend()
-	if err != nil {
-		return err
-	}
-
 	subCtx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
-	ctl, err := p2pnet.Dial(subCtx, who, rp, bk)
+	ctl, err := p2pnet.Dial(subCtx, who, b.repo, b.backend)
 	if err != nil {
 		return e.Wrapf(err, "dial")
 	}
@@ -507,33 +370,13 @@ func (b *base) Quit() (err error) {
 
 	log.Infof("Trying to lock repository...")
 
-	rp, err := b.Repo()
-	if err != nil {
-		log.Warningf("Failed to access repository: %v", err)
-	}
-
-	if rp != nil {
-		if err = rp.Close(b.password); err != nil {
-			log.Warningf("Failed to lock repository: %v", err)
-		}
+	if err = b.repo.Close(b.password); err != nil {
+		log.Warningf("Failed to lock repository: %v", err)
 	}
 
 	log.Infof("Trying to unmount any mounts...")
-
-	var mounts *fuse.MountTable
-
-	// Only unmount things when we used the backend.
-	// Otherwise we might load the backend implicitly
-	// when doing unmounting which slows the shutdown process down.
-	if b.fsLoaded {
-		mounts, err = b.Mounts()
-		if err != nil {
-			return err
-		}
-
-		if err := mounts.Close(); err != nil {
-			return err
-		}
+	if err := b.mounts.Close(); err != nil {
+		return err
 	}
 
 	log.Infof("===== brigd can be considered dead now! ====")
@@ -548,7 +391,7 @@ func newBase(
 	bindHost string,
 	quitCh chan struct{},
 	logToStdout bool,
-) (*base, error) {
+) *base {
 	return &base{
 		ctx:         ctx,
 		port:        port,
@@ -558,16 +401,11 @@ func newBase(
 		quitCh:      quitCh,
 		logToStdout: logToStdout,
 		conductor:   conductor.New(5*time.Minute, 100),
-	}, nil
+	}
 }
 
 func (b *base) doFetch(who string) error {
-	rp, err := b.Repo()
-	if err != nil {
-		return err
-	}
-
-	if who == rp.Owner {
+	if who == b.repo.Owner {
 		log.Infof("skipping fetch for own metadata")
 		return nil
 	}
@@ -668,23 +506,13 @@ func (b *base) handleFsEvent(ev *events.Event) {
 	}
 }
 
-func (b *base) notifyFsChangeEventLocked() {
-	rp, err := b.Repo()
-	if err != nil {
-		log.Warningf("failed to load repo: %v", err)
-		return
-	}
-
-	b.notifyFsChangeEvent(rp)
-}
-
-func (b *base) notifyFsChangeEvent(rp *repo.Repository) {
+func (b *base) notifyFsChangeEvent() {
 	if b.evListener == nil {
 		return
 	}
 
 	// Do not trigger events when we're looking at the store of somebody else.
-	if rp.Owner != rp.CurrentUser() {
+	if b.repo.Owner != b.repo.CurrentUser() {
 		return
 	}
 
@@ -699,12 +527,7 @@ func (b *base) notifyFsChangeEvent(rp *repo.Repository) {
 }
 
 func (b *base) initialSyncWithAutoUpdatePeers() error {
-	rp, err := b.repoUnlocked()
-	if err != nil {
-		return err
-	}
-
-	rmts, err := rp.Remotes.ListRemotes()
+	rmts, err := b.repo.Remotes.ListRemotes()
 	if err != nil {
 		return err
 	}
@@ -724,18 +547,8 @@ func (b *base) initialSyncWithAutoUpdatePeers() error {
 }
 
 func (b *base) syncRemoteStates() error {
-	psrv, err := b.PeerServer()
-	if err != nil {
-		return err
-	}
-
-	rp, err := b.Repo()
-	if err != nil {
-		return err
-	}
-
 	addrs := []string{}
-	remotes, err := rp.Remotes.ListRemotes()
+	remotes, err := b.repo.Remotes.ListRemotes()
 	if err != nil {
 		return err
 	}
@@ -744,7 +557,8 @@ func (b *base) syncRemoteStates() error {
 		addrs = append(addrs, remote.Fingerprint.Addr())
 	}
 
-	if err := psrv.PingMap().Sync(addrs); err != nil {
+	pmap := b.peerServer.PingMap()
+	if err := pmap.Sync(addrs); err != nil {
 		return err
 	}
 

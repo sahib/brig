@@ -815,10 +815,6 @@ EXAMPLES:
    and also print the roundtrip time for each.
 `,
 		Flags: []cli.Flag{
-			cli.BoolFlag{
-				Name:  "w,wait-for-init",
-				Usage: "Wait for the daemon to be initialized before the first ping",
-			},
 			cli.IntFlag{
 				Name:  "c,count",
 				Usage: "How many times to ping the daemon",
