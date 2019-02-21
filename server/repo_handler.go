@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/fuse"
 	gwdb "github.com/sahib/brig/gateway/db"

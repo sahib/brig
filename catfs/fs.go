@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sahib/config"
 	capnp "zombiezen.com/go/capnproto2"
 

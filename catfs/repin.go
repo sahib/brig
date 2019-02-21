@@ -3,7 +3,7 @@ package catfs
 import (
 	"sort"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/dustin/go-humanize"
 	e "github.com/pkg/errors"
 	ie "github.com/sahib/brig/catfs/errors"

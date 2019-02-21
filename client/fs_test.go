@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	colorlog "github.com/sahib/brig/util/log"
 	"github.com/stretchr/testify/require"
 )

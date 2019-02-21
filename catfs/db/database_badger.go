@@ -1,22 +1,15 @@
 package db
 
 import (
-
-	// Because ipfs' package manager sucks a lot (sorry, but it does)
-	// it imports badger with the import url below. This calls a few init()s,
-	// which will panic when being called twice due to expvar defines e.g.
-	// (i.e. when using the "correct" import github.com/dgraph-io/badger)
-	//
-	// So gx forces us to use their badger version for no good reason at all.
-
-	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
-	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger/options"
 	"io"
 	"strings"
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // BadgerDatabase is a database implementation based on BadgerDB
@@ -249,8 +242,9 @@ func (db *BadgerDatabase) Clear(key ...string) error {
 	for iter.Rewind(); iter.Valid(); iter.Next() {
 		item := iter.Item()
 
-		key := []byte{}
-		keys = append(keys, item.KeyCopy(key))
+		key := make([]byte, len(item.Key()))
+		copy(key, item.Key())
+		keys = append(keys, key)
 	}
 
 	for _, key := range keys {

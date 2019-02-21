@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util"
 )

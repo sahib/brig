@@ -5,11 +5,11 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger"
-	"gx/ipfs/QmZ7bFqkoHU2ARF68y9fSQVKcmhjYrTQgtCQ4i3chwZCgQ/badger/options"
 	"sync"
 	"time"
 
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
 	capnp "github.com/sahib/brig/gateway/db/capnp"
 	"github.com/sahib/brig/util"
 	capnp_lib "zombiezen.com/go/capnproto2"
@@ -342,15 +342,18 @@ func (ub *UserDatabase) Get(name string) (User, error) {
 			return err
 		}
 
-		return item.Value(func(data []byte) error {
-			decUser, err := unmarshalUser(data)
-			if err != nil {
-				return err
-			}
+		data, err := item.Value()
+		if err != nil {
+			return err
+		}
 
-			user = *decUser
-			return nil
-		})
+		decUser, err := unmarshalUser(data)
+		if err != nil {
+			return err
+		}
+
+		user = *decUser
+		return nil
 	})
 }
 
@@ -380,19 +383,17 @@ func (ub *UserDatabase) List() ([]User, error) {
 		defer iter.Close()
 
 		for iter.Rewind(); iter.Valid(); iter.Next() {
-			err := iter.Item().Value(func(data []byte) error {
-				user, err := unmarshalUser(data)
-				if err != nil {
-					return err
-				}
-
-				users = append(users, *user)
-				return nil
-			})
-
+			data, err := iter.Item().Value()
 			if err != nil {
 				return err
 			}
+
+			user, err := unmarshalUser(data)
+			if err != nil {
+				return err
+			}
+
+			users = append(users, *user)
 		}
 
 		return nil

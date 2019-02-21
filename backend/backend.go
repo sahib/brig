@@ -6,9 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/backend/httpipfs"
-	"github.com/sahib/brig/backend/ipfs"
 	"github.com/sahib/brig/backend/mock"
 	"github.com/sahib/brig/catfs"
 	eventsBackend "github.com/sahib/brig/events/backend"
@@ -40,8 +39,6 @@ type Backend interface {
 // InitByName creates a new backend structure at `path` for the backend `name`
 func InitByName(name, path string) error {
 	switch name {
-	case "ipfs":
-		return ipfs.Init(path, 2048)
 	case "httpipfs":
 		return httpipfs.Init(path)
 	case "mock":
@@ -54,9 +51,6 @@ func InitByName(name, path string) error {
 // ForwardLogByName will forward the logs of the backend `name` to `w`.
 func ForwardLogByName(name string, w io.Writer) error {
 	switch name {
-	case "ipfs":
-		ipfs.ForwardLog(w)
-		return nil
 	case "httpipfs":
 		return nil
 	case "mock":
@@ -70,8 +64,6 @@ func ForwardLogByName(name string, w io.Writer) error {
 // If an invalid name is passed, nil is returned.
 func FromName(name, path string) (Backend, error) {
 	switch name {
-	case "ipfs":
-		return ipfs.New(path)
 	case "httpipfs":
 		// TODO: Make this configurable.
 		return httpipfs.NewNode(5001)
@@ -107,7 +99,7 @@ func FromName(name, path string) (Backend, error) {
 // IsValidName tells you if `name` is a valid backend name.
 func IsValidName(name string) bool {
 	switch name {
-	case "ipfs", "mock", "httpipfs":
+	case "mock", "httpipfs":
 		return true
 	default:
 		return false
@@ -117,8 +109,6 @@ func IsValidName(name string) bool {
 // Version returns version info for the backend `name`.
 func Version(name string) VersionInfo {
 	switch name {
-	case "ipfs":
-		return ipfs.Version()
 	case "mock":
 		return mock.Version()
 	case "httpipfs":

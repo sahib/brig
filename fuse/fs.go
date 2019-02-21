@@ -4,7 +4,7 @@ package fuse
 
 import (
 	"bazil.org/fuse/fs"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

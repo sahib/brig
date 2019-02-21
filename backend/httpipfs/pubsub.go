@@ -12,15 +12,15 @@ type subWrapper struct {
 }
 
 type msgWrapper struct {
-	msg *shell.Message
+	msg shell.PubSubRecord
 }
 
 func (msg *msgWrapper) Data() []byte {
-	return msg.msg.Data
+	return msg.msg.Data()
 }
 
 func (msg *msgWrapper) Source() string {
-	return msg.msg.From.Pretty()
+	return msg.msg.From().Pretty()
 }
 
 func (s *subWrapper) Next(ctx context.Context) (eventsBackend.Message, error) {

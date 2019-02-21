@@ -5,7 +5,7 @@ package server
 import (
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 func increaseMaxOpenFds() error {

@@ -42,7 +42,7 @@ var helpTexts = map[string]helpEntry{
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "backend,b",
-				Value: "ipfs",
+				Value: "httpipfs",
 				Usage: "What data backend to use for the new repo",
 			},
 			cli.StringFlag{

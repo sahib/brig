@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/phogolabs/parcello"

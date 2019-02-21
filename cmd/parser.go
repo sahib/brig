@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/fatih/color"
 	isatty "github.com/mattn/go-isatty"
 	formatter "github.com/sahib/brig/util/log"

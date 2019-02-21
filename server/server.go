@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/repo"

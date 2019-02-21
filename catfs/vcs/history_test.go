@@ -3,7 +3,7 @@ package vcs
 import (
 	"testing"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/sahib/brig/catfs/db"
 	n "github.com/sahib/brig/catfs/nodes"

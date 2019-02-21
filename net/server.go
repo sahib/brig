@@ -9,7 +9,7 @@ import (
 
 	"zombiezen.com/go/capnproto2/rpc"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/net/capnp"

@@ -7,7 +7,7 @@ import (
 	"io"
 	"net"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	netBackend "github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/capnp"

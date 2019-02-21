@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
