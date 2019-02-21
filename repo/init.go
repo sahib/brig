@@ -9,7 +9,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/defaults"
-	"github.com/sahib/brig/util/registry"
 	"github.com/sahib/config"
 )
 
@@ -20,28 +19,6 @@ func touch(path string) error {
 	}
 
 	return fd.Close()
-}
-
-func addSelfToRegistry(owner, baseFolder string, daemonPort int64) error {
-	reg, err := registry.Open()
-	if err != nil {
-		log.Infof("failed to open global registry: %v", err)
-		return nil
-	}
-
-	repoID, err := reg.Add(&registry.Entry{
-		Owner: owner,
-		Path:  baseFolder,
-		Port:  daemonPort,
-	})
-
-	if err != nil {
-		log.Warningf("failed to add self to registry: %v", err)
-		return err
-	}
-
-	repoIDPath := filepath.Join(baseFolder, "REPO_ID")
-	return ioutil.WriteFile(repoIDPath, []byte(repoID), 0644)
 }
 
 // Init will create a new repository on disk at `baseFolder`.
@@ -91,10 +68,6 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 	// For future use: If we ever need to migrate the repo.
 	versionPath := filepath.Join(baseFolder, "VERSION")
 	if err := ioutil.WriteFile(versionPath, []byte("1"), 0644); err != nil {
-		return err
-	}
-
-	if err := addSelfToRegistry(owner, baseFolder, daemonPort); err != nil {
 		return err
 	}
 

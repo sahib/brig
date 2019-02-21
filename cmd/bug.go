@@ -67,7 +67,7 @@ Please include anything else you think is helpful. Thanks!
 		version.BuildTime,
 	)
 
-	port := guessPort(ctx)
+	port := guessPort(ctx, false)
 	ctl, err := client.Dial(context.Background(), port)
 	if err == nil {
 		// Try to get the server side / ipfs version.

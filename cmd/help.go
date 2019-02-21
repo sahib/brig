@@ -58,6 +58,10 @@ var helpTexts = map[string]helpEntry{
 				Name:  "empty,e",
 				Usage: "Do not create an initial README.",
 			},
+			cli.BoolFlag{
+				Name:  "no-logo,n",
+				Usage: "Do not display the super pretty logo on init.",
+			},
 		},
 		Description: `Initialize a new repository with a certain backend.
 

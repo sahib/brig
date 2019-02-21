@@ -138,7 +138,7 @@ func completeLocalPath(ctx *cli.Context) {
 
 func completeBrigPath(allowFiles, allowDirs bool) func(ctx *cli.Context) {
 	return func(ctx *cli.Context) {
-		port := guessPort(ctx)
+		port := guessPort(ctx, true)
 
 		// Check if the daemon is running:
 		ctl, err := client.Dial(context.Background(), port)

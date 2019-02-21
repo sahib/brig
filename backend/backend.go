@@ -68,12 +68,13 @@ func ForwardLogByName(name string, w io.Writer) error {
 
 // FromName returns a suitable backend for a human readable name.
 // If an invalid name is passed, nil is returned.
-func FromName(name, path string, bootstrapNodes []string) (Backend, error) {
+func FromName(name, path string) (Backend, error) {
 	switch name {
 	case "ipfs":
-		return ipfs.New(path, bootstrapNodes)
+		return ipfs.New(path)
 	case "httpipfs":
-		return httpipfs.NewNode()
+		// TODO: Make this configurable.
+		return httpipfs.NewNode(5001)
 	case "mock":
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.
@@ -121,7 +122,8 @@ func Version(name string) VersionInfo {
 	case "mock":
 		return mock.Version()
 	case "httpipfs":
-		nd, err := httpipfs.NewNode()
+		// TODO: Make this configurable.
+		nd, err := httpipfs.NewNode(5001)
 		if err != nil {
 			log.Debugf("failed to get version")
 			return nil

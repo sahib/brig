@@ -23,7 +23,6 @@ import (
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util/pwutil"
-	"github.com/sahib/brig/util/registry"
 	"github.com/urfave/cli"
 )
 
@@ -42,57 +41,6 @@ type ExitCode struct {
 
 func (err ExitCode) Error() string {
 	return err.Message
-}
-
-func getRepoEntryFromRegistry(ctx *cli.Context, port int64) (*registry.Entry, error) {
-	reg, err := registry.Open()
-	if err != nil {
-		return nil, err
-	}
-
-	entries, err := reg.List()
-	if err != nil {
-		return nil, err
-	}
-
-	// Shortcut: If there's only one repo, always connect to that.
-	if len(entries) == 1 {
-		return entries[0], nil
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
-	// Scan three times.
-	// First: Check if we're in some repo:
-	for _, entry := range entries {
-		if entry.Path == cwd {
-			logVerbose(ctx, "Found path via current working dir: %s", cwd)
-			return entry, nil
-		}
-	}
-
-	// Second: Check if we have a matching port.
-	// This is only used if the port was explicitly set
-	// (and we did not guess).
-	for _, entry := range entries {
-		if entry.Port == port {
-			logVerbose(ctx, "Found path via port (%d): %s", port, entry.Path)
-			return entry, nil
-		}
-	}
-
-	// Third: Check for defaults:
-	for _, entry := range entries {
-		if entry.IsDefault {
-			logVerbose(ctx, "Found path via is_default %s", entry.Path)
-			return entry, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no suitable registry entry found")
 }
 
 func mustAbsPath(path string) string {
@@ -124,23 +72,9 @@ func checkmarkify(val bool) string {
 // guessRepoFolder tries to find the repository path
 // by using a number of sources.
 // This helper may call exit when it fails to get the path.
-func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
+func guessRepoFolder(ctx *cli.Context) string {
 	if argPath := ctx.GlobalString("repo"); argPath != "" {
 		return mustAbsPath(argPath)
-	}
-
-	if lookupGlobal {
-		port := int64(-1)
-		if ctx.GlobalIsSet("port") {
-			port = ctx.GlobalInt64("port")
-		}
-
-		entry, err := getRepoEntryFromRegistry(ctx, port)
-		if err == nil {
-			return mustAbsPath(entry.Path)
-		}
-
-		fmt.Printf("Failed to get path from registry: %v\n", err)
 	}
 
 	cwdPath, err := os.Getwd()
@@ -153,35 +87,14 @@ func guessRepoFolder(ctx *cli.Context, lookupGlobal bool) string {
 }
 
 func guessNextFreePort(ctx *cli.Context) (int, error) {
+	// This can be overwritten by specifying -p $SOME_PORT.
+	// Use this if we want
 	if ctx.GlobalIsSet("port") {
 		return ctx.GlobalInt("port"), nil
 	}
 
-	reg, err := registry.Open()
-	if err != nil {
-		return 0, err
-	}
-
-	entries, err := reg.List()
-	if err != nil {
-		return 0, err
-	}
-
-	maxPort := 0
-	if len(entries) == 0 {
-		// Use the default value.
-		maxPort = ctx.GlobalInt("port")
-	} else {
-		for _, entry := range entries {
-			if int(entry.Port) > maxPort {
-				maxPort = int(entry.Port)
-			}
-		}
-
-		// Always start checking with at least
-		// the next higher port.
-		maxPort++
-	}
+	// Use the default as a start:
+	maxPort := ctx.GlobalInt("port")
 
 	maxAttempts := 1000
 	for off := 0; off <= maxAttempts; off++ {
@@ -199,20 +112,31 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 	)
 }
 
-func guessPort(ctx *cli.Context) int {
+func guessPort(ctx *cli.Context, readConfig bool) int {
 	if ctx.GlobalIsSet("port") {
 		return ctx.GlobalInt("port")
 	}
 
-	entry, err := getRepoEntryFromRegistry(ctx, -1)
-	if err == nil && entry.Port > 0 {
-		logVerbose(ctx, "found port from global registry: %d", entry.Port)
-		return int(entry.Port)
+	if !readConfig {
+		return 6666
 	}
 
-	port := ctx.GlobalInt("port")
-	logVerbose(ctx, "using port from global --port option: %d", port)
-	return port
+	folder := guessRepoFolder(ctx)
+	configPath := filepath.Join(folder, "config.yml")
+
+	cfg, err := defaults.OpenMigratedConfig(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read config to see which port I need to connect to.\n")
+		fmt.Fprintf(os.Stderr, "Please specify either --repo <path> or set BRIG_PATH so we know\n")
+		fmt.Fprintf(os.Stderr, "where the repository is (if it is not in the current directory)\n")
+		fmt.Fprintf(os.Stderr, "I will continue by assuming the default port: 6666\n\n")
+		fmt.Fprintf(os.Stderr, "--------------------------------------------------\n\n")
+
+		// Assume default:
+		return 6666
+	}
+
+	return int(cfg.Int("daemon.port"))
 }
 
 func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
@@ -399,37 +323,10 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 	return folder
 }
 
-// TODO: Do we really need this? Init should be able to use an existing daemon.
-func withDaemonAlways(handler cmdHandlerWithClient) cli.ActionFunc {
-	return withExit(func(ctx *cli.Context) error {
-		port, err := guessNextFreePort(ctx)
-		if err != nil {
-			return err
-		}
-
-		logVerbose(ctx, "using port %d for starting a new daemon.", port)
-
-		folder := guessNextRepoFolder(ctx)
-		logVerbose(ctx, "using path %s for new daemon.", folder)
-
-		// Start the server & pass the password:
-		ctl, err := startDaemon(ctx, folder, port)
-		if err != nil {
-			return ExitCode{
-				DaemonNotResponding,
-				fmt.Sprintf("Unable to start daemon: %v", err),
-			}
-		}
-
-		// Run the actual handler:
-		return handler(ctx, ctl)
-	})
-}
-
-func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
+func withDaemon(handler cmdHandlerWithClient, startNew bool, warnOnMissingRepo bool) cli.ActionFunc {
 	// If not, make sure we start a new one:
 	return withExit(func(ctx *cli.Context) error {
-		port := guessPort(ctx)
+		port := guessPort(ctx, warnOnMissingRepo)
 
 		if startNew {
 			logVerbose(ctx, "using port %d to check for running daemon.", port)
@@ -450,7 +347,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		}
 
 		// Start the server & pass the password:
-		folder := guessRepoFolder(ctx, true)
+		folder := guessRepoFolder(ctx)
 		logVerbose(ctx, "starting new daemon in background, on folder '%s'", folder)
 
 		ctl, err = startDaemon(ctx, folder, port)

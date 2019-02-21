@@ -26,7 +26,6 @@ import (
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
-	"github.com/sahib/brig/util/registry"
 )
 
 type base struct {
@@ -202,54 +201,6 @@ func (b *base) backendUnlocked() (backend.Backend, error) {
 	return b.loadBackend()
 }
 
-func (b *base) updateBackendAddr(reg *registry.Registry, bk backend.Backend) error {
-	rp, err := b.repoUnlocked()
-	if err != nil {
-		return err
-	}
-
-	info, err := bk.Identity()
-	if err != nil {
-		return err
-	}
-
-	repoID, err := rp.RepoID()
-	if err != nil {
-		return err
-	}
-
-	entry, err := reg.Entry(repoID)
-	if err != nil {
-		return err
-	}
-
-	log.Debugf("Updating backend addr (%s) in registry...", info.Addr)
-	entry.Addr = info.Addr
-	return reg.Update(repoID, entry)
-}
-
-func (b *base) findBootstrapAddrs(reg *registry.Registry) ([]string, error) {
-	entries, err := reg.List()
-	if err != nil {
-		return nil, err
-	}
-
-	seenAddrs := make(map[string]bool)
-	bootstrapAddrs := []string{}
-	for _, entry := range entries {
-		if len(entry.Addr) > 0 {
-			if seenAddrs[entry.Addr] {
-				continue
-			}
-
-			seenAddrs[entry.Addr] = true
-			bootstrapAddrs = append(bootstrapAddrs, entry.Addr)
-		}
-	}
-
-	return bootstrapAddrs, nil
-}
-
 func (b *base) loadBackend() (backend.Backend, error) {
 	rp, err := b.repoUnlocked()
 	if err != nil {
@@ -260,32 +211,14 @@ func (b *base) loadBackend() (backend.Backend, error) {
 	log.Infof("Loading backend `%s`", backendName)
 
 	backendPath := rp.BackendPath(backendName)
-
-	reg, err := registry.Open()
-	if err != nil {
-		return nil, err
-	}
-
-	bootstrapAddrs, err := b.findBootstrapAddrs(reg)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(bootstrapAddrs) > 0 {
-		log.Debugf("Found local bootstrap addrs: %v", bootstrapAddrs)
-	}
-
-	realBackend, err := backend.FromName(backendName, backendPath, bootstrapAddrs)
+	realBackend, err := backend.FromName(backendName, backendPath)
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
 		return nil, err
 	}
 
 	b.backend = realBackend
-	if err := b.updateBackendAddr(reg, realBackend); err != nil {
-		log.Warningf("Failed to update registry with backend addr: %v", err)
-	}
-
+	// TODO: Do we need a separate flag for that?
 	b.backendLoaded = true
 
 	// Load the gateway pretty early. It won't start unless

@@ -57,13 +57,12 @@ type Node struct {
 	ipfsNode *core.IpfsNode
 
 	// Root context used for all operations.
-	ctx            context.Context
-	cancel         context.CancelFunc
-	bootstrapAddrs []string
-	api            coreiface.CoreAPI
+	ctx    context.Context
+	cancel context.CancelFunc
+	api    coreiface.CoreAPI
 }
 
-func createNode(ctx context.Context, path string, minSwarmPort int, online bool, bootstrapAddrs []string) (*core.IpfsNode, error) {
+func createNode(ctx context.Context, path string, minSwarmPort int, online bool) (*core.IpfsNode, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		log.Infof("Creating new ipfs repo at %s since it does not exist yet.", path)
 		if err := Init(path, 2048); err != nil {
@@ -83,31 +82,6 @@ func createNode(ctx context.Context, path string, minSwarmPort int, online bool,
 		rp, err = fsrepo.Open(path)
 		if err != nil {
 			return nil, e.Wrapf(err, "failed to open repo after migration")
-		}
-	}
-
-	if len(bootstrapAddrs) > 0 && rp != nil {
-		cfg, err := rp.Config()
-		if err != nil {
-			return nil, err
-		}
-
-		bootstrapMap := make(map[string]struct{})
-		for _, entry := range cfg.Bootstrap {
-			bootstrapMap[entry] = struct{}{}
-		}
-
-		for _, addr := range bootstrapAddrs {
-			fullAddr := "/dnsaddr/bootstrap.libp2p.io/ipfs/" + addr
-			if _, ok := bootstrapMap[fullAddr]; ok {
-				continue
-			}
-
-			cfg.Bootstrap = append(cfg.Bootstrap, fullAddr)
-		}
-
-		if err := rp.SetConfig(cfg); err != nil {
-			return nil, err
 		}
 	}
 
@@ -163,28 +137,26 @@ func createNode(ctx context.Context, path string, minSwarmPort int, online bool,
 }
 
 // New creates a new ipfs node manager. No daemon is started yet.
-func New(ipfsPath string, bootstrapAddrs []string) (*Node, error) {
-	return NewWithPort(ipfsPath, bootstrapAddrs, 4001)
+func New(ipfsPath string) (*Node, error) {
+	return NewWithPort(ipfsPath, 4001)
 }
 
 // NewWithPort creates a new ipfs instance with the repo at `ipfsPath`
-// the additional bootstrap addrs in `bootstrapAddrs` at port `swarmPort`.
-func NewWithPort(ipfsPath string, bootstrapAddrs []string, swarmPort int) (*Node, error) {
+func NewWithPort(ipfsPath string, swarmPort int) (*Node, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	ipfsNode, err := createNode(ctx, ipfsPath, swarmPort, true, bootstrapAddrs)
+	ipfsNode, err := createNode(ctx, ipfsPath, swarmPort, true)
 	if err != nil {
 		cancel()
 		return nil, err
 	}
 
 	return &Node{
-		Path:           ipfsPath,
-		SwarmPort:      swarmPort,
-		ipfsNode:       ipfsNode,
-		api:            coreapi.NewCoreAPI(ipfsNode),
-		ctx:            ctx,
-		cancel:         cancel,
-		bootstrapAddrs: bootstrapAddrs,
+		Path:      ipfsPath,
+		SwarmPort: swarmPort,
+		ipfsNode:  ipfsNode,
+		api:       coreapi.NewCoreAPI(ipfsNode),
+		ctx:       ctx,
+		cancel:    cancel,
 	}, nil
 }
 
@@ -211,7 +183,7 @@ func (nd *Node) Connect() error {
 	}
 
 	var err error
-	nd.ipfsNode, err = createNode(nd.ctx, nd.Path, nd.SwarmPort, true, nd.bootstrapAddrs)
+	nd.ipfsNode, err = createNode(nd.ctx, nd.Path, nd.SwarmPort, true)
 	if err != nil {
 		return err
 	}
@@ -230,7 +202,7 @@ func (nd *Node) Disconnect() error {
 	}
 
 	var err error
-	nd.ipfsNode, err = createNode(nd.ctx, nd.Path, nd.SwarmPort, false, nd.bootstrapAddrs)
+	nd.ipfsNode, err = createNode(nd.ctx, nd.Path, nd.SwarmPort, false)
 	if err != nil {
 		return err
 	}

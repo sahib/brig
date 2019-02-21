@@ -38,6 +38,9 @@ const brigLogo = `
       \  \::/       \  \:\         \__\/      \  \::/
        \__\/         \__\/                     \__\/
 
+`
+
+const initBanner = `
 
      A new file README.md was automatically added.
      Use 'brig cat README.md' to view it & get started.
@@ -116,7 +119,7 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 
 	if folder == "" {
 		// Make sure that we do not lookup the global registry:
-		folder = guessRepoFolder(ctx, false)
+		folder = guessRepoFolder(ctx)
 		fmt.Printf("Guessed folder for init: %s\n", folder)
 	}
 
@@ -162,7 +165,13 @@ func handleInit(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	fmt.Println(brigLogo)
+	if !ctx.Bool("no-logo") {
+		fmt.Println(brigLogo)
+
+		if !ctx.Bool("empty") {
+			fmt.Println(initBanner)
+		}
+	}
 
 	if ctx.Bool("no-password") {
 		// Set a command in the config that simply echoes a static password:
@@ -332,13 +341,13 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
-	brigPath := guessRepoFolder(ctx, true)
+	brigPath := guessRepoFolder(ctx)
 	isInitialized, err := repoIsInitialized(brigPath)
 	if err != nil {
 		return err
 	}
 
-	port := guessPort(ctx)
+	port := guessPort(ctx, true)
 	bindHost := ctx.GlobalString("bind")
 
 	var password string
@@ -818,7 +827,7 @@ func handleGatewayCert(ctx *cli.Context) error {
 
 	fmt.Println("A certificate was downloaded successfully.")
 
-	port := guessPort(ctx)
+	port := guessPort(ctx, true)
 	ctl, err := client.Dial(context.Background(), port)
 	if err != nil {
 		fmt.Println("There does not seem a daemon running currently.")
