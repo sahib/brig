@@ -3,13 +3,15 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/fatih/color"
 	isatty "github.com/mattn/go-isatty"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -40,12 +42,63 @@ func formatGroup(category string) string {
 	return strings.ToUpper(category) + " COMMANDS"
 }
 
+func memProfile() {
+	memPath := os.Getenv("BRIG_MEM_PROFILE")
+	if memPath == "" {
+		return
+	}
+
+	fd, err := os.Create(memPath)
+	if err != nil {
+		log.Fatal("could not create memory profile: ", err)
+	}
+
+	defer fd.Close()
+
+	runtime.GC()
+	if err := pprof.WriteHeapProfile(fd); err != nil {
+		log.Fatal("could not write memory profile: ", err)
+	}
+}
+
+func startCPUProfile() *os.File {
+	cpuPath := os.Getenv("BRIG_CPU_PROFILE")
+	if cpuPath == "" {
+		return nil
+	}
+
+	fd, err := os.Create(cpuPath)
+	if err != nil {
+		log.Fatal("could not create memory profile: ", err)
+	}
+
+	runtime.GC()
+	if err := pprof.StartCPUProfile(fd); err != nil {
+		log.Fatal("could not write memory profile: ", err)
+	}
+
+	return fd
+}
+
+func stopCPUProfile(fd *os.File) {
+	if os.Getenv("BRIG_CPU_PROFILE") == "" {
+		return
+	}
+
+	defer fd.Close()
+	pprof.StopCPUProfile()
+}
+
 ////////////////////////////
 // Commandline definition //
 ////////////////////////////
 
 // RunCmdline starts a brig commandline tool.
 func RunCmdline(args []string) int {
+	profFd := startCPUProfile()
+	defer stopCPUProfile(profFd)
+	defer memProfile()
+
 	app := cli.NewApp()
 	app.Name = "brig"
 	app.Usage = "Secure and decentralized file synchronization"
@@ -315,7 +368,7 @@ func RunCmdline(args []string) int {
 			Subcommands: []cli.Command{
 				{
 					Name:   "launch",
-					Action: withExit(handleDaemonLaunch),
+					Action: handleDaemonLaunch,
 				}, {
 					Name:   "quit",
 					Action: withDaemon(handleDaemonQuit, false, true),
@@ -456,9 +509,16 @@ func RunCmdline(args []string) int {
 		},
 	})
 
+	exitCode := Success
 	if err := app.Run(args); err != nil {
-		fmt.Println(err)
-		return 1
+		log.Error(prettyPrintError(err))
+		cerr, ok := err.(ExitCode)
+		if !ok {
+			exitCode = UnknownError
+		}
+
+		exitCode = cerr.Code
 	}
-	return 0
+
+	return exitCode
 }

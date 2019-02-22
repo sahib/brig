@@ -17,12 +17,12 @@ import (
 	"text/template"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/fatih/color"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util/pwutil"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -325,7 +325,7 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 
 func withDaemon(handler cmdHandlerWithClient, startNew bool, warnOnMissingRepo bool) cli.ActionFunc {
 	// If not, make sure we start a new one:
-	return withExit(func(ctx *cli.Context) error {
+	return func(ctx *cli.Context) error {
 		port := guessPort(ctx, warnOnMissingRepo)
 
 		if startNew {
@@ -361,7 +361,7 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool, warnOnMissingRepo b
 		// Run the actual handler:
 		defer ctl.Close()
 		return handler(ctx, ctl)
-	})
+	}
 }
 
 type checkFunc func(ctx *cli.Context) int
@@ -378,23 +378,6 @@ func withArgCheck(checker checkFunc, handler cli.ActionFunc) cli.ActionFunc {
 
 func prettyPrintError(err error) string {
 	return rpcErrPattern.ReplaceAllString(err.Error(), " ")
-}
-
-func withExit(handler cli.ActionFunc) cli.ActionFunc {
-	return func(ctx *cli.Context) error {
-		if err := handler(ctx); err != nil {
-			log.Error(prettyPrintError(err))
-			cerr, ok := err.(ExitCode)
-			if !ok {
-				os.Exit(UnknownError)
-			}
-
-			os.Exit(cerr.Code)
-		}
-
-		os.Exit(Success)
-		return nil
-	}
 }
 
 func needAtLeast(min int) checkFunc {
