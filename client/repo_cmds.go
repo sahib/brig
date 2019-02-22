@@ -541,3 +541,16 @@ func (ctl *Client) GatewayUserList() ([]GatewayUser, error) {
 
 	return users, err
 }
+
+func (ctl *Client) DebugProfilePort() (int, error) {
+	call := ctl.api.DebugProfilePort(ctl.ctx, func(p capnp.Repo_debugProfilePort_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return -1, err
+	}
+
+	return int(result.Port()), nil
+}

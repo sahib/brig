@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	shell "github.com/ipfs/go-ipfs-api"
+	log "github.com/sirupsen/logrus"
 )
 
 type Node struct {
@@ -14,6 +15,7 @@ type Node struct {
 func NewNode(port int) (*Node, error) {
 	client := &http.Client{}
 	addr := fmt.Sprintf("localhost:%d", port)
+	log.Infof("Connecting to IPFS HTTP API at %s", addr)
 	sh := shell.NewShellWithClient(addr, client)
 	if !sh.IsUp() {
 		return nil, fmt.Errorf("could not reach daemon api")

@@ -323,18 +323,16 @@ func guessNextRepoFolder(ctx *cli.Context) string {
 	return folder
 }
 
-func withDaemon(handler cmdHandlerWithClient, startNew bool, warnOnMissingRepo bool) cli.ActionFunc {
-	// If not, make sure we start a new one:
+func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
-		port := guessPort(ctx, warnOnMissingRepo)
-
+		port := guessPort(ctx, true)
 		if startNew {
 			logVerbose(ctx, "using port %d to check for running daemon.", port)
 		} else {
 			logVerbose(ctx, "using port %d to connect to old daemon.", port)
 		}
 
-		// Check if the daemon is running:
+		// Check if the daemon is running already:
 		ctl, err := client.Dial(context.Background(), port)
 		if err == nil {
 			defer ctl.Close()

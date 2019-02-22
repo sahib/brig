@@ -161,28 +161,29 @@ interface VCS {
 }
 
 interface Repo {
-    quit            @0  ();
-    ping            @1  () -> (reply :Text);
-    mount           @2  (mountPath :Text, options :MountOptions);
-    unmount         @3  (mountPath :Text);
+    quit             @0  ();
+    ping             @1  () -> (reply :Text);
+    mount            @2  (mountPath :Text, options :MountOptions);
+    unmount          @3  (mountPath :Text);
 
-    configGet       @4  (key :Text) -> (value :Text);
-    configSet       @5  (key :Text, value :Text);
-    configAll       @6  () -> (all :List(ConfigEntry));
-    configDoc       @7  (key :Text) -> (desc :ConfigEntry);
+    configGet        @4  (key :Text) -> (value :Text);
+    configSet        @5  (key :Text, value :Text);
+    configAll        @6  () -> (all :List(ConfigEntry));
+    configDoc        @7  (key :Text) -> (desc :ConfigEntry);
 
-    become          @8  (who :Text);
+    become           @8  (who :Text);
 
-    fstabAdd        @9 (mountName :Text, mountPath :Text, options :MountOptions);
-    fstabRemove     @10 (mountName :Text);
-    fstabApply      @11 ();
-    fstabList       @12 () -> (mounts :List(FsTabEntry));
-    fstabUnmountAll @13 ();
+    fstabAdd         @9 (mountName :Text, mountPath :Text, options :MountOptions);
+    fstabRemove      @10 (mountName :Text);
+    fstabApply       @11 ();
+    fstabList        @12 () -> (mounts :List(FsTabEntry));
+    fstabUnmountAll  @13 ();
 
-    version         @14 () -> (version :Version);
-    gatewayUserAdd  @15 (name :Text, password :Text, folders :List(Text), rights :List(Text));
-    gatewayUserRm   @16 (name :Text);
-    gatewayUserList @17 () -> (users :List(User.User));
+    version          @14 () -> (version :Version);
+    gatewayUserAdd   @15 (name :Text, password :Text, folders :List(Text), rights :List(Text));
+    gatewayUserRm    @16 (name :Text);
+    gatewayUserList  @17 () -> (users :List(User.User));
+    debugProfilePort @18 () -> (port :Int32);
 }
 
 interface Net {

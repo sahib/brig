@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/events/backend"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
 
@@ -248,11 +248,17 @@ func (lst *Listener) listenSingle(ctx context.Context, topic string) error {
 
 	for {
 		if !lst.cfg.Bool("enabled") {
+			// Do not grind the cpu if it is not enabled.
+			time.Sleep(2 * time.Second)
 			continue
 		}
 
 		msg, err := sub.Next(ctx)
 		if msg == nil {
+			// Sometimes we might have a case where a ipfs daemon
+			// returns an empty message very often - just sleep a bit
+			// to save the cpu.
+			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 

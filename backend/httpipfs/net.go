@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"path"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	shell "github.com/ipfs/go-ipfs-api"
 	netBackend "github.com/sahib/brig/net/backend"
@@ -54,6 +57,8 @@ func (cw *connWrapper) Close() error {
 }
 
 func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
+	protocol = path.Join(protocol, peerHash)
+
 	port := findFreePort()
 	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", port)
 	if err := forward(nd.sh, protocol, addr, peerHash); err != nil {
@@ -105,6 +110,8 @@ func openListener(sh *shell.Shell, protocol, targetAddr string) error {
 		return err
 	}
 
+	log.Infof("LISTEN %s %s", protocol, targetAddr)
+
 	defer resp.Close()
 	if err := resp.Error; err != nil {
 		return err
@@ -125,6 +132,8 @@ func closeStream(sh *shell.Shell, protocol, targetAddr, listenAddr string) error
 	if listenAddr != "" {
 		rb.Option("listen-address", listenAddr)
 	}
+
+	log.Infof("CLOSE %s %s %s", protocol, targetAddr, listenAddr)
 
 	resp, err := rb.Send(ctx)
 	if err != nil {
@@ -178,8 +187,17 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 		return nil, err
 	}
 
+	// Append the id to the protocol:
+	protocol = path.Join(protocol, self.Addr)
+
 	port := findFreePort()
 	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", port)
+
+	// Prevent errors by closing any previously opened listeners:
+	if err := closeStream(nd.sh, protocol, "", ""); err != nil {
+		return nil, err
+	}
+
 	if err := openListener(nd.sh, protocol, addr); err != nil {
 		return nil, err
 	}
@@ -208,7 +226,7 @@ type pinger struct {
 
 	mu     sync.Mutex
 	cancel func()
-	sh     *shell.Shell
+	nd     *Node
 }
 
 // LastSeen returns the time we pinged the remote last time.
@@ -242,34 +260,49 @@ func (p *pinger) Close() error {
 	return nil
 }
 
-func (p *pinger) Run() error {
+func (p *pinger) Run(addr string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	p.cancel = cancel
+
+	self, err := p.nd.Identity()
+	if err != nil {
+		return err
+	}
+
+	tckr := time.NewTicker(10 * time.Second)
 
 	for {
 		select {
 		case <-ctx.Done():
 			break
-		default:
-		}
+		case <-tckr.C:
+			// Edge case: test setups where we ping ourselves.
+			if self.Addr == addr {
+				p.mu.Lock()
+				p.lastSeen = time.Now()
+				p.roundtrip = time.Duration(0)
+				p.mu.Unlock()
+				continue
+			}
 
-		p.mu.Lock()
-		roundtrip, err := ping(p.sh)
-		if err != nil {
-			p.err = err
-		} else {
-			p.lastSeen = time.Now()
-			p.roundtrip = roundtrip
-		}
+			p.mu.Lock()
+			roundtrip, err := ping(p.nd.sh, addr)
+			if err != nil {
+				p.err = err
+			} else {
+				p.lastSeen = time.Now()
+				p.roundtrip = roundtrip
+			}
 
-		p.mu.Unlock()
+			p.mu.Unlock()
+		}
 	}
 }
 
 // TODO: Make a PR with those functions.
-func ping(sh *shell.Shell) (time.Duration, error) {
+func ping(sh *shell.Shell, peerID string) (time.Duration, error) {
 	ctx := context.Background()
-	resp, err := sh.Request("ping").Send(ctx)
+	resp, err := sh.Request("ping", peerID).Send(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -297,7 +330,7 @@ func ping(sh *shell.Shell) (time.Duration, error) {
 }
 
 func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
-	p := &pinger{sh: nd.sh}
-	go p.Run()
+	p := &pinger{nd: nd}
+	go p.Run(addr)
 	return p, nil
 }

@@ -62,6 +62,11 @@ var helpTexts = map[string]helpEntry{
 				Name:  "no-logo,n",
 				Usage: "Do not display the super pretty logo on init.",
 			},
+			cli.IntFlag{
+				Name:  "ipfs-port,P",
+				Usage: "Port of the HTTP API to connect to",
+				Value: 5001,
+			},
 		},
 		Description: `Initialize a new repository with a certain backend.
 
@@ -1068,6 +1073,12 @@ CAVEATS
 				Usage: "TODO",
 			},
 		},
+	},
+	"debug": {
+		Usage: "Various debbugging utilities. Use with care.",
+	},
+	"debug.pprof-port": {
+		Usage: "Print the pprof port of the daemon.",
 	},
 	"bug": {
 		Usage: "Print a template for bug reports",

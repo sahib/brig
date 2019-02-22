@@ -13,6 +13,12 @@ var DefaultsV0 = config.DefaultMapping{
 			Docs:         "Port of the daemon process",
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
+		"ipfs_port": config.DefaultEntry{
+			Default:      5001,
+			NeedsRestart: true,
+			Docs:         "Port of IPFS' HTTP API",
+			Validator:    config.IntRangeValidator(1, 655356),
+		},
 	},
 	"events": config.DefaultMapping{
 		"enabled": config.DefaultEntry{

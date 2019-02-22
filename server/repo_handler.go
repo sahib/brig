@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/fuse"
 	gwdb "github.com/sahib/brig/gateway/db"
 	gwcapnp "github.com/sahib/brig/gateway/db/capnp"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/version"
+	log "github.com/sirupsen/logrus"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
@@ -330,7 +330,8 @@ func (rh *repoHandler) Version(call capnp.Repo_version) error {
 
 	rp := rh.base.repo
 	name := rp.BackendName()
-	bkVersion := backend.Version(name)
+	ipfsPort := int(rp.Config.Int("daemon.ipfs_port"))
+	bkVersion := backend.Version(name, ipfsPort)
 	if bkVersion == nil {
 		return fmt.Errorf("bug: invalid backend name: %v", name)
 	}
@@ -448,4 +449,10 @@ func (rh *repoHandler) GatewayUserList(call capnp.Repo_gatewayUserList) error {
 	}
 
 	return call.Results.SetUsers(capUsers)
+}
+
+func (rh *repoHandler) DebugProfilePort(call capnp.Repo_debugProfilePort) error {
+	server.Ack(call.Options)
+	call.Results.SetPort(int32(rh.base.pprofPort))
+	return nil
 }

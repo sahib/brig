@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/fatih/color"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/client"
@@ -23,6 +22,7 @@ import (
 	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/version"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -1028,4 +1028,14 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return tabW.Flush()
+}
+
+func handleDebugPprofPort(ctx *cli.Context, ctl *client.Client) error {
+	port, err := ctl.DebugProfilePort()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(port)
+	return nil
 }

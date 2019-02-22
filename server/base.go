@@ -13,7 +13,6 @@ import (
 
 	"zombiezen.com/go/capnproto2/rpc"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
@@ -25,6 +24,7 @@ import (
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
+	log "github.com/sirupsen/logrus"
 )
 
 type base struct {
@@ -74,6 +74,9 @@ type base struct {
 
 	// evListenerCancel can be called on quitting the daemon
 	evListenerCancel context.CancelFunc
+
+	// pprofPort is the port pprof can acquire profiling from
+	pprofPort int
 }
 
 func repoIsInitialized(path string) error {
@@ -148,8 +151,9 @@ func (b *base) loadBackend() error {
 	backendName := b.repo.BackendName()
 	log.Infof("Loading backend `%s`", backendName)
 
+	ipfsPort := int(b.repo.Config.Int("daemon.ipfs_port"))
 	backendPath := b.repo.BackendPath(backendName)
-	realBackend, err := backend.FromName(backendName, backendPath)
+	realBackend, err := backend.FromName(backendName, backendPath, ipfsPort)
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
 		return err
@@ -391,6 +395,7 @@ func newBase(
 	bindHost string,
 	quitCh chan struct{},
 	logToStdout bool,
+	pprofPort int,
 ) *base {
 	return &base{
 		ctx:         ctx,
@@ -401,6 +406,7 @@ func newBase(
 		quitCh:      quitCh,
 		logToStdout: logToStdout,
 		conductor:   conductor.New(5*time.Minute, 100),
+		pprofPort:   pprofPort,
 	}
 }
 

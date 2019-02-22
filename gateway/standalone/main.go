@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/gateway"
 	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -69,7 +69,7 @@ func main() {
 	cfg.SetBool("gateway.enabled", true)
 	cfg.SetBool("gateway.ui.enabled", true)
 	cfg.SetBool("gateway.ui.debug_mode", true)
-	cfg.SetInt("gateway.port", 5001)
+	cfg.SetInt("gateway.port", 6001)
 	cfg.SetBool("gateway.cert.redirect.enabled", false)
 
 	cfg.SetBool("gateway.auth.enabled", true)

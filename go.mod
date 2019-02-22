@@ -50,6 +50,9 @@ require (
 	github.com/ulule/limiter v2.2.2+incompatible
 	github.com/urfave/cli v1.20.0
 	github.com/vbauerster/mpb v3.3.4+incompatible
+	github.com/visualfc/fastmod v0.0.0-20190131104758-c069a47540eb // indirect
+	github.com/visualfc/gocode v0.0.0-20190131105310-4e0736b4668d // indirect
+	github.com/visualfc/gotools v0.0.0-20190218124934-6d12497f1bd5 // indirect
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0
 	github.com/whyrusleeping/tar-utils v0.0.0-20180509141711-8c6c8ba81d5c // indirect
 	github.com/xrash/smetrics v0.0.0-20170218160415-a3153f7040e9

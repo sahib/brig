@@ -157,7 +157,7 @@ func RunCmdline(args []string) int {
 			EnvVar: "BRIG_BIND",
 		},
 		cli.StringFlag{
-			Name:   "password,P",
+			Name:   "password",
 			Usage:  "Supply user password. Usage is not recommended.",
 			EnvVar: "BRIG_PASSWORD",
 			Value:  "",
@@ -179,8 +179,9 @@ func RunCmdline(args []string) int {
 			Action:   handleInit,
 		}, {
 			Name:     "whoami",
+			Aliases:  []string{"id"},
 			Category: netwGroup,
-			Action:   withDaemon(handleWhoami, true, true),
+			Action:   withDaemon(handleWhoami, true),
 		}, {
 			Name:     "remote",
 			Aliases:  []string{"rmt"},
@@ -189,47 +190,47 @@ func RunCmdline(args []string) int {
 				{
 					Name:    "add",
 					Aliases: []string{"a"},
-					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true, true)),
+					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
 				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
-					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true, true)),
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRemoteRemove, true)),
 				}, {
 					Name:    "list",
 					Aliases: []string{"ls"},
-					Action:  withDaemon(handleRemoteList, true, true),
+					Action:  withDaemon(handleRemoteList, true),
 				}, {
 					Name:   "clear",
-					Action: withDaemon(handleRemoteClear, true, true),
+					Action: withDaemon(handleRemoteClear, true),
 				}, {
 					Name:   "edit",
-					Action: withDaemon(handleRemoteEdit, true, true),
+					Action: withDaemon(handleRemoteEdit, true),
 				}, {
 					Name:   "ping",
-					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleRemotePing, true)),
 				}, {
 					Name:    "auto-update",
 					Aliases: []string{"au"},
-					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAutoUpdate, true, true)),
+					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAutoUpdate, true)),
 				}, {
 					Name:    "folder",
 					Aliases: []string{"fld", "f"},
-					Action:  withDaemon(handleRemoteFolderListAll, true, true),
+					Action:  withDaemon(handleRemoteFolderListAll, true),
 					Subcommands: []cli.Command{
 						{
 							Name:   "add",
-							Action: withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderAdd, true, true)),
+							Action: withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderAdd, true)),
 						}, {
 							Name:    "remove",
 							Aliases: []string{"rm"},
-							Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderRemove, true, true)),
+							Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderRemove, true)),
 						}, {
 							Name:   "clear",
-							Action: withArgCheck(needAtLeast(1), withDaemon(handleRemoteFolderClear, true, true)),
+							Action: withArgCheck(needAtLeast(1), withDaemon(handleRemoteFolderClear, true)),
 						}, {
 							Name:    "list",
 							Aliases: []string{"ls"},
-							Action:  withArgCheck(needAtLeast(1), withDaemon(handleRemoteFolderList, true, true)),
+							Action:  withArgCheck(needAtLeast(1), withDaemon(handleRemoteFolderList, true)),
 						},
 					},
 				},
@@ -237,18 +238,18 @@ func RunCmdline(args []string) int {
 		}, {
 			Name:     "pin",
 			Category: vcscGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handlePin, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 			Subcommands: []cli.Command{
 				{
 					Name:   "add",
-					Action: withArgCheck(needAtLeast(1), withDaemon(handlePin, true, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handlePin, true)),
 				}, {
 					Name:   "repin",
-					Action: withDaemon(handleRepin, true, true),
+					Action: withDaemon(handleRepin, true),
 				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
-					Action:  withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true, true)),
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleUnpin, true)),
 				},
 			},
 		}, {
@@ -257,111 +258,111 @@ func RunCmdline(args []string) int {
 			Subcommands: []cli.Command{
 				{
 					Name:   "offline",
-					Action: withDaemon(handleOffline, true, true),
+					Action: withDaemon(handleOffline, true),
 				}, {
 					Name:   "online",
-					Action: withDaemon(handleOnline, true, true),
+					Action: withDaemon(handleOnline, true),
 				}, {
 					Name:   "status",
-					Action: withDaemon(handleIsOnline, true, true),
+					Action: withDaemon(handleIsOnline, true),
 				}, {
 					Name:   "locate",
-					Action: withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleNetLocate, true)),
 				},
 			},
 		}, {
 			Name:     "status",
 			Aliases:  []string{"st"},
 			Category: vcscGroup,
-			Action:   withDaemon(handleStatus, true, true),
+			Action:   withDaemon(handleStatus, true),
 		}, {
 			Name:     "diff",
 			Category: vcscGroup,
-			Action:   withDaemon(handleDiff, true, true),
+			Action:   withDaemon(handleDiff, true),
 		}, {
 			Name:     "tag",
 			Category: vcscGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTag, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTag, true)),
 		}, {
 			Name:     "log",
 			Category: vcscGroup,
-			Action:   withDaemon(handleLog, true, true),
+			Action:   withDaemon(handleLog, true),
 		}, {
 			Name:     "fetch",
 			Category: vcscGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleFetch, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleFetch, true)),
 		}, {
 			Name:     "sync",
 			Category: vcscGroup,
-			Action:   withDaemon(handleSync, true, true),
+			Action:   withDaemon(handleSync, true),
 		}, {
 			Name:     "commit",
 			Aliases:  []string{"cmt"},
 			Category: vcscGroup,
-			Action:   withDaemon(handleCommit, true, true),
+			Action:   withDaemon(handleCommit, true),
 		}, {
 			Name:     "reset",
 			Aliases:  []string{"re"},
 			Category: vcscGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleReset, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleReset, true)),
 		}, {
 			Name:     "become",
 			Aliases:  []string{"be"},
 			Category: vcscGroup,
-			Action:   withDaemon(handleBecome, true, true),
+			Action:   withDaemon(handleBecome, true),
 		}, {
 			Name:     "history",
 			Aliases:  []string{"hst", "hist"},
 			Category: vcscGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleHistory, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleHistory, true)),
 		}, {
 			Name:     "stage",
 			Aliases:  []string{"stg", "add", "a"},
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleStage, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleStage, true)),
 		}, {
 			Name:     "touch",
 			Aliases:  []string{"t"},
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTouch, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleTouch, true)),
 		}, {
 			Name:     "cat",
 			Category: wdirGroup,
-			Action:   withDaemon(handleCat, true, true),
+			Action:   withDaemon(handleCat, true),
 		}, {
 			Name:     "show",
 			Aliases:  []string{"s", "info"},
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleShow, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleShow, true)),
 		}, {
 			Name:     "rm",
 			Aliases:  []string{"remove"},
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleRm, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleRm, true)),
 		}, {
 			Name:     "ls",
 			Category: wdirGroup,
-			Action:   withDaemon(handleList, true, true),
+			Action:   withDaemon(handleList, true),
 		}, {
 			Name:     "tree",
 			Category: wdirGroup,
-			Action:   withDaemon(handleTree, true, true),
+			Action:   withDaemon(handleTree, true),
 		}, {
 			Name:     "mkdir",
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleMkdir, true)),
 		}, {
 			Name:     "mv",
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(2), withDaemon(handleMv, true, true)),
+			Action:   withArgCheck(needAtLeast(2), withDaemon(handleMv, true)),
 		}, {
 			Name:     "cp",
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(2), withDaemon(handleCp, true, true)),
+			Action:   withArgCheck(needAtLeast(2), withDaemon(handleCp, true)),
 		}, {
 			Name:     "edit",
 			Category: wdirGroup,
-			Action:   withArgCheck(needAtLeast(1), withDaemon(handleEdit, true, true)),
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handleEdit, true)),
 		}, {
 			Name:     "daemon",
 			Category: repoGroup,
@@ -371,52 +372,52 @@ func RunCmdline(args []string) int {
 					Action: handleDaemonLaunch,
 				}, {
 					Name:   "quit",
-					Action: withDaemon(handleDaemonQuit, false, true),
+					Action: withDaemon(handleDaemonQuit, false),
 				}, {
 					Name:   "ping",
-					Action: withDaemon(handleDaemonPing, false, true),
+					Action: withDaemon(handleDaemonPing, false),
 				},
 			},
 		}, {
 			Name:     "config",
 			Aliases:  []string{"cfg"},
 			Category: repoGroup,
-			Action:   withDaemon(handleConfigList, true, true),
+			Action:   withDaemon(handleConfigList, true),
 			Subcommands: []cli.Command{
 				{
 					Name:    "list",
 					Aliases: []string{"ls"},
-					Action:  withDaemon(handleConfigList, true, true),
+					Action:  withDaemon(handleConfigList, true),
 				}, {
 					Name:   "get",
-					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigGet, true)),
 				}, {
 					Name:   "doc",
-					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigDoc, true, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleConfigDoc, true)),
 				}, {
 					Name:   "set",
-					Action: withArgCheck(needAtLeast(2), withDaemon(handleConfigSet, true, true)),
+					Action: withArgCheck(needAtLeast(2), withDaemon(handleConfigSet, true)),
 				},
 			},
 		}, {
 			Name:     "fstab",
 			Category: repoGroup,
-			Action:   withArgCheck(needAtLeast(0), withDaemon(handleFstabList, true, true)),
+			Action:   withArgCheck(needAtLeast(0), withDaemon(handleFstabList, true)),
 			Subcommands: []cli.Command{
 				{
 					Name:   "add",
-					Action: withArgCheck(needAtLeast(2), withDaemon(handleFstabAdd, true, true)),
+					Action: withArgCheck(needAtLeast(2), withDaemon(handleFstabAdd, true)),
 				}, {
 					Name:    "remove",
 					Aliases: []string{"rm"},
-					Action:  withArgCheck(needAtLeast(1), withDaemon(handleFstabRemove, true, true)),
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleFstabRemove, true)),
 				}, {
 					Name:   "apply",
-					Action: withDaemon(handleFstabApply, true, true),
+					Action: withDaemon(handleFstabApply, true),
 				}, {
 					Name:    "list",
 					Aliases: []string{"ls"},
-					Action:  withDaemon(handleFstabList, true, true),
+					Action:  withDaemon(handleFstabList, true),
 				},
 			},
 		}, {
@@ -428,12 +429,12 @@ func RunCmdline(args []string) int {
 				{
 					Name:    "list",
 					Aliases: []string{"ls"},
-					Action:  withDaemon(handleTrashList, true, true),
+					Action:  withDaemon(handleTrashList, true),
 				},
 				{
 					Name:    "remove",
 					Aliases: []string{"rm"},
-					Action:  withArgCheck(needAtLeast(1), withDaemon(handleTrashRemove, true, true)),
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleTrashRemove, true)),
 				},
 			},
 		}, {
@@ -443,15 +444,15 @@ func RunCmdline(args []string) int {
 			Subcommands: []cli.Command{
 				{
 					Name:   "start",
-					Action: withDaemon(handleGatewayStart, true, true),
+					Action: withDaemon(handleGatewayStart, true),
 				},
 				{
 					Name:   "stop",
-					Action: withDaemon(handleGatewayStop, true, true),
+					Action: withDaemon(handleGatewayStop, true),
 				},
 				{
 					Name:   "status",
-					Action: withDaemon(handleGatewayStatus, true, true),
+					Action: withDaemon(handleGatewayStatus, true),
 				},
 				{
 					Name:   "cert",
@@ -459,7 +460,7 @@ func RunCmdline(args []string) int {
 				},
 				{
 					Name:   "url",
-					Action: withArgCheck(needAtLeast(1), withDaemon(handleGatewayURL, true, true)),
+					Action: withArgCheck(needAtLeast(1), withDaemon(handleGatewayURL, true)),
 				},
 				{
 					Name:    "user",
@@ -468,37 +469,48 @@ func RunCmdline(args []string) int {
 						{
 							Name:    "add",
 							Aliases: []string{"a"},
-							Action:  withArgCheck(needAtLeast(1), withDaemon(handleGatewayUserAdd, true, true)),
+							Action:  withArgCheck(needAtLeast(1), withDaemon(handleGatewayUserAdd, true)),
 						},
 						{
 							Name:    "remove",
 							Aliases: []string{"rm"},
-							Action:  withArgCheck(needAtLeast(1), withDaemon(handleGatewayUserRemove, true, true)),
+							Action:  withArgCheck(needAtLeast(1), withDaemon(handleGatewayUserRemove, true)),
 						},
 						{
 							Name:    "list",
 							Aliases: []string{"ls"},
-							Action:  withDaemon(handleGatewayUserList, true, true),
+							Action:  withDaemon(handleGatewayUserList, true),
 						},
 					},
 				},
 			},
 		}, {
+			Name:     "debug",
+			Aliases:  []string{"d"},
+			Category: repoGroup,
+			Subcommands: []cli.Command{
+				{
+					Name:    "pprof-port",
+					Aliases: []string{"p"},
+					Action:  withDaemon(handleDebugPprofPort, true),
+				},
+			},
+		}, {
 			Name:     "mount",
 			Category: repoGroup,
-			Action:   withDaemon(handleMount, true, true),
+			Action:   withDaemon(handleMount, true),
 		}, {
 			Name:     "unmount",
 			Category: repoGroup,
-			Action:   withDaemon(handleUnmount, true, true),
+			Action:   withDaemon(handleUnmount, true),
 		}, {
 			Name:     "version",
 			Category: repoGroup,
-			Action:   withDaemon(handleVersion, false, true),
+			Action:   withDaemon(handleVersion, false),
 		}, {
 			Name:     "gc",
 			Category: repoGroup,
-			Action:   withDaemon(handleGc, true, true),
+			Action:   withDaemon(handleGc, true),
 		}, {
 			Name:   "docs",
 			Action: handleOpenHelp,

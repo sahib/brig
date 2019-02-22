@@ -1,5 +1,8 @@
 #!/bin/sh
 
+set -e
+set -x
+
 USE_SINGLE=false
 
 while getopts ":s" opt; do
@@ -15,7 +18,7 @@ while getopts ":s" opt; do
 done
 
 # Kill previous test-bed
-pkill -9 brig
+pkill -9 brig || true
 rm -rf /tmp/{ali,bob}
 
 # Have some color in the logs even when piping it somewhere else.
@@ -30,10 +33,8 @@ else
 fi
 
 # Give the daemon to start up a bit.
-(brig-ali init ali -x > /dev/null) &
-(brig-bob init bob -x > /dev/null) &
-
-sleep 1
+brig-ali init ali -x -P 5001
+brig-bob init bob -x -P 5002
 
 # Add them as remotes each
 if [ "$USE_SINGLE" = false ]; then
@@ -41,7 +42,7 @@ if [ "$USE_SINGLE" = false ]; then
     brig-bob remote add ali $(brig-ali whoami -f)
 fi
 
-brig-ali stage BUGS ali-file
+brig-ali -V stage BUGS ali-file
 brig-ali commit -m 'added ali-file'
 brig-bob stage LICENSE bob-file
 brig-bob commit -m 'added bob-file'

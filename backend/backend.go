@@ -6,13 +6,13 @@ import (
 	"os"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/backend/httpipfs"
 	"github.com/sahib/brig/backend/mock"
 	"github.com/sahib/brig/catfs"
 	eventsBackend "github.com/sahib/brig/events/backend"
 	netBackend "github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/repo"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -37,7 +37,7 @@ type Backend interface {
 }
 
 // InitByName creates a new backend structure at `path` for the backend `name`
-func InitByName(name, path string) error {
+func InitByName(name, path string, port int) error {
 	switch name {
 	case "httpipfs":
 		return httpipfs.Init(path)
@@ -62,11 +62,10 @@ func ForwardLogByName(name string, w io.Writer) error {
 
 // FromName returns a suitable backend for a human readable name.
 // If an invalid name is passed, nil is returned.
-func FromName(name, path string) (Backend, error) {
+func FromName(name, path string, port int) (Backend, error) {
 	switch name {
 	case "httpipfs":
-		// TODO: Make this configurable.
-		return httpipfs.NewNode(5001)
+		return httpipfs.NewNode(port)
 	case "mock":
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.
@@ -107,13 +106,12 @@ func IsValidName(name string) bool {
 }
 
 // Version returns version info for the backend `name`.
-func Version(name string) VersionInfo {
+func Version(name string, port int) VersionInfo {
 	switch name {
 	case "mock":
 		return mock.Version()
 	case "httpipfs":
-		// TODO: Make this configurable.
-		nd, err := httpipfs.NewNode(5001)
+		nd, err := httpipfs.NewNode(port)
 		if err != nil {
 			log.Debugf("failed to get version")
 			return nil
