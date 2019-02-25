@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	shell "github.com/ipfs/go-ipfs-api"
+	shell "github.com/sahib/go-ipfs-api"
 	netBackend "github.com/sahib/brig/net/backend"
 	log "github.com/sirupsen/logrus"
 )

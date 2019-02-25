@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	shell "github.com/ipfs/go-ipfs-api"
+	shell "github.com/sahib/go-ipfs-api"
 	"github.com/sahib/brig/catfs/mio"
 	h "github.com/sahib/brig/util/hashlib"
 )

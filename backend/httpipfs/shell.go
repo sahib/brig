@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	shell "github.com/ipfs/go-ipfs-api"
+	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 

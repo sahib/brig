@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 
-	shell "github.com/ipfs/go-ipfs-api"
+	shell "github.com/sahib/go-ipfs-api"
 	ipfsutil "github.com/ipfs/go-ipfs-util"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sahib/brig/net/peer"
