@@ -3,16 +3,16 @@ package httpipfs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"path"
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	shell "github.com/ipfs/go-ipfs-api"
 	netBackend "github.com/sahib/brig/net/backend"
+	log "github.com/sirupsen/logrus"
 )
 
 // TODO: Move this to util.
@@ -57,6 +57,10 @@ func (cw *connWrapper) Close() error {
 }
 
 func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
+	if !nd.allowNetOps {
+		return nil, ErrOffline
+	}
+
 	protocol = path.Join(protocol, peerHash)
 
 	port := findFreePort()
@@ -66,6 +70,7 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 	}
 
 	tcpAddr := fmt.Sprintf("127.0.0.1:%d", port)
+	log.Debugf("dial to »%s« over port %d", peerHash, port)
 	conn, err := net.Dial("tcp", tcpAddr)
 	if err != nil {
 		return nil, err
@@ -110,8 +115,6 @@ func openListener(sh *shell.Shell, protocol, targetAddr string) error {
 		return err
 	}
 
-	log.Infof("LISTEN %s %s", protocol, targetAddr)
-
 	defer resp.Close()
 	if err := resp.Error; err != nil {
 		return err
@@ -132,8 +135,6 @@ func closeStream(sh *shell.Shell, protocol, targetAddr, listenAddr string) error
 	if listenAddr != "" {
 		rb.Option("listen-address", listenAddr)
 	}
-
-	log.Infof("CLOSE %s %s %s", protocol, targetAddr, listenAddr)
 
 	resp, err := rb.Send(ctx)
 	if err != nil {
@@ -182,6 +183,10 @@ func (lw *listenerWrapper) Close() error {
 }
 
 func (nd *Node) Listen(protocol string) (net.Listener, error) {
+	if !nd.allowNetOps {
+		return nil, ErrOffline
+	}
+
 	self, err := nd.Identity()
 	if err != nil {
 		return nil, err
@@ -198,6 +203,7 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 		return nil, err
 	}
 
+	log.Debugf("backend: listening for %s over port %d", protocol, port)
 	if err := openListener(nd.sh, protocol, addr); err != nil {
 		return nil, err
 	}
@@ -256,14 +262,15 @@ func (p *pinger) Err() error {
 
 // Close will clean up the pinger.
 func (p *pinger) Close() error {
-	p.cancel()
+	if p.cancel != nil {
+		p.cancel()
+	}
+
+	p.cancel = nil
 	return nil
 }
 
-func (p *pinger) Run(addr string) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	p.cancel = cancel
-
+func (p *pinger) Run(ctx context.Context, addr string) error {
 	self, err := p.nd.Identity()
 	if err != nil {
 		return err
@@ -279,17 +286,22 @@ func (p *pinger) Run(addr string) error {
 			// Edge case: test setups where we ping ourselves.
 			if self.Addr == addr {
 				p.mu.Lock()
+				p.err = nil
 				p.lastSeen = time.Now()
 				p.roundtrip = time.Duration(0)
 				p.mu.Unlock()
 				continue
 			}
 
-			p.mu.Lock()
+			log.Debugf("backend: do ping »%s«", addr)
 			roundtrip, err := ping(p.nd.sh, addr)
+			p.mu.Lock()
+			log.Debugf("backend: got »%s«: %v %v", addr, roundtrip, err)
+
 			if err != nil {
 				p.err = err
 			} else {
+				p.err = nil
 				p.lastSeen = time.Now()
 				p.roundtrip = roundtrip
 			}
@@ -329,8 +341,21 @@ func ping(sh *shell.Shell, peerID string) (time.Duration, error) {
 	return 0, fmt.Errorf("no ping")
 }
 
+var ErrWaiting = errors.New("waiting for route")
+
 func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
-	p := &pinger{nd: nd}
-	go p.Run(addr)
+	if !nd.allowNetOps {
+		return nil, ErrOffline
+	}
+
+	log.Debugf("backend: start ping »%s«", addr)
+	p := &pinger{
+		nd:  nd,
+		err: ErrWaiting,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
+	go p.Run(ctx, addr)
 	return p, nil
 }

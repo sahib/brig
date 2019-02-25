@@ -37,6 +37,10 @@ func (s *subWrapper) Close() error {
 }
 
 func (nd *Node) Subscribe(ctx context.Context, topic string) (eventsBackend.Subscription, error) {
+	if !nd.allowNetOps {
+		return nil, ErrOffline
+	}
+
 	sub, err := nd.sh.PubSubSubscribe(topic)
 	if err != nil {
 		return nil, err
@@ -46,5 +50,9 @@ func (nd *Node) Subscribe(ctx context.Context, topic string) (eventsBackend.Subs
 }
 
 func (nd *Node) PublishEvent(topic string, data []byte) error {
+	if !nd.allowNetOps {
+		return ErrOffline
+	}
+
 	return nd.sh.PubSubPublish(topic, string(data))
 }

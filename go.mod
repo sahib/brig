@@ -27,6 +27,7 @@ require (
 	github.com/ipfs/go-ipfs-cmdkit v1.1.3 // indirect
 	github.com/ipfs/go-ipfs-util v1.2.8
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
+	github.com/keegancsmith/rpc v1.1.0 // indirect
 	github.com/libp2p/go-flow-metrics v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-crypto v2.0.5+incompatible // indirect
 	github.com/libp2p/go-libp2p-metrics v2.1.7+incompatible // indirect
@@ -45,6 +46,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sahib/config v0.2.0
 	github.com/sirupsen/logrus v1.3.0
+	github.com/stamblerre/gocode v0.0.0-20190213022308-8cc90faaf476 // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/toqueteos/webbrowser v1.1.0
 	github.com/ulule/limiter v2.2.2+incompatible
@@ -60,6 +62,7 @@ require (
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
 	golang.org/x/text v0.3.0
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+	golang.org/x/tools v0.0.0-20190221204921-83362c3779f5 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	zombiezen.com/go/capnproto2 v2.17.0+incompatible
 )

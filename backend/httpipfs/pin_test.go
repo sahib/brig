@@ -9,26 +9,28 @@ import (
 )
 
 func TestPinUnpin(t *testing.T) {
-	nd, err := NewNode(5001)
-	require.Nil(t, err)
+	withIpfs(t, 1, func(t *testing.T, apiPort int) {
+		nd, err := NewNode(apiPort)
+		require.Nil(t, err)
 
-	data := testutil.CreateDummyBuf(4096 * 1024)
-	hash, err := nd.Add(bytes.NewReader(data))
-	require.Nil(t, err)
+		data := testutil.CreateDummyBuf(4096 * 1024)
+		hash, err := nd.Add(bytes.NewReader(data))
+		require.Nil(t, err)
 
-	isPinned, err := nd.IsPinned(hash)
-	require.Nil(t, err)
-	require.True(t, isPinned)
+		isPinned, err := nd.IsPinned(hash)
+		require.Nil(t, err)
+		require.True(t, isPinned)
 
-	require.Nil(t, nd.Unpin(hash))
+		require.Nil(t, nd.Unpin(hash))
 
-	isPinned, err = nd.IsPinned(hash)
-	require.Nil(t, err)
-	require.False(t, isPinned)
+		isPinned, err = nd.IsPinned(hash)
+		require.Nil(t, err)
+		require.False(t, isPinned)
 
-	require.Nil(t, nd.Pin(hash))
+		require.Nil(t, nd.Pin(hash))
 
-	isPinned, err = nd.IsPinned(hash)
-	require.Nil(t, err)
-	require.True(t, isPinned)
+		isPinned, err = nd.IsPinned(hash)
+		require.Nil(t, err)
+		require.True(t, isPinned)
+	})
 }

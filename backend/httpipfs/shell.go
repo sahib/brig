@@ -1,42 +1,44 @@
 package httpipfs
 
 import (
+	"errors"
 	"fmt"
-	"net/http"
 
 	shell "github.com/ipfs/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	ErrOffline = errors.New("backend is in offline mode")
+)
+
 type Node struct {
-	sh *shell.Shell
+	sh          *shell.Shell
+	allowNetOps bool
 }
 
 func NewNode(port int) (*Node, error) {
-	client := &http.Client{}
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	log.Infof("Connecting to IPFS HTTP API at %s", addr)
-	sh := shell.NewShellWithClient(addr, client)
-	if !sh.IsUp() {
-		return nil, fmt.Errorf("could not reach daemon api")
-	}
+	sh := shell.NewShell(addr)
 
 	return &Node{
-		sh: sh,
+		sh:          sh,
+		allowNetOps: true,
 	}, nil
 }
 
 func (nd *Node) IsOnline() bool {
-	return nd.sh.IsUp()
+	return nd.sh.IsUp() && nd.allowNetOps
 }
 
 func (nd *Node) Connect() error {
-	// TODO
+	nd.allowNetOps = true
 	return nil
 }
 
 func (nd *Node) Disconnect() error {
-	// TODO
+	nd.allowNetOps = false
 	return nil
 }
 
