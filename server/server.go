@@ -10,9 +10,6 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
-	"net/http"
-	_ "net/http/pprof"
-
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/repo"
@@ -81,27 +78,6 @@ func applyFstabInitially(base *base) error {
 	return fuse.FsTabApply(base.repo.Config.Section("mounts"), base.mounts)
 }
 
-func startProfileServer() int {
-	lst, err := net.Listen("tcp", ":0")
-	if err != nil {
-		log.Warningf("failed to get a new port for the pprof server")
-		return -1
-	}
-
-	port := lst.Addr().(*net.TCPAddr).Port
-	log.Infof("Starting pprof server on :%d", port)
-
-	go func() {
-		defer lst.Close()
-
-		if err := http.Serve(lst, nil); err != nil {
-			log.Warningf("failed to serve pprof: %v", err)
-		}
-	}()
-
-	return port
-}
-
 // BootServer will boot up the local server.
 // `basePath` is the path to the repository.
 // `passwordFn` is a function that will deliver a password when
@@ -133,8 +109,6 @@ func BootServer(
 	} else {
 		switchToSyslog()
 	}
-
-	pprofPort := startProfileServer()
 
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
 	log.Infof("Starting daemon for %s on port %s", basePath, addr)
@@ -172,7 +146,6 @@ func BootServer(
 		bindHost,
 		quitCh,
 		logToStdout,
-		pprofPort,
 	)
 
 	lst, err := net.Listen("tcp", addr)

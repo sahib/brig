@@ -18,6 +18,7 @@ import (
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/cmd/tabwriter"
 	"github.com/sahib/brig/gateway"
+	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/pwutil"
@@ -123,7 +124,13 @@ func handleInit(ctx *cli.Context) error {
 
 	if folder == "" {
 		folder = guessRepoFolder(ctx)
-		fmt.Printf("Guessed folder for init: %s\n", folder)
+		fmt.Printf("-- Guessed folder for init: %s\n", folder)
+	}
+
+	if backend == "httpipfs" {
+		if err := setup.IPFS(os.Stdout); err != nil {
+			return err
+		}
 	}
 
 	// If a password helper is set, we should read the password from it directly.
@@ -1036,6 +1043,12 @@ func handleDebugPprofPort(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	fmt.Println(port)
+	if port > 0 {
+		fmt.Println(port)
+	} else {
+		fmt.Println("Profiling is not enabled.")
+		fmt.Println("Enable daemon.enable_pprof and restart.")
+	}
+
 	return nil
 }

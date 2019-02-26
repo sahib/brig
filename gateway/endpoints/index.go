@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/csrf"
 	"github.com/phogolabs/parcello"
+	log "github.com/sirupsen/logrus"
 
 	// Include static resources:
 	_ "github.com/sahib/brig/gateway/templates"

@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
+	log "github.com/sirupsen/logrus"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )

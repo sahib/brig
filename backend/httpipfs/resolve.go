@@ -6,16 +6,18 @@ import (
 	"context"
 	"encoding/json"
 
-	shell "github.com/sahib/go-ipfs-api"
 	ipfsutil "github.com/ipfs/go-ipfs-util"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sahib/brig/net/peer"
 	h "github.com/sahib/brig/util/hashlib"
+	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 
+// PublishName will announce `name` to the network
+// and make us discoverable.
 func (nd *Node) PublishName(name string) error {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return ErrOffline
 	}
 
@@ -25,15 +27,32 @@ func (nd *Node) PublishName(name string) error {
 	return err
 }
 
+// Identity returns our own identity.
+// It will cache the identity after the first request.
 func (nd *Node) Identity() (peer.Info, error) {
-	// TODO: Cache that response? It won't change.
+	nd.mu.Lock()
+	if nd.cachedIdentity != "" {
+		defer nd.mu.Unlock()
+		return peer.Info{
+			Name: "httpipfs",
+			Addr: nd.cachedIdentity,
+		}, nil
+	}
+
+	// Do not hold the lock during net ops:
+	nd.mu.Unlock()
+
 	id, err := nd.sh.ID()
 	if err != nil {
 		return peer.Info{}, err
 	}
 
+	nd.mu.Lock()
+	nd.cachedIdentity = id.ID
+	nd.mu.Unlock()
+
 	return peer.Info{
-		Name: "ipfs",
+		Name: "httpipfs",
 		Addr: id.ID,
 	}, nil
 }
@@ -90,8 +109,10 @@ func findProvider(ctx context.Context, sh *shell.Shell, hash h.Hash) ([]string, 
 	return linearIDs, nil
 }
 
+// ResolveName will return all peers that identify themselves as `name`.
+// If ctx is canceled it will return early, but return no error.
 func (nd *Node) ResolveName(ctx context.Context, name string) ([]peer.Info, error) {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return nil, ErrOffline
 	}
 

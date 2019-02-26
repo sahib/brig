@@ -9,13 +9,13 @@ import (
 
 	"zombiezen.com/go/capnproto2/rpc"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/util/server"
+	log "github.com/sirupsen/logrus"
 )
 
 // Server implements the server for inter-remote communication.

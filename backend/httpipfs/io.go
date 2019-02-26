@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	shell "github.com/sahib/go-ipfs-api"
 	"github.com/sahib/brig/catfs/mio"
 	h "github.com/sahib/brig/util/hashlib"
+	shell "github.com/sahib/go-ipfs-api"
 )
 
 func cat(s *shell.Shell, path string, offset int64) (io.ReadCloser, error) {
@@ -117,6 +117,7 @@ func (sw *streamWrapper) Seek(offset int64, whence int) (int64, error) {
 	return absOffset, nil
 }
 
+// Cat returns a stream associated with `hash`.
 func (nd *Node) Cat(hash h.Hash) (mio.Stream, error) {
 	rc, err := cat(nd.sh, hash.B58String(), 0)
 	if err != nil {
@@ -132,6 +133,7 @@ func (nd *Node) Cat(hash h.Hash) (mio.Stream, error) {
 	}, nil
 }
 
+// Add puts the contents of `r` into IPFS and returns its hash.
 func (nd *Node) Add(r io.Reader) (h.Hash, error) {
 	hs, err := nd.sh.Add(r)
 	if err != nil {

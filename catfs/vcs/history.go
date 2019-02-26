@@ -5,11 +5,11 @@ import (
 	"path"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
+	log "github.com/sirupsen/logrus"
 )
 
 // HistoryWalker provides a way to iterate over all changes a single Node had.

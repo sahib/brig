@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/net/backend"
+	log "github.com/sirupsen/logrus"
 )
 
 var (

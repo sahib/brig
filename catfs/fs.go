@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 	capnp "zombiezen.com/go/capnproto2"
 
 	e "github.com/pkg/errors"

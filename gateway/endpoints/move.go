@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/gateway/db"
+	log "github.com/sirupsen/logrus"
 )
 
 // MoveHandler implements http.Handler.

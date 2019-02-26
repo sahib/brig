@@ -9,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetHandler implements http.Handler

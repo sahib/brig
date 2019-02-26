@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/websocket"
 	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/remotesapi"
+	log "github.com/sirupsen/logrus"
 )
 
 var upgrader = websocket.Upgrader{

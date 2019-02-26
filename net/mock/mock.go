@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/peer"
+	log "github.com/sirupsen/logrus"
 )
 
 // NetBackend provides a testing backend implementation

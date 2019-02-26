@@ -19,6 +19,11 @@ var DefaultsV0 = config.DefaultMapping{
 			Docs:         "Port of IPFS' HTTP API",
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
+		"enable_pprof": config.DefaultEntry{
+			Default:      true,
+			NeedsRestart: true,
+			Docs:         "enable a ppropf profile server on startup",
+		},
 	},
 	"events": config.DefaultMapping{
 		"enabled": config.DefaultEntry{

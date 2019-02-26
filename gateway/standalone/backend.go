@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio"
 	h "github.com/sahib/brig/util/hashlib"
+	log "github.com/sirupsen/logrus"
 )
 
 // TmpFsBackend is a mock structure that implements FsBackend.

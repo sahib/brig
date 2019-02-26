@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log/syslog"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -143,6 +144,31 @@ func (b *base) loadRepo() error {
 	}
 
 	return nil
+}
+
+func (b *base) loadProfileServer() {
+	if !b.repo.Config.Bool("daemon.enable_pprof") {
+		return
+	}
+
+	lst, err := net.Listen("tcp", ":0")
+	if err != nil {
+		log.Warningf("failed to get a new port for the pprof server")
+		return
+	}
+
+	port := lst.Addr().(*net.TCPAddr).Port
+	log.Infof("Starting pprof server on :%d", port)
+
+	go func() {
+		defer lst.Close()
+
+		if err := http.Serve(lst, nil); err != nil {
+			log.Warningf("failed to serve pprof: %v", err)
+		}
+	}()
+
+	b.pprofPort = port
 }
 
 /////////
@@ -395,7 +421,6 @@ func newBase(
 	bindHost string,
 	quitCh chan struct{},
 	logToStdout bool,
-	pprofPort int,
 ) *base {
 	return &base{
 		ctx:         ctx,
@@ -406,7 +431,6 @@ func newBase(
 		quitCh:      quitCh,
 		logToStdout: logToStdout,
 		conductor:   conductor.New(5*time.Minute, 100),
-		pprofPort:   pprofPort,
 	}
 }
 

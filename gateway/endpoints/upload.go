@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"path"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/gateway/db"
+	log "github.com/sirupsen/logrus"
 )
 
 // UploadHandler implements http.Handler.

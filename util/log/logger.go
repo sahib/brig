@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/fatih/color"
 	ownStrings "github.com/sahib/brig/util/strings"
+	"github.com/sirupsen/logrus"
 )
 
 var showPid = false

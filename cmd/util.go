@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
@@ -77,13 +78,13 @@ func guessRepoFolder(ctx *cli.Context) string {
 		return mustAbsPath(argPath)
 	}
 
-	cwdPath, err := os.Getwd()
+	dir, err := homedir.Expand("~/.brig")
 	if err != nil {
-		fmt.Printf("Failed to get current working dir: %v; aborting.", err)
+		fmt.Printf("failed to expand home dir: %v; aborting.", err)
 		os.Exit(1)
 	}
 
-	return mustAbsPath(cwdPath)
+	return mustAbsPath(dir)
 }
 
 func guessNextFreePort(ctx *cli.Context) (int, error) {

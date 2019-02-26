@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
@@ -22,6 +21,7 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 

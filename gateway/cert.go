@@ -18,8 +18,8 @@ import (
 	"runtime"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
 )
 

@@ -13,6 +13,9 @@ import (
 	"github.com/urfave/cli"
 )
 
+// Init creates a new brig repository at `basePath` with `owner`.
+// `password` is used to encrypt it and `backendName` tells `brig` what backend
+// to initialize. The port is the port of the brig daemon.
 func Init(ctx *cli.Context, basePath, owner, password, backendName string, port int) error {
 	if !backend.IsValidName(backendName) {
 		return fmt.Errorf("invalid backend name: %v", backendName)

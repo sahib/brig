@@ -7,6 +7,9 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// GC will trigger the garbage collector of IPFS.
+// Cleaned up hashes will be returned as a list
+// (note that those hashes are not always ours)
 func (nd *Node) GC() ([]h.Hash, error) {
 	ctx := context.Background()
 	resp, err := nd.sh.Request("repo/gc").Send(ctx)

@@ -7,12 +7,12 @@ import (
 	"io"
 	"net"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	netBackend "github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
+	log "github.com/sirupsen/logrus"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 

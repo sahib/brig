@@ -36,8 +36,11 @@ func (s *subWrapper) Close() error {
 	return s.sub.Cancel()
 }
 
+// Subscribe will create a subscription for `topic`.
+// You can use the subscription to wait for the next incoming message.
+// This will only work if the daemon supports/has enabled pub sub.
 func (nd *Node) Subscribe(ctx context.Context, topic string) (eventsBackend.Subscription, error) {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return nil, ErrOffline
 	}
 
@@ -49,8 +52,9 @@ func (nd *Node) Subscribe(ctx context.Context, topic string) (eventsBackend.Subs
 	return &subWrapper{sub: sub}, nil
 }
 
+// PublishEvent will publish `data` on `topic`.
 func (nd *Node) PublishEvent(topic string, data []byte) error {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return ErrOffline
 	}
 

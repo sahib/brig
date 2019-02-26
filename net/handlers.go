@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/repo"
+	log "github.com/sirupsen/logrus"
 )
 
 type requestHandler struct {

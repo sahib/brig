@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 )
 
 func touch(path string) error {

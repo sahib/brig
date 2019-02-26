@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/gateway/db"
+	log "github.com/sirupsen/logrus"
 )
 
 // HistoryHandler implements http.Handler

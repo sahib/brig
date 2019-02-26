@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/phogolabs/parcello"
@@ -17,6 +16,7 @@ import (
 	"github.com/sahib/brig/gateway/endpoints"
 	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/middleware/stdlib"
 	"github.com/ulule/limiter/drivers/store/memory"

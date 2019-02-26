@@ -14,10 +14,10 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // Notifier implementors can take notifications

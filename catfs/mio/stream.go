@@ -4,10 +4,10 @@ import (
 	"io"
 	"io/ioutil"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // Stream is a stream coming from the backend.

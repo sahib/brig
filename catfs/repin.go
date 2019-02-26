@@ -3,13 +3,13 @@ package catfs
 import (
 	"sort"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/dustin/go-humanize"
 	e "github.com/pkg/errors"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/catfs/vcs"
 	"github.com/sahib/brig/util"
+	log "github.com/sirupsen/logrus"
 )
 
 type partition struct {

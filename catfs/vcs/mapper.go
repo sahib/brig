@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"path"
 
-	log "github.com/sirupsen/logrus"
 	e "github.com/pkg/errors"
 	c "github.com/sahib/brig/catfs/core"
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/util/trie"
+	log "github.com/sirupsen/logrus"
 )
 
 // MapPair is a pair of nodes (a file or a directory)

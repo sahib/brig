@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
+	log "github.com/sirupsen/logrus"
 )
 
 func getNextFreePort() (int, error) {

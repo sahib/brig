@@ -11,8 +11,8 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
+	log "github.com/sirupsen/logrus"
 )
 
 // Handle is an open Entry.

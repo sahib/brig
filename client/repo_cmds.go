@@ -542,6 +542,8 @@ func (ctl *Client) GatewayUserList() ([]GatewayUser, error) {
 	return users, err
 }
 
+// DebugProfilePort will get the port of pprof server in the backend.
+// The port changes during daemon restarts.
 func (ctl *Client) DebugProfilePort() (int, error) {
 	call := ctl.api.DebugProfilePort(ctl.ctx, func(p capnp.Repo_debugProfilePort_Params) error {
 		return nil

@@ -6,10 +6,10 @@ import (
 	"net"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
+	log "github.com/sirupsen/logrus"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )

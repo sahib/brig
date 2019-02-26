@@ -492,3 +492,24 @@ func PeekHeader(r io.ReadSeeker, size int64) ([]byte, io.ReadSeeker, error) {
 	headerBuf = headerBuf[:n]
 	return headerBuf, &prefixReader{data: headerBuf, r: r}, nil
 }
+
+// CopyFile simply copies the file at `src` to `dst`.
+// If `dst` already contains a file, it will be overwritten.
+func CopyFile(src, dst string) error {
+	srcFd, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+
+	defer srcFd.Close()
+
+	dstFd, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0700)
+	if err != nil {
+		return err
+	}
+
+	defer dstFd.Close()
+
+	_, err = io.Copy(dstFd, srcFd)
+	return err
+}

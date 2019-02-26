@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/sessions"
 	"github.com/sahib/brig/gateway/db"
+	log "github.com/sirupsen/logrus"
 )
 
 func getUserName(store *sessions.CookieStore, w http.ResponseWriter, r *http.Request) string {

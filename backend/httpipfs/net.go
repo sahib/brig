@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	shell "github.com/sahib/go-ipfs-api"
 	netBackend "github.com/sahib/brig/net/backend"
+	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -56,8 +56,10 @@ func (cw *connWrapper) Close() error {
 	return closeStream(cw.sh, cw.protocol, "", cw.targetAddr)
 }
 
+// Dial will open a connection to the peer identified by `peerHash`,
+// running `protocol` over it.
 func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return nil, ErrOffline
 	}
 
@@ -182,8 +184,9 @@ func (lw *listenerWrapper) Close() error {
 	return closeStream(lw.sh, lw.protocol, lw.targetAddr, "")
 }
 
+// Listen will listen to the protocol
 func (nd *Node) Listen(protocol string) (net.Listener, error) {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return nil, ErrOffline
 	}
 
@@ -192,6 +195,8 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 		return nil, err
 	}
 
+	// TODO: Is this even needed still?
+	// Do we want support for having more than one brig per ipfs.
 	// Append the id to the protocol:
 	protocol = path.Join(protocol, self.Addr)
 
@@ -341,10 +346,13 @@ func ping(sh *shell.Shell, peerID string) (time.Duration, error) {
 	return 0, fmt.Errorf("no ping")
 }
 
+// ErrWaiting is the initial error state of a pinger.
+// The error will be unset once a successful ping was made.
 var ErrWaiting = errors.New("waiting for route")
 
+// Ping will return a pinger for `addr`.
 func (nd *Node) Ping(addr string) (netBackend.Pinger, error) {
-	if !nd.allowNetOps {
+	if !nd.isOnline() {
 		return nil, ErrOffline
 	}
 

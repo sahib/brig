@@ -8,9 +8,9 @@ import (
 	"sort"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/util"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // FsTabAdd adds the mount at `path` with `name` and `opts` to `cfg`.

@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"bazil.org/fuse"
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 func errorize(name string, err error) error {

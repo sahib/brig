@@ -3,11 +3,11 @@ package vcs
 import (
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/sahib/brig/catfs/db"
 	n "github.com/sahib/brig/catfs/nodes"
 	h "github.com/sahib/brig/util/hashlib"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 

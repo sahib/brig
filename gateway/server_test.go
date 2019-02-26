@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 

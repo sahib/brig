@@ -8,6 +8,7 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+// IsPinned returns true when `hash` is pinned in some way.
 func (nd *Node) IsPinned(hash h.Hash) (bool, error) {
 	ctx := context.Background()
 	resp, err := nd.sh.Request("pin/ls", hash.B58String()).Send(ctx)
@@ -42,10 +43,12 @@ func (nd *Node) IsPinned(hash h.Hash) (bool, error) {
 	return true, nil
 }
 
+// Pin will pin `hash`.
 func (nd *Node) Pin(hash h.Hash) error {
 	return nd.sh.Pin(hash.B58String())
 }
 
+// Unpin will unpin `hash`.
 func (nd *Node) Unpin(hash h.Hash) error {
 	return nd.sh.Unpin(hash.B58String())
 }

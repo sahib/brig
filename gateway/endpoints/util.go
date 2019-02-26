@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/sahib/brig/catfs"
@@ -19,6 +18,7 @@ import (
 	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // State is a helper struct that contains all API objects that might be useful

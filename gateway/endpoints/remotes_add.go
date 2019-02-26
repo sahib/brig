@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/brig/net/peer"
+	log "github.com/sirupsen/logrus"
 )
 
 // RemotesAddHandler implements http.Handler
