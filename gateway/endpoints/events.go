@@ -34,26 +34,23 @@ type EventsHandler struct {
 }
 
 // NewEventsHandler returns a new EventsHandler
-func NewEventsHandler(rapi remotesapi.RemotesAPI) *EventsHandler {
+func NewEventsHandler(rapi remotesapi.RemotesAPI, ev *events.Listener) *EventsHandler {
 	hdl := &EventsHandler{
 		chs:  make(map[int]chan string),
 		rapi: rapi,
 	}
 
+	if ev != nil {
+		ev.RegisterEventHandler(events.FsEvent, func(ev *events.Event) {
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+
+			hdl.Notify(ctx, "fs")
+		})
+
+		hdl.evListener = ev
+	}
 	return hdl
-}
-
-// SetEventListener sets the event listener for this event handler.
-// See also State.SetEventListener
-func (eh *EventsHandler) SetEventListener(ev *events.Listener) {
-	ev.RegisterEventHandler(events.FsEvent, func(ev *events.Event) {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-
-		eh.Notify(ctx, "fs")
-	})
-
-	eh.evListener = ev
 }
 
 // Notify sends `msg` to all connected clients, but stops in case `ctx`

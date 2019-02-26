@@ -239,11 +239,6 @@ func (b *base) loadPeerServer() error {
 		log.Warningf("failed to setup event listeners: %v", err)
 	}
 
-	// TODO: That's bullshit. Set it immediately on gateway startup.
-	if b.gateway != nil {
-		b.gateway.SetEventListener(b.evListener)
-	}
-
 	// Give peer server a small bit of time to start up, so it can Accept()
 	// connections immediately after loadPeerServer. Also nice for tests.
 	time.Sleep(50 * time.Millisecond)
@@ -269,6 +264,7 @@ func (b *base) loadGateway() error {
 			fs,
 			rapi,
 			b.repo.Config.Section("gateway"),
+			b.evListener,
 			filepath.Join(b.repo.BaseFolder, "gateway"),
 		)
 

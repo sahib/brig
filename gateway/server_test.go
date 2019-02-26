@@ -44,7 +44,9 @@ func withBasicGateway(t *testing.T, fn func(gw *Gateway, fs *catfs.FS)) {
 	cfg.SetInt("gateway.port", 9999)
 
 	rapi := remotesapi.NewMock("ali", "alisfingerprint")
-	gw, err := NewGateway(fs, rapi, cfg.Section("gateway"), filepath.Join(tmpDir, "users"))
+	gw, err := NewGateway(
+		fs, rapi, cfg.Section("gateway"), nil, filepath.Join(tmpDir, "users"),
+	)
 	require.Nil(t, err)
 
 	require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/"}, nil))

@@ -50,7 +50,9 @@ func withState(t *testing.T, fn func(state *testState)) {
 	dbPath := filepath.Join(tmpDir, "user")
 
 	rapi := remotesapi.NewMock("ali", "alisfingerprint")
-	state, err := NewState(fs, rapi, cfg.Section("gateway"), NewEventsHandler(rapi), dbPath)
+	state, err := NewState(
+		fs, rapi, cfg.Section("gateway"), NewEventsHandler(rapi, nil), nil, dbPath,
+	)
 	require.Nil(t, err)
 
 	state.UserDatabase().Add("ali", "ila", nil, nil)

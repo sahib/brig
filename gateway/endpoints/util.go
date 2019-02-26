@@ -51,6 +51,7 @@ func NewState(
 	rapi remotesapi.RemotesAPI,
 	cfg *config.Config,
 	evHdl *EventsHandler,
+	ev *events.Listener,
 	dbPath string,
 ) (*State, error) {
 	authKey, err := readOrInitKeyFromConfig(cfg, "auth.session-authentication-key", 64)
@@ -93,14 +94,6 @@ func (s *State) Close() error {
 // UserDatabase returns the currently opened user database.
 func (s *State) UserDatabase() *db.UserDatabase {
 	return s.userDb
-}
-
-// SetEventListener sets the event listener.
-// Since the gateway can run before (or without) the peer server
-// and event listener running, we can set this dynamically.
-func (s *State) SetEventListener(ev *events.Listener) {
-	s.ev = ev
-	s.evHdl.SetEventListener(ev)
 }
 
 func (s *State) publishFsEvent(req *http.Request) {
