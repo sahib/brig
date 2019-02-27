@@ -2,14 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
-	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo"
-	"github.com/sahib/config"
 	"github.com/urfave/cli"
 )
 
@@ -27,22 +24,8 @@ func Init(ctx *cli.Context, basePath, owner, password, backendName string, port 
 	}
 
 	ipfsPort := ctx.Int("ipfs-port")
-
-	configPath := filepath.Join(basePath, "config.yml")
-	cfg, err := defaults.OpenMigratedConfig(configPath)
+	err = repo.OverwriteConfigKey(basePath, "daemon.ipfs_port", int64(ipfsPort))
 	if err != nil {
-		return e.Wrapf(err, "failed to set ipfs port")
-	}
-
-	cfg.SetInt("daemon.ipfs_port", int64(ipfsPort))
-	fd, err := os.OpenFile(configPath, os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
-
-	if err := cfg.Save(config.NewYamlEncoder(fd)); err != nil {
 		return err
 	}
 

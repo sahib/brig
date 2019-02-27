@@ -12,7 +12,7 @@ import (
 )
 
 func TestAddCatBasic(t *testing.T) {
-	withIpfs(t, 1, func(t *testing.T, apiPort int) {
+	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
 		nd, err := NewNode(apiPort)
 		require.Nil(t, err)
 
@@ -32,7 +32,7 @@ func TestAddCatBasic(t *testing.T) {
 }
 
 func TestAddCatSize(t *testing.T) {
-	withIpfs(t, 1, func(t *testing.T, apiPort int) {
+	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
 		nd, err := NewNode(apiPort)
 		require.Nil(t, err)
 

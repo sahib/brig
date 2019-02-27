@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"strconv"
 
 	"github.com/sahib/brig/backend/httpipfs"
 	"github.com/sahib/brig/backend/mock"
@@ -70,16 +69,6 @@ func FromName(name, path string, port int) (Backend, error) {
 		// This is silly, but it's only for testing.
 		// Read the name and the port from the backend path.
 		// Side effect: user cannot contain slashes currently.
-		port := 9995
-		if envPort := os.Getenv("BRIG_MOCK_PORT"); envPort != "" {
-			newPort, err := strconv.Atoi(envPort)
-			if err != nil {
-				log.Warningf("Failed to parse BRIG_MOCK_PORT=%s: %s", envPort, err)
-			} else {
-				port = newPort
-			}
-		}
-
 		user := "alice"
 		if envUser := os.Getenv("BRIG_MOCK_USER"); envUser != "" {
 			user = envUser

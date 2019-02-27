@@ -11,7 +11,7 @@ install:
     - sudo apt-get install fuse
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
-    - go get -t -v github.com/sahib/brig
+    - go get -d -t -v github.com/sahib/brig
     - go get -u github.com/rakyll/gotest
     - cd $GOPATH/src/github.com/sahib/brig
     - mkdir -p ${GOPATH}/bin

@@ -33,7 +33,7 @@ func testClientSide(t *testing.T, portB int, addr string) {
 }
 
 func TestDialAndListen(t *testing.T) {
-	withDoubleIpfs(t, 1, func(t *testing.T, portA, portB int) {
+	WithDoubleIpfs(t, 1, func(t *testing.T, portA, portB int) {
 		nd, err := NewNode(portA)
 		require.Nil(t, err)
 
@@ -59,7 +59,7 @@ func TestDialAndListen(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
-	withDoubleIpfs(t, 1, func(t *testing.T, portA, portB int) {
+	WithDoubleIpfs(t, 1, func(t *testing.T, portA, portB int) {
 		ndA, err := NewNode(portA)
 		require.Nil(t, err)
 

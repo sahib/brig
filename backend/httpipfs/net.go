@@ -11,22 +11,10 @@ import (
 	"time"
 
 	netBackend "github.com/sahib/brig/net/backend"
+	"github.com/sahib/brig/util"
 	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
-
-// TODO: Move this to util.
-func findFreePort() int {
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0
-	}
-
-	defer listener.Close()
-	return listener.Addr().(*net.TCPAddr).Port
-}
-
-//////////////////////////
 
 type connWrapper struct {
 	net.Conn
@@ -65,7 +53,7 @@ func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
 
 	protocol = path.Join(protocol, peerHash)
 
-	port := findFreePort()
+	port := util.FindFreePort()
 	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", port)
 	if err := forward(nd.sh, protocol, addr, peerHash); err != nil {
 		return nil, err
@@ -200,7 +188,7 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 	// Append the id to the protocol:
 	protocol = path.Join(protocol, self.Addr)
 
-	port := findFreePort()
+	port := util.FindFreePort()
 	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%d", port)
 
 	// Prevent errors by closing any previously opened listeners:

@@ -33,6 +33,7 @@ func (sv *Server) Serve() error {
 
 // Close will clean up the listener resources.
 func (sv *Server) Close() error {
+	sv.baseServer.Quit()
 	return sv.baseServer.Close()
 }
 

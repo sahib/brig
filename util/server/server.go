@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -110,6 +111,11 @@ func (sv *Server) Serve() error {
 		case <-rateCh:
 			// If this signal can receive something, we have a free connection.
 			if err := sv.accept(rateCh); err != nil {
+				if strings.HasSuffix(err.Error(), "use of closed network connection") {
+					doServe = false
+					break
+				}
+
 				log.Errorf("Failed to accept connection: %v", err)
 				// prevent spamming log messages in case of repeating errors.
 				time.Sleep(100 * time.Millisecond)
@@ -138,6 +144,6 @@ func NewServer(ctx context.Context, lst net.Listener, handler Handler) (*Server,
 		ctx:     ctx,
 		lst:     lst,
 		handler: handler,
-		quitCh:  make(chan bool),
+		quitCh:  make(chan bool, 10),
 	}, nil
 }

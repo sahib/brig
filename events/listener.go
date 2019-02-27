@@ -280,6 +280,10 @@ func (lst *Listener) listenSingle(ctx context.Context, topic string) error {
 
 		ev.Source = msg.Source()
 
+		if lst.isClosed {
+			break
+		}
+
 		select {
 		case lst.evRecvCh <- *ev:
 		default:

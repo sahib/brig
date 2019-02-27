@@ -514,7 +514,7 @@ func (b *base) handleFsEvent(ev *events.Event) {
 	log.Debugf("received fs event: %v", ev)
 	rmt, err := b.repo.Remotes.RemoteByAddr(ev.Source)
 	if err != nil {
-		log.Warningf("failed to resolve '%s' to a remote name: %v", ev.Source, err)
+		log.Debugf("failed to resolve '%s' to a known remote name: %v", ev.Source, err)
 		return
 	}
 

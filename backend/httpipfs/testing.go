@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func withIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
+func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 	ipfsPath, err := ioutil.TempDir("", "brig-httpipfs-test-")
 	require.Nil(t, err)
 	defer os.RemoveAll(ipfsPath)
@@ -22,6 +22,9 @@ func withIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 	gwtPort := 8081 + portOff
 	swmPort := 4001 + portOff
 	apiPort := 5011 + portOff
+
+	os.Setenv("IPFS_PATH", ipfsPath)
+	fmt.Println("->", ipfsPath)
 
 	script := [][]string{
 		{"ipfs", "init"},
@@ -64,17 +67,17 @@ func withIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 
 }
 
-func withDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPortA, apiPortB int)) {
+func WithDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPortA, apiPortB int)) {
 	chPortA := make(chan int)
 	chPortB := make(chan int)
 	stop := make(chan bool)
 
-	go withIpfs(t, portOff, func(t *testing.T, apiPortA int) {
+	go WithIpfs(t, portOff, func(t *testing.T, apiPortA int) {
 		chPortA <- apiPortA
 		<-stop
 	})
 
-	go withIpfs(t, portOff+1, func(t *testing.T, apiPortB int) {
+	go WithIpfs(t, portOff+1, func(t *testing.T, apiPortB int) {
 		chPortB <- apiPortB
 		<-stop
 	})
@@ -85,7 +88,7 @@ func withDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPortA, a
 }
 
 func TestIpfsStartup(t *testing.T) {
-	withIpfs(t, 1, func(t *testing.T, apiPort int) {
+	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
 		nd, err := NewNode(apiPort)
 		require.Nil(t, err)
 
@@ -96,7 +99,7 @@ func TestIpfsStartup(t *testing.T) {
 }
 
 func TestDoubleIpfsStartup(t *testing.T) {
-	withDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
+	WithDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
 		ndA, err := NewNode(apiPortA)
 		require.Nil(t, err)
 

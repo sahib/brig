@@ -9,7 +9,7 @@ import (
 
 func TestPubSub(t *testing.T) {
 	// Only use one ipfs instance, for test performance.
-	withIpfs(t, 1, func(t *testing.T, apiPort int) {
+	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
 		nd, err := NewNode(apiPort)
 		require.Nil(t, err)
 

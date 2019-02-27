@@ -3,16 +3,16 @@ package client
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
-	colorlog "github.com/sahib/brig/util/log"
+	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/server"
+	"github.com/sahib/brig/util"
+	colorLog "github.com/sahib/brig/util/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -20,8 +20,8 @@ import (
 var CurrBackendPort = 10000
 
 func init() {
-	log.SetLevel(log.DebugLevel)
-	log.SetFormatter(&colorlog.FancyLogFormatter{
+	log.SetLevel(log.WarnLevel)
+	log.SetFormatter(&colorLog.FancyLogFormatter{
 		UseColors: true,
 	})
 }
@@ -34,122 +34,74 @@ func stringify(err error) string {
 	return err.Error()
 }
 
-func hardKillDaemonForPort(t *testing.T, port int) {
-	pidPath := filepath.Join(os.TempDir(), fmt.Sprintf("brig.%d.pid", port))
-	data, err := ioutil.ReadFile(pidPath)
-	if os.IsNotExist(err) {
-		// pid file does not exist yet.
-		return
-	}
+func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
+	port := util.FindFreePort()
+	repoPath, err := ioutil.TempDir("", "brig-client-repo")
+	require.Nil(t, err)
 
-	defer os.Remove(pidPath)
+	defer os.RemoveAll(repoPath)
 
-	// Handle other errors.
+	err = repo.Init(repoPath, name, "no-pass", "mock", int64(port))
 	require.Nil(t, err, stringify(err))
 
-	pid := string(data)
-	cmd := exec.Command("/bin/kill", "-9", pid)
-	require.Nil(t, cmd.Start())
+	bkPort := util.FindFreePort()
+	err = repo.OverwriteConfigKey(repoPath, "daemon.ipfs_port", int64(bkPort))
+	require.Nil(t, err, stringify(err))
+
+	passwordFn := func() (string, error) {
+		return "no-pass", nil
+	}
+
+	srv, err := server.BootServer(repoPath, passwordFn, "127.0.0.1", port, true)
+	require.Nil(t, err, stringify(err))
+
+	go func() {
+		require.Nil(t, srv.Serve())
+	}()
+
+	time.Sleep(500 * time.Millisecond)
+
+	ctl, err := Dial(context.Background(), port)
+	require.Nil(t, err)
+
+	defer func() {
+		require.Nil(t, srv.Close())
+	}()
+
+	fn(ctl)
+
 }
 
-func withDaemon(t *testing.T, name string, port, backendPort int, fn func(ctl *Client)) {
-	basePath, err := ioutil.TempDir("", "brig-ctl-test")
-	require.Nil(t, err, stringify(err))
+func withDaemonPair(t *testing.T, nameA, nameB string, fn func(ctlA, ctlB *Client)) {
+	withDaemon(t, nameA, func(ctlA *Client) {
+		withDaemon(t, nameB, func(ctlB *Client) {
+			aliWhoami, err := ctlA.Whoami()
+			require.Nil(t, err, stringify(err))
 
-	// Path to the global registry file for this daemon:
-	regPath := filepath.Join(os.TempDir(), "test-reg.yml")
-	// Path to use for the net mock backend (stores dns names)
-	netPath := filepath.Join(os.TempDir(), "test-net-dir")
+			bobWhoami, err := ctlB.Whoami()
+			require.Nil(t, err, stringify(err))
 
-	defer func() {
-		os.RemoveAll(basePath)
-		os.RemoveAll(regPath)
-		os.RemoveAll(netPath)
-	}()
+			// add bob to ali as remote
+			err = ctlA.RemoteAddOrUpdate(Remote{
+				Name:        nameB,
+				Fingerprint: bobWhoami.Fingerprint,
+			})
+			require.Nil(t, err, stringify(err))
 
-	hardKillDaemonForPort(t, port)
-	require.Nil(t, os.MkdirAll(basePath, 0700))
+			// add ali to bob as remote
+			err = ctlB.RemoteAddOrUpdate(Remote{
+				Name:        nameA,
+				Fingerprint: aliWhoami.Fingerprint,
+			})
+			require.Nil(t, err, stringify(err))
 
-	cmd := exec.Command(
-		"brig",
-		"--repo", basePath,
-		"--port", fmt.Sprintf("%d", port),
-		"daemon", "launch",
-		"--log-to-stdout",
-	)
-
-	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_REGISTRY_PATH=/tmp/%s", regPath))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_MOCK_NET_DB_PATH=%s", netPath))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_MOCK_USER=%s", name))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("BRIG_MOCK_PORT=%d", backendPort))
-	cmd.Env = append(cmd.Env, "BRIG_LOG_SHOW_PID=true")
-
-	// Pipe the daemon output to the test output:
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	require.Nil(t, cmd.Start())
-
-	pidPath := filepath.Join(
-		os.TempDir(),
-		fmt.Sprintf("brig.%d.pid", port),
-	)
-
-	require.Nil(t,
-		ioutil.WriteFile(
-			pidPath,
-			[]byte(fmt.Sprintf("%d", cmd.Process.Pid)),
-			0644,
-		),
-	)
-
-	// Timeout to make sure that the dameon started.
-	// Only after this we try to connect normally.
-	time.Sleep(200 * time.Millisecond)
-
-	// Loop until we give up or have a valid connection.
-	var ctl *Client
-	for idx := 0; idx < 100; idx++ {
-		ctl, err = Dial(context.Background(), port)
-		if err == nil {
-			break
-		}
-
-		time.Sleep(50 * time.Millisecond)
-	}
-
-	require.NotNil(t, ctl, "could not connect")
-
-	// Make sure that the daemon shut down correctly.
-	defer func() {
-		// Send the death signal:
-		require.Nil(t, ctl.Quit())
-
-		// Wait until we cannot ping it anymore.
-		daemonErroredOut := false
-		for idx := 0; idx < 200; idx++ {
-			if err := ctl.Ping(); err != nil {
-				daemonErroredOut = true
-				break
-			}
-
-			time.Sleep(50 * time.Millisecond)
-		}
-
-		if !daemonErroredOut {
-			t.Fatalf("daemon is still up and running after quit")
-		}
-	}()
-
-	// Init the repo. This should block until done.
-	err = ctl.Init(basePath, name, "password", "mock")
-	require.Nil(t, err, stringify(err))
-
-	// Run the actual test function:
-	fn(ctl)
+			fn(ctlA, ctlB)
+		})
+	})
 }
 
 func TestStageAndCat(t *testing.T) {
-	withDaemon(t, "ali", 6667, 9999, func(ctl *Client) {
+	withDaemon(t, "ali", func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
@@ -171,7 +123,7 @@ func TestStageAndCat(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
-	withDaemon(t, "ali", 6667, 9999, func(ctl *Client) {
+	withDaemon(t, "ali", func(ctl *Client) {
 		// Create something nested with -p...
 		require.Nil(t, ctl.Mkdir("/a/b/c", true))
 
@@ -207,45 +159,8 @@ func TestMkdir(t *testing.T) {
 	})
 }
 
-func withConnectedDaemonPair(t *testing.T, fn func(aliCtl, bobCtl *Client)) {
-	// Use a shared directory for our shared data:
-	basePath, err := ioutil.TempDir("", "brig-test-sync-pair-test")
-	require.Nil(t, err, stringify(err))
-
-	defer func() {
-		CurrBackendPort += 2
-		os.RemoveAll(basePath)
-	}()
-
-	withDaemon(t, "ali", 6668, CurrBackendPort, func(aliCtl *Client) {
-		withDaemon(t, "bob", 6669, CurrBackendPort+1, func(bobCtl *Client) {
-			aliWhoami, err := aliCtl.Whoami()
-			require.Nil(t, err, stringify(err))
-
-			bobWhoami, err := bobCtl.Whoami()
-			require.Nil(t, err, stringify(err))
-
-			// add bob to ali as remote
-			err = aliCtl.RemoteAddOrUpdate(Remote{
-				Name:        "bob",
-				Fingerprint: bobWhoami.Fingerprint,
-			})
-			require.Nil(t, err, stringify(err))
-
-			// add ali to bob as remote
-			err = bobCtl.RemoteAddOrUpdate(Remote{
-				Name:        "ali",
-				Fingerprint: aliWhoami.Fingerprint,
-			})
-			require.Nil(t, err, stringify(err))
-
-			fn(aliCtl, bobCtl)
-		})
-	})
-}
-
 func TestSyncBasic(t *testing.T) {
-	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
 		err := aliCtl.StageFromReader("/ali_file", bytes.NewReader([]byte{42}))
 		require.Nil(t, err, stringify(err))
 
@@ -280,7 +195,7 @@ func pathsFromListing(l []StatInfo) []string {
 }
 
 func TestSyncConflict(t *testing.T) {
-	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
 		// Create two files with the same content on both sides:
 		err := aliCtl.StageFromReader("/README", bytes.NewReader([]byte{42}))
 		require.Nil(t, err, stringify(err))
@@ -332,7 +247,7 @@ func TestSyncConflict(t *testing.T) {
 }
 
 func TestSyncSeveralTimes(t *testing.T) {
-	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
 		err := aliCtl.StageFromReader("/ali_file_1", bytes.NewReader([]byte{1}))
 		require.Nil(t, err, stringify(err))
 
@@ -379,7 +294,7 @@ func TestSyncSeveralTimes(t *testing.T) {
 }
 
 func TestSyncPartial(t *testing.T) {
-	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
 		aliWhoami, err := aliCtl.Whoami()
 		require.Nil(t, err, stringify(err))
 
@@ -465,7 +380,7 @@ func TestSyncPartial(t *testing.T) {
 }
 
 func TestSyncMovedFile(t *testing.T) {
-	withConnectedDaemonPair(t, func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
 		require.Nil(t, aliCtl.StageFromReader("/ali-file", bytes.NewReader([]byte{1, 2, 3})))
 		require.Nil(t, bobCtl.StageFromReader("/bob-file", bytes.NewReader([]byte{4, 5, 6})))
 

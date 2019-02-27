@@ -11,7 +11,7 @@ import (
 
 func TestPublishResolve(t *testing.T) {
 	// Only use one ipfs instance, for test performance.
-	withDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
+	WithDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
 		ndA, err := NewNode(apiPortA)
 		require.Nil(t, err)
 

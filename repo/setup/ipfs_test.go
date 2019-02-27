@@ -10,6 +10,7 @@ import (
 )
 
 func TestMain(t *testing.T) {
+	t.Skip("TODO: probanly a bit too much for travis")
 	require.Nil(t, IPFS(os.Stdout))
 }
 

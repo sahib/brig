@@ -33,7 +33,14 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 			return err
 		}
 	} else if info.Mode().IsDir() {
-		log.Warningf("`%s` is a directory and exists", baseFolder)
+		children, err := ioutil.ReadDir(baseFolder)
+		if err != nil {
+			return err
+		}
+
+		if len(children) > 0 {
+			log.Warningf("`%s` is a directory and exists", baseFolder)
+		}
 	} else {
 		return fmt.Errorf("`%s` is a file (should be a directory)", baseFolder)
 	}
@@ -110,4 +117,28 @@ func Init(baseFolder, owner, password, backendName string, daemonPort int64) err
 	}
 
 	return nil
+}
+
+// OverwriteConfigKey allows to overwrite a single key/val pair in the config,
+// without requiring a running daemon or an opened repository.
+// It is not performant and should be use with care.
+func OverwriteConfigKey(repoPath string, key string, val interface{}) error {
+	configPath := filepath.Join(repoPath, "config.yml")
+	cfg, err := defaults.OpenMigratedConfig(configPath)
+	if err != nil {
+		return e.Wrapf(err, "failed to set ipfs port")
+	}
+
+	if err := cfg.Set(key, val); err != nil {
+		return err
+	}
+
+	fd, err := os.OpenFile(configPath, os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer fd.Close()
+
+	return cfg.Save(config.NewYamlEncoder(fd))
 }

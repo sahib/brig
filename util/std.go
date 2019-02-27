@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -512,4 +513,15 @@ func CopyFile(src, dst string) error {
 
 	_, err = io.Copy(dstFd, srcFd)
 	return err
+}
+
+// FindFreePort asks the operating system for a free port.
+func FindFreePort() int {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0
+	}
+
+	defer listener.Close()
+	return listener.Addr().(*net.TCPAddr).Port
 }
