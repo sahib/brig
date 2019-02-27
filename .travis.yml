@@ -16,11 +16,9 @@ install:
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
     - go get -u github.com/ipfs/ipfs-update
-    - git clone https://github.com/sahib/brig.git
     - ipfs-update install v0.4.18
-    - cd brig && make
+    - make
 
 script:
-    - cd brig
     - export PATH="${GOPATH}/bin:${PATH}"
     - gotest -v ./...
