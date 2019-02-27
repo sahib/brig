@@ -15,10 +15,6 @@ var (
 	TestRegistryPath = "/tmp/test-registry.yml"
 )
 
-func init() {
-	os.Setenv("BRIG_REGISTRY_PATH", TestRegistryPath)
-}
-
 func TestRepoInit(t *testing.T) {
 	testDir := "/tmp/.brig-repo-test"
 	require.Nil(t, os.RemoveAll(testDir))

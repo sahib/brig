@@ -1,24 +1,25 @@
 language: go
 sudo: required
 go:
-    - "1.9"
-    - "1.10"
     - "1.11"
+    - "1.12"
 notifications:
     email:
       - sahib@online.de
 install:
     - sudo apt-get install fuse
-    - go get -u github.com/phogolabs/parcello
-    - go get -u github.com/phogolabs/parcello/cmd/parcello
-    - go get -d -t -v github.com/sahib/brig
-    - go get -u github.com/rakyll/gotest
-    - cd $GOPATH/src/github.com/sahib/brig
     - mkdir -p ${GOPATH}/bin
     - export GOBIN=${GOPATH}/bin
-    - make
+    - go get -u github.com/rakyll/gotest
+    - go get -u github.com/phogolabs/parcello
+    - go get -u github.com/phogolabs/parcello/cmd/parcello
+    - go get -u github.com/ipfs/ipfs-update
+    - git clone https://github.com/sahib/brig.git
+    - export PATH="${GOPATH}/bin:${PATH}"
+    - ipfs-update install v0.4.18
+    - cd brig && make
 
 script:
-    - cd $GOPATH/src/github.com/sahib/brig
+    - cd brig
     - export PATH="${GOPATH}/bin:${PATH}"
     - gotest -v ./...

@@ -24,8 +24,6 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 	apiPort := 5011 + portOff
 
 	os.Setenv("IPFS_PATH", ipfsPath)
-	fmt.Println("->", ipfsPath)
-
 	script := [][]string{
 		{"ipfs", "init"},
 		{"ipfs", "config", "--json", "Addresses.Swarm", fmt.Sprintf("[\"/ip4/127.0.0.1/tcp/%d\"]", swmPort)},

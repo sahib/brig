@@ -3,6 +3,7 @@ package httpipfs
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +25,7 @@ func TestPubSub(t *testing.T) {
 			require.Nil(t, sub.Close())
 		}()
 
+		time.Sleep(1 * time.Second)
 		data := []byte("hello world!")
 		go nd.PublishEvent("test-topic", data)
 

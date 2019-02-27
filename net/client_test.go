@@ -3,7 +3,6 @@ package net
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -40,11 +39,9 @@ func withNetServer(t *testing.T, name string, backendPort int, basePath string, 
 	}()
 
 	// The following env vars are only read in FromName.
-	require.Nil(t, os.Setenv("BRIG_MOCK_PORT", fmt.Sprintf("%d", backendPort)))
 	require.Nil(t, os.Setenv("BRIG_MOCK_USER", name))
 	require.Nil(t, os.Setenv("BRIG_MOCK_NET_DB_PATH", netDbPath))
-	require.Nil(t, os.Setenv("BRIG_REGISTRY_PATH", regDbPath))
-	bk, err := backend.FromName("mock", basePath, nil)
+	bk, err := backend.FromName("mock", basePath, backendPort)
 	require.Nil(t, err)
 
 	err = repo.Init(basePath, name, "password", "mock", 6666)

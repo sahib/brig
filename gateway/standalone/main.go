@@ -145,7 +145,7 @@ func main() {
 	})
 
 	userDbPath := filepath.Join(dbPath, "users")
-	gw, err := gateway.NewGateway(fs, rmtMock, cfg.Section("gateway"), userDbPath)
+	gw, err := gateway.NewGateway(fs, rmtMock, cfg.Section("gateway"), nil, userDbPath)
 	if err != nil {
 		log.Fatalf("failed to open gateway: %v", err)
 	}
