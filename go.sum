@@ -1,7 +1,5 @@
 bazil.org/fuse v0.0.0-20180421153158-65cc252bf669 h1:FNCRpXiquG1aoyqcIWVFmpTSKVcx2bQD38uZZeGtdlw=
 bazil.org/fuse v0.0.0-20180421153158-65cc252bf669/go.mod h1:Xbm+BRKSBEpa4q4hTSxohYNQpsxXPbPry4JJWOB3LB8=
-bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024 h1:ZVEtxUBovI1CMcmmbJTiXty8PIuiszcsREpGgfPRTFk=
-bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024/go.mod h1:SK3ZibXcOAUXNzKDFwVbcimuU+Sw2GCdxZHtZ+yyZrA=
 github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7 h1:PqzgE6kAMi81xWQA2QIVxjWkFHptGgC547vchpUbtFo=
 github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7/go.mod h1:bOvUY6CB00SOBii9/FifXqc0awNKxLFCL/+pkDPuyl8=
 github.com/NYTimes/gziphandler v1.1.0 h1:wkMjq4kSz11Zer+ncYWNBQDlj9Y5RLloY/Tb8yOj6gA=
@@ -122,6 +120,8 @@ github.com/sahib/config v0.2.0 h1:wdUC7PKeaHhN+9nLfuN3DkPllzGQc4bsFDg5El5ngz0=
 github.com/sahib/config v0.2.0/go.mod h1:BdxJ2ls9EpvLPX8Ql6Wagqiz/6Ysh93EJt0j9EKqIpc=
 github.com/sahib/go-ipfs-api v1.4.1 h1:6Gy7oYy4UI9IOPha5LJYL4FiMkwLc3M1ulmT2hB+cO0=
 github.com/sahib/go-ipfs-api v1.4.1/go.mod h1:+ERJXpKdHQN5j7UqtC3vFkUfqqjK9bMsQFZ589P4ff4=
+github.com/sdemontfort/go-mimemagic v0.0.0-20150708072242-d026a5785116 h1:jzyvoTYAiryRneCJGQUQJUjbVrmz8lxOaVe/a0ZMq64=
+github.com/sdemontfort/go-mimemagic v0.0.0-20150708072242-d026a5785116/go.mod h1:thqX5LmtQKCS+jPMYrorba/GB3YjfZfeLfg8+C6rFTs=
 github.com/sirupsen/logrus v1.3.0 h1:hI/7Q+DtNZ2kINb6qt/lS+IyXnHQe9e90POfeewL/ME=
 github.com/sirupsen/logrus v1.3.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

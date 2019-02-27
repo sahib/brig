@@ -2,7 +2,6 @@ module github.com/sahib/brig
 
 require (
 	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
-	bitbucket.org/taruti/mimemagic v0.0.0-20120314151349-e5179c80a024
 	github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7 // indirect
 	github.com/NYTimes/gziphandler v1.1.0
 	github.com/VividCortex/ewma v1.1.1 // indirect
@@ -44,6 +43,7 @@ require (
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
 	github.com/sahib/config v0.2.0
 	github.com/sahib/go-ipfs-api v1.4.1
+	github.com/sdemontfort/go-mimemagic v0.0.0-20150708072242-d026a5785116
 	github.com/sirupsen/logrus v1.3.0
 	github.com/stretchr/testify v1.3.0
 	github.com/tinylib/msgp v1.1.0 // indirect

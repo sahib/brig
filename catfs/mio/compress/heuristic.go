@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bitbucket.org/taruti/mimemagic"
+	"github.com/sdemontfort/go-mimemagic"
 )
 
 var (
