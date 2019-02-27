@@ -283,7 +283,7 @@ func (nh *netHandler) RemoteAddOrUpdate(call capnp.Net_remoteAddOrUpdate) error 
 	}
 
 	if rp.Owner == remote.Name {
-		return fmt.Errorf("refusing to add a remote with the same as ours.")
+		return fmt.Errorf("refusing to add a remote with the same as the repo owner")
 	}
 
 	if err := rp.Remotes.AddOrUpdateRemote(*remote); err != nil {

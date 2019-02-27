@@ -1,7 +1,6 @@
 package httpipfs
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -14,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// WithIpfs starts a new IPFS instance and calls `fn` with the API port to it.
+// `portOff` is the offset to add on all standard ports.
 func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 	ipfsPath, err := ioutil.TempDir("", "brig-httpipfs-test-")
 	require.Nil(t, err)
@@ -65,6 +66,7 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 
 }
 
+// WithDoubleIpfs starts two IPFS instances in parallel.
 func WithDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPortA, apiPortB int)) {
 	chPortA := make(chan int)
 	chPortB := make(chan int)
@@ -83,33 +85,4 @@ func WithDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPortA, a
 	fn(t, <-chPortA, <-chPortB)
 	stop <- true
 	stop <- true
-}
-
-func TestIpfsStartup(t *testing.T) {
-	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
-		nd, err := NewNode(apiPort)
-		require.Nil(t, err)
-
-		hash, err := nd.Add(bytes.NewReader([]byte("hello")))
-		require.Nil(t, err, fmt.Sprintf("%v", err))
-		require.Equal(t, "QmWfVY9y3xjsixTgbd9AorQxH7VtMpzfx2HaWtsoUYecaX", hash.String())
-	})
-}
-
-func TestDoubleIpfsStartup(t *testing.T) {
-	WithDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
-		ndA, err := NewNode(apiPortA)
-		require.Nil(t, err)
-
-		ndB, err := NewNode(apiPortB)
-		require.Nil(t, err)
-
-		idA, err := ndA.Identity()
-		require.Nil(t, err, fmt.Sprintf("%v", err))
-
-		idB, err := ndB.Identity()
-		require.Nil(t, err)
-
-		require.NotEqual(t, idA.Addr, idB.Addr)
-	})
 }
