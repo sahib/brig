@@ -9,6 +9,7 @@ notifications:
 install:
     - sudo apt-get install fuse
     - mkdir -p ${GOPATH}/bin
+    - export GO111MODULE=on
     - export GOBIN=${GOPATH}/bin
     - go get -u github.com/rakyll/gotest
     - go get -u github.com/phogolabs/parcello
