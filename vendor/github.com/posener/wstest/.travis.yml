@@ -1,0 +1,13 @@
+language: go
+sudo: false
+go:
+  - '1.10'
+
+before_install:
+  - go get -u -t ./...
+
+script:
+  - go test -count 20 -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

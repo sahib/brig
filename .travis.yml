@@ -9,14 +9,14 @@ notifications:
 install:
     - sudo apt-get install fuse
     - mkdir -p ${GOPATH}/bin
-    - export GO111MODULE=on
+    - export GO111MODULE=auto
     - export GOBIN=${GOPATH}/bin
+    - export PATH="${GOPATH}/bin:${PATH}"
     - go get -u github.com/rakyll/gotest
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
     - go get -u github.com/ipfs/ipfs-update
     - git clone https://github.com/sahib/brig.git
-    - export PATH="${GOPATH}/bin:${PATH}"
     - ipfs-update install v0.4.18
     - cd brig && make
 
