@@ -13,7 +13,7 @@ import (
 
 func TestAddCatBasic(t *testing.T) {
 	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
-		nd, err := NewNode(apiPort)
+		nd, err := NewNode(apiPort, "")
 		require.Nil(t, err)
 
 		data := testutil.CreateDummyBuf(4096 * 1024)
@@ -33,7 +33,7 @@ func TestAddCatBasic(t *testing.T) {
 
 func TestAddCatSize(t *testing.T) {
 	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
-		nd, err := NewNode(apiPort)
+		nd, err := NewNode(apiPort, "")
 		require.Nil(t, err)
 
 		data := testutil.CreateDummyBuf(4096 * 1024)

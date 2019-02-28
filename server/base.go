@@ -22,6 +22,7 @@ import (
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/gateway"
 	p2pnet "github.com/sahib/brig/net"
+	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/conductor"
@@ -177,9 +178,22 @@ func (b *base) loadBackend() error {
 	backendName := b.repo.BackendName()
 	log.Infof("Loading backend `%s`", backendName)
 
+	pubKey, err := b.repo.Keyring().OwnPubKey()
+	if err != nil {
+		return err
+	}
+
+	fingerprint := peer.BuildFingerprint("", pubKey)
+
 	ipfsPort := int(b.repo.Config.Int("daemon.ipfs_port"))
 	backendPath := b.repo.BackendPath(backendName)
-	realBackend, err := backend.FromName(backendName, backendPath, ipfsPort)
+	realBackend, err := backend.FromName(
+		backendName,
+		backendPath,
+		fingerprint.PubKeyID(),
+		ipfsPort,
+	)
+
 	if err != nil {
 		log.Errorf("Failed to load backend: %v", err)
 		return err

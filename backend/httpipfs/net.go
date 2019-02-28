@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -46,9 +49,29 @@ func (cw *connWrapper) Close() error {
 
 // Dial will open a connection to the peer identified by `peerHash`,
 // running `protocol` over it.
-func (nd *Node) Dial(peerHash, protocol string) (net.Conn, error) {
+func (nd *Node) Dial(peerHash, fingerprint, protocol string) (net.Conn, error) {
 	if !nd.isOnline() {
 		return nil, ErrOffline
+	}
+
+	self, err := nd.Identity()
+	if err != nil {
+		return nil, err
+	}
+
+	if self.Addr == peerHash {
+		// Special case:
+		// When we use the same IPFS daemon for different
+		// brig repositiories, we want still to be able to dial
+		// other brig instances. Since we cannot dial over ipfs
+		// we simply have the port written to /tmp where
+		// we can pick it up on Dial()
+		addr, err := readLocalAddr(peerHash, fingerprint)
+		if err != nil {
+			return nil, err
+		}
+
+		return net.Dial("tcp", addr)
 	}
 
 	protocol = path.Join(protocol, peerHash)
@@ -154,10 +177,11 @@ func (sa *addrWrapper) String() string {
 
 type listenerWrapper struct {
 	net.Listener
-	protocol   string
-	peer       string
-	targetAddr string
-	sh         *shell.Shell
+	protocol    string
+	peer        string
+	targetAddr  string
+	fingerprint string
+	sh          *shell.Shell
 }
 
 func (lw *listenerWrapper) Addr() net.Addr {
@@ -169,7 +193,32 @@ func (lw *listenerWrapper) Addr() net.Addr {
 
 func (lw *listenerWrapper) Close() error {
 	defer lw.Listener.Close()
+	defer deleteLocalAddr(lw.peer, lw.fingerprint)
 	return closeStream(lw.sh, lw.protocol, lw.targetAddr, "")
+}
+
+func buildLocalAddrPath(id, fingerprint string) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf("brig-%s:%s.addr", id, fingerprint))
+}
+
+func readLocalAddr(id, fingerprint string) (string, error) {
+	path := buildLocalAddrPath(id, fingerprint)
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+func deleteLocalAddr(id, fingerprint string) error {
+	path := buildLocalAddrPath(id, fingerprint)
+	return os.RemoveAll(path)
+}
+
+func writeLocalAddr(id, fingerprint, addr string) error {
+	path := buildLocalAddrPath(id, fingerprint)
+	return ioutil.WriteFile(path, []byte(addr), 0644)
 }
 
 // Listen will listen to the protocol
@@ -207,12 +256,17 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 		return nil, err
 	}
 
+	if err := writeLocalAddr(self.Addr, nd.fingerprint, localAddr); err != nil {
+		return nil, err
+	}
+
 	return &listenerWrapper{
-		Listener:   lst,
-		protocol:   protocol,
-		peer:       self.Addr,
-		targetAddr: addr,
-		sh:         nd.sh,
+		Listener:    lst,
+		protocol:    protocol,
+		peer:        self.Addr,
+		targetAddr:  addr,
+		fingerprint: nd.fingerprint,
+		sh:          nd.sh,
 	}, nil
 }
 
@@ -263,12 +317,40 @@ func (p *pinger) Close() error {
 	return nil
 }
 
+func (p *pinger) update(ctx context.Context, addr, self string) {
+	// Edge case: test setups where we ping ourselves.
+	if self == addr {
+		p.mu.Lock()
+		p.err = nil
+		p.lastSeen = time.Now()
+		p.roundtrip = time.Duration(0)
+		p.mu.Unlock()
+		return
+	}
+
+	log.Debugf("backend: do ping »%s«", addr)
+	roundtrip, err := ping(p.nd.sh, addr)
+	p.mu.Lock()
+	log.Debugf("backend: got »%s«: %v %v", addr, roundtrip, err)
+
+	if err != nil {
+		p.err = err
+	} else {
+		p.err = nil
+		p.lastSeen = time.Now()
+		p.roundtrip = roundtrip
+	}
+
+	p.mu.Unlock()
+}
+
 func (p *pinger) Run(ctx context.Context, addr string) error {
 	self, err := p.nd.Identity()
 	if err != nil {
 		return err
 	}
 
+	p.update(ctx, addr, self.Addr)
 	tckr := time.NewTicker(10 * time.Second)
 
 	for {
@@ -276,30 +358,7 @@ func (p *pinger) Run(ctx context.Context, addr string) error {
 		case <-ctx.Done():
 			break
 		case <-tckr.C:
-			// Edge case: test setups where we ping ourselves.
-			if self.Addr == addr {
-				p.mu.Lock()
-				p.err = nil
-				p.lastSeen = time.Now()
-				p.roundtrip = time.Duration(0)
-				p.mu.Unlock()
-				continue
-			}
-
-			log.Debugf("backend: do ping »%s«", addr)
-			roundtrip, err := ping(p.nd.sh, addr)
-			p.mu.Lock()
-			log.Debugf("backend: got »%s«: %v %v", addr, roundtrip, err)
-
-			if err != nil {
-				p.err = err
-			} else {
-				p.err = nil
-				p.lastSeen = time.Now()
-				p.roundtrip = roundtrip
-			}
-
-			p.mu.Unlock()
+			p.update(ctx, addr, self.Addr)
 		}
 	}
 }

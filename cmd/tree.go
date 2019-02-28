@@ -170,7 +170,7 @@ func (n *treeNode) Print(cfg *treeCfg) {
 	formatted := format(n)
 	pinState := ""
 	if cfg.showPin && n.entry.IsPinned {
-		pinState += " " + color.CyanString("🖈")
+		pinState = " " + pinStateToSymbol(n.entry.IsPinned, n.entry.IsExplicit)
 	}
 
 	fmt.Printf("%s%s%s\n", prefix, formatted, pinState)

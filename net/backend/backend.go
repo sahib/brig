@@ -42,7 +42,7 @@ type Backend interface {
 
 	// Dial builds up a connection to another peer.
 	// If only ever one protocol is used, just pass the same string always.
-	Dial(peerAddr, protocol string) (stdnet.Conn, error)
+	Dial(peerAddr, fingerprint, protocol string) (stdnet.Conn, error)
 
 	// Listen returns a listener, that will yield incoming connections
 	// from other peers when calling Accept.

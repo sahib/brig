@@ -255,7 +255,6 @@ func (sv *Server) PeekFingerprint(ctx context.Context, addr string) (peer.Finger
 		return peer.Fingerprint(""), "", nil
 	}
 
-	log.Debugf("remote name: %v", remoteName)
 	return peer.BuildFingerprint(addr, pubKey), remoteName, nil
 }
 
@@ -306,6 +305,8 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 		return
 	}
 
+	ownFingerprint := peer.BuildFingerprint("", ownPubKey)
+
 	// The respective handler should get its own context it can listen to.
 	reqCtx, reqCancel := context.WithCancel(ctx)
 	reqHdl := &requestHandler{
@@ -326,6 +327,9 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 
 		// Create a temporary fingerprint to get a hashed version of pubkey.
 		remoteFp := peer.BuildFingerprint("", pubKey)
+		if remoteFp == ownFingerprint {
+			return fmt.Errorf("cannot dial self")
+		}
 
 		// Linear scan over all remotes.
 		// If this proves to be a performance problem, we can fix it later.

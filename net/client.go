@@ -59,8 +59,8 @@ func DialByAddr(
 	}
 
 	// Low level by addr, not by brig's remote name:
-	log.Debugf("raw dial to %s", addr)
-	rawConn, err := bk.Dial(addr, "brig/caprpc")
+	log.Debugf("raw dial to %s:%s", addr, fingerprint.PubKeyID())
+	rawConn, err := bk.Dial(addr, fingerprint.PubKeyID(), "brig/caprpc")
 	if err != nil {
 		return nil, e.Wrapf(err, "raw")
 	}
@@ -78,11 +78,13 @@ func DialByAddr(
 		return nil
 	})
 
+	log.Debugf("trigger auth")
 	// Trigger the authentication:
 	// (otherwise it would be triggered on the first read/write)
 	if err := authConn.Trigger(); err != nil {
 		return nil, e.Wrapf(err, "auth")
 	}
+	log.Debugf("trigger auth done")
 
 	// Setup capnp-rpc:
 	transport := rpc.StreamTransport(rawConn)
@@ -112,7 +114,7 @@ func PeekRemotePubkey(
 	}
 
 	log.Debugf("peek to %s", addr)
-	rawConn, err := bk.Dial(addr, "brig/caprpc")
+	rawConn, err := bk.Dial(addr, "", "brig/caprpc")
 	if err != nil {
 		return nil, "", e.Wrapf(err, "raw")
 	}

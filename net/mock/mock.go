@@ -137,7 +137,7 @@ func getPortFromAddr(peerAddr string) (int, error) {
 }
 
 // Dial is a fake implementation.
-func (nb *NetBackend) Dial(peerAddr, protocol string) (net.Conn, error) {
+func (nb *NetBackend) Dial(peerAddr, fingerprint, protocol string) (net.Conn, error) {
 	port, err := getPortFromAddr(peerAddr)
 	if err != nil {
 		return nil, err

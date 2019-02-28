@@ -24,6 +24,7 @@ type Node struct {
 	mu             sync.Mutex
 	cachedIdentity string
 	allowNetOps    bool
+	fingerprint    string
 }
 
 func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
@@ -50,9 +51,9 @@ func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
 	return raw.Experimental, nil
 }
 
-// NewNode returns a new http based IPFS backend.
+// NewNode returns a new http based IPFS backend., "")
 // It uses the API server at `port`.
-func NewNode(port int) (*Node, error) {
+func NewNode(port int, fingerprint string) (*Node, error) {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	log.Infof("Connecting to IPFS HTTP API at %s", addr)
 	sh := shell.NewShell(addr)
@@ -71,6 +72,7 @@ func NewNode(port int) (*Node, error) {
 	return &Node{
 		sh:          sh,
 		allowNetOps: true,
+		fingerprint: fingerprint,
 	}, nil
 }
 
