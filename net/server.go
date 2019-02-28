@@ -92,10 +92,10 @@ func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
 		return nil, e.Wrapf(err, "new-server")
 	}
 
-	log.Debugf("Publish own identity to network: %s", rp.Owner)
+	log.Debugf("publishing own identity to network: %s", rp.Owner)
 	if err := publishSelf(bk, rp.Owner); err != nil {
-		log.Warningf("Failed to publish `%v` to the network: %v", rp.Owner, err)
-		log.Warningf("You will not be visible to other users.")
+		log.Warningf("failed to publish `%v` to the network: %v", rp.Owner, err)
+		log.Warningf("you will not be visible to other users.")
 	}
 
 	return &Server{

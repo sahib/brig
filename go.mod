@@ -30,6 +30,8 @@ require (
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/mitchellh/gox v0.4.0 // indirect
+	github.com/mitchellh/iochan v1.0.0 // indirect
 	github.com/multiformats/go-multiaddr v1.4.0 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.2.5 // indirect
 	github.com/multiformats/go-multiaddr-net v1.7.1 // indirect

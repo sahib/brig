@@ -311,9 +311,9 @@ func (p *pinger) Err() error {
 func (p *pinger) Close() error {
 	if p.cancel != nil {
 		p.cancel()
+		p.cancel = nil
 	}
 
-	p.cancel = nil
 	return nil
 }
 
@@ -328,11 +328,10 @@ func (p *pinger) update(ctx context.Context, addr, self string) {
 		return
 	}
 
-	log.Debugf("backend: do ping »%s«", addr)
+	// Do the network op without a lock:
 	roundtrip, err := ping(p.nd.sh, addr)
-	p.mu.Lock()
-	log.Debugf("backend: got »%s«: %v %v", addr, roundtrip, err)
 
+	p.mu.Lock()
 	if err != nil {
 		p.err = err
 	} else {

@@ -106,14 +106,14 @@ func (b *base) Handle(ctx context.Context, conn net.Conn) {
 	)
 
 	if err := rpcConn.Wait(); err != nil {
-		log.Warnf("Serving rpc failed: %v", err)
+		log.Warnf("serving rpc failed: %v", err)
 	}
 
 	if err := rpcConn.Close(); err != nil {
 		// Close seems to be complaining that the conn was
 		// already closed, but be safe and expect this.
 		if err != rpc.ErrConnClosed {
-			log.Warnf("Failed to close rpc conn: %v", err)
+			log.Warnf("failed to close rpc conn: %v", err)
 		}
 	}
 }
@@ -123,9 +123,10 @@ func (b *base) Handle(ctx context.Context, conn net.Conn) {
 func (b *base) loadRepo() error {
 	// Sanity check, so that we do not call a repo command without
 	// an initialized repo. Error early for a meaningful message here.
+	log.Infof("loading repository at %s", b.basePath)
 	rp, err := repo.Open(b.basePath, b.password)
 	if err != nil {
-		log.Warningf("Failed to load repository at `%s`: %v", b.basePath, err)
+		log.Warningf("failed to load repository at `%s`: %v", b.basePath, err)
 		return err
 	}
 
@@ -152,6 +153,7 @@ func (b *base) loadProfileServer() {
 		return
 	}
 
+	log.Infof("loading pprof server")
 	lst, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Warningf("failed to get a new port for the pprof server")
@@ -176,7 +178,7 @@ func (b *base) loadProfileServer() {
 
 func (b *base) loadBackend() error {
 	backendName := b.repo.BackendName()
-	log.Infof("Loading backend `%s`", backendName)
+	log.Infof("loading backend `%s`", backendName)
 
 	pubKey, err := b.repo.Keyring().OwnPubKey()
 	if err != nil {
@@ -231,7 +233,6 @@ func (b *base) loadPeerServer() error {
 		addrs = append(addrs, remote.Fingerprint.Addr())
 	}
 
-	log.Infof("syncing pingers")
 	if err := srv.PingMap().Sync(addrs); err != nil {
 		return err
 	}

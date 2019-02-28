@@ -59,7 +59,7 @@ var DefaultsV0 = config.DefaultMapping{
 			Docs:         "Wether the gateway should be running",
 		},
 		"port": config.DefaultEntry{
-			Default:      5000,
+			Default:      6001,
 			NeedsRestart: false,
 			Docs:         "On what port the gateway runs on",
 		},

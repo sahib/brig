@@ -37,7 +37,7 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func readPasswordFromHelper(basePath string) (string, error) {
+func readPasswordFromHelper(basePath string, passwordFn func() (string, error)) (string, error) {
 	configPath := filepath.Join(basePath, "config.yml")
 	cfg, err := defaults.OpenMigratedConfig(configPath)
 	if err != nil {
@@ -46,7 +46,10 @@ func readPasswordFromHelper(basePath string) (string, error) {
 
 	passwordCmd := cfg.String("repo.password_command")
 	if passwordCmd == "" {
-		return "", fmt.Errorf("no password helper set")
+		log.Infof("reading password via client logic")
+		return passwordFn()
+	} else {
+		log.Infof("password was read from the password helper")
 	}
 
 	return pwutil.ReadPasswordFromHelper(basePath, passwordCmd)
@@ -55,7 +58,7 @@ func readPasswordFromHelper(basePath string) (string, error) {
 func switchToSyslog() {
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
 	if err != nil {
-		log.Warningf("Failed to open connection to syslog for brig: %v", err)
+		log.Warningf("failed to open connection to syslog for brig: %v", err)
 		logFd, err := ioutil.TempFile("", "brig-*.log")
 		if err != nil {
 			log.Warningf("")
@@ -112,29 +115,21 @@ func BootServer(
 	}
 
 	addr := fmt.Sprintf("%s:%d", bindHost, port)
-	log.Infof("Starting daemon for %s on port %s", basePath, addr)
+	log.Infof("starting daemon for %s on port %s", basePath, addr)
 
-	password, err := readPasswordFromHelper(basePath)
+	password, err := readPasswordFromHelper(basePath, passwordFn)
 	if err != nil {
-		log.Infof("Failed to read password from helper: %s", err)
-		log.Infof("Attempting to read it via client logic.")
-
-		password, err = passwordFn()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		log.Infof("Password is coming from the configured password helper")
+		return nil, err
 	}
 
 	if err := repo.CheckPassword(basePath, password); err != nil {
 		return nil, err
 	}
 
-	log.Infof("Password seems to be valid...")
+	log.Infof("password is valid")
 
 	if err := increaseMaxOpenFds(); err != nil {
-		log.Warningf("Failed to incrase number of open fds")
+		log.Warningf("failed to incrase number of open fds")
 	}
 
 	ctx := context.Background()
@@ -164,7 +159,7 @@ func BootServer(
 		<-quitCh
 		baseServer.Quit()
 		if err := baseServer.Close(); err != nil {
-			log.Warnf("Failed to close local server listener: %v", err)
+			log.Warnf("failed to close local server listener: %v", err)
 		}
 	}()
 

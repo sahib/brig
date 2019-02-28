@@ -442,7 +442,7 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 		file.SetUser(lkr.owner)
 
 		// Add it again when the hash was changed.
-		log.Debugf("Adding %s (%v)", file.Path(), file.BackendHash())
+		log.Debugf("adding %s (%v)", file.Path(), file.BackendHash())
 		if err := parentDir.Add(lkr, file); err != nil {
 			return true, err
 		}

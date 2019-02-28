@@ -107,7 +107,7 @@ func (pm *PingMap) Sync(addrs []string) error {
 		return ErrPingMapClosed
 	}
 
-	log.Infof("Syncing ping map entries...")
+	log.Infof("syncing ping map entries...")
 
 	// Remember to schedule an update right after sync.
 	// This will only run after Sync() due the common lock.
@@ -142,7 +142,6 @@ func (pm *PingMap) Sync(addrs []string) error {
 		}
 	}
 
-	log.Infof("Finished syncing pinger entries...")
 	return nil
 }
 
