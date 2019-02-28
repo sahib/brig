@@ -48,8 +48,13 @@ type Gateway struct {
 // NewGateway returns a newly built gateway.
 // This function does not yet start a server.
 func NewGateway(fs *catfs.FS, rapi remotesapi.RemotesAPI, cfg *config.Config, ev *events.Listener, dbPath string) (*Gateway, error) {
+	userDb, err := db.NewUserDatabase(dbPath)
+	if err != nil {
+		return nil, err
+	}
+
 	evHdl := endpoints.NewEventsHandler(rapi, ev)
-	state, err := endpoints.NewState(fs, rapi, cfg, evHdl, ev, dbPath)
+	state, err := endpoints.NewState(fs, rapi, cfg, evHdl, ev, userDb)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +82,6 @@ func NewGateway(fs *catfs.FS, rapi remotesapi.RemotesAPI, cfg *config.Config, ev
 			return
 		}
 
-		state, err := endpoints.NewState(fs, rapi, cfg, evHdl, ev, dbPath)
-		if err != nil {
-			log.Errorf("failed to re-create state: %v", err)
-		}
-
-		gw.state = state
 		gw.Start()
 	}
 
@@ -309,4 +308,8 @@ func (gw *Gateway) Start() {
 // UserDatabase returns the user database API.
 func (gw *Gateway) UserDatabase() *db.UserDatabase {
 	return gw.state.UserDatabase()
+}
+
+func (gw *Gateway) Close() error {
+	return gw.state.UserDatabase().Close()
 }

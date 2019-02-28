@@ -392,30 +392,36 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 }
 
 func (b *base) Quit() (err error) {
-	log.Info("Shutting down brigd due to QUIT command")
+	log.Info("shutting down brigd due to QUIT command")
 
-	if b.peerServer != nil {
-		log.Infof("Closing peer server...")
-		if err = b.peerServer.Close(); err != nil {
-			log.Warningf("Failed to close peer server: %v", err)
-		}
+	if err := b.gateway.Stop(); err != nil {
+		log.Warningf("could not close gateway: %v", err)
+	}
 
-		b.evListenerCancel()
-		log.Infof("Shutting down event listener...")
-		if b.evListener != nil {
-			if err := b.evListener.Close(); err != nil {
-				log.Warningf("shutting down event handler failed: %v", err)
-			}
+	if err := b.gateway.Close(); err != nil {
+		log.Warningf("could not shut down gateway: %v", err)
+	}
+
+	log.Infof("closing peer server...")
+	if err = b.peerServer.Close(); err != nil {
+		log.Warningf("failed to close peer server: %v", err)
+	}
+
+	b.evListenerCancel()
+	log.Infof("shutting down event listener...")
+	if b.evListener != nil {
+		if err := b.evListener.Close(); err != nil {
+			log.Warningf("shutting down event handler failed: %v", err)
 		}
 	}
 
-	log.Infof("Trying to lock repository...")
+	log.Infof("trying to lock repository...")
 
 	if err = b.repo.Close(b.password); err != nil {
-		log.Warningf("Failed to lock repository: %v", err)
+		log.Warningf("failed to lock repository: %v", err)
 	}
 
-	log.Infof("Trying to unmount any mounts...")
+	log.Infof("trying to unmount any mounts...")
 	if err := b.mounts.Close(); err != nil {
 		return err
 	}

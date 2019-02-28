@@ -52,7 +52,7 @@ func NewState(
 	cfg *config.Config,
 	evHdl *EventsHandler,
 	ev *events.Listener,
-	dbPath string,
+	userDb *db.UserDatabase,
 ) (*State, error) {
 	authKey, err := readOrInitKeyFromConfig(cfg, "auth.session-authentication-key", 64)
 	if err != nil {
@@ -70,11 +70,6 @@ func NewState(
 		return nil, err
 	}
 
-	userDb, err := db.NewUserDatabase(dbPath)
-	if err != nil {
-		return nil, err
-	}
-
 	return &State{
 		fs:     fs,
 		rapi:   rapi,
@@ -88,7 +83,7 @@ func NewState(
 // Close cleans up any potentially open resource.
 func (s *State) Close() error {
 	s.evHdl.Shutdown()
-	return s.userDb.Close()
+	return nil
 }
 
 // UserDatabase returns the currently opened user database.
