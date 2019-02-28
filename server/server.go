@@ -48,10 +48,9 @@ func readPasswordFromHelper(basePath string, passwordFn func() (string, error)) 
 	if passwordCmd == "" {
 		log.Infof("reading password via client logic")
 		return passwordFn()
-	} else {
-		log.Infof("password was read from the password helper")
 	}
 
+	log.Infof("password was read from the password helper")
 	return pwutil.ReadPasswordFromHelper(basePath, passwordCmd)
 }
 

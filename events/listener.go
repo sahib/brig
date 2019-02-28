@@ -26,12 +26,17 @@ type Listener struct {
 
 	bk        backend.Backend
 	cfg       *config.Config
-	callbacks map[EventType][]func(*Event)
+	callbacks map[EventType][]callback
 	cancels   map[string]context.CancelFunc
 	evSendCh  chan Event
 	evRecvCh  chan Event
 	ownAddr   string
 	isClosed  bool
+}
+
+type callback struct {
+	fn          func(*Event)
+	notifyOnOwn bool
 }
 
 // NewListener constructs a new listener.
@@ -43,7 +48,7 @@ func NewListener(cfg *config.Config, bk backend.Backend, ownAddr string) *Listen
 		bk:        bk,
 		cfg:       cfg,
 		ownAddr:   ownAddr,
-		callbacks: make(map[EventType][]func(*Event)),
+		callbacks: make(map[EventType][]callback),
 		cancels:   make(map[string]context.CancelFunc),
 		evSendCh:  make(chan Event, maxBurstSize),
 		evRecvCh:  make(chan Event, maxBurstSize),
@@ -75,8 +80,10 @@ func (lst *Listener) Close() error {
 }
 
 // RegisterEventHandler remembers that `hdl` should be called whenever a event
-// of type `ev` is being received.
-func (lst *Listener) RegisterEventHandler(ev EventType, hdl func(ev *Event)) {
+// of type `ev` is being received. If `notifyOnOwn` is true, the handler
+// will only be called for changes that came from our own node. If it is `false`
+// it will only be called for
+func (lst *Listener) RegisterEventHandler(ev EventType, notifyOnOwn bool, hdl func(ev *Event)) {
 	lst.mu.Lock()
 	defer lst.mu.Unlock()
 
@@ -84,7 +91,10 @@ func (lst *Listener) RegisterEventHandler(ev EventType, hdl func(ev *Event)) {
 		return
 	}
 
-	lst.callbacks[ev] = append(lst.callbacks[ev], hdl)
+	lst.callbacks[ev] = append(lst.callbacks[ev], callback{
+		fn:          hdl,
+		notifyOnOwn: notifyOnOwn,
+	})
 }
 
 func eventLoop(evCh chan Event, interval time.Duration, rps float64, fn func(ev Event)) {
@@ -148,7 +158,9 @@ func (lst *Listener) eventRecvLoop() {
 		lst.mu.Lock()
 		if cbs, ok := lst.callbacks[ev.Type]; ok {
 			for _, cb := range cbs {
-				go cb(&ev)
+				if !cb.notifyOnOwn {
+					go cb.fn(&ev)
+				}
 			}
 		}
 		lst.mu.Unlock()
@@ -175,6 +187,16 @@ func (lst *Listener) eventSendLoop() {
 	})
 }
 
+func (lst *Listener) publishToSelf(ev Event) {
+	if cbs, ok := lst.callbacks[ev.Type]; ok {
+		for _, cb := range cbs {
+			if cb.notifyOnOwn {
+				go cb.fn(&ev)
+			}
+		}
+	}
+}
+
 // PublishEvent notifies other peers that something on our
 // side changed. The "something" is defined by `ev`.
 // PublishEvent does not block.
@@ -189,6 +211,10 @@ func (lst *Listener) PublishEvent(ev Event) error {
 	if !lst.cfg.Bool("enabled") {
 		return nil
 	}
+
+	// Some submodules (like the gateway) also want to be notified
+	// when other parts of the same server (fuse, cmdline) changed something.
+	lst.publishToSelf(ev)
 
 	// Only send the event if we are not clogged up yet.
 	// We prioritze the well-being of other systems more by

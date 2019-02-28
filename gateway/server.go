@@ -310,6 +310,7 @@ func (gw *Gateway) UserDatabase() *db.UserDatabase {
 	return gw.state.UserDatabase()
 }
 
+// Close the gateway and clean up all open resouces.
 func (gw *Gateway) Close() error {
 	return gw.state.UserDatabase().Close()
 }

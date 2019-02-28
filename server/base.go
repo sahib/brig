@@ -14,6 +14,9 @@ import (
 
 	"zombiezen.com/go/capnproto2/rpc"
 
+	// For loadProfileServer
+	_ "net/http/pprof"
+
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
@@ -150,6 +153,7 @@ func (b *base) loadRepo() error {
 
 func (b *base) loadProfileServer() {
 	if !b.repo.Config.Bool("daemon.enable_pprof") {
+		log.Debugf("not loading pprof; not enabled in config")
 		return
 	}
 
@@ -249,7 +253,7 @@ func (b *base) loadPeerServer() error {
 		self.Addr,
 	)
 
-	b.evListener.RegisterEventHandler(events.FsEvent, b.handleFsEvent)
+	b.evListener.RegisterEventHandler(events.FsEvent, false, b.handleFsEvent)
 	if err := b.evListener.SetupListeners(b.evListenerCtx, addrs); err != nil {
 		log.Warningf("failed to setup event listeners: %v", err)
 	}
@@ -333,6 +337,7 @@ func (b *base) loadAll() error {
 		return err
 	}
 
+	b.loadProfileServer()
 	return nil
 }
 

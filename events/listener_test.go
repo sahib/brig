@@ -42,7 +42,7 @@ func TestBasicRun(t *testing.T) {
 	withEventListenerPair(t, "a", "b", func(lstA, lstB *Listener) {
 		eventReceived := false
 
-		lstB.RegisterEventHandler(FsEvent, func(ev *Event) {
+		lstB.RegisterEventHandler(FsEvent, false, func(ev *Event) {
 			require.Equal(t, "a", ev.Source)
 			require.Equal(t, FsEvent, ev.Type)
 			eventReceived = true
