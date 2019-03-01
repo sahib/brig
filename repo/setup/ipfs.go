@@ -201,9 +201,10 @@ func configureIPFS(out io.Writer, ipfsPath string) error {
 		// Optional: Helps save us resources.
 		{"Experimental.QUIC", "true"},
 		{"Swarm.EnableRelayHop", "true"},
-		// {"Reprovider.Interval", "\"2h\""},
-		// {"Swarm.ConnMgr.LowWater", "100"},
-		// {"Swarm.ConnMgr.HighWater", "200"},
+		{"Reprovider.Interval", "\"2h\""},
+		{"Swarm.ConnMgr.LowWater", "100"},
+		{"Swarm.ConnMgr.HighWater", "200"},
+		{"Swarm.ConnMgr.GracePeriod", "\"60s\""},
 	}
 
 	for _, args := range config {
