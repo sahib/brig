@@ -62,6 +62,8 @@ Please refer to the [install docs](https://brig.readthedocs.io/en/latest/install
 ...If you want to know, what to do after you can read the
 [Quickstart](http://brig.readthedocs.io/en/latest/quickstart.html).
 
+There is also a ``#brig`` room on ``matrix.org`` you can join with any [Matrix](https://matrix.org) client.
+
 ## Status
 
 This software is in a **beta phase** currently. All mentioned features should
