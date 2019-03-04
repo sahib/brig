@@ -10,8 +10,8 @@ import (
 )
 
 func TestMain(t *testing.T) {
-	t.Skip("TODO: probanly a bit too much for travis")
-	require.Nil(t, IPFS(os.Stdout))
+	t.Skip("TODO: probably a bit too much for travis")
+	require.Nil(t, IPFS(os.Stdout, true, true, -1))
 }
 
 func TestInstall(t *testing.T) {

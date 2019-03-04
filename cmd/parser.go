@@ -39,7 +39,7 @@ func init() {
 }
 
 func formatGroup(category string) string {
-	return strings.ToUpper(category) + " COMMANDS"
+	return "\n" + strings.ToUpper(category) + " COMMANDS"
 }
 
 func memProfile() {
@@ -136,7 +136,7 @@ func RunCmdline(args []string) int {
 	app.Flags = []cli.Flag{
 		cli.IntFlag{
 			Name:   "port,p",
-			Usage:  "Port of the daemon to connect to.",
+			Usage:  "Port of the daemon to connect to. Normally guessed via --repo.",
 			EnvVar: "BRIG_PORT",
 			Value:  6666,
 		},
@@ -424,7 +424,7 @@ func RunCmdline(args []string) int {
 			Name:     "trash",
 			Aliases:  []string{"tr"},
 			Category: repoGroup,
-			Action:   handleTrashList,
+			Action:   withDaemon(handleTrashList, true),
 			Subcommands: []cli.Command{
 				{
 					Name:    "list",
@@ -432,7 +432,7 @@ func RunCmdline(args []string) int {
 					Action:  withDaemon(handleTrashList, true),
 				},
 				{
-					Name:    "remove",
+					Name:    "undelete",
 					Aliases: []string{"rm"},
 					Action:  withArgCheck(needAtLeast(1), withDaemon(handleTrashRemove, true)),
 				},

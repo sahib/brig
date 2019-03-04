@@ -7,16 +7,20 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"time"
 
 	humanize "github.com/dustin/go-humanize"
 	homedir "github.com/mitchellh/go-homedir"
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/util"
 	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
@@ -46,7 +50,7 @@ func guessIPFSRepo() string {
 func getAPIAddrForPath(baseDir string) (string, error) {
 	apiFile := path.Join(baseDir, defaultAPIFile)
 	if _, err := os.Stat(apiFile); err != nil {
-		return "", err
+		return "", e.Wrap(err, "does the IPFS repository exist? full error")
 	}
 
 	api, err := ioutil.ReadFile(apiFile)
@@ -243,14 +247,34 @@ func isCommandAvailable(name string) bool {
 	return path != ""
 }
 
+func waitForOpenPort(port int, maxWaitTime time.Duration) {
+	for maxWaitTime <= 0 {
+		lst, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			maxWaitTime -= time.Second
+			continue
+		}
+
+		lst.Close()
+		break
+	}
+}
+
 // IPFS setups a IPFS repo at the standard place.
 // If there is already a repository and the daemon is running, it will do nothing.
 // Otherwise it will install IPFS (if it needs to), init a repo, set config and
 // bring up the daemon in a fashion that should work for most cases.
 // It will output log messages to `out`.
-func IPFS(out io.Writer) error {
-	ipfsPath := guessIPFSRepo()
+func IPFS(out io.Writer, doSetup, setDefaultConfig bool, ipfsPath string) error {
 	if ipfsPath == "" {
+		ipfsPath = guessIPFSRepo()
+		fmt.Fprintf(out, "-- Guessed IPFS repository as %s\n", ipfsPath)
+	} else {
+		fmt.Fprintf(out, "-- IPFS repository is supposed to be at %s\n", ipfsPath)
+	}
+
+	if ipfsPath == "" && doSetup {
 		if !isCommandAvailable("ipfs") {
 			fmt.Fprintf(out, "-- There is no »ipfs« command available.\n")
 			if err := installIPFS(out); err != nil {
@@ -266,8 +290,6 @@ func IPFS(out io.Writer) error {
 
 		fmt.Fprintf(out, "-- Creating new IPFS repository.\n")
 		initIPFS(ipfsPath)
-	} else {
-		fmt.Fprintf(out, "-- Guessed IPFS repository as %s\n", ipfsPath)
 	}
 
 	apiAddr, err := getAPIAddrForPath(ipfsPath)
@@ -276,22 +298,38 @@ func IPFS(out io.Writer) error {
 	}
 
 	fmt.Fprintf(out, "-- The API address of the repo is: %s\n", apiAddr)
-	fmt.Fprintf(out, "-- Will set some default settings for IPFS.\n")
-	fmt.Fprintf(out, "-- These are required for brig to work smoothly.\n")
-
-	if err := configureIPFS(out, ipfsPath); err != nil {
-		fmt.Fprintf(out, "-- Failed to set defaults: %v\n", err)
-		return err
-	}
 
 	if !isRunning(apiAddr) {
-		fmt.Fprintf(out, "-- Daemon does not seem to be running.\n")
+		fmt.Fprintf(out, "-- IPFS Daemon does not seem to be running.\n")
 		fmt.Fprintf(out, "-- Will start one for you.\n")
 		if err := startIpfs(ipfsPath); err != nil {
 			return err
 		}
+
+		fmt.Fprintf(out, "-- Waiting up to 60s for it to fully boot up...\n")
+
+		port := 5001
+		splitApiAddr := strings.Split(apiAddr, "/")
+		if len(splitApiAddr) > 0 {
+			port, err = strconv.Atoi(splitApiAddr[len(splitApiAddr)-1])
+			if err != nil {
+				return fmt.Errorf("api addr seems wrong: %v", err)
+			}
+		}
+
+		waitForOpenPort(port, 60)
 	} else {
-		fmt.Fprintf(out, "-- Daemon seems to be running. Let's go!\n")
+		fmt.Fprintf(out, "-- IPFS Daemon seems to be running. Let's go!\n")
+	}
+
+	if setDefaultConfig {
+		fmt.Fprintf(out, "-- Will set some default settings for IPFS.\n")
+		fmt.Fprintf(out, "-- These are required for brig to work smoothly.\n")
+
+		if err := configureIPFS(out, ipfsPath); err != nil {
+			fmt.Fprintf(out, "-- Failed to set defaults: %v\n", err)
+			return err
+		}
 	}
 
 	return nil

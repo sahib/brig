@@ -1,10 +1,23 @@
 Installation
 ------------
 
-At the time of writing, there are no pre-compiled binaries. So you gonna have
-to compile ``brig`` yourself - but don't worry that is quite easy. We do not
-have many dependencies, you only need two things: The programming language *Go*
-and the version control system ``git``.
+We provide pre-compiled binaries on every release. ``brig`` comes to your computer
+as a single binary that includes everything you need. See here for the release list:
+
+   https://github.com/sahib/brig/releases
+
+
+Just download the binary for you platform and put in somewhere in your
+``$PATH`` (for example ``/usr/local/bin``).
+
+Compiling yourself
+------------------
+
+If you use a platform we don't provide binaries for or if you want to use
+a development version, you're going have to compile ``brig`` yourself. But
+don't worry that's quite easy. We do not have many dependencies. You only need
+two things: The programming language *Go* and the version control system
+``git``.
 
 Step 0: Installing Go
 ~~~~~~~~~~~~~~~~~~~~~
@@ -14,9 +27,10 @@ Please consult your package manager for that.
 
 .. warning::
 
-    ``brig`` only works with a newer version of Go (>= 1.9).
+    ``brig`` only works with a newer version of Go (>= 1.10).
     The version in your package manager might be too outdated,
     if you're on e.g. Debian. Make sure it's rather up to date!
+    If it's too old you can always use tools like ``gvm`` to get a more recent version.
 
 
 If you did not do that, you gonna need to install ``Go``. `Refere here
@@ -68,7 +82,7 @@ If everything worked, there will be a ``brig`` binary in ``$GOBIN``.
     $ brig help
 
 If above command prints out documentation on how to use the program's
-commandline switches then the installation worked. Happy shipping!
+commandline switches then the installation worked. Happy file shipping!
 
 -----
 

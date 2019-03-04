@@ -12,11 +12,11 @@ only for »big picture« ideas. Also excluded are stability/performance
 improvements, documentation and testing work, since this is part of the
 »normal« development.
 
-First Release
+Current state
 -------------
 
-The first real release (0.2.0 »Baffling Buck«) is planned for end of November
-2018. Until then, the software should provide the following basic features:
+The first real release (0.3.0 »Galloping Galapagos«) was released on the 7th December 2018.
+It includes all basic features and is working somewhat. The original goals were met:
 
 - Stable command line interface.
 - Git-like version control
@@ -24,13 +24,10 @@ The first real release (0.2.0 »Baffling Buck«) is planned for end of November
 - User authentication
 - Fuse filesystem
 
-All of the above features are currently already implemented and work.
-Focus is on stabilizing the features and making it somewhat release ready. All
-those features combined do already provide some usefulness, but for being
-a day-to-day useful tool, it takes a few more features, especially being able
-to sync with offline peers over a trusted partner.
+For day-to-day use there are quite some other features that make brig easier to use
+and capable of forming a Dropbox-like backend out of several nodes.
 
-Note that there will be no stability guarantees before version 1.0.0.
+**There will be no stability guarantees before version 1.0.0.**
 
 Future
 ------
@@ -41,29 +38,31 @@ direction we're going is valid.
 
  ..  role:: strikethrough
 
-*Gateway:* :strikethrough:`Provide a built-in (and optional) http server, that can »bridge«
+**Gateway:** :strikethrough:`Provide a built-in (and optional) http server, that can »bridge«
 between the internal ipfs network and people that use a regular browser.
 Instances that run on a public server can then provide hyperlinks of files to
 non-brig users.` *Done as of version 0.3.0.*
 
-*Shelf instances:* Special instaces of brig, that operate automatically and are
-meant to be run on public servers. They can be used to exchange data between
-users that are not online at the same day (e.g. due to timezone differences).
+**Config profiles:** Make it easy to configure brig in a way to serve either as thin client
+or as archival node. Archival nodes can be used in cases where a brig network spans over computers
+that lie in a different timezone. The archival node would accumulate all changes and repositories
+would see it as some sort of "blessed repository" which holds the latest and greatest state.
 
-*Automatic syncing:* Automatically publish changes after a short amount of time.
+**Automatic syncing:** :strikethrough:`Automatically publish changes after a short amount of time.
 If an instance modified some file other nodes are notified and can decide to
-pull the change.
+pull the change.` *Done as of version 0.4.0.*
 
-*Intelligent pinning strategies:* By default only the most recent layer of
+**Intelligent pinning strategies:** :strikethrough:`By default only the most recent layer of
 files are being kept. This is very basic and can't be configured currently.
 Some users might only want to have only the last few used files pinned, archive
-instances might want to pin almost everything up to a certain depth.
+instances might want to pin almost everything up to a certain depth.` *Done as of version 0.4.0 (see repinning)*
 
 *Improve read/write performance:* Big files are currently hold in memory
 completely by the fuse layer (when doing a flush). This is suboptimal and needs
 more intelligent handling and out-of-memory caching of writes. Also, the
 network performance is often very low and ridden by network errors and
-timeouts.
+timeouts. This can be tackled since IPFS v0.4.19 supports an --offline switch to
+error out early if a file is not available locally.
 
 *More automated authentication scheme:* E-Mail-like usernames could be used to
 verify a user without exchanging fingerprints. This could be done by e.g.
@@ -96,12 +95,3 @@ a file has to have on different peers. This could be maybe incorporated into
 the pinning concept. If a user wants to remove a file, brig should warn him if
 he would violate the min-copies rule. This idea is shamelessly stolen from
 ``git-annex``.
-
-*Implement a portable GUI:* Many user will rely on a GUI to configure brig and
-hit the »sync button«. We should optionally provide this in a portable fashion
-(browser based app? I kinda hate myself for proposing this though...).
-Most of the time the GUI should be a simple tray icon that can be clicked to sync.
-A rough and a little exaggerated mock-up was already drawn up for GNOME:
-
-.. image:: _static/overview.svg
-    :width: 66%

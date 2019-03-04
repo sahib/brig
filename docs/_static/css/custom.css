@@ -1,1 +1,9 @@
 span.strikethrough { text-decoration: line-through; }
+
+a {
+    color: #1866bc !important;
+}
+
+#navbar a {
+    color: #18bc9c !important;
+}

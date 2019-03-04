@@ -33,8 +33,8 @@ else
 fi
 
 # Give the daemon to start up a bit.
-brig-ali init ali -x -P 5001
-brig-bob init bob -x -P 5002
+brig-ali init ali -x -P ~/.ipfs/
+brig-bob init bob -x -P ~/.ipfs2/
 
 # Add them as remotes each
 if [ "$USE_SINGLE" = false ]; then

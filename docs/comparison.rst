@@ -1,7 +1,7 @@
 Comparison with other tools
 ===========================
 
-When announcing ``brig`` (or any other software in general) the first question
+When pitching ``brig`` (or any other software in general) the first question
 is usually something like *»But isn't there already X?«* and sometimes even
 *»Why don't you just contribute to other projects?«*. This document tries to
 find an answer to both questions. The answer will obviously be biased, so take

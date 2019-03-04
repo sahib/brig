@@ -1,1048 +1,210 @@
-
-
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Getting started &mdash; brig v0.1.0-beta documentation</title>
-  
 
-  
-  
-  
-  
-
-  
-
-  
-  
-    
-
-  
-
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Other commands &#8212; brig v0.1.0-beta documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Quickstart" href="quickstart.html" />
-    <link rel="prev" title="Installation" href="installation.html" /> 
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
 
-  
-  <script src="_static/js/modernizr.min.js"></script>
+  </head><body>
 
-</head>
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="index.html">
+          brig</a>
+        <span class="navbar-text navbar-version pull-left"><b>v0.1.0-beta</b></span>
+      </div>
 
-<body class="wy-body-for-nav">
-
-   
-  <div class="wy-grid-for-nav">
-
-    
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
-          
-
-          
-            <a href="index.html" class="icon icon-home"> brig
-          
-
-          
-          </a>
-
-          
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="https://github.com/sahib/brig">GitHub</a></li>
+                <li><a href="https://travis-ci.org/sahib/brig">Build Status</a></li>
             
             
-              <div class="version">
-                v0.1.0-beta
-              </div>
-            
-          
-
-          
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-          
-        </div>
-
-        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-          
-            
-            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Installation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#compiling-yourself">Compiling yourself</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#step-0-installing-go">Step 0: Installing Go</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#step-1-compile-install-brig">Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#step-2-test-if-the-installation-is-working">Step 2: Test if the installation is working</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">User manual</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/intro.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/intro.html#precursor-the-help-system">Precursor: The help system</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#passwords">Passwords</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#choosing-and-finding-names">Choosing and finding names</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#logging">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#making-mounts-permanent">Making mounts permanent</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html">Remotes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#data-retrieval">Data retrieval</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#partial-synchronisation">Partial synchronisation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#garbage-collection">Garbage collection</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#key-concepts">Key concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#commits">Commits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#file-history">File history</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#viewing-differences">Viewing differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#reverting-to-previous-state">Reverting to previous state</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Screenshots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html#using-the-gateway">Using the gateway</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#securing-access">Securing access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#running-the-gateway-with-https">Running the gateway with HTTPS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Additional resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#init">1. Init</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#adding-files">2. Adding files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#coreutils">3. Coreutils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#mounting">4. Mounting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#commits">5. Commits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#history">6. History</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#discovery-remotes">7. Discovery &amp; Remotes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#sync-diff">8. Sync &amp; Diff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#pinning">9. Pinning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#general-questions">General questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#technical-questions">Technical questions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="comparison.html">Comparison with other tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#first-release">First Release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#future">Future</a></li>
+<li class="toctree-l2"><a class="reference internal" href="roadmap.html#far-future">Far Future</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#what-to-improve">What to improve</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#workflow">Workflow</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Other commands</a></li>
+</ul>
+</ul>
+</li>
               
             
             
-              <p class="caption"><span class="caption-text">User documentation:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#precursor-the-help-system">Precursor: The help system</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#built-in-documentation">Built-in documentation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#shell-autocompletion">Shell autocompletion</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#open-the-online-documentation">Open the online documentation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#reporting-bugs">Reporting bugs</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#creating-a-repository">Creating a repository</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#passwords">Passwords</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#adding-viewing-files">Adding &amp; Viewing files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#coreutils">Coreutils</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mounting-repositories">Mounting repositories</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#making-mounts-permanent">Making mounts permanent</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#remotes">Remotes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#choosing-and-finding-names">Choosing and finding names</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#syncing">Syncing</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#data-retrieval">Data retrieval</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#partial-synchronisation">Partial synchronisation</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#pinning">Pinning</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#garbage-collection">Garbage collection</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#version-control">Version control</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#key-concepts">Key concepts</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#commits">Commits</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#file-history">File history</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#viewing-differences">Viewing differences</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#reverting-to-previous-state">Reverting to previous state</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#other-commands">Other commands</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-the-gateway">Using the gateway</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#securing-access">Securing access</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#running-the-gateway-with-https">Running the gateway with HTTPS</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#automatic-updating">Automatic Updating</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
-</ul>
-<p class="caption"><span class="caption-text">Complementary</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="comparison.html">Comparison with other tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute</a></li>
-</ul>
-
             
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/introduction.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
           
         </div>
-      </div>
-    </nav>
+    </div>
+  </div>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
       
-      <nav class="wy-nav-top" aria-label="top navigation">
-        
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">brig</a>
-        
-      </nav>
-
-
-      <div class="wy-nav-content">
-        
-        <div class="rst-content">
-        
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div role="navigation" aria-label="breadcrumbs navigation">
-
-  <ul class="wy-breadcrumbs">
-    
-      <li><a href="index.html">Docs</a> &raquo;</li>
-        
-      <li>Getting started</li>
-    
-    
-      <li class="wy-breadcrumbs-aside">
-        
-            
-            <a href="_sources/introduction.rst.txt" rel="nofollow"> View page source</a>
-          
-        
-      </li>
-    
-  </ul>
-
-  
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-            
-  <div class="section" id="getting-started">
-<span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<p>This guide will walk you through the steps of synchronizing your first files
-over <code class="docutils literal notranslate"><span class="pre">brig</span></code>. You will learn about the concepts behind it along the way.
-Everything is hands on, so make sure to open a terminal. For now, <code class="docutils literal notranslate"><span class="pre">brig</span></code> has
-no other user interface.</p>
-<div class="section" id="precursor-the-help-system">
-<h2>Precursor: The help system<a class="headerlink" href="#precursor-the-help-system" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> has some built-in helpers to serve as support for your memory. Before
-you dive into the actual commands, you should learn how to get help.</p>
-<div class="section" id="built-in-documentation">
-<h3>Built-in documentation<a class="headerlink" href="#built-in-documentation" title="Permalink to this headline">¶</a></h3>
-<p>Every command offers detailed built-in help, which you can view using the
-<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span></code> command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig <span class="nb">help</span> stage
-NAME:
-   brig stage - Add a <span class="nb">local</span> file to the storage
-
-USAGE:
-   brig stage <span class="o">[</span><span class="nb">command</span> options<span class="o">]</span> <span class="o">(</span>&lt;local-path&gt; <span class="o">[</span>&lt;path&gt;<span class="o">]</span><span class="p">|</span>--stdin &lt;path&gt;<span class="o">)</span>
-
-CATEGORY:
-   WORKING TREE COMMANDS
-
-DESCRIPTION:
-   Read a <span class="nb">local</span> file <span class="o">(</span>given by »local-path«<span class="o">)</span> and try to <span class="nb">read</span>
-   it. This is the conceptual equivalent of »git add«. <span class="o">[</span>...<span class="o">]</span>
-
-EXAMPLES:
-
-   $ brig stage file.png                         <span class="c1"># gets added as /file.png</span>
-   $ brig stage file.png /photos/me.png          <span class="c1"># gets added as /photos/me.png</span>
-   $ cat file.png <span class="p">|</span> brig stage --stdin /file.png <span class="c1"># gets added as /file.png</span>
-
-OPTIONS:
-   --stdin, -i  Read data from stdin
-</pre></div>
-</div>
-</div>
-<div class="section" id="shell-autocompletion">
-<h3>Shell autocompletion<a class="headerlink" href="#shell-autocompletion" title="Permalink to this headline">¶</a></h3>
-<p>If you don’t like to remember the exact name of each command, you can use
-the provided autocompletion. For this to work you have to insert this
-at the end of your <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> <span class="nv">$GOPATH</span>/src/github.com/sahib/brig/autocomplete/bash_autocomplete
-</pre></div>
-</div>
-<p>Or if you happen to use <code class="docutils literal notranslate"><span class="pre">zsh</span></code>, append this to your <code class="docutils literal notranslate"><span class="pre">.zshrc</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span> <span class="nv">$GOPATH</span>/src/github.com/sahib/brig/autocomplete/zsh_autocomplete
-</pre></div>
-</div>
-<p>After starting a new shell you should be able to autocomplete most commands.
-Try this for example by typing <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">&lt;tab&gt;</span></code>.</p>
-</div>
-<div class="section" id="open-the-online-documentation">
-<h3>Open the online documentation<a class="headerlink" href="#open-the-online-documentation" title="Permalink to this headline">¶</a></h3>
-<p>By typing <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">docs</span></code> you’ll get a tab opened in your browser with this
-domain loaded.</p>
-</div>
-<div class="section" id="reporting-bugs">
-<h3>Reporting bugs<a class="headerlink" href="#reporting-bugs" title="Permalink to this headline">¶</a></h3>
-<p>If you need to report a bug you can use a built-in utility to do that. It will
-gather all relevant information, create a report and open a tab with the
-<em>GitHub</em> issue tracker in a browser for you. Only thing left for you is to fill
-out some questions in the report and include anything you think is relevant.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig bug
-</pre></div>
-</div>
-<p>To actually create the issue you sadly need an <em>GitHub</em> <a class="reference external" href="https://github.com/join">account</a>.</p>
-</div>
-</div>
-<div class="section" id="creating-a-repository">
-<h2>Creating a repository<a class="headerlink" href="#creating-a-repository" title="Permalink to this headline">¶</a></h2>
-<p>Let’s get started with the actual working commands.</p>
-<p>You need a central place where <code class="docutils literal notranslate"><span class="pre">brig</span></code> stores files you give it. This place is
-called a »repository« or short »repo«. Think of it as a database where all
-files (and some metadata about them) is <strong>copied</strong> to. It is important to keep
-in mind that <code class="docutils literal notranslate"><span class="pre">brig</span></code> <strong>copies</strong> the file and does not do anything destructive
-to the original file.</p>
-<p>By creating a new repository you also generate your identity, under which your
-buddies can later <strong>find</strong> and <strong>authenticate</strong> you.</p>
-<p>But enough of the mere theory, let’s get started:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a place where we store our metadata.</span>
-$ mkdir ~/sync
-$ brig --repo ~/sync init ali@woods.org/desktop
-<span class="m">27</span>.12.2017/14:44:39 ⚐ Starting daemon from: /home/sahib/go/bin/brig
-⚠  <span class="m">39</span> New passphrase:
-
-Well <span class="k">done</span>! Please re-type your password now:
-⚠  <span class="m">39</span> Retype passphrase:
-
-       _____         /  /<span class="se">\ </span>       ___          /  /<span class="se">\</span>
-      /  /::<span class="se">\ </span>      /  /::<span class="se">\ </span>     /  /<span class="se">\ </span>       /  /:/_
-     /  /:/<span class="se">\:\ </span>    /  /:/<span class="se">\:\ </span>   /  /:/       /  /:/ /<span class="se">\</span>
-    /  /:/~/::<span class="se">\ </span>  /  /:/~/:/   /__/::<span class="se">\ </span>     /  /:/_/::<span class="se">\</span>
-   /__/:/ /:/<span class="se">\:</span><span class="p">|</span> /__/:/ /:/___ <span class="se">\_</span>_<span class="se">\/\:\_</span>_  /__/:/__<span class="se">\/\:\</span>
-   <span class="se">\ </span> <span class="se">\:\/</span>:/~/:/ <span class="se">\ </span> <span class="se">\:\/</span>:::::/    <span class="se">\ </span> <span class="se">\:\/\ \ </span> <span class="se">\:\ </span>/~~/:/
-    <span class="se">\ </span> <span class="se">\:</span>:/ /:/   <span class="se">\ </span> <span class="se">\:</span>:/~~~~      <span class="se">\_</span>_<span class="se">\:</span>:/  <span class="se">\ </span> <span class="se">\:\ </span> /:/
-     <span class="se">\ </span> <span class="se">\:\/</span>:/     <span class="se">\ </span> <span class="se">\:\ </span>         /__/:/    <span class="se">\ </span> <span class="se">\:\/</span>:/
-      <span class="se">\ </span> <span class="se">\:</span>:/       <span class="se">\ </span> <span class="se">\:\ </span>        <span class="se">\_</span>_<span class="se">\/</span>      <span class="se">\ </span> <span class="se">\:</span>:/
-       <span class="se">\_</span>_<span class="se">\/</span>         <span class="se">\_</span>_<span class="se">\/</span>                     <span class="se">\_</span>_<span class="se">\/</span>
-
-
-     A new file README.md was automatically added.
-     Use <span class="s1">&#39;brig cat README.md&#39;</span> to view it <span class="p">&amp;</span> get started.
-$ <span class="nb">cd</span> ~/sync
-$ ls
-config.yml  data  gpg.prv  gpg.pub  logs  metadata
-meta.yml  passwd.locked  remotes.yml
-</pre></div>
-</div>
-<p>The name you specified after the <code class="docutils literal notranslate"><span class="pre">init</span></code> is the name that will be shown
-to other users and by which you are searchable in the network.
-See <a class="reference internal" href="#about-names"><span class="std std-ref">Choosing and finding names</span></a> for more details on the subject.</p>
-<p>Once the <code class="docutils literal notranslate"><span class="pre">init</span></code> ran successfully there will be a daemon process running the
-background. Every other <code class="docutils literal notranslate"><span class="pre">brig</span></code> commands will communicate with it via a local
-network socket.</p>
-<p>Also note that a lot of files were created in the current directory. This is
-all part of the metadata that is being used by the daemon that runs in the
-background. Please try not to modify them.</p>
-<div class="section" id="passwords">
-<h3>Passwords<a class="headerlink" href="#passwords" title="Permalink to this headline">¶</a></h3>
-<p>You will be asked to enter a new password. The more secure the password is you
-entered, the greener the prompt gets <a class="footnote-reference" href="#id8" id="id2">[1]</a>. This password is used to store
-the metadata in an encrypted manner on your filesystem and without further
-configuration it needs to be re-entered every time you start the daemon. There
-are two ways to prevent that:</p>
-<ol class="arabic">
-<li><p class="first">Use a password helper and tell <code class="docutils literal notranslate"><span class="pre">brig</span></code> how to get a password from it by using <code class="docutils literal notranslate"><span class="pre">-w</span> <span class="pre">/</span> <span class="pre">--password-helper</span></code> on the <code class="docutils literal notranslate"><span class="pre">init</span></code> command.
-We recommend using <a class="reference external" href="https://www.passwordstore.org/">pass</a>  to do that:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate a password and store it in &quot;pass&quot;:</span>
-$ pass generate brig/ali -n <span class="m">20</span>
-<span class="c1"># Tell brig how to get the password out of &quot;pass&quot;:</span>
-<span class="c1"># (This is an alternative to the way shown above,</span>
-<span class="c1">#  if you try it out we first need to shut down the previous daemon)</span>
-$ brig daemon quit
-$ brig --repo ~/sync-with-password init -w <span class="s2">&quot;pass brig/ali&quot;</span> ali@woods.org/desktop
-<span class="c1"># Now pass will ask you for the master password with</span>
-<span class="c1"># a nice dialog whenever one if its passwords is first used.</span>
-</pre></div>
-</div>
-<p>If you like this setup for an existing repo, take a look at the
-<a class="reference internal" href="#configurations"><span class="std std-ref">Configuration</span></a> section.</p>
-</li>
-<li><p class="first">Do not use a password. You can do this by passing <code class="docutils literal notranslate"><span class="pre">-x</span></code> to the <code class="docutils literal notranslate"><span class="pre">init</span></code> command.
-This is obviously not recommended.</p>
-</li>
-</ol>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Using a good password is especially important if you’re planning to move
-the repo, i.e. carrying it around you on a usb stick. When the daemon shuts
-down it locks and encrypts all files in the repository (including all
-metadata and keys), so nobodoy is able to access them anymore.</p>
-</div>
-</div>
-</div>
-<div class="section" id="adding-viewing-files">
-<h2>Adding &amp; Viewing files<a class="headerlink" href="#adding-viewing-files" title="Permalink to this headline">¶</a></h2>
-<p>Now let’s add some files to <code class="docutils literal notranslate"><span class="pre">brig</span></code>. We do this by using <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">stage</span></code>. It’s
-called <code class="docutils literal notranslate"><span class="pre">stage</span></code> because all files first get added to a staging area. If you
-want, and are able to remember that easier, you can also use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">add</span></code>.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">echo</span> <span class="s2">&quot;Hello World&quot;</span> &gt; /tmp/hello.world
-$ brig stage /tmp/hello.world
-$ brig cat hello.world
-Hello World
-$ brig ls
-SIZE   MODTIME          PATH          PIN
-<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  /README.md     🖈
-<span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  /hello.world   🖈
-</pre></div>
-</div>
-<p>This adds the content of <code class="docutils literal notranslate"><span class="pre">/tmp/hello.world</span></code> to a new file in <code class="docutils literal notranslate"><span class="pre">brig</span></code> called
-<code class="docutils literal notranslate"><span class="pre">/hello.world</span></code>. The name was automatically chosen from looking at the base
-name of the added file. All files in <code class="docutils literal notranslate"><span class="pre">brig</span></code> have their own name, possibly
-differing from the content of the file they originally came from. Of course,
-you can also add whole directories.</p>
-<p>If you want to use a different name, you can simply pass the new name as second
-argument to <code class="docutils literal notranslate"><span class="pre">stage</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig stage /tmp/hello.world /hallo.welt
-</pre></div>
-</div>
-<p>You also previously saw <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span></code> which can be used to get the content of
-a file again. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">ls</span></code> in contrast shows you a list of currently existing
-files, including their size, last modification time, path and pin state <a class="footnote-reference" href="#id9" id="id3">[2]</a>.</p>
-<p>One useful feature of <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span></code> is that you can output directories as well.
-When specifying a directory as path, a <code class="docutils literal notranslate"><span class="pre">.tar</span></code> archive is being outputted.
-You can use that easily to store whole directories on your disk or archive
-in order to send it to some client for example:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a tar from root and unpack it to the current directory.</span>
-$ brig cat <span class="p">|</span> tar xfv -
-<span class="c1"># Create .tar.gz out of of the /photos directory.</span>
-$ brig cat photos <span class="p">|</span> gzip -f &gt; photos.tar.gz
-</pre></div>
-</div>
-</div>
-<div class="section" id="coreutils">
-<h2>Coreutils<a class="headerlink" href="#coreutils" title="Permalink to this headline">¶</a></h2>
-<p>You probably already noticed that a lot of commands you’d type in a terminal on
-a normal day have a sibling as <code class="docutils literal notranslate"><span class="pre">brig</span></code> command. Here is a short overview of
-the available commands:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig mkdir photos
-$ brig touch photos/me.png
-$ brig tree
-    • 🖈
-├──photos 🖈
-│  └── me.png 🖈
-├── README.md 🖈
-└── hello.world 🖈
-
-<span class="m">2</span> directories, <span class="m">2</span> files
-$ brig cp photos/me.png photos/moi.png
-$ brig mv photos/me.png photos/ich.png
-<span class="c1"># NOTE: There is no &quot;-r&quot; switch. Directories are always deleted recursively.</span>
-$ brig rm photos
-</pre></div>
-</div>
-<p>Please refer to <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span> <span class="pre">&lt;command&gt;</span></code> for more information about those.
-Sometimes they work a little bit different <a class="footnote-reference" href="#id10" id="id4">[3]</a> and a bit less surprising than
-their counterparts. Also note that there is no <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cd</span></code> currently. All paths
-must be absolute.</p>
-</div>
-<div class="section" id="mounting-repositories">
-<h2>Mounting repositories<a class="headerlink" href="#mounting-repositories" title="Permalink to this headline">¶</a></h2>
-<p>Using those specialized <code class="docutils literal notranslate"><span class="pre">brig</span></code> commands might not feel very seamless,
-especially when being used to tools like file browsers. And indeed, those
-commands are only supposed to serve as a low-level way of interacting with
-<code class="docutils literal notranslate"><span class="pre">brig</span></code> and as means for scripting own workflows.</p>
-<p>For your daily workflow it is far easier to mount all files known to <code class="docutils literal notranslate"><span class="pre">brig</span></code>
-to a directory of your choice and use it with your normal tools. To accomplish
-that <code class="docutils literal notranslate"><span class="pre">brig</span></code> supports a FUSE filesystem that can be controlled via the
-<code class="docutils literal notranslate"><span class="pre">mount</span></code> and <code class="docutils literal notranslate"><span class="pre">fstab</span></code> commands. Let’s look at <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">mount</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir ~/data
-$ brig mount ~/data
-$ <span class="nb">cd</span> ~/data
-$ cat hello-world
-Hello World
-$ <span class="nb">echo</span> <span class="s1">&#39;Salut le monde!&#39;</span> &gt; salut-monde.txt
-<span class="c1"># There is no difference between brig&#39;s &quot;virtual view&quot;</span>
-<span class="c1"># and the contents of the mount:</span>
-$ brig cat salut-monde.txt
-Salut le monde!
-</pre></div>
-</div>
-<p>You can use this directory exactly <a class="footnote-reference" href="#id11" id="id5">[4]</a> like a normal one. You can have any
-number of mounts. This proves especially useful when only mounting a
-subdirectory of <code class="docutils literal notranslate"><span class="pre">brig</span></code> (let’s say <code class="docutils literal notranslate"><span class="pre">Public</span></code>) with the <code class="docutils literal notranslate"><span class="pre">--root</span></code> option of
-<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">mount</span></code> and mounting all other files as read only (<code class="docutils literal notranslate"><span class="pre">--readonly</span></code>).</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig mount ~/data --readonly
-$ brig mkdir /writable
-$ brig touch /writable/please-edit-me
-$ mkdir ~/rw-data
-$ brig mount ~/rw-data --root /writable
-$ <span class="nb">echo</span> <span class="s1">&#39;writable?&#39;</span> &gt; ~/data/test
-read-only file system: ~/data/test
-$ <span class="nb">echo</span> <span class="s1">&#39;writable!&#39;</span> &gt; ~/rw-data/test
-$ cat ~/rw-data/test
-writable!
-</pre></div>
-</div>
-<p>An existing mount can be removed again with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">unmount</span> <span class="pre">&lt;path&gt;</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig unmount ~/data
-$ brig unmount ~/rw-data
-$ brig rm writable
-</pre></div>
-</div>
-<div class="section" id="making-mounts-permanent">
-<span id="permanent-mounts"></span><h3>Making mounts permanent<a class="headerlink" href="#making-mounts-permanent" title="Permalink to this headline">¶</a></h3>
-<p>It can get a little annoying when having to manage several mounts yourself. It
-would be nice to have some <em>typical</em> mounts you’d like to have always and it
-should be only one command to mount or unmount all of them, kind of what
-<code class="docutils literal notranslate"><span class="pre">mount</span> <span class="pre">-a</span></code> does. That’s what <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span></code> is for:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig fstab add tmp_rw_mount /tmp/rw-mount
-$ brig fstab add tmp_ro_mount /tmp/ro-mount -r
-$ brig fstab
-NAME          PATH           READ_ONLY  ROOT  ACTIVE
-tmp_ro_mount  /tmp/ro-mount  yes        /
-tmp_rw_mount  /tmp/rw-mount  no         /
-$ brig fstab apply
-$ brig fstab
-NAME          PATH           READ_ONLY  ROOT  ACTIVE
-tmp_ro_mount  /tmp/ro-mount  yes        /     ✔
-tmp_rw_mount  /tmp/rw-mount  no         /     ✔
-$ brig fstab apply -u
-NAME          PATH           READ_ONLY  ROOT  ACTIVE
-tmp_ro_mount  /tmp/ro-mount  yes        /
-tmp_rw_mount  /tmp/rw-mount  no         /
-</pre></div>
-</div>
-<p>Et Voilà, all mounts will be created and mounted once you enter <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span>
-<span class="pre">apply</span></code>. The opposite can be achieved by executing <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span> <span class="pre">apply</span> <span class="pre">--unmount</span></code>.
-On every restart of the daemon, all mounts are mounted by default, so the only
-thing you need to make sure is that the daemon is running.</p>
-<p><em>Caveats:</em> The FUSE filesystem is not yet perfect. Keep those points in mind:</p>
-<ul class="simple">
-<li><strong>Performance:</strong> Writing to FUSE is currently somewhat <em>memory and CPU
-intensive</em>. Generally, reading should be fast enough for most basic use
-cases, but also is not enough for high performance needs. If you need to edit
-a file many times, it is recommended to copy the file somewhere to your local
-storage (e.g. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cat</span> <span class="pre">the_file</span> <span class="pre">&gt;</span> <span class="pre">/tmp/the_file</span></code>), edit it there and save
-it back for syncing purpose. Future releases will work on optimizing the
-performance.</li>
-<li><strong>Timeouts:</strong> Although it tries not to look like one, we’re operating on
-a networking filesystem. Every file you access might come from a different
-computer. If no other machine can serve this file we might block for a long
-time, causing application hangs and general slowness. This is a problem that
-still needs a proper solution and leaves much to be desired in the current
-implementation.</li>
-</ul>
-</div>
-</div>
-<div class="section" id="remotes">
-<h2>Remotes<a class="headerlink" href="#remotes" title="Permalink to this headline">¶</a></h2>
-<p>Until now, all our operations were tied only to our local computer. But
-<code class="docutils literal notranslate"><span class="pre">brig</span></code> is a synchronization tool and that would be hardly very useful without
-supporting other peers. We call other peers »remotes« similar to the slang used
-in the <code class="docutils literal notranslate"><span class="pre">git</span></code> world.</p>
-<p>Every remote possesses two things that identifies him:</p>
-<ul class="simple">
-<li><strong>A human readable name:</strong> This name can be choose by the user and can take
-pretty much any form, but we recommend to sticking for a form that resembles
-an extended email <a class="footnote-reference" href="#id12" id="id6">[5]</a> like »<a class="reference external" href="mailto:ali&#37;&#52;&#48;woods&#46;org/desktop">ali<span>&#64;</span>woods<span>&#46;</span>org/desktop</a>«. This name is <strong>not</strong>
-guaranteed to be unique! In theory everyone could take it and it is therefore
-only used for display purposes. There is no central place where users are registered.</li>
-<li><strong>A unique fingerprint:</strong> This serves both as address for a certain
-repository and as certificate of identity. It is long and hard to remember,
-which is the reason why <code class="docutils literal notranslate"><span class="pre">brig</span></code> offers to loosely link a human readable to
-it.</li>
-</ul>
-<p>If we want to find out what our name and fingerprint is, we can use the <code class="docutils literal notranslate"><span class="pre">brig</span>
-<span class="pre">whoami</span></code> command to ask a very existential questions:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># NOTE: The hash will look different for you:</span>
-$ brig whoami
-ali@woods.org/desktop QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The fingerprint consists of two hashes divided by a colon (:). The first
-part is the identity of your <code class="docutils literal notranslate"><span class="pre">IPFS</span></code> node, the second part is the
-fingerprint of a keypair that was generated by <code class="docutils literal notranslate"><span class="pre">brig</span></code> during init and
-will be used to authenticate other peers.</p>
-</div>
-<p>When we want to synchronize with another repository, we need to exchange fingerprints
-and each other as remote. There are three typical scenarios here:</p>
-<ol class="arabic">
-<li><p class="first">Both repositories are controlled by you. In this case you can simple execute
-<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> on both repositories and add them with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">add</span></code>
-as described in the following.</p>
-</li>
-<li><p class="first">You want to sync with somebody you know. In this case you should both
-execute <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">whoami</span></code> and send its output over a trusted side channel.
-Personally, I use a <a class="reference external" href="https://signal.org">secure messenger like Signal</a>,
-but you can also use any channel you like, including encrypted mail or
-meeting up with the person in question.</p>
-</li>
-<li><p class="first">You don’t know each other. Get to know each other and the proceed like in the
-second point. If you need to get a hint of what users use a certain domain,
-you can use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code> to get a list of those:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This command might take some time to yield results:</span>
-$ brig net locate -m domain woods.org
-NAME           TYPE    FINGERPRINT
-ali@woods.org  domain  QmTTJbk<span class="o">[</span>...<span class="o">]</span>:W1UDvKzjRPb4rbbk<span class="o">[</span>...<span class="o">]</span>
-</pre></div>
-</div>
-<p>Please note again: Do not blindly add the fingerprint you see here. Always
-make sure the person you’re syncing with is the one you think they are.</p>
+  <div class="section" id="other-commands">
+<h1>Other commands<a class="headerlink" href="#other-commands" title="Permalink to this headline">¶</a></h1>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
-<p class="last">This seems currently broken as it does not yield any results.</p>
+<p class="last">This section is silly.</p>
 </div>
-</li>
-</ol>
-<p>Once you have exchanged the fingerprints, you add each other as <strong>remotes</strong>.
-Let’s call the other side <em>bob</em>: <a class="footnote-reference" href="#id13" id="id7">[6]</a></p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob <span class="se">\</span>
-        QmUDSXt27LbCCG7NfNXfnwUkqwCig8RzV1wzB9ekdXaag7:
-        W1e3rNGGCuuQnzyoiBKLdoN41yQ4NfNy9nRD3MwXk6h8Vy
-</pre></div>
-</div>
-<p><em>Bob</em> has do the same on his side. Otherwise the connection won’t be
-established, because the other side won’t be authenticated. By adding somebody
-as remote we <strong>authenticate</strong> them:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add ali <span class="se">\</span>
-QmTTJbkfG267gidFKfDTV4j1c843z4tkUG93Hw8r6kZ17a:
-W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
-</pre></div>
-</div>
-<p>Thanks to the fingerprint, <code class="docutils literal notranslate"><span class="pre">brig</span></code> now knows how to reach the other repository
-over the network. This is done in the background via <code class="docutils literal notranslate"><span class="pre">IPFS</span></code> and might take
-a few moments until a valid route to the host was found.</p>
-<p>The remote list can tell us if a remote is online:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote list
-NAME   FINGERPRINT  ROUNDTRIP  ONLINE AUTHENTICATED LASTSEEN
-bob    QmUDSXt27    0s         ✔      ✔             Apr <span class="m">16</span> <span class="m">17</span>:31:01
-$ brig remote ping bob
-ping to bob: ✔ <span class="o">(</span><span class="m">0</span>.00250s<span class="o">)</span>
-</pre></div>
-</div>
-<p>Nice. Now we know that bob is online (✔) and also that he authenticated us (✔).
-Otherwise <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">ping</span> <span class="pre">bob</span></code> would have failed.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>About open ports:</p>
-<p class="last">While <code class="docutils literal notranslate"><span class="pre">ipfs</span></code> tries to do it’s best to avoid having the user to open ports
-in his firewall/router. This mechanism might not be perfect though and maybe
-never is. If any of the following network operations might not work it might
-be necessary to open the port 4001 and/or enable UPnP. For security reasons
-we recommend to only open the required ports explicitly and not to use UPnP
-unless necessary. This is only necessary if the computers you’re using
-<code class="docutils literal notranslate"><span class="pre">brig</span></code> on are not in the same local network.</p>
-</div>
-<div class="section" id="choosing-and-finding-names">
-<span id="about-names"></span><h3>Choosing and finding names<a class="headerlink" href="#choosing-and-finding-names" title="Permalink to this headline">¶</a></h3>
-<p>You might wonder what the name you pass to <code class="docutils literal notranslate"><span class="pre">init</span></code> is actually for. As
-previously noted, there is no real restriction for choosing a name, so all of
-the following are indeed valid names:</p>
-<ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">ali</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">ali&#64;woods.org</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">ali&#64;woods.org/desktop</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">ali/desktop</span></code></li>
-</ul>
-<p>It’s however recommended to choose a name that is formatted like
-a XMPP/Jabber-ID. Those IDs can look like plain emails, but can optionally have
-a »resource« part as suffix (separated by a »/« like <code class="docutils literal notranslate"><span class="pre">desktop</span></code>). Choosing
-such a name has two advantages:</p>
-<ul>
-<li><p class="first">Other peers can find you by only specifying parts of your name.
-Imagine all of the <em>Smith</em> family members use <code class="docutils literal notranslate"><span class="pre">brig</span></code>, then they’d possibly those names:</p>
-<ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">dad&#64;smith.org/desktop</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">mom&#64;smith.org/tablet</span></code></li>
-<li><code class="docutils literal notranslate"><span class="pre">son&#64;smith.org/laptop</span></code></li>
-</ul>
-<p>When <code class="docutils literal notranslate"><span class="pre">dad</span></code> now sets up <code class="docutils literal notranslate"><span class="pre">brig</span></code> on his server, he can use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span>
-<span class="pre">-m</span> <span class="pre">domain</span> <span class="pre">'smith.org'</span></code> to get all fingerprints of all family members. Note
-however that <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code> <strong>is not secure</strong>. Its purpose is solely
-discovery, but is not able to verify that the fingerprints really correspond
-to the persons they claim to be. This due to the distributed nature of
-<code class="docutils literal notranslate"><span class="pre">brig</span></code> where there is no central or federated authority that coordinate
-user name registrations. So it is perfectly possible that one name can be
-taken by several repositories - only the fingerprint is unique.</p>
-</li>
-<li><p class="first">Later development of <code class="docutils literal notranslate"><span class="pre">brig</span></code> might interpret the user name and domain as
-email and might use your email account for verification purposes.</p>
-</li>
-</ul>
-<p>Having a resource part is optional, but can help if you have several instances
-of <code class="docutils literal notranslate"><span class="pre">brig</span></code> on your machines. i.e. one username could be
-<code class="docutils literal notranslate"><span class="pre">dad&#64;smith.org/desktop</span></code> and the other <code class="docutils literal notranslate"><span class="pre">dad&#64;smith.org/server</span></code>.</p>
-</div>
-</div>
-<div class="section" id="syncing">
-<h2>Syncing<a class="headerlink" href="#syncing" title="Permalink to this headline">¶</a></h2>
-<p>Before we move on to do our first synchronization, let’s do a quick recap of
-what we have done so far:</p>
-<ul class="simple">
-<li>Create a repository (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">init</span> <span class="pre">&lt;name&gt;</span></code>) - This needs to be done only once.</li>
-<li>Create optional mount points (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fstab</span> <span class="pre">add</span> <span class="pre">&lt;name&gt;</span> <span class="pre">&lt;path&gt;</span></code>) - This needs to be done only once.</li>
-<li>Find &amp; add remotes (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span> <span class="pre">add</span></code>) - This needs to be done once for each peer.</li>
-<li>Add some files (<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">stage</span> <span class="pre">&lt;path&gt;</span></code>) - Do as often as you like.</li>
-</ul>
-<p>As you can see, there is some initial setup work, but the actual syncing is
-pretty effortless now. Before we attempt to sync with anybody, it’s always a
-good idea to see what changes they have. We can check this with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span>
-<span class="pre">&lt;remote&gt;</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The &quot;--missing&quot; switch also tells us what files the remote does not possess:</span>
-$ brig diff bob --missing
-•
-├── _ hello.world
-├── + videos/
-└── README.md ⇄ README.md
-</pre></div>
-</div>
-<p>This output resembles the one we saw from <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">tree</span></code> earlier. Each node in
-this tree tells us about something that would happen when we merge. The prefix
-of each file and the color in the terminal indicate what would happen with this
-file. Refer to the table below to see what prefix relates to what action:</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="7%" />
-<col width="93%" />
-</colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Symbol</th>
-<th class="head">Description</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">+</span></code></td>
-<td>This file is only present on the remote side.</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-</span></code></td>
-<td>This file was removed on the remote side.</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">→</span></code></td>
-<td>This file was moved to a new location.</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">*</span></code></td>
-<td>This file was ignored because we chose to, due to our settings.</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">⇄</span></code></td>
-<td>Both sides have changes, but they are compatible and can be merged.</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">⚡</span></code></td>
-<td>Both sides have changes, but they are incompatible and result in conflict files.</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">_</span></code></td>
-<td>This file is missing on the remote side (needs to be enabled with <code class="docutils literal notranslate"><span class="pre">--missing</span></code>)</td>
-</tr>
-</tbody>
-</table>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Remember that <code class="docutils literal notranslate"><span class="pre">brig</span></code> does not do any actual diffs between files. It does
-not care a lot about the content. It only records how the file metadata
-changes and what content hash the file has at a certain point.</p>
-</div>
-<p>If you prefer a more traditional view, similar to <code class="docutils literal notranslate"><span class="pre">git</span></code>, you can use
-<code class="docutils literal notranslate"><span class="pre">--list</span></code> on <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span></code>.</p>
-<p>So in the above output we can tell that <em>Bob</em> added the directory
-<code class="docutils literal notranslate"><span class="pre">/videos</span></code>, but does not possess the <code class="docutils literal notranslate"><span class="pre">/hello.world</span></code> file. He also
-apparently modified <code class="docutils literal notranslate"><span class="pre">README.md</span></code>, but since we did not, it’s safe for us to
-take over his changes. If we sync now we will get this directory from him:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig sync bob
-$ brig ls
-SIZE   MODTIME          OWNER    PATH                      PIN
-<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  ali      /README.md                🖈
-<span class="m">443</span> B  Dec <span class="m">27</span> <span class="m">14</span>:44:44  bob      /README.md.conflict.0
-<span class="m">12</span> B   Dec <span class="m">27</span> <span class="m">15</span>:14:16  ali      /hello.world              🖈
-<span class="m">32</span> GB  Dec <span class="m">27</span> <span class="m">15</span>:14:16  bob      /videos
-</pre></div>
-</div>
-<p>You might notice that the <code class="docutils literal notranslate"><span class="pre">sync</span></code> step took only around one second, even
-though <code class="docutils literal notranslate"><span class="pre">/videos</span></code> is 32 GB in size. This is because <code class="docutils literal notranslate"><span class="pre">sync</span></code> <strong>does not
-transfer actual data</strong>. It only transferred the metadata, while the actual data
-will only be loaded when required. This might sound a little inconvenient at
-first. When I want to watch the video, I’d prefer to have it cached locally
-before viewing it to avoid stuttering playback. If you plan to use the files
-immediately, you should be using pinning (see <a class="reference internal" href="#pinning-section"><span class="std std-ref">Pinning</span></a>)</p>
-<div class="section" id="data-retrieval">
-<h3>Data retrieval<a class="headerlink" href="#data-retrieval" title="Permalink to this headline">¶</a></h3>
-<p>If the data is not on your local machine, where is it then? Thanks to <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>
-it can be transferred from any other peer that caches this particular content.
-Content is usually cached when the peer either really stores this file or if
-this peer recently used this content. In the latter case it will still be
-available in its cache. This property is particularly useful when having a
-small device for viewing data (e.g. a smartphone, granted <code class="docutils literal notranslate"><span class="pre">brig</span></code> would run
-there) and a big machine that acts as storage server (e.g. a desktop).</p>
-<p>How are the files secure then if they essentially could be everywhere? Every
-file is encrypted by <code class="docutils literal notranslate"><span class="pre">brig</span></code> before giving it to <code class="docutils literal notranslate"><span class="pre">IPFS</span></code>. The encryption key
-is part of the metadata and is only available to the peers that you chose to
-synchronize with. Think of each brig repository only as a cache for the whole
-network it is in.</p>
-</div>
-<div class="section" id="partial-synchronisation">
-<h3>Partial synchronisation<a class="headerlink" href="#partial-synchronisation" title="Permalink to this headline">¶</a></h3>
-<p>Sometimes you only want to share certain things with certain people. You
-probably want to share all your <code class="docutils literal notranslate"><span class="pre">/photos</span></code> directory with your significant
-other, but not with your fellow students where you maybe want to share the
-<code class="docutils literal notranslate"><span class="pre">/lectures</span></code> folder. In <code class="docutils literal notranslate"><span class="pre">brig</span></code> you can define what folder you want to share
-with what remote. If you do not limit this, <strong>all folders will be open to
-a remote by default.</strong> Also note, that if a remote already got some content
-of a folder you did not want to share, he will still be able to access it.
-If you’re unsure, you should better be restrictive than too permissive.</p>
-<p>To add a folder for a specific remote, you can use the <code class="docutils literal notranslate"><span class="pre">folders</span></code> subcommand
-of <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">remote</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Starting with next sync, bob will only see the /videos folder:</span>
-$ brig remote folder add bob /videos
-$ brig remote folder ls bob
-/videos
-</pre></div>
-</div>
-<p>If you’re tired of typing all of this, be reminded that there are aliases for most
-subcommands:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig rmt f a bob /videos
-</pre></div>
-</div>
-</div>
-</div>
-<div class="section" id="pinning">
-<span id="pinning-section"></span><h2>Pinning<a class="headerlink" href="#pinning" title="Permalink to this headline">¶</a></h2>
-<p>How can we control what files are stored locally and which should be retrieved
-from the network? You can do this by <strong>pinning</strong> each file or directory you
-want to keep locally. Normally, files that are not pinned may be cleaned up
-from time to time, that means they are evaded from the local cache and need to
-be fetched again when being accessed afterwards. Since you still have the
-metadata for this file, you won’t notice difference beside possible network
-lag. When you pin a file, it will not be garbage collected.</p>
-<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> knows of two types of pins: <strong>Explicit</strong> and <strong>implicit</strong>.</p>
-<ul class="simple">
-<li><strong>Implicit pins:</strong> This kind of pin is created automatically by <code class="docutils literal notranslate"><span class="pre">brig</span></code> and
-cannot be created by the user. In the command line output it always shows as
-blue pin. Implicit pins are created by <code class="docutils literal notranslate"><span class="pre">brig</span></code> whenever you create a new
-file, or update the contents of a file. The old version of a file will then
-be unpinned.</li>
-<li><strong>Explicit pins:</strong> This kind of pin is created by the user explicitly (hence
-the name) and is never done by <code class="docutils literal notranslate"><span class="pre">brig</span></code> automatically. It has the same effect
-as an implicit pin, but cannot be removed again by <code class="docutils literal notranslate"><span class="pre">brig</span></code>, unless
-explicitly unpinned. It’s the user’s way to tell <code class="docutils literal notranslate"><span class="pre">brig</span></code> »Never forgot
-these!«.</li>
-</ul>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The current pinning implementation is still under conceptual development.
-It’s still not clear what the best way is to modify/view the pin state
-of older versions. Time and user experience will tell.</p>
-</div>
-<p>When syncing with somebody, all files retrieved by them are by default <strong>not
-pinned</strong>. If you want to keep them for longer, make sure to pin them
-explicitly.</p>
-<p>If you never pin something explicitly, only the newest version of all files
-will be stored locally. If you decide that you need older versions, you can pin
-them explicitly, so brig cannot unpin them implicitly. For this you should also
-look into the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">set</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">clear</span></code> commands, which are
-similar to <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">add</span></code> and <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">pin</span> <span class="pre">rm</span></code> but can operate on whole commit
-ranges.</p>
-<div class="section" id="garbage-collection">
-<h3>Garbage collection<a class="headerlink" href="#garbage-collection" title="Permalink to this headline">¶</a></h3>
-<p>Strongly related to pinning is garbage collection. This is normally being run
-for you every few minutes, but you can also trigger it manually via the <code class="docutils literal notranslate"><span class="pre">brig</span>
-<span class="pre">gc</span></code> command. While not usually needed, it can help you understand how <code class="docutils literal notranslate"><span class="pre">brig</span></code>
-works internally as it shows what hashes it throws away.</p>
-</div>
-</div>
-<div class="section" id="version-control">
-<h2>Version control<a class="headerlink" href="#version-control" title="Permalink to this headline">¶</a></h2>
-<p>One key feature of <code class="docutils literal notranslate"><span class="pre">brig</span></code> over other synchronisation tools is the built-in
-and quite capable version control. If you already know <code class="docutils literal notranslate"><span class="pre">git</span></code> that’s a plus
-for this chapter since a lot of stuff will feel similar. This isn’t a big
-surprise, since <code class="docutils literal notranslate"><span class="pre">brig</span></code> implements something like <code class="docutils literal notranslate"><span class="pre">git</span></code> internally. Don’t
-worry, knowing <code class="docutils literal notranslate"><span class="pre">git</span></code> is however not needed at all for this chapter.</p>
-<div class="section" id="key-concepts">
-<h3>Key concepts<a class="headerlink" href="#key-concepts" title="Permalink to this headline">¶</a></h3>
-<p>I’d like you to keep the following mantra in your head when thinking
-about versioning (repeating before you go to sleep may or may not help):</p>
-<p><strong>Metadata and actual data are separated.</strong> This means that a repository may
-contain metadata about many files, including older versions of them. However,
-it is not guaranteed that a repository caches all actual data for each file or
-version. This is solely controlled by pinning described in the section before.
-If you check out earlier versions of a file, you’re always able to see the
-metadata of it, but being able to view the actual data depends on having a peer
-that is being able to deliver the data in your network (which might be
-yourself). So in short: <code class="docutils literal notranslate"><span class="pre">brig</span></code> <strong>only versions metadata and links to the
-respective data for each version</strong>.</p>
-<p>This is a somewhat novel approach to versioning, so feel free to re-read the
-last paragraph, since I’ve found that it does not quite fit what most people
-are used to. Together with pinning this offers a high degree of freedom on how
-you can decide what repositories store what data. The price is that this
-fine-tuned control can get a little annoying. Future versions of <code class="docutils literal notranslate"><span class="pre">brig</span></code> will
-try to solve that.</p>
-<p>For some more background, you can invoke <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">info</span></code> to see what metadata is
-being saved per file version:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig show README.md
-Path          /README.md
-User          ali
-Type          file
-Size          <span class="m">832</span> bytes
-Inode         <span class="m">4</span>
-Pinned        yes
-Explicit      no
-ModTime       <span class="m">2018</span>-10-14T22:46:00+02:00
-Tree Hash     W1gX8NMQ9m8SBnjHRGtamRAjJewbnSgi6C1P7YEunfgTA3
-Content Hash  W1pzHcGbVpXaePa1XpehW4HGPatDUJs8zZzSRbpNCGbN2u
-Backend Hash  QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK
-</pre></div>
-</div>
-<p>Most of it should be no big surprise. It might be a small surprise that three
-hashes are stored per file. The <code class="docutils literal notranslate"><span class="pre">Backend</span> <span class="pre">Hash</span></code> is really the link to the
-actual data. If you’d type <code class="docutils literal notranslate"><span class="pre">ipfs</span> <span class="pre">cat</span>
-<span class="pre">QmPvNjR1h56EFK1Sfb7vr7tFJ57A4JDJS9zwn7PeNbHCsK</span></code> you will get the encrypted
-version of your file dumped to your terminal. The <code class="docutils literal notranslate"><span class="pre">Content</span> <span class="pre">Hash</span></code> is being
-calculated before the encryption and is the same for two files with the same
-content. The <code class="docutils literal notranslate"><span class="pre">Tree</span> <span class="pre">Hash</span></code> is a hash that uniquely identifies this specific
-node for internal purposes. The <code class="docutils literal notranslate"><span class="pre">Inode</span></code> is a number that stays unique over
-the lifetime of a file (including moves and removes). It is used mostly in the
-FUSE filesystem.</p>
-</div>
-<div class="section" id="commits">
-<h3>Commits<a class="headerlink" href="#commits" title="Permalink to this headline">¶</a></h3>
-<p>Now that we know that only metadata is versioned, we have to ask »what is the
-smallest unit of modification that can be saved?«. This smallest unit is
-a commit. A commit can be seen as a snapshot of the whole repository.</p>
-<p>The command <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">log</span></code> shows you a list of commits that were made already:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>      -      Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-W1kAySD3aKLt Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added ali-file <span class="o">(</span>head<span class="o">)</span>
-W1ocyBsS28SD Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: Added initial README.md
-W1D9KsLNnAv4 Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> initial commit <span class="o">(</span>init<span class="o">)</span>
-</pre></div>
-</div>
-<p>Each commit is identified by a hash (e.g. <code class="docutils literal notranslate"><span class="pre">W1kAySD3aKLt</span></code>) and records the
-time when it was created. Apart from that, there is a message that describes
-the commit in some way. In contrast to <code class="docutils literal notranslate"><span class="pre">git</span></code>, <strong>commits are rarely done by
-the user themselve</strong>. More often they are done by <code class="docutils literal notranslate"><span class="pre">brig</span></code> when synchronizing.</p>
-<p>All commits form a long chain (<strong>no branches</strong>, just a linear chain) with the
-very first empty commit called <code class="docutils literal notranslate"><span class="pre">init</span></code> and the still unfinished commit called
-<code class="docutils literal notranslate"><span class="pre">curr</span></code>. Directly below <code class="docutils literal notranslate"><span class="pre">curr</span></code> there is the last finished commit called <code class="docutils literal notranslate"><span class="pre">head</span></code>.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">curr</span></code> is what <code class="docutils literal notranslate"><span class="pre">git</span></code> users would call the staging area. While the staging area
-in <code class="docutils literal notranslate"><span class="pre">git</span></code> is “special”, the <code class="docutils literal notranslate"><span class="pre">curr</span></code> commit can be used like any other one, with
-the sole difference that it does not have a proper hash yet.</p>
-</div>
-<p>Sometimes you might want to do a snapshot or »savepoint« yourself. In this case
-you can do a commit yourself:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig touch A_NEW_FILE
-$ brig commit -m <span class="s1">&#39;better leave some breadcrumbs&#39;</span>
-$ brig log <span class="p">|</span> head -n <span class="m">2</span>
-      -      Mon Oct <span class="m">15</span> <span class="m">00</span>:27:37 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>head<span class="o">)</span>
-</pre></div>
-</div>
-<p>This snapshot can be useful later if you decide to revert to a certain version.
-The hash of the commit is of course hard to remember, so if you need it very often, you can
-give it a tag yourself. Tags are similar to the names, <code class="docutils literal notranslate"><span class="pre">curr</span></code>, <code class="docutils literal notranslate"><span class="pre">head</span></code> and <code class="docutils literal notranslate"><span class="pre">init</span></code> but
-won’t be changed by <code class="docutils literal notranslate"><span class="pre">brig</span></code> and won’t move therefore:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># instead of &quot;W1hZoY7TrxyK&quot; you also could use &quot;head&quot; here:</span>
-$ brig tag W1hZoY7TrxyK breadcrumbs
-$ brig log <span class="p">|</span> grep breadcrumbs
-$ W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs, head<span class="o">)</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="file-history">
-<h3>File history<a class="headerlink" href="#file-history" title="Permalink to this headline">¶</a></h3>
-<p>Each file and directory in <code class="docutils literal notranslate"><span class="pre">brig</span></code> maintains its own history. Each entry of
-this history relates to exactly one distinct commit. In the life of a file or
-directory there are four things that can happen to it:</p>
-<ul class="simple">
-<li><em>added:</em> The file was added in this commit.</li>
-<li><em>moved:</em> The file was moved in this commit.</li>
-<li><em>removed:</em> The file was removed in this commit.</li>
-<li><em>modified:</em> The file’s content (i.e. hash changed) was altered in this commit.</li>
-</ul>
-<p>You can check an individual file or directorie’s history by using the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">history</span></code> command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># or &quot;hst&quot; for short:</span>
-$ brig hst README.md
-CHANGE  FROM  TO              WHEN
-added   INIT  W1ocyBsS28SD    Oct <span class="m">14</span> <span class="m">22</span>:46:00
-$ brig mv README.md README_LATER.md
-$ brig hst README_LATER.md
-CHANGE  FROM  TO            HOW                           WHEN
-moved   HEAD  CURR          /README.md → /README_LATER.md Oct <span class="m">15</span> <span class="m">00</span>:27:37
-added   INIT  W1ocyBsS28SD                                Oct <span class="m">14</span> <span class="m">22</span>:46:0
-</pre></div>
-</div>
-<p>As you can see, you will be shown one line per history entry. Each entry
-denotes which commit the change was in. Some commits were nothing was changed
-will be jumped over except if you pass <code class="docutils literal notranslate"><span class="pre">--empty</span></code>.</p>
-</div>
-<div class="section" id="viewing-differences">
-<h3>Viewing differences<a class="headerlink" href="#viewing-differences" title="Permalink to this headline">¶</a></h3>
-<p>If you’re interested what changed in a range of your own commits, you can use
-the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span></code> command as shown previously. The <code class="docutils literal notranslate"><span class="pre">-s</span></code> (<code class="docutils literal notranslate"><span class="pre">--self</span></code>) switch
-says that we want to compare only two of our own commits (as opposed to
-comparing with the commits of a remote).</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let&#39;s compare the commit hashes from above:</span>
-$ brig diff -s W1hZoY7TrxyK W1kAySD3aKLt
-•
-└── + A_NEW_FILE
-</pre></div>
-</div>
-<p>Often, those hashes are quite hard to remember and annoying to look up. That’s
-why you can the special syntax <code class="docutils literal notranslate"><span class="pre">&lt;tag</span> <span class="pre">or</span> <span class="pre">hash&gt;^</span></code> to denote that you want to go
-»one commit up«:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brig diff -s head head^
-•
-└── + A_NEW_FILE
-<span class="c1"># You can also use this several times:</span>
-brig diff -s head^^^ head^^^^^
-•
-└── + README.md
-</pre></div>
-</div>
-<p>If you just want to see what you changed since <code class="docutils literal notranslate"><span class="pre">head</span></code>, you can simply type <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span></code>.
-This is the same as <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">diff</span> <span class="pre">-s</span> <span class="pre">curr</span> <span class="pre">head</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig diff
-•
-└── README.md → README_LATER.md
-$ brig diff -s curr head
-•
-└── README.md → README_LATER.md
-</pre></div>
-</div>
-</div>
-<div class="section" id="reverting-to-previous-state">
-<h3>Reverting to previous state<a class="headerlink" href="#reverting-to-previous-state" title="Permalink to this headline">¶</a></h3>
-<p>Until now we were only looking at the version history and didn’t modify it. The
-most versatile command to do that is <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code>. It is able to revert
-changes previously made:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reset to the &quot;init&quot; commit (the very first and empty commit)</span>
-$ brig reset init
-$ brig ls  <span class="c1"># nothing, it&#39;s empty.</span>
-</pre></div>
-</div>
-<p>The key here is that you did not loose any history:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig log <span class="p">|</span> head -2
-       -     Mon Oct <span class="m">15</span> <span class="m">00</span>:51:12 CEST <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-W1hZoY7TrxyK Sun Oct <span class="m">14</span> <span class="m">22</span>:46:00 CEST <span class="m">2018</span> user: better leave some bread crumbs <span class="o">(</span>breadcrumbs<span class="o">)</span>
-</pre></div>
-</div>
-<p>As you can see, we still have the previous commits. <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">revert</span></code> did one
-thing more than restoring the state of <code class="docutils literal notranslate"><span class="pre">init</span></code> and put that result in
-<code class="docutils literal notranslate"><span class="pre">curr</span></code>. This also means that you can’t really <em>modify</em> history. But you can
-revert it. Let’s revert your complete wipe-out:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reset to the state we had in »breadcrumbs«</span>
-$ brig reset breadcrumbs
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code> cannot only restore old commits, but individual files and
-directories:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig reset head^^ README.md
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">It is a good idea to do a <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">commit</span></code> before a <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code>. Since it
-modifies <code class="docutils literal notranslate"><span class="pre">curr</span></code> you might loose uncommitted changes. It will warn you
-about that, but you can overwrite that warning with <code class="docutils literal notranslate"><span class="pre">--force</span></code>. If you did
-a <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">commit</span></code> you can simply use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span> <span class="pre">head</span></code> to go back to the
-last good state.</p>
-</div>
-<p>Nodes that were overwritten with <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">reset</span></code> will be unpinned (unless pinned
-explicitly). Those nodes and their content will be garbage collected after some
-time. The content may still be accessed through the use of other remotes
-though.</p>
-</div>
-<div class="section" id="other-commands">
-<h3>Other commands<a class="headerlink" href="#other-commands" title="Permalink to this headline">¶</a></h3>
 <p>There are a few other commands, but they are not (yet) very useful for most end
 users. Therefore they will not be explained in depth to save you some mental
 space. The commands in question are:</p>
@@ -1054,352 +216,31 @@ space. The commands in question are:</p>
 <li><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">fetch</span></code>: Manually trigger the fetching of a remote’s metadata. Also good for debugging.</li>
 </ul>
 <p>Please use <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">help</span> <span class="pre">&lt;command&gt;</span></code> to find out more about them if you’re interested.</p>
-</div>
-</div>
-<div class="section" id="configuration">
-<span id="configurations"></span><h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
-<p>Quite a few details can be configured in a different way to your liking. <code class="docutils literal notranslate"><span class="pre">brig</span>
-<span class="pre">config</span></code> is the command that allows you to list, get and set individual
-configuration values. Each config entry already brings some documentation that
-tells you about its purpose:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig config ls
-<span class="o">[</span>... output truncated ...<span class="o">]</span>
-fs.sync.ignore_moved: <span class="nb">false</span> <span class="o">(</span>default<span class="o">)</span>
-Default:       <span class="nb">false</span>
-Documentation: Do not move what the remote moved
-Needs restart: no
-<span class="o">[</span>... output truncated ...<span class="o">]</span>
-$ brig config get repo.password_command
-pass brig/repo/password
-$ brig config <span class="nb">set</span> repo.password_command <span class="s2">&quot;pass brig/repo/my-password&quot;</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="using-the-gateway">
-<h2>Using the gateway<a class="headerlink" href="#using-the-gateway" title="Permalink to this headline">¶</a></h2>
-<p>Many users will not run <code class="docutils literal notranslate"><span class="pre">brig</span></code>. Chances are, that you still want to send them
-your files without too much hassle. <code class="docutils literal notranslate"><span class="pre">brig</span></code> features a <em>Gateway</em> to HTTP(S),
-which comes particularly handy if you happen to run a public server.</p>
-<p>The gateway is disabled by default. If you want to start it, use this command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway start
-</pre></div>
-</div>
-<p>Without further configuration, this will create a HTTP server on port <code class="docutils literal notranslate"><span class="pre">5000</span></code>,
-which can be queried already. There is a small helper that will print you a nice
-hyperlink to a certain file called <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gateway</span> <span class="pre">url</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway url README.md
-http://localhost:5000/get/README.md
-</pre></div>
-</div>
-<p>Opening this in your browser will show you the file’s content. If you’d like to
-use another port than <code class="docutils literal notranslate"><span class="pre">5000</span></code>, you can do so by setting the respective config
-key:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.port <span class="m">7777</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p>You can always check the status of the gateway:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway status
-</pre></div>
-</div>
-<p class="last">This will also print helpful diagnostics if something might be wrong.</p>
-</div>
-<p>The gateway can be stopped anytime with the following command. It tries to still
-serve all open requests, so that no connections are dropped:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway stop
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you want to forward the gateway to the outside, but do not own
-a dedicated server, you can forward port 5000 to your computer. With this
-setup you should also get a certficate which in turn requires a DNS name.
-An easy way to get one is to use dynamic DNS.</p>
-</div>
-<div class="section" id="securing-access">
-<h3>Securing access<a class="headerlink" href="#securing-access" title="Permalink to this headline">¶</a></h3>
-<p>You probably do not want to offer your files to everyone that have a link.
-Therefore you can restrict access to a few folders (<code class="docutils literal notranslate"><span class="pre">/public</span></code> for example)
-and require a user to authenticate himself with a user and password upon access.</p>
-<p>By default all files are accessible. You can change this by changing the config:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.folders /public
-</pre></div>
-</div>
-<p>Now only the files in <code class="docutils literal notranslate"><span class="pre">/public</span></code> (and including <code class="docutils literal notranslate"><span class="pre">/public</span></code> itself) are
-accessible from the gateway. If you want to add basic HTTP authentication:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.auth.enabled <span class="nb">true</span>
-$ brig cfg <span class="nb">set</span> gateway.auth.user &lt;user&gt;
-$ brig cfg <span class="nb">set</span> gateway.auth.pass &lt;pass&gt;
-</pre></div>
-</div>
-<p>If you use authentication, it is strongly recommended to enable HTTPS.
-Otherwise the password will be transmitted in clear text.</p>
-</div>
-<div class="section" id="running-the-gateway-with-https">
-<h3>Running the gateway with HTTPS<a class="headerlink" href="#running-the-gateway-with-https" title="Permalink to this headline">¶</a></h3>
-<p>The gateway has built-in support for <a class="reference external" href="https://letsencrypt.org/">LetsEncrypt</a>.
-If the gateway is reachable under a DNS name, it is straightforward to get
-a TLS certificate for it. In total there are three methods:</p>
-<p><strong>Method one: Automatic:</strong> This works by telling the gateway the domain name.
-Since the retrieval process for getting a certificate involves binding on port 80,
-you need to prepare the brig binary to allow that without running as root:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># You need to restart the brig daemon for that.</span>
-<span class="c1"># Every next brig command will restart it.</span>
-$ brig daemon quit
-$ sudo setcap <span class="nv">CAP_NET_BIND_SERVICE</span><span class="o">=</span>+ep <span class="k">$(</span>which brig<span class="k">)</span>
-</pre></div>
-</div>
-<p>Afterwards you can set the domain in the config. If the gateway is already running,
-it will restart immediately.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.cert.domain your.domain.org
-</pre></div>
-</div>
-<p>You can check after a few seconds if it worked by checking if the <code class="docutils literal notranslate"><span class="pre">certfile</span></code> and <code class="docutils literal notranslate"><span class="pre">keyfile</span></code>
-was set:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg get gateway.cert.certfile
-/home/user/.cache/brig/your.domain.org_cert.pem
-$ brig cfg get gateway.cert.keyfile
-/home/user/.cache/brig/your.domain.org_key.pem
-$ curl -i https://your.domain.org:5000
-HTTP/2 <span class="m">200</span>
-vary: Accept-Encoding
-content-type: text/plain<span class="p">;</span> <span class="nv">charset</span><span class="o">=</span>utf-8
-content-length: <span class="m">38</span>
-date: Wed, <span class="m">05</span> Dec <span class="m">2018</span> <span class="m">11</span>:53:57 GMT
-
-This brig gateway seems to be working.
-</pre></div>
-</div>
-<p>This method has the advantage that the certificate can be updated automatically
-before it expires.</p>
-<p><strong>Method two: Half-Automated:</strong></p>
-<p>If the above did not work for whatever reasons, you can try to get a certificate manually.
-There is a built-in helper called <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">gateway</span> <span class="pre">cert</span></code> that can help you doing that:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig gateway cert your.domain.org
-You are not root. We need root rights to <span class="nb">bind</span> to port <span class="m">80</span>.
-I will re-execute this <span class="nb">command</span> <span class="k">for</span> you as:
-$ sudo brig gateway cert nwzmlh4iouqikobq.myfritz.net --cache-dir /home/sahib/.cache/brig
-
-A certificate was downloaded successfully.
-Successfully <span class="nb">set</span> the gateway config to use the certificate.
-Note that you have to re-run this <span class="nb">command</span> every <span class="m">90</span> days currently.
-</pre></div>
-</div>
-<p>If successful, this command will set the <code class="docutils literal notranslate"><span class="pre">certfile</span></code> and <code class="docutils literal notranslate"><span class="pre">keyfile</span></code> config
-values for you. You can test if the change worked by doing the same procedure
-as in <em>method one</em>. Sadly, you have to re-execute once the certificate expires.</p>
-<p><strong>Method three: Manual:</strong></p>
-<p>If you already own a certificate you can make the gateway use it by setting the path
-to the public certificate and the private key file:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.cert.certfile /path/to/cert.pem
-$ brig cfg <span class="nb">set</span> gateway.cert.keyfile /path/to/key.pem
-</pre></div>
-</div>
-<p>If you do not own a certificate yet, but want to setup an automated way to
-download one for usages outside of brig, you should look into
-<a class="reference external" href="https://certbot.eff.org/docs/">certbot</a>.</p>
-</div>
-<div class="section" id="redirecting-http-traffic">
-<h3>Redirecting HTTP traffic<a class="headerlink" href="#redirecting-http-traffic" title="Permalink to this headline">¶</a></h3>
-<p>This section only applies to you if you choose <strong>method one</strong> from above and
-want to run the gateway on port 80 (http) and port 443 (https). This has the
-advantage that a user does not need to specify the port in a gateway URL have
-which looks a little bit less <em>»scary«</em>. With this setup all traffic on port 80
-will be redirected directly to port 443.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig cfg <span class="nb">set</span> gateway.port <span class="m">443</span>
-$ brig cfg <span class="nb">set</span> gateway.cert.redirect.enabled <span class="nb">true</span>
-$ brig cfg <span class="nb">set</span> gateway.cert.redirect.http_port <span class="m">80</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="section" id="automatic-updating">
-<h2>Automatic Updating<a class="headerlink" href="#automatic-updating" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This feature is very experimental and builds upon the also experimental
-pubsub experiment of the IPFS project. Use with care.</p>
-</div>
-<p>If you do not want to hit <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">sync</span></code> every time somebody wants to merge with you,
-you can enable the automatic updating for any remote you like. Let’s suppose we are <code class="docutils literal notranslate"><span class="pre">ali</span></code>
-and want to receive updates on every change of <code class="docutils literal notranslate"><span class="pre">bob</span></code>, we should simply add the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote auto-update <span class="nb">enable</span> bob
-<span class="c1"># You can also abbreviate most of that:</span>
-$ brig rmt au e bob
-</pre></div>
-</div>
-<p>Alternatively, we could have used the <code class="docutils literal notranslate"><span class="pre">-a</span></code> switch when adding <code class="docutils literal notranslate"><span class="pre">bob</span></code> as remote:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig remote add bob -a
-</pre></div>
-</div>
-<p>In any case, an initial sync is performed with this remote and a sync on every change
-that <code class="docutils literal notranslate"><span class="pre">bob</span></code> published. Keep in mind that <code class="docutils literal notranslate"><span class="pre">bob</span></code> will not receive your updates by default,
-he needs to decide to use auto updating for himself. You can watch the times when your repository
-was updated automatically by looking at <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">log</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig log
-     -       Sun Dec <span class="m">16</span> <span class="m">18</span>:24:27 CET <span class="m">2018</span> • <span class="o">(</span>curr<span class="o">)</span>
-W1kGKKviWCBY Sun Dec <span class="m">16</span> <span class="m">18</span>:24:27 CET <span class="m">2018</span> sync due to notification from »bob« <span class="o">(</span>head<span class="o">)</span>
-...
-</pre></div>
-</div>
-</div>
-<div class="section" id="running-the-daemon-and-viewing-logs">
-<h2>Running the daemon and viewing logs<a class="headerlink" href="#running-the-daemon-and-viewing-logs" title="Permalink to this headline">¶</a></h2>
-<p>As discussed before, the daemon is being started on demand in the background.
-Subsequent commands will then use the daemon. For debugging purposes it can be useful
-to run in the daemon in the foreground. You can do this with the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">daemon</span></code> commands:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make sure no prior daemon is running:</span>
-$ brig daemon quit
-<span class="c1"># Start the daemon in the foreground and log to stdout:</span>
-$ brig daemon launch -s
-</pre></div>
-</div>
-<p>The last step will ask for your password if you did not set a password helper
-program. If you want to quit the instance, either just hit CTRL-C or type
-<code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">daemon</span> <span class="pre">quit</span></code> into another terminal window.</p>
-<div class="section" id="logging">
-<h3>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
-<p>Unless you pass the <code class="docutils literal notranslate"><span class="pre">-s</span></code> (<code class="docutils literal notranslate"><span class="pre">--log-to-stdout</span></code> flag) all logs are being piped
-to the system log. You can follow the log like this:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># The actual daemon log:</span>
-$ journalctl -ft brig
-
-<span class="c1"># The ipfs log:</span>
-$ journalctl -ft brig-ipfs
-</pre></div>
-</div>
-<p>This assumes you’re using a <code class="docutils literal notranslate"><span class="pre">systemd</span></code>-based distribution. If not, refer to
-the documentation of your syslog daemon.</p>
-</div>
-<div class="section" id="using-several-repositories-in-parallel">
-<h3>Using several repositories in parallel<a class="headerlink" href="#using-several-repositories-in-parallel" title="Permalink to this headline">¶</a></h3>
-<p>It can be useful to run more than one instance of the <code class="docutils literal notranslate"><span class="pre">brig</span></code> daemon in
-parallel. Either for testing purposes or as actual production configuration. If
-you’re planning to do that it is advisable to be always explicit about the port
-number you’re using. Here’s an example how you can run two daemons at the same
-time:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># It might be a good idea to keep that in your .bashrc:</span>
-<span class="nb">alias</span> brig-ali<span class="o">=</span><span class="s1">&#39;brig --port 6666&#39;</span>
-<span class="nb">alias</span> brig-bob<span class="o">=</span><span class="s1">&#39;brig --port 6667&#39;</span>
-
-<span class="c1"># Subsitute your password helper here:</span>
-brig-ali --repo /tmp/ali init ali -w <span class="s2">&quot;echo brig/repo/ali&quot;</span>
-brig-bob --repo /tmp/bob init bob -w <span class="s2">&quot;echo brig/repo/bob&quot;</span>
-
-<span class="c1"># Now you can use them normally,</span>
-<span class="c1"># e.g. by adding them as remotes each:</span>
-brig-ali remote add bob <span class="k">$(</span>brig-bob whoami -f<span class="k">)</span>
-brig-bob remote add ali <span class="k">$(</span>brig-ali whoami -f<span class="k">)</span>
-</pre></div>
-</div>
 <hr class="docutils" />
-<table class="docutils footnote" frame="void" id="id8" rules="none">
+<table class="docutils footnote" frame="void" id="id1" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>This uses <a class="reference external" href="https://github.com/dropbox/zxcvbn">Dropbox’s password strength library »zxcvbn«</a>.</td></tr>
+<tr><td class="label">[1]</td><td><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">rm</span></code> for example deletes directories without needing a <code class="docutils literal notranslate"><span class="pre">-r</span></code> switch.</td></tr>
 </tbody>
 </table>
-<table class="docutils footnote" frame="void" id="id9" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Pinning and pin states are explained <a class="reference internal" href="#pinning-section"><span class="std std-ref">Pinning</span></a> and are not important for now.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id10" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[3]</a></td><td><code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">rm</span></code> for example deletes directories without needing a <code class="docutils literal notranslate"><span class="pre">-r</span></code> switch.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id11" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id5">[4]</a></td><td>Well almost. See the <em>Caveats</em> below.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id12" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[5]</a></td><td>To be more exact, it resembles an <a class="reference external" href="https://en.wikipedia.org/wiki/Jabber_ID">XMPP or Jabber-ID</a>.</td></tr>
-</tbody>
-</table>
-<table class="docutils footnote" frame="void" id="id13" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[6]</a></td><td>The name you choose as remote can be anything you like and does not need
-to match the name the other person chose for themselves. It’s not a bad
-idea though.</td></tr>
-</tbody>
-</table>
-</div>
-</div>
 </div>
 
 
-           </div>
-           
-          </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quickstart" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="installation.html" class="btn btn-neutral" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
     </div>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
     <p>
-        &copy; Copyright 2018, Chris Pahl.
-
+        &copy; Copyright 2018, Chris Pahl.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.<br/>
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
-
 </footer>
-
-        </div>
-      </div>
-
-    </section>
-
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'v0.1.0-beta',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
-
-</body>
+  </body>
 </html>

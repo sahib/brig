@@ -1,15 +1,25 @@
 # TODO: Convert this to a go file.
 #       make might not be available on all platforms.
 #       https://github.com/perkeep/perkeep/blob/master/make.go
-VERSION_IMPORT="github.com/sahib/brig/version"
+
+ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+VERSION_SPLIT=$(shell sed 's/v\(.*\)\.\(.*\)\.\(.*\)-\(.*\)/\1 \2 \3 \4/g' ${ROOT_DIR}/.version)
 
 # Build metadata:
-VERSION_MAJOR=0
-VERSION_MINOR=3
-VERSION_PATCH=0
-RELEASETYPE=
+VERSION_MAJOR=$(word 1,${VERSION_SPLIT})
+VERSION_MINOR=$(word 2,${VERSION_SPLIT})
+VERSION_PATCH=$(word 3,${VERSION_SPLIT})
+
+# alpha, beta and so on:
+RELEASETYPE=$(word 4,${VERSION_SPLIT})
 BUILDTIME=`date -u '+%Y-%m-%dT%H:%M:%S%z'`
 GITREV=`git rev-parse HEAD`
+
+# Where to put the resulting binary:
+BRIG_BINARY_PATH ?= ${GOBIN}/brig
+
+# What package contains the version number?
+VERSION_IMPORT="github.com/sahib/brig/version"
 
 all: build
 
@@ -19,7 +29,9 @@ generate:
 	go generate ./...
 
 build:
-	@go install -ldflags \
+	@go build \
+		-o "${BRIG_BINARY_PATH}" \
+		-ldflags \
 		" \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
@@ -51,8 +63,10 @@ capnp:
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo events/capnp/events_api.capnp
 	capnp compile -I/home/sahib/go/src/zombiezen.com/go/capnproto2/std -ogo gateway/db/capnp/user.capnp
 
-small:
-	time go install -ldflags \
+build-small:
+	go build \
+		-o "${BRIG_BINARY_PATH}" \
+		-ldflags \
 		" -s -w \
 			-X $(VERSION_IMPORT).Major=$(VERSION_MAJOR) \
 			-X $(VERSION_IMPORT).Minor=$(VERSION_MINOR) \
@@ -62,14 +76,11 @@ small:
 			-X $(VERSION_IMPORT).GitRev=$(GITREV) \
 		" \
 		brig.go
-	upx $(GOPATH)/bin/brig
-
-integration-tests:
-	@./test-runner.sh
-
-bob:
-	@echo "Running bob as sidekick under brig port :6667 and ipfs port :4003"
-	docker run -it -p 4003:4002 -p 6667:6666 brig
+	# upx "${BRIG_BINARY_PATH}"
+	@echo "Binary is at ${BRIG_BINARY_PATH}"
 
 docs:
 	cd docs && make html
+
+cloc:
+	cloc $(find -iname '*.elm' -or -iname '*.go' -a ! -path '*vendor*' ! -path '*capnp*' | head -n -1 | sort | uniq)<Paste>

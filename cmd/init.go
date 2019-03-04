@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
@@ -23,7 +26,31 @@ func Init(ctx *cli.Context, basePath, owner, password, backendName string, port 
 		return e.Wrapf(err, "repo-init")
 	}
 
-	ipfsPort := ctx.Int("ipfs-port")
+	ipfsPath := ctx.String("ipfs-path")
+	apiDataPath := filepath.Join(ipfsPath, "api")
+	apiData, err := ioutil.ReadFile(apiDataPath)
+	if err != nil {
+		return err
+	}
+
+	splitApiData := strings.Split(string(apiData), "/")
+	if len(splitApiData) == 0 {
+		return fmt.Errorf(
+			"failed to read IPFS api port to connect to (at %s): %v",
+			apiDataPath,
+			err,
+		)
+	}
+
+	ipfsPort, err := strconv.Atoi(splitApiData[len(splitApiData)-1])
+	if err != nil {
+		return fmt.Errorf(
+			"failed to convert api port to string (at %s): %v",
+			apiDataPath,
+			err,
+		)
+	}
+
 	err = repo.OverwriteConfigKey(basePath, "daemon.ipfs_port", int64(ipfsPort))
 	if err != nil {
 		return err

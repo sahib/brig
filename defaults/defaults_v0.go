@@ -10,58 +10,58 @@ var DefaultsV0 = config.DefaultMapping{
 		"port": config.DefaultEntry{
 			Default:      6666,
 			NeedsRestart: true,
-			Docs:         "Port of the daemon process",
+			Docs:         "Port of the daemon process.",
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
 		"ipfs_port": config.DefaultEntry{
 			Default:      5001,
 			NeedsRestart: true,
-			Docs:         "Port of IPFS' HTTP API",
+			Docs:         "Port of IPFS' HTTP API.",
 			Validator:    config.IntRangeValidator(1, 655356),
 		},
 		"enable_pprof": config.DefaultEntry{
 			Default:      true,
 			NeedsRestart: true,
-			Docs:         "enable a ppropf profile server on startup",
+			Docs:         "Enable a ppropf profile server on startup (see »brig d p --help«)",
 		},
 	},
 	"events": config.DefaultMapping{
 		"enabled": config.DefaultEntry{
 			Default:      true,
 			NeedsRestart: false,
-			Docs:         "Wether we should handle incoming events and publish events",
+			Docs:         "Wether we should handle incoming events and publish auto update events.",
 		},
 		"recv_interval": config.DefaultEntry{
 			Default:      "100ms",
 			NeedsRestart: false,
-			Docs:         "Time window in which events are buffered before handling them",
+			Docs:         "Time window in which events are buffered before handling them.",
 		},
 		"recv_max_events_per_second": config.DefaultEntry{
 			Default:      0.5,
 			NeedsRestart: false,
-			Docs:         "How many events per second to process at max",
+			Docs:         "How many incoming events per second to process at max.",
 		},
 		"send_interval": config.DefaultEntry{
 			Default:      "200ms",
 			NeedsRestart: false,
-			Docs:         "Time window in which events are buffered before sending them",
+			Docs:         "Time window in which events are buffered before sending them.",
 		},
 		"send_max_events_per_second": config.DefaultEntry{
 			Default:      5.0,
 			NeedsRestart: false,
-			Docs:         "How many events per second to send out at max",
+			Docs:         "How many outgoing events per second to send out at max",
 		},
 	},
 	"gateway": config.DefaultMapping{
 		"enabled": config.DefaultEntry{
 			Default:      false,
 			NeedsRestart: false,
-			Docs:         "Wether the gateway should be running",
+			Docs:         "Wether the gateway should be running. Will start when enabled.",
 		},
 		"port": config.DefaultEntry{
 			Default:      6001,
 			NeedsRestart: false,
-			Docs:         "On what port the gateway runs on",
+			Docs:         "On what port the gateway runs on.",
 		},
 		"ui": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
@@ -72,35 +72,38 @@ var DefaultsV0 = config.DefaultMapping{
 			"debug_mode": config.DefaultEntry{
 				Default:      false,
 				NeedsRestart: false,
-				Docs:         "Enable debug mode (load resources from filesystem)",
+				Docs:         "Enable debug mode (load resources from filesystem).",
 			},
 		},
 		"cert": config.DefaultMapping{
 			"certfile": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: false,
-				Docs:         "Path to an existing certificate file",
+				Docs:         "Path to an existing .cert file. Ignored if empty.",
 			},
 			"keyfile": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: false,
-				Docs:         "Path to an existing key file",
+				Docs:         "Path to an existing key file.",
 			},
 			"domain": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: false,
-				Docs:         "What domain to use for getting a certificate from LetsEncrypt",
+				Docs: `What domain to use for getting a certificate from LetsEncrypt
+
+  Setting this will restart the gateway and make it look for a certificate in $HOME/.cache/brig.
+`,
 			},
 			"redirect": config.DefaultMapping{
 				"enabled": config.DefaultEntry{
 					Default:      true,
 					NeedsRestart: false,
-					Docs:         "Wether http request should be forwarded to https",
+					Docs:         "Wether http request should be forwarded to https.",
 				},
 				"http_port": config.DefaultEntry{
-					Default:      5001,
+					Default:      6002,
 					NeedsRestart: false,
-					Docs:         "What port the http redirect server should run on",
+					Docs:         "What port the http redirect server should run on.",
 				},
 			},
 		},
@@ -108,7 +111,7 @@ var DefaultsV0 = config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,
 				NeedsRestart: false,
-				Docs:         "Wether the gateway should be running",
+				Docs:         "Wether user need to login to the gateway.",
 			},
 			"session-encryption-key": config.DefaultEntry{
 				Default:      "",
@@ -132,7 +135,7 @@ var DefaultsV0 = config.DefaultMapping{
 			"ignore_removed": config.DefaultEntry{
 				Default:      false,
 				NeedsRestart: false,
-				Docs:         "Do not remove what the remote removed",
+				Docs:         "Do not remove what the remote removed.",
 			},
 			"ignore_moved": config.DefaultEntry{
 				Default:      false,
@@ -143,15 +146,21 @@ var DefaultsV0 = config.DefaultMapping{
 				Default:      "marker",
 				NeedsRestart: false,
 				Validator: config.EnumValidator(
-					"marker", "ignore",
+					"marker", "ignore", "embrace",
 				),
+				Docs: `What strategy to apply in case of conflicts:
+
+  * marker: Create a conflict file with the remote's version.
+  * ignore: Ignore the remote version completely and keep our version.
+  * embrace: Take the remote version and replace ours with it.
+`,
 			},
 		},
 		"compress": config.DefaultMapping{
 			"default_algo": config.DefaultEntry{
 				Default:      "snappy",
 				NeedsRestart: false,
-				Docs:         "What compression algorithm to use by default",
+				Docs:         "What compression algorithm to use by default.",
 				Validator: config.EnumValidator(
 					"snappy", "lz4", "none",
 				),
@@ -161,19 +170,19 @@ var DefaultsV0 = config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      false,
 				NeedsRestart: false,
-				Docs:         "pre-cache pinned files",
+				Docs:         "pre-cache files up-on pinning.",
 			},
 		},
 		"repin": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,
 				NeedsRestart: false,
-				Docs:         "Perform repinning on old versions",
+				Docs:         "Perform repinning to reclaim space (see »brig pin repin --help«)",
 			},
 			"interval": config.DefaultEntry{
 				Default:      "15m",
 				NeedsRestart: false,
-				Docs:         "In what time interval to trigger repinning",
+				Docs:         "In what time interval to trigger repinning automatically.",
 				Validator:    config.DurationValidator(),
 			},
 			"quota": config.DefaultEntry{
@@ -181,8 +190,8 @@ var DefaultsV0 = config.DefaultMapping{
 				NeedsRestart: false,
 				Docs: `Maximum stored amount of pinned files to have.
 
-This quota is always enforced on commits. When the pinned storage exceeds the quota limit,
-old versions of files are unpinned first.
+  If the quota limit is hit, old versions of a file are unpinned first on the
+  next repin. Biggest file first.
 `,
 			},
 			"min_depth": config.DefaultEntry{
@@ -200,12 +209,12 @@ old versions of files are unpinned first.
 			"enabled": config.DefaultEntry{
 				Default:      true,
 				NeedsRestart: false,
-				Docs:         "Enable the autocommit logic",
+				Docs:         "Wether to make automatic commits in a fixed interval.",
 			},
 			"interval": config.DefaultEntry{
 				Default:      "5m",
 				NeedsRestart: false,
-				Docs:         "In what interval to make automatic commits",
+				Docs:         "In what interval to make automatic commits.",
 				Validator:    config.DurationValidator(),
 			},
 		},
@@ -213,40 +222,32 @@ old versions of files are unpinned first.
 	"repo": config.DefaultMapping{
 		"current_user": config.DefaultEntry{
 			Default:      "",
-			NeedsRestart: true,
-			Docs:         "The repository owner that is published to the outside",
+			NeedsRestart: false,
+			Docs:         "The repository owner that is published to the outside.",
 		},
 		"password_command": config.DefaultEntry{
 			Default:      "",
 			NeedsRestart: false,
-			Docs:         "If set, the repo password is taken from stdout of this command",
+			Docs:         "If set, the repo password is taken from stdout of this command.",
 		},
 	},
 	"mounts": config.DefaultMapping{
+		// This key stands for the fstab name entry:
 		"__many__": config.DefaultMapping{
 			"path": config.DefaultEntry{
 				Default:      "",
 				NeedsRestart: true,
-				Docs:         "The place where the mount path can be found",
+				Docs:         "The place where the mount path can be found.",
 			},
 			"read_only": config.DefaultEntry{
 				Default:      false,
 				NeedsRestart: true,
-				Docs:         "Wether this mount should be done read-only",
+				Docs:         "Wether this mount should be done read-only.",
 			},
 			"root": config.DefaultEntry{
 				Default:      "/",
 				NeedsRestart: true,
-				Docs:         "The root of the mount",
-			},
-		},
-	},
-	"data": config.DefaultMapping{
-		"ipfs": config.DefaultMapping{
-			"path": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: true,
-				Docs:         "Root directory of the ipfs repository",
+				Docs:         "The virtual root of the mount.",
 			},
 		},
 	},

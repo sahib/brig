@@ -18,6 +18,9 @@ const (
 	// ConflictStragetyIgnore ignores conflicts totally.
 	ConflictStragetyIgnore
 
+	// ConflictStragetyEmbrace takes the version of the remote.
+	ConflictStragetyEmbrace
+
 	// ConflictStragetyUnknown should be used when the strategy is not clear.
 	ConflictStragetyUnknown
 )
@@ -32,6 +35,8 @@ func (cs ConflictStrategy) String() string {
 		return "marker"
 	case ConflictStragetyIgnore:
 		return "ignore"
+	case ConflictStragetyEmbrace:
+		return "embrace"
 	default:
 		return "unknown"
 	}
@@ -45,6 +50,8 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 		return ConflictStragetyMarker
 	case "ignore":
 		return ConflictStragetyIgnore
+	case "embrace":
+		return ConflictStragetyEmbrace
 	default:
 		return ConflictStragetyUnknown
 	}
@@ -203,6 +210,10 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
 	if sy.cfg.ConflictStrategy == ConflictStragetyIgnore {
 		return nil
+	}
+
+	if sy.cfg.ConflictStrategy == ConflictStragetyEmbrace {
+		return sy.handleAdd(src)
 	}
 
 	log.Debugf("handling conflict: %s <-> %s", src.Path(), dst.Path())
