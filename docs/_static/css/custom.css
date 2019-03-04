@@ -7,3 +7,15 @@ a {
 #navbar a {
     color: #18bc9c !important;
 }
+
+.alert-info {
+    background-color: #3498dba1;
+}
+
+.alert-warning {
+    background-color: #f39c12b1;
+}
+
+pre {
+    color: #4e5858;
+}
