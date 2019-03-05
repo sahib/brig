@@ -158,7 +158,7 @@ EXAMPLES:
 			},
 			cli.StringSliceFlag{
 				Name:  "folder,f",
-				Usage: "Configure the folders this remote may see. Can be given more than once.",
+				Usage: "Configure the folders this remote may see. Can be given more than once. If the first letter of the folder is »-« it is added as read-only.",
 			},
 		},
 	},
@@ -239,9 +239,9 @@ EXAMPLES:
    It will be updated once you exit your editor.`,
 	},
 	"remote.auto-update": {
-		Usage:       "",
+		Usage:       "Enable auto-updating for this remote",
 		Complete:    completeArgsUsage,
-		Description: ``,
+		Description: `When enabled you will get updates shortly after this remote made it.`,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "no-initial-sync,n",
@@ -260,9 +260,15 @@ EXAMPLES:
    If you do not specify any subcommand, this is a shortcut for »brig rmt f ls«`,
 	},
 	"remote.folder.add": {
-		Usage:       "Add a remote folder for a specific remote.",
-		Complete:    completeArgsUsage,
-		Description: ``,
+		Usage:    "Add a remote folder for a specific remote.",
+		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "read-only,r",
+				Usage: "Add the folder as read-only",
+			},
+		},
+		Description: `If a folder is added as read-only, we `,
 	},
 	"remote.folder.remove": {
 		Usage:       "Remove a folder from a specific remote. ",

@@ -13,31 +13,44 @@ import (
 // REMOTE LIST ACCESS //
 ////////////////////////
 
-// Remote describes a single remote in the remote list.
-type Remote struct {
-	Name        string   `yaml:"Name"`
-	Fingerprint string   `yaml:"Fingerprint"`
-	Folders     []string `yaml:"Folders,flow"`
-	AutoUpdate  bool     `yaml:"AutoUpdate"`
+// RemoteFolder is a single folder shared with a remote.
+type RemoteFolder struct {
+	Folder   string `yaml:"Folder"`
+	ReadOnly bool   `yaml:"ReadOnly"`
 }
 
-func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
-	remoteName, err := remote.Name()
+// Remote describes a single remote in the remote list.
+type Remote struct {
+	Name             string         `yaml:"Name"`
+	Fingerprint      string         `yaml:"Fingerprint"`
+	Folders          []RemoteFolder `yaml:"Folders,flow"`
+	AutoUpdate       bool           `yaml:"AutoUpdate"`
+	ConflictStrategy string         `yaml:"ConflictStrategy"`
+	AcceptPush       bool           `yaml:"AcceptPush"`
+}
+
+func capRemoteToRemote(capRemote capnp.Remote) (*Remote, error) {
+	remoteName, err := capRemote.Name()
 	if err != nil {
 		return nil, err
 	}
 
-	remoteFp, err := remote.Fingerprint()
+	remoteFp, err := capRemote.Fingerprint()
 	if err != nil {
 		return nil, err
 	}
 
-	remoteFolders, err := remote.Folders()
+	remoteFolders, err := capRemote.Folders()
 	if err != nil {
 		return nil, err
 	}
 
-	folders := []string{}
+	conflictStrategy, err := capRemote.ConflictStrategy()
+	if err != nil {
+		return nil, err
+	}
+
+	folders := []RemoteFolder{}
 	for idx := 0; idx < remoteFolders.Len(); idx++ {
 		folder := remoteFolders.At(idx)
 		folderName, err := folder.Folder()
@@ -45,14 +58,19 @@ func capRemoteToRemote(remote capnp.Remote) (*Remote, error) {
 			return nil, err
 		}
 
-		folders = append(folders, folderName)
+		folders = append(folders, RemoteFolder{
+			Folder:   folderName,
+			ReadOnly: folder.ReadOnly(),
+		})
 	}
 
 	return &Remote{
-		Name:        remoteName,
-		Fingerprint: remoteFp,
-		Folders:     folders,
-		AutoUpdate:  remote.AcceptAutoUpdates(),
+		Name:             remoteName,
+		Fingerprint:      remoteFp,
+		Folders:          folders,
+		AutoUpdate:       capRemote.AcceptAutoUpdates(),
+		AcceptPush:       capRemote.AcceptPush(),
+		ConflictStrategy: conflictStrategy,
 	}, nil
 }
 
@@ -70,6 +88,10 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 		return nil, err
 	}
 
+	if err := capRemote.SetConflictStrategy(remote.ConflictStrategy); err != nil {
+		return nil, err
+	}
+
 	capFolders, err := capnp.NewRemoteFolder_List(seg, int32(len(remote.Folders)))
 	if err != nil {
 		return nil, err
@@ -81,7 +103,8 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 			return nil, err
 		}
 
-		if err := capFolder.SetFolder(folder); err != nil {
+		capFolder.SetReadOnly(folder.ReadOnly)
+		if err := capFolder.SetFolder(folder.Folder); err != nil {
 			return nil, err
 		}
 
@@ -95,6 +118,7 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 	}
 
 	capRemote.SetAcceptAutoUpdates(remote.AutoUpdate)
+	capRemote.SetAcceptPush(remote.AcceptPush)
 	return &capRemote, nil
 }
 

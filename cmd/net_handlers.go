@@ -216,7 +216,16 @@ func handleRemoteAdd(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	for _, folder := range ctx.StringSlice("folder") {
-		remote.Folders = append(remote.Folders, folder)
+		isReadOnly := false
+		if strings.HasPrefix(folder, "-") {
+			isReadOnly = true
+			folder = folder[1:]
+		}
+
+		remote.Folders = append(remote.Folders, client.RemoteFolder{
+			Folder:   folder,
+			ReadOnly: isReadOnly,
+		})
 	}
 
 	if err := ctl.RemoteAddOrUpdate(remote); err != nil {
@@ -333,7 +342,10 @@ func handleRemoteFolderAdd(ctx *cli.Context, ctl *client.Client) error {
 			fmt.Printf("warning: »%s« has no stat info: %s\n", folder, err)
 		}
 
-		remote.Folders = append(remote.Folders, folder)
+		remote.Folders = append(remote.Folders, client.RemoteFolder{
+			Folder:   folder,
+			ReadOnly: ctx.Bool("read-only"),
+		})
 	}
 
 	return ctl.RemoteUpdate(*remote)
@@ -346,9 +358,9 @@ func handleRemoteFolderRemove(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	folderName := ctx.Args().Get(1)
-	newFolders := []string{}
+	newFolders := []client.RemoteFolder{}
 	for _, folder := range remote.Folders {
-		if string(folder) == folderName {
+		if string(folder.Folder) == folderName {
 			continue
 		}
 
@@ -365,7 +377,7 @@ func handleRemoteFolderClear(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
-	remote.Folders = []string{}
+	remote.Folders = []client.RemoteFolder{}
 	return ctl.RemoteUpdate(*remote)
 }
 
