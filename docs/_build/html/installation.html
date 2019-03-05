@@ -56,7 +56,7 @@
      id="dLabelGlobalToc"
      data-toggle="dropdown"
      data-target="#"
-     href="index.html">Site <b class="caret"></b></a>
+     href="index.html">brig documentation <b class="caret"></b></a>
   <ul class="dropdown-menu globaltoc"
       role="menu"
       aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Installation:</span></p>
@@ -73,7 +73,13 @@
 <p class="caption"><span class="caption-text">User manual</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/intro.html">Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/intro.html#precursor-the-help-system">Precursor: The help system</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/intro.html#precursor-the-help-system">Precursor: The help system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/intro.html#built-in-reference-documentation">Built-in reference documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/intro.html#shell-autocompletion">Shell autocompletion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/intro.html#open-the-online-documentation">Open the online documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/intro.html#reporting-bugs">Reporting bugs</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a><ul>
@@ -114,7 +120,15 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#gateway-screenshots">Gateway Screenshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#gateway-screenshots">Gateway Screenshots</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#login-screen">Login screen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#file-browser">File Browser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#changelog-view">Changelog View</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#trashbin">Trashbin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#remote-list">Remote List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#remote-add-dialog">Remote Add Dialog</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#folder-management">Folder management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#user-right-management">User right management</a></li>
@@ -142,8 +156,19 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#general-questions">General questions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="faq.html#technical-questions">Technical questions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#general-questions">General questions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#why-is-the-software-named-brig">1. Why is the software named <code class="docutils literal notranslate"><span class="pre">brig</span></code>?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#who-develops-it">2. Who develops it?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#technical-questions">Technical questions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-is-the-encryption-working">1. How is the encryption working?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#is-there-compression-implemented">2. Is there compression implemented?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-hash-algorithms-are-used">3. What hash algorithms are used?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#what-kind-of-deduplication-is-currently-used">4. What kind of deduplication is currently used?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="faq.html#how-fast-is-the-i-o-when-using-brig">5. How fast is the I/O when using <code class="docutils literal notranslate"><span class="pre">brig</span></code>?</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
@@ -183,15 +208,45 @@
      href="#">Page <b class="caret"></b></a>
   <ul class="dropdown-menu localtoc"
       role="menu"
-      aria-labelledby="dLabelLocalToc"><ul>
-<li><a class="reference internal" href="#">Installation</a></li>
-<li><a class="reference internal" href="#compiling-yourself">Compiling yourself</a><ul>
-<li><a class="reference internal" href="#step-0-installing-go">Step 0: Installing Go</a></li>
-<li><a class="reference internal" href="#step-1-compile-install-brig">Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code></a></li>
-<li><a class="reference internal" href="#step-2-test-if-the-installation-is-working">Step 2: Test if the installation is working</a></li>
+      aria-labelledby="dLabelLocalToc"><p class="caption"><span class="caption-text">Installation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#compiling-yourself">Compiling yourself</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-0-installing-go">Step 0: Installing Go</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-compile-install-brig">Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-test-if-the-installation-is-working">Step 2: Test if the installation is working</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#setting-up-ipfs">Setting up IPFS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#setting-up-ipfs">Setting up IPFS</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User manual</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/intro.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html">Remotes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Additional resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#comparison-with-other-tools">Comparison with other tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute</a></li>
 </ul>
 </ul>
 </li>
@@ -200,12 +255,6 @@
             
             
             
-            
-              <li class="hidden-sm">
-<div id="sourcelink">
-  <a href="_sources/installation.rst.txt"
-     rel="nofollow">Source</a>
-</div></li>
             
           </ul>
 
@@ -225,7 +274,51 @@
 
 <div class="container">
   <div class="row">
-    <div class="col-md-12 content">
+      <div class="col-md-3">
+        <div id="sidebar" class="bs-sidenav" role="complementary"><p class="caption"><span class="caption-text">Installation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#compiling-yourself">Compiling yourself</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-0-installing-go">Step 0: Installing Go</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-compile-install-brig">Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-test-if-the-installation-is-working">Step 2: Test if the installation is working</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#setting-up-ipfs">Setting up IPFS</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User manual</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/intro.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html">Remotes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Additional resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#comparison-with-other-tools">Comparison with other tools</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">How to contribute</a></li>
+</ul>
+
+        </div>
+      </div>
+    <div class="col-md-9 content">
       
   <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
@@ -320,6 +413,13 @@ just need a refresh on the details.</p>
   <div class="container">
     <p class="pull-right">
       <a href="#">Back to top</a>
+      
+        <br/>
+        
+<div id="sourcelink">
+  <a href="_sources/installation.rst.txt"
+     rel="nofollow">Source</a>
+</div>
       
     </p>
     <p>

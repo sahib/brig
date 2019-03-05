@@ -30,3 +30,15 @@ pre {
 .navbar-brand {
     font-weight: 900;
 }
+
+.caption-text {
+    font-weight: 900;
+}
+
+#sidebar > li {
+    display: block;
+}
+
+#sidebar > li {
+    display: block;
+}

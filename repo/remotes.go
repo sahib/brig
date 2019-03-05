@@ -22,6 +22,9 @@ var (
 // Folder defines a folder setting of the remote.
 type Folder struct {
 	Folder string
+
+	// ReadOnly will exclude this folder from syncing if true.
+	ReadOnly bool
 }
 
 func (f Folder) String() string {
@@ -45,6 +48,14 @@ type Remote struct {
 	// AcceptAutoUpdates can be true if we want to receive
 	// updates from other peers that support this.
 	AcceptAutoUpdates bool
+
+	// ConflictStrategy sets the Either "marker", "ignore", "embrace".  If an
+	// empty string (default) then the config value fs.sync.conflict_strategy"
+	// is taken.
+	ConflictStrategy string
+
+	// AcceptPush will allow this remote to push data to us if true.
+	AcceptPush bool
 }
 
 // RemoteList is a helper that parses the remote access yml file

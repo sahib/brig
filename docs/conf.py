@@ -34,7 +34,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages']
+    'sphinx.ext.githubpages',
+    'sphinxcontrib.fulltoc',
+]
 
 
 
@@ -105,7 +107,7 @@ html_theme_options = {
     'navbar_title': "brig",
 
     # Tab name for entire site. (Default: "Site")
-    'navbar_site_name': "Site",
+    'navbar_site_name': "brig documentation",
 
     # A list of tuples containing pages or urls to link to.
     # Valid tuples should be in the following forms:
@@ -151,7 +153,7 @@ html_theme_options = {
 
     # Location of link to source.
     # Options are "nav" (default), "footer" or anything else to exclude.
-    'source_link_position': "nav",
+    'source_link_position': "footer",
 
     # Bootswatch (http://bootswatch.com/) theme.
     #
@@ -182,10 +184,24 @@ html_static_path = ['_static']
 # This is required for the alabaster theme
 # refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
 html_sidebars = {
-    # '**': [
-    #     'relations.html',  # needs 'show_related': True theme option to display
-    #     'searchbox.html',
-    # ]
+    'tutorial/*': [
+        'localtoc.html',
+    ],
+    'quickstart*': [
+        'localtoc.html',
+    ],
+    'installation*': [
+        'localtoc.html',
+    ],
+    'faq*': [
+        'localtoc.html',
+    ],
+    'roadmap*': [
+        'localtoc.html',
+    ],
+    'contributing*': [
+        'localtoc.html',
+    ]
 }
 
 
@@ -194,56 +210,55 @@ html_sidebars = {
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'brigdoc'
 
-
-# -- Options for LaTeX output ---------------------------------------------
-
-latex_elements = {
-    # The paper size ('letterpaper' or 'a4paper').
-    #
-    # 'papersize': 'letterpaper',
-
-    # The font size ('10pt', '11pt' or '12pt').
-    #
-    # 'pointsize': '10pt',
-
-    # Additional stuff for the LaTeX preamble.
-    #
-    # 'preamble': '',
-
-    # Latex figure (float) alignment
-    #
-    # 'figure_align': 'htbp',
-}
-
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title,
-#  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, 'brig.tex', 'brig Documentation',
-     'Chris Pahl', 'manual'),
-]
-
-
-# -- Options for manual page output ---------------------------------------
-
-# One entry per manual page. List of tuples
-# (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'brig', 'brig Documentation',
-     [author], 1)
-]
-
-
-# -- Options for Texinfo output -------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-texinfo_documents = [
-    (master_doc, 'brig', 'brig Documentation',
-     author, 'brig', 'One line description of project.',
-     'Miscellaneous'),
-]
+# # -- Options for LaTeX output ---------------------------------------------
+# 
+# latex_elements = {
+#     # The paper size ('letterpaper' or 'a4paper').
+#     #
+#     # 'papersize': 'letterpaper',
+# 
+#     # The font size ('10pt', '11pt' or '12pt').
+#     #
+#     # 'pointsize': '10pt',
+# 
+#     # Additional stuff for the LaTeX preamble.
+#     #
+#     # 'preamble': '',
+# 
+#     # Latex figure (float) alignment
+#     #
+#     # 'figure_align': 'htbp',
+# }
+# 
+# # Grouping the document tree into LaTeX files. List of tuples
+# # (source start file, target name, title,
+# #  author, documentclass [howto, manual, or own class]).
+# latex_documents = [
+#     (master_doc, 'brig.tex', 'brig Documentation',
+#      'Chris Pahl', 'manual'),
+# ]
+# 
+# 
+# # -- Options for manual page output ---------------------------------------
+# 
+# # One entry per manual page. List of tuples
+# # (source start file, name, description, authors, manual section).
+# man_pages = [
+#     (master_doc, 'brig', 'brig Documentation',
+#      [author], 1)
+# ]
+# 
+# 
+# # -- Options for Texinfo output -------------------------------------------
+# 
+# # Grouping the document tree into Texinfo files. List of tuples
+# # (source start file, target name, title, author,
+# #  dir menu entry, description, category)
+# texinfo_documents = [
+#     (master_doc, 'brig', 'brig Documentation',
+#      author, 'brig', 'One line description of project.',
+#      'Miscellaneous'),
+# ]
 
 
 def setup(app):
