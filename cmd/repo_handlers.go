@@ -127,6 +127,17 @@ func handleInit(ctx *cli.Context) error {
 		fmt.Printf("-- Guessed folder for init: %s\n", folder)
 	}
 
+	// Check if the folder exists...
+	// doing init twice can easily break things.
+	isInitialized, err := repoIsInitialized(folder)
+	if err != nil {
+		return err
+	}
+
+	if isInitialized {
+		return fmt.Errorf("`%s` already exists and is not empty; refusing to do init", folder)
+	}
+
 	ipfsPath := ctx.String("ipfs-path")
 	doIpfsSetup := !ctx.Bool("no-ipfs-setup")
 	doIpfsConfig := !ctx.Bool("no-ipfs-config")
@@ -147,17 +158,6 @@ func handleInit(ctx *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to read password from helper: %s", err)
 		}
-	}
-
-	// Check if the folder exists...
-	// doing init twice can easily break things.
-	isInitialized, err := repoIsInitialized(folder)
-	if err != nil {
-		return err
-	}
-
-	if isInitialized {
-		return fmt.Errorf("`%s` already exists and is not empty; refusing to do init", folder)
 	}
 
 	if password == "" {
