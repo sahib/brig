@@ -249,9 +249,21 @@ aliases for most subcommands:
 Conflicts
 ---------
 
-.. todo:: write
+Whenever two repositories have a file at the same path, ``brig`` needs to do some conflict resolving.
+If those files are equal or if they share common history and did not diverge there is nothing to fear.
+But what if both sides have different versions of a file without common history? In this case ``brig`` offers you
+to handle conflict by one of the three strategies:
 
-Explain ``fs.sync.conflict_strategy`` setting.
+* ``ignore``: Ignore the change from the remote side.
+* ``embrace``: Ignore our state and take over the remote's change.
+* ``marker``: Create a conflict file with the same name but a ``.conflict`` ending.
+  Leave it to the user to resolve the conflict. This is the **default.**
+
+You can configure this behavior by using ``brig cfg``:
+
+.. code-block:: bash
+
+   $ brig cfg set fs.sync.conflict_strategy marker
 
 Automatic Updating
 ------------------

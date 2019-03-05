@@ -11,8 +11,6 @@ By creating a new repository you also generate your identity, under which your
 buddies can later **find** and **authenticate** you. But enough of the mere
 theory, let's get started:
 
-.. todo:: New output of init. With password helper as default.
-
 .. code-block:: bash
 
     # Create a place where we store our metadata.
