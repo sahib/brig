@@ -107,7 +107,7 @@ html_theme_options = {
     'navbar_title': "brig",
 
     # Tab name for entire site. (Default: "Site")
-    'navbar_site_name': "brig documentation",
+    'navbar_site_name': "Table of Contents",
 
     # A list of tuples containing pages or urls to link to.
     # Valid tuples should be in the following forms:
