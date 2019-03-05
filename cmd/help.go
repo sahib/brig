@@ -154,11 +154,11 @@ EXAMPLES:
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "auto-update,a",
-				Usage: "Take automatic updates from this node",
+				Usage: "Take automatic updates from this node.",
 			},
 			cli.StringSliceFlag{
 				Name:  "folder,f",
-				Usage: "Configure the folders this remote may see",
+				Usage: "Configure the folders this remote may see. Can be given more than once.",
 			},
 		},
 	},
@@ -323,8 +323,8 @@ EXAMPLES:
    This uses the following configuration variables:
 
    - fs.repin.quota: Max. amount of data to store in a repository.
-   - fs.min_depth: Keep this many versions definitely pinned. Trumps quota.
-   - fs.max_depth: Unpin versions beyond this depth definitely. Trumps quota.
+   - fs.repin.min_depth: Keep this many versions definitely pinned. Trumps quota.
+   - fs.repin.max_depth: Unpin versions beyond this depth definitely. Trumps quota.
 
    If repin detects files that need to be unpinned, then it will first unpin all files
    that are beyond the max depth setting. If this is not sufficient to stay under the quota,

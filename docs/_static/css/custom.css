@@ -13,9 +13,20 @@ a {
 }
 
 .alert-warning {
-    background-color: #f39c12b1;
+    background-color: #f39c1281;
+    color: black;
 }
 
 pre {
     color: #4e5858;
+}
+
+.form-control {
+    padding: 1px 2px;
+    height: 35px;
+    margin-top: 5px;
+}
+
+.navbar-brand {
+    font-weight: 900;
 }

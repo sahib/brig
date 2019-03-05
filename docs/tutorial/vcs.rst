@@ -16,15 +16,15 @@ about versioning (repeating before you go to sleep may or may not help):
 **Metadata and actual data are separated.** This means that a repository may
 contain metadata about many files, including older versions of them. However,
 it is not guaranteed that a repository caches all actual data for each file or
-version. This is solely controlled by pinning described in the section before.
-If you check out earlier versions of a file, you're always able to see the
-metadata of it, but being able to view the actual data depends on having a peer
-that is being able to deliver the data in your network (which might be
-yourself). So in short: ``brig`` **only versions metadata and links to the
-respective data for each version**.
+version. This is solely controlled by pinning described in the
+:ref:`pinning-section` section. If you check out earlier versions of a file,
+you're always able to see the metadata of it, but being able to view the actual
+data depends on having a peer that is being able to deliver the data in your
+network (which might be yourself). So in short: ``brig`` **only versions
+metadata and links to the respective data for each version**.
 
 This is a somewhat novel approach to versioning, so feel free to re-read the
-last paragraph, since I've found that it does not quite fit what most people
+last paragraph, since we've found that it does not quite fit what most people
 are used to. Together with pinning this offers a high degree of freedom on how
 you can decide what repositories store what data. The price is that this
 fine-tuned control can get a little annoying. Future versions of ``brig`` will
@@ -236,9 +236,3 @@ directories:
     about that, but you can overwrite that warning with ``--force``. If you did
     a ``brig commit`` you can simply use ``brig reset head`` to go back to the
     last good state.
-
-
-Nodes that were overwritten with ``brig reset`` will be unpinned (unless pinned
-explicitly). Those nodes and their content will be garbage collected after some
-time. The content may still be accessed through the use of other remotes
-though.

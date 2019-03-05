@@ -15,6 +15,7 @@ When we named it, we thought it's a good name for the following reason:
 - A ship operates on streams (sorry 😛)
 - The name is short and somewhat similar to ``git``.
 - It gives you a few nautical metaphors and a logo for free.
+- Words like »bright«, »brigade« and many others start with it
 
 Truth be told, only half of the two name givers thought it's a good name, but
 I still kinda like it.

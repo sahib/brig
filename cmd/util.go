@@ -129,7 +129,7 @@ func guessPort(ctx *cli.Context, readConfig bool) int {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not read config to see which port I need to connect to.\n")
 		fmt.Fprintf(os.Stderr, "Please specify either --repo <path> or set BRIG_PATH so we know\n")
-		fmt.Fprintf(os.Stderr, "where the repository is (if it is not in the current directory)\n")
+		fmt.Fprintf(os.Stderr, "where the repository is to find out the right port number.\n")
 		fmt.Fprintf(os.Stderr, "I will continue by assuming the default port: 6666\n\n")
 		fmt.Fprintf(os.Stderr, "--------------------------------------------------\n\n")
 
@@ -267,6 +267,8 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 			proc.Env = append(proc.Env, fmt.Sprintf("BRIG_PASSWORD=%s", pwd))
 		}
 	}
+
+	proc.Env = append(proc.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
 
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)

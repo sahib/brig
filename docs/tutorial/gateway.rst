@@ -1,40 +1,62 @@
-Screenshots
------------
+Using the gateway
+-----------------
 
-Here are some screenshots of the gateway
+Gateway Screenshots
+~~~~~~~~~~~~~~~~~~~
+
+Login screen
+^^^^^^^^^^^^
 
 .. image:: ../_static/gateway-login.png
     :alt: Gateway login screen
     :width: 66%
 
+File Browser
+^^^^^^^^^^^^
+
 .. image:: ../_static/gateway-files.png
     :alt: Gateway files view
     :width: 66%
+
+Changelog View
+^^^^^^^^^^^^^^
 
 .. image:: ../_static/gateway-changelog.png
     :alt: Gateway changelog view
     :width: 66%
 
+Trashbin
+^^^^^^^^
+
 .. image:: ../_static/gateway-trashbin.png
     :alt: Gateway trashbin view
     :width: 66%
+
+Remote List
+^^^^^^^^^^^
 
 .. image:: ../_static/gateway-remotes.png
     :alt: Gateway remotes view
     :width: 66%
 
+Remote Add Dialog
+^^^^^^^^^^^^^^^^^
+
 .. image:: ../_static/gateway-add-remote.png
     :alt: Gateway add remote view
     :width: 66%
 
+---------
 
-Using the gateway
------------------
+Introduction
+~~~~~~~~~~~~
 
-Many users will not run ``brig``. Chances are, that you still want to send or
-present them your files without too much hassle. ``brig`` features a *Gateway*
-to HTTP(S), which comes particularly handy if you happen to run a public
-server and/or want to provide a GUI to your users.
+Many users will not run ``brig`` themselves, so you won't be able to ``brig
+sync`` with them. Chances are that you still want to send or present them your
+files without too much hassle. ``brig`` features a *Gateway* to HTTP(S), which
+comes particularly handy if you happen to run a public server and/or want to
+provide a GUI to your users. It also includes an easy to use UI that is enabled
+by default.
 
 Before you do anything, you need to a »user« to your gateway. This user is different
 than remotes and describes what credentials can be used to access the gateway.
@@ -55,9 +77,10 @@ The gateway is disabled by default. If you want to start it, use this command:
 
     $ brig gateway start
 
-Without further configuration, this will create a HTTP (**not** HTTPS!) server
-on port ``5000``, which can be used already. If you access it under ``http://localhost:5000``
-you will see a login mask where you can log yourself in with the credentials you used earlier.
+Without further configuration, this will create a HTTP (**not HTTPS!**) server
+on port ``5000``, which can be used already. If you access it under
+``http://localhost:5000`` you will see a login mask where you can log yourself
+in with the credentials you entered earlier.
 
 If you'd like to use another port than ``5000``, you can do so by setting the
 respective config key:
@@ -76,8 +99,7 @@ respective config key:
 
     This will also print helpful diagnostics if something might be wrong.
 
-The gateway can be stopped anytime with the following command. It tries to still
-serve all open requests, so that no connections are dropped:
+The gateway can be stopped anytime with the following command:
 
 .. code-block:: bash
 
@@ -98,33 +120,46 @@ file called ``brig gateway url``:
     $ brig gateway url README.md
     http://localhost:5000/get/README.md
 
-
-Securing access
-~~~~~~~~~~~~~~~
+Folder management
+~~~~~~~~~~~~~~~~~
 
 You probably do not want to offer your files to everyone that have a link.
 Therefore you can restrict access to a few folders (``/public`` for example)
-and require a user to authenticate himself with a user and password upon access.
-
-By default all files are accessible. You can change this by changing the config:
+for individual users. By default a user is allowed to see everything. If you want
+a user that can only access the ``/public`` folder simply add him as follows:
 
 .. code-block:: bash
 
-    $ brig cfg set gateway.folders /public
+    $ brig gw user add my-new-user /public
 
 Now only the files in ``/public`` (and including ``/public`` itself) are
-accessible from the gateway. If you want to add basic HTTP authentication:
+accessible from the gateway.
 
+User right management
+~~~~~~~~~~~~~~~~~~~~~
+
+We already discussed the adding of a user above. There is a little more to that though.
+You can add users with different rights. In total there are 5 different rights currently:
+
+* **fs.view**: View and list all files.
+* **fs.edit**: Edit and create new files.
+* **fs.download**: Download file content.
+* **remotes.view**: View the remotes tab.
+* **remotes.edit**: Edit the remotes tab.
+
+When you add users you can give a new user a comma separated list of rights via the ``-r`` switch:
 
 .. code-block:: bash
 
-    $ brig cfg set gateway.auth.enabled true
-    $ brig cfg set gateway.auth.user <user>
-    $ brig cfg set gateway.auth.pass <pass>
+   $ brig gw user add my-new-user -r 'remotes.view,remotes.edit'
 
-If you use authentication, it is strongly recommended to enable HTTPS.
-Otherwise the password will be transmitted in clear text.
+For your convenience there are a bunch of presets which will do the work for you in 99% of the cases:
 
+* ``--role-admin, -a``: Add this user as admin (short for »-r 'fs.view,fs.edit,fs.download,remotes.view,remotes.edit'«)
+* ``--role-editor, -b``: Add this user as collaborator (short for »-r 'fs.view,fs.edit,fs.download,remotes.view'«)
+* ``--role-collaborator, -c``: Add this user as collaborator (short for »-r 'fs.view,fs.edit,fs.download'«)
+* ``--role-viewer, -d``: Add this user as viewer (short for »-r 'fs.view,fs.download'«)
+* ``--role-link-only, -e``: Add this user as linker (short for »-r 'fs.download'«)
 
 Running the gateway with HTTPS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,7 +202,10 @@ was set:
     content-length: 38
     date: Wed, 05 Dec 2018 11:53:57 GMT
 
-    This brig gateway seems to be working.
+    <html>
+    ...
+    </html>
+
 
 This method has the advantage that the certificate can be updated automatically
 before it expires.

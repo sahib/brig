@@ -3,10 +3,10 @@ Remotes
 
 Until now, all our operations were tied only to our local computer. But
 ``brig`` is a synchronization tool and that would be hardly very useful without
-supporting other peers. We call other peers »remotes« similar to the slang used
+supporting other peers. We call other peers »remotes« similar to the term used
 in the ``git`` world.
 
-Every remote possesses two things that identifies him:
+A remote consists of three things:
 
 - **A human readable name:** This name can be choose by the user and can take
   pretty much any form, but we recommend to sticking for a form that resembles
@@ -17,11 +17,14 @@ Every remote possesses two things that identifies him:
   repository and as certificate of identity. It is long and hard to remember,
   which is the reason why ``brig`` offers to loosely link a human readable to
   it.
+- **A bunch of settings and state:** ``brig`` knows about every remote if it is
+  online and/or authenticated. Additionally you can set a few remote-specific
+  configuration settings like automatic updating.
 
 .. [#] To be more exact, it resembles an `XMPP or Jabber-ID <https://en.wikipedia.org/wiki/Jabber_ID>`_.
 
-If we want to find out what our name and fingerprint is, we can use the ``brig
-whoami`` command to ask a very existential questions:
+If we want to find out what *our own* name and fingerprint is, we can use the
+``brig whoami`` command to ask a very existential questions:
 
 .. code-block:: bash
 
@@ -47,8 +50,12 @@ and each other as remote. There are three typical scenarios here:
    Personally, I use a `secure messenger like Signal <https://signal.org>`_,
    but you can also use any channel you like, including encrypted mail or
    meeting up with the person in question.
-3. You don't know each other. Get to know each other and the proceed like in the
-   second point. If you need to get a hint of what users use a certain domain,
+3. You don't know each other: Get to know each other and the proceed like in
+   the second point. There is no way to know if somebody is the person he is
+   pretending to be, so validate that over a separate channel - that's sadly
+   something where ``brig`` can't help you yet.
+
+   If you need to get a hint of what users use a certain domain,
    you can use ``brig net locate`` to get a list of those:
 
    .. code-block:: bash
@@ -90,16 +97,16 @@ as remote we **authenticate** them:
         W1nayTG5UMcVxy9mFFNjuZDUb7uVTnmwFYiJ4Ajr1TP3bg
 
 Thanks to the fingerprint, ``brig`` now knows how to reach the other repository
-over the network. This is done in the background via ``IPFS`` and might take
-a few moments until a valid route to the host was found.
+over the network. This is done in the background via IPFS and might take a few
+moments until a valid route to the host was found.
 
 The remote list can tell us if a remote is online:
 
 .. code-block:: bash
 
     $ brig remote list
-    NAME   FINGERPRINT  ROUNDTRIP  ONLINE AUTHENTICATED LASTSEEN
-    bob    QmUDSXt27    0s         ✔      ✔             Apr 16 17:31:01
+    NAME   FINGERPRINT  ROUNDTRIP  ONLINE AUTHENTICATED LASTSEEN         AUTO-UPDATE
+    bob    QmUDSXt27    0s         ✔      ✔             Apr 16 17:31:01  no
     $ brig remote ping bob
     ping to bob: ✔ (0.00250s)
 
@@ -113,12 +120,12 @@ Otherwise ``brig remote ping bob`` would have failed.
    never is. If any of the following network operations might not work it might
    be necessary to open the port 4001 and/or enable UPnP. For security reasons
    we recommend to only open the required ports explicitly and not to use UPnP
-   unless necessary. This is only necessary if the computers you're using
-   ``brig`` on are not in the same local network.
+   unless necessary.
 
 Syncing
 -------
 
+Now that we added a remote, a whole new set of features are available to us.
 Before we move on to do our first synchronization, let's do a quick recap of
 what we have done so far:
 
@@ -127,9 +134,9 @@ what we have done so far:
 - Find & add remotes (``brig remote add``) - This needs to be done once for each peer.
 - Add some files (``brig stage <path>``) - Do as often as you like.
 
-As you can see, there is some initial setup work, but the actual syncing is
-pretty effortless now. Before we attempt to sync with anybody, it's always a
-good idea to see what changes they have. We can check this with ``brig diff
+As you can see, there is a bit of initial setup work, but the actual syncing is
+pretty effortless now. Before we attempt to sync with anybody, it's always
+a good idea to see what changes they have. We can check this with ``brig diff
 <remote>``:
 
 .. code-block:: bash
@@ -160,9 +167,10 @@ Symbol Description
 
 .. note::
 
-    Remember that ``brig`` does not do any actual diffs between files. It does
-    not care a lot about the content. It only records how the file metadata
-    changes and what content hash the file has at a certain point.
+    Remember that ``brig`` does not do any actual diffs between files, i.e. it
+    will not show you what line changed. It does not care a lot about the
+    content. It only records how the file metadata changes and what content
+    hash the file has at a certain point.
 
 If you prefer a more traditional view, similar to ``git``, you can use
 ``--list`` on ``brig diff``.
@@ -193,7 +201,7 @@ immediately, you should be using pinning (see :ref:`pinning-section`)
 Data retrieval
 ~~~~~~~~~~~~~~
 
-If the data is not on your local machine, where is it then? Thanks to ``IPFS``
+If the data is not on your local machine, where is it then? Thanks to IPFS
 it can be transferred from any other peer that caches this particular content.
 Content is usually cached when the peer either really stores this file or if
 this peer recently used this content. In the latter case it will still be
@@ -202,7 +210,7 @@ small device for viewing data (e.g. a smartphone, granted ``brig`` would run
 there) and a big machine that acts as storage server (e.g. a desktop).
 
 How are the files secure then if they essentially could be everywhere? Every
-file is encrypted by ``brig`` before giving it to ``IPFS``. The encryption key
+file is encrypted by ``brig`` before giving it to IPFS. The encryption key
 is part of the metadata and is only available to the peers that you chose to
 synchronize with. Think of each brig repository only as a cache for the whole
 network it is in.
@@ -212,12 +220,13 @@ Partial synchronisation
 
 Sometimes you only want to share certain things with certain people. You
 probably want to share all your ``/photos`` directory with your significant
-other, but not with your fellow students where you maybe want to share the
-``/lectures`` folder. In ``brig`` you can define what folder you want to share
-with what remote. If you do not limit this, **all folders will be open to
-a remote by default.** Also note, that if a remote already got some content
-of a folder you did not want to share, he will still be able to access it.
-If you're unsure, you should better be restrictive than too permissive.
+other, but not with your fellow students. On the other hand you maybe want to
+share the ``/lectures`` folder with them. In ``brig`` you can define what
+folder you want to share with what remote. If you do not limit this, **all
+folders will be open to a remote by default.** Also note, that if a remote
+already got some content of a folder you did not want to share, he will still
+be able to access it. If you're unsure, you should better be restrictive than
+too permissive.
 
 To add a folder for a specific remote, you can use the ``folders`` subcommand
 of ``brig remote``:
@@ -229,14 +238,20 @@ of ``brig remote``:
     $ brig remote folder ls bob
     /videos
 
-If you're tired of typing all of this, be reminded that there are aliases for most
-subcommands:
+If you're tired of typing all of this, be reminded that there are very short
+aliases for most subcommands:
 
 .. code-block:: bash
 
     $ brig rmt f a bob /videos
 
 
+Conflicts
+---------
+
+.. todo:: write
+
+Explain ``fs.sync.conflict_strategy`` setting.
 
 Automatic Updating
 ------------------
@@ -247,15 +262,16 @@ Automatic Updating
     pubsub experiment of the IPFS project. Use with care.
 
 
-If you do not want to hit ``brig sync`` every time somebody wants to merge with you,
+If you do not want to hit ``brig sync`` every time somebody in the network changed something,
 you can enable the automatic updating for any remote you like. Let's suppose we are ``ali``
 and want to receive updates on every change of ``bob``, we should simply add the following:
 
 .. code-block:: bash
 
     $ brig remote auto-update enable bob
-    # You can also abbreviate most of that:
-    $ brig rmt au e bob
+
+    # (You can also abbreviate most of that:)
+    # brig rmt au e bob
 
 
 Alternatively, we could have used the ``-a`` switch when adding ``bob`` as remote:
@@ -276,4 +292,3 @@ was updated automatically by looking at ``brig log``:
          -       Sun Dec 16 18:24:27 CET 2018 • (curr)
     W1kGKKviWCBY Sun Dec 16 18:24:27 CET 2018 sync due to notification from »bob« (head)
     ...
-

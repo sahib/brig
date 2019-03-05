@@ -10,6 +10,8 @@ as a single binary that includes everything you need. See here for the release l
 Just download the binary for you platform and put in somewhere in your
 ``$PATH`` (for example ``/usr/local/bin``).
 
+.. todo:: provide easy way to guess os and architecture.
+
 Compiling yourself
 ------------------
 
@@ -83,6 +85,14 @@ If everything worked, there will be a ``brig`` binary in ``$GOBIN``.
 
 If above command prints out documentation on how to use the program's
 commandline switches then the installation worked. Happy file shipping!
+
+Setting up IPFS
+---------------
+
+``brig`` requires a running *IPFS* daemon. While ``brig`` has ways to do install a IPFS daemon for you,
+it is preferable to install it via your package manager or via the official way:
+
+   https://docs.ipfs.io/introduction/install
 
 -----
 

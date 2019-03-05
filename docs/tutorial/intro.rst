@@ -4,16 +4,17 @@ Getting started
 ================
 
 This guide will walk you through the steps of synchronizing your first files
-over ``brig``. You will learn about the concepts behind it along the way.
-Most of the steps here will include working in a terminal, since this is the primary
-way to interact with ``brig``. Once setup you have to choice to use a browser application though.
+over ``brig``. You will learn about the concepts behind it along the way. Most
+of the steps here will include working in a terminal, since this is the primary
+way to interact with ``brig``. Once setup you have to choice to use a browser
+application though.
 
 Precursor: The help system
 --------------------------
 
 Before we dive in, we go over a few things that will make your life easier
 along the way. ``brig`` has some built-in helpers to serve as support for your
-memory.
+memory. If you're not interested in that you can skip right to the next section.
 
 Built-in reference documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,10 +77,11 @@ domain loaded. Please stop typing ``brig documentation`` into Google.
 Reporting bugs
 ~~~~~~~~~~~~~~~
 
-If you need to report a bug you can use a built-in utility to do that. It will
-gather all relevant information, create a report and open a tab with the
-*GitHub* issue tracker in a browser for you. Only thing left for you is to fill
-out some questions in the report and include anything you think is relevant.
+If you need to report a bug (thank you!) you can use a built-in utility to do
+that. It will gather all relevant information, create a report and open a tab
+with the *GitHub* issue tracker in a browser for you. Only thing left for you
+is to fill out some questions in the report and include anything you think is
+relevant.
 
 .. code-block:: bash
 

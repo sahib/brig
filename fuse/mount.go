@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"sync"
@@ -69,9 +70,10 @@ func NewMount(cfs *catfs.FS, mountpoint string, notifier Notifier, opts MountOpt
 		mountOptions = append(mountOptions, fuse.ReadOnly())
 	}
 
+	log.Debugf("PATH: %v", os.Getenv("PATH"))
 	conn, err := fuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "fuse-mount")
 	}
 
 	if opts.Root == "" {
@@ -257,7 +259,7 @@ func checkMountPath(path string) error {
 
 func (t *MountTable) addMount(path string, opts MountOptions) (*Mount, error) {
 	if err := checkMountPath(path); err != nil {
-		return nil, err
+		return nil, e.Wrapf(err, "dir check")
 	}
 
 	m, ok := t.m[path]
@@ -270,7 +272,7 @@ func (t *MountTable) addMount(path string, opts MountOptions) (*Mount, error) {
 		t.m[path] = m
 	}
 
-	return m, err
+	return m, e.Wrapf(err, "new-mount")
 }
 
 // Unmount closes the mount at `path` and deletes it from the table.

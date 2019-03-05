@@ -67,6 +67,7 @@
 <li class="toctree-l2"><a class="reference internal" href="installation.html#step-2-test-if-the-installation-is-working">Step 2: Test if the installation is working</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#setting-up-ipfs">Setting up IPFS</a></li>
 </ul>
 <p class="caption"><span class="caption-text">User manual</span></p>
 <ul>
@@ -96,11 +97,8 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#partial-synchronisation">Partial synchronisation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#garbage-collection">Garbage collection</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#key-concepts">Key concepts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#commits">Commits</a></li>
@@ -109,14 +107,24 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#reverting-to-previous-state">Reverting to previous state</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Screenshots</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html#using-the-gateway">Using the gateway</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#securing-access">Securing access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#garbage-collection">Garbage collection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#repinning">Repinning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#gateway-screenshots">Gateway Screenshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#folder-management">Folder management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#user-right-management">User right management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#running-the-gateway-with-https">Running the gateway with HTTPS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/config.html#profiles">Profiles</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">Additional resources</span></p>
 <ul>
@@ -137,8 +145,17 @@
 <li class="toctree-l2"><a class="reference internal" href="faq.html#technical-questions">Technical questions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
-<li class="toctree-l1"><a class="reference internal" href="comparison.html">Comparison with other tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#encrypted-and-compression-built-in">Encrypted and compression built-in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#easy-version-control">Easy Version control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#separation-between-data-and-metadata">Separation between data and metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#truly-distributed">Truly Distributed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#fuse-filesystem">FUSE filesystem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gateway-and-web-ui">Gateway and Web UI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#open-source">100% Open-Source</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#comparison-with-other-tools">Comparison with other tools</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Development</span></p>
 <ul>
@@ -166,10 +183,12 @@
   <ul class="dropdown-menu localtoc"
       role="menu"
       aria-labelledby="dLabelLocalToc"><ul>
-<li><a class="reference internal" href="#">brig - decentralized &amp; secure synchronization</a><ul>
+<li><a class="reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">brig</span></code> - decentralized &amp; secure synchronization</a><ul>
 <li><a class="reference internal" href="#what-is-brig">What is <code class="docutils literal notranslate"><span class="pre">brig</span></code>?</a></li>
 <li><a class="reference internal" href="#what-is-brig-not">What is <code class="docutils literal notranslate"><span class="pre">brig</span></code> not?</a></li>
-<li><a class="reference internal" href="#current-status">Current Status</a><ul>
+<li><a class="reference internal" href="#i-have-questions">I have questions!</a></li>
+<li><a class="reference internal" href="#current-status">Current Status</a></li>
+<li><a class="reference internal" href="#table-of-contents">Table of Contents</a><ul>
 </ul>
 </li>
 </ul>
@@ -210,26 +229,26 @@
     <div class="col-md-12 content">
       
   <div class="section" id="brig-decentralized-secure-synchronization">
-<h1>brig - decentralized &amp; secure synchronization<a class="headerlink" href="#brig-decentralized-secure-synchronization" title="Permalink to this headline">¶</a></h1>
+<h1><code class="docutils literal notranslate"><span class="pre">brig</span></code> - decentralized &amp; secure synchronization<a class="headerlink" href="#brig-decentralized-secure-synchronization" title="Permalink to this headline">¶</a></h1>
 <a class="reference internal image-reference" href="_images/logo.png"><img alt="_images/logo.png" class="align-center" src="_images/logo.png" style="width: 50%;" /></a>
 <div class="section" id="what-is-brig">
 <h2>What is <code class="docutils literal notranslate"><span class="pre">brig</span></code>?<a class="headerlink" href="#what-is-brig" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">brig</span></code> is a distributed &amp; secure file synchronization tool with version
-control. It is based on <code class="docutils literal notranslate"><span class="pre">ipfs</span></code>, written in Go and will feel familiar to
+control. It is based on IPFS, written in Go and will feel familiar to
 <code class="docutils literal notranslate"><span class="pre">git</span></code> users. Think of it as a swiss army knife for file synchronization or as
-a distributed alternative to Dropbox.</p>
+a peer to peer alternative to <em>Dropbox.</em></p>
 <p><strong>Key feature highlights:</strong></p>
 <ul class="simple">
-<li>Encryption of data in rest and transport, plus optional compression on the fly.</li>
+<li>Encryption of data during storage and transport, plus optional compression on the fly.</li>
 <li>Simplified <code class="docutils literal notranslate"><span class="pre">git</span></code> version control only limited by your storage space.</li>
 <li>Synchronization algorithm that can handle moved files and empty directories and files.</li>
 <li>Your data does not need to be stored on the device you are currently using.</li>
 <li>FUSE filesystem that feels like a normal sync folder.</li>
 <li>No central server at all. Still, central architectures can be build with <code class="docutils literal notranslate"><span class="pre">brig</span></code>.</li>
-<li>Gateway to share normal HTTP/S links with other users.</li>
+<li>Gateway and Web based UI to share normal HTTP/S links with other users.</li>
 <li>Auto-updating facility that will sync on any change.</li>
 <li>Completely free software under the terms of the <code class="docutils literal notranslate"><span class="pre">AGPL</span></code>.</li>
-<li>Simple user identification and discovery.</li>
+<li>…</li>
 </ul>
 <p>Please refer to the <a class="reference internal" href="features.html#features-page"><span class="std std-ref">Features</span></a> for more details. If you want a visual
 hint how <code class="docutils literal notranslate"><span class="pre">brig</span></code> looks on the commandline, refer to the <a class="reference internal" href="quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a>.</p>
@@ -244,6 +263,14 @@ cannot excel in all areas. It won’t replace high performance network file
 systems and should not be used when you are in need of high throughput - at
 least not at the moment.</p>
 </div>
+<div class="section" id="i-have-questions">
+<h2>I have questions!<a class="headerlink" href="#i-have-questions" title="Permalink to this headline">¶</a></h2>
+<p>Please ask in one of those places:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/sahib/brig/issues">GitHub Issue Tracker</a>: All things like bug reports or feature requests.</li>
+<li>The matrix chat room <code class="docutils literal notranslate"><span class="pre">#brig</span></code> on <code class="docutils literal notranslate"><span class="pre">matrix.org</span></code>. Just <a class="reference external" href="https://matrix.org/docs/projects/try-matrix-now.html">pick a client</a> and join the room.</li>
+</ul>
+</div>
 <div class="section" id="current-status">
 <h2>Current Status<a class="headerlink" href="#current-status" title="Permalink to this headline">¶</a></h2>
 <p><strong>This software is in active development and probably not suited for production
@@ -257,6 +284,9 @@ stabilizing the current feature set.</p>
 <p>At this moment <code class="docutils literal notranslate"><span class="pre">brig</span></code> is <strong>only tested on Linux</strong>. Porting and testing
 efforts are welcome. Other platforms should be able to compile, but there are
 currently not guarantees that it will work.</p>
+</div>
+<div class="section" id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Installation:</span></p>
 <ul>
@@ -267,6 +297,7 @@ currently not guarantees that it will work.</p>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#step-2-test-if-the-installation-is-working">Step 2: Test if the installation is working</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#setting-up-ipfs">Setting up IPFS</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -298,11 +329,8 @@ currently not guarantees that it will work.</p>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#partial-synchronisation">Partial synchronisation</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#garbage-collection">Garbage collection</a></li>
-</ul>
-</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#key-concepts">Key concepts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#commits">Commits</a></li>
@@ -311,14 +339,24 @@ currently not guarantees that it will work.</p>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#reverting-to-previous-state">Reverting to previous state</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Screenshots</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html#using-the-gateway">Using the gateway</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#securing-access">Securing access</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#garbage-collection">Garbage collection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#repinning">Repinning</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#gateway-screenshots">Gateway Screenshots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#folder-management">Folder management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#user-right-management">User right management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#running-the-gateway-with-https">Running the gateway with HTTPS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/config.html#profiles">Profiles</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -341,8 +379,17 @@ currently not guarantees that it will work.</p>
 <li class="toctree-l2"><a class="reference internal" href="faq.html#technical-questions">Technical questions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a></li>
-<li class="toctree-l1"><a class="reference internal" href="comparison.html">Comparison with other tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#encrypted-and-compression-built-in">Encrypted and compression built-in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#easy-version-control">Easy Version control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#separation-between-data-and-metadata">Separation between data and metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#truly-distributed">Truly Distributed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#fuse-filesystem">FUSE filesystem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#gateway-and-web-ui">Gateway and Web UI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#open-source">100% Open-Source</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="features.html#comparison-with-other-tools">Comparison with other tools</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">

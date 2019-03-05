@@ -186,7 +186,7 @@ var DefaultsV0 = config.DefaultMapping{
 				Validator:    config.DurationValidator(),
 			},
 			"quota": config.DefaultEntry{
-				Default:      "1GB",
+				Default:      "5GB",
 				NeedsRestart: false,
 				Docs: `Maximum stored amount of pinned files to have.
 

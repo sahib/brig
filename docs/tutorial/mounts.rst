@@ -1,15 +1,15 @@
 Mounting repositories
 ---------------------
 
-Using those specialized ``brig`` commands might not feel very seamless,
-especially when being used to tools like file browsers. And indeed, those
-commands are only supposed to serve as a low-level way of interacting with
-``brig`` and as means for scripting own workflows.
+Using commands like ``brig cp`` might not feel very seamless, especially when
+being used to tools like file browsers. And indeed, those commands are only
+supposed to serve as a low-level way of interacting with ``brig`` and as way
+for scripting own, more elaborate workflows.
 
 For your daily workflow it is far easier to mount all files known to ``brig``
-to a directory of your choice and use it with your normal tools. To accomplish
-that ``brig`` supports a FUSE filesystem that can be controlled via the
-``mount`` and ``fstab`` commands. Let's look at ``brig mount``:
+to a directory of your choice and use it with the tools you are used to. To
+accomplish that ``brig`` supports a FUSE filesystem that can be controlled via
+the ``mount`` and ``fstab`` commands. Let's look at ``brig mount``:
 
 .. code-block:: bash
 
@@ -24,10 +24,11 @@ that ``brig`` supports a FUSE filesystem that can be controlled via the
    $ brig cat salut-monde.txt
    Salut le monde!
 
-You can use this directory like a normal one (except for the CAVEATS below). You can have any
-number of mounts. This proves especially useful when only mounting a subdirectory of ``brig``
-(let's say ``Public``) with the ``--root`` option of
-``brig mount`` and mounting all other files as read only (``--readonly``).
+You can use this directory like a normal one, but check for the CAVEATS below.
+You can have any number of mounts. This proves especially useful when only
+mounting a subdirectory (let's say we have a directory called ``/Public``) with
+the ``--root`` option of ``brig mount`` and mounting all other files as read
+only (``--readonly``).
 
 .. code-block:: bash
 
@@ -55,10 +56,8 @@ An existing mount can be removed again with ``brig unmount <path>``:
 Making mounts permanent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-It can get a little annoying when having to manage several mounts yourself. It
-would be nice to have some *typical* mounts you'd like to have always and it
-should be only one command to mount or unmount all of them, kind of what
-``mount -a`` does. That's what ``brig fstab`` is for:
+All mounts that are created via ``brig mount`` will be gone after a daemon restart.
+If you a typical set of mounts, you can persist them with the ``brig fstab`` facility:
 
 .. code-block:: bash
 
@@ -79,11 +78,10 @@ should be only one command to mount or unmount all of them, kind of what
     tmp_rw_mount  /tmp/rw-mount  no         /
 
 Et Voilà, all mounts will be created and mounted once you enter ``brig fstab
-apply``. The opposite can be achieved by executing ``brig fstab apply --unmount``.
-On every restart of the daemon, all mounts are mounted by default, so the only
-thing you need to make sure is that the daemon is running.
+apply`` or restart the daemon. The opposite can be achieved by executing ``brig
+fstab apply --unmount``.
 
-*CAVEATS:* The FUSE filesystem is not yet perfect. Keep those points in mind:
+*CAVEATS:* The FUSE filesystem is not yet perfect and somewhat experimental. Keep those points in mind:
 
 - **Performance:** Writing to FUSE is currently somewhat *memory and CPU
   intensive*. Generally, reading should be fast enough for most basic use
