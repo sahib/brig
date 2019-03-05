@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -10,13 +9,14 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/repo/setup"
 	"github.com/urfave/cli"
 )
 
 // Init creates a new brig repository at `basePath` with `owner`.
 // `password` is used to encrypt it and `backendName` tells `brig` what backend
 // to initialize. The port is the port of the brig daemon.
-func Init(ctx *cli.Context, basePath, owner, password, backendName string, port int) error {
+func Init(ctx *cli.Context, basePath, owner, password, backendName, ipfsPath string, port int) error {
 	if !backend.IsValidName(backendName) {
 		return fmt.Errorf("invalid backend name: %v", backendName)
 	}
@@ -26,27 +26,25 @@ func Init(ctx *cli.Context, basePath, owner, password, backendName string, port 
 		return e.Wrapf(err, "repo-init")
 	}
 
-	ipfsPath := ctx.String("ipfs-path")
-	apiDataPath := filepath.Join(ipfsPath, "api")
-	apiData, err := ioutil.ReadFile(apiDataPath)
+	apiAddr, err := setup.GetAPIAddrForPath(ipfsPath)
 	if err != nil {
-		return err
+		return e.Wrapf(err, "no config - is »%s« an IPFS repo?", apiAddr)
 	}
 
-	splitApiData := strings.Split(string(apiData), "/")
-	if len(splitApiData) == 0 {
+	splitAPIAddr := strings.Split(string(apiAddr), "/")
+	if len(splitAPIAddr) == 0 {
 		return fmt.Errorf(
 			"failed to read IPFS api port to connect to (at %s): %v",
-			apiDataPath,
+			ipfsPath,
 			err,
 		)
 	}
 
-	ipfsPort, err := strconv.Atoi(splitApiData[len(splitApiData)-1])
+	ipfsPort, err := strconv.Atoi(splitAPIAddr[len(splitAPIAddr)-1])
 	if err != nil {
 		return fmt.Errorf(
 			"failed to convert api port to string (at %s): %v",
-			apiDataPath,
+			ipfsPath,
 			err,
 		)
 	}

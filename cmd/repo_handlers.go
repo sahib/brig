@@ -132,7 +132,9 @@ func handleInit(ctx *cli.Context) error {
 	doIpfsConfig := !ctx.Bool("no-ipfs-config")
 
 	if backend == "httpipfs" {
-		if err := setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, ipfsPath); err != nil {
+		var err error
+		ipfsPath, err = setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, ipfsPath)
+		if err != nil {
 			return err
 		}
 	}
@@ -174,7 +176,7 @@ func handleInit(ctx *cli.Context) error {
 		return err
 	}
 
-	if err := Init(ctx, folder, owner, password, backend, port); err != nil {
+	if err := Init(ctx, folder, owner, password, backend, ipfsPath, port); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
 	}
 
