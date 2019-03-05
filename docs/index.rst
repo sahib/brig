@@ -46,7 +46,7 @@ I have questions!
 Please ask in one of those places:
 
 * `GitHub Issue Tracker <https://github.com/sahib/brig/issues>`_: All things like bug reports or feature requests.
-* The matrix chat room ``#brig`` on ``matrix.org``. Just `pick a client <https://matrix.org/docs/projects/try-matrix-now.html>`_ and join the room.
+* The matrix chat room ``#brig`` on ``matrix.org``. Just `pick a client <https://matrix.org/docs/projects/try-matrix-now.html>`_ and join the room or click `this link <https://riot.im/app/#/room/#brig:matrix.org>`_ directly.
 
 Current Status
 --------------

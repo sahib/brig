@@ -44,7 +44,7 @@ Also take a look [at the documentation](http://brig.readthedocs.io/en/latest/ind
 
 ## Installation
 
-If you have a recent version of `go` (`>= 1.9`) installed, it should be as easy as this:
+If you have a recent version of `go` (`>= 1.10`) installed, it should be as easy as this:
 
 ```bash
 $ go get -d -v -u github.com/sahib/brig  # Download the sources.
@@ -62,7 +62,10 @@ Please refer to the [install docs](https://brig.readthedocs.io/en/latest/install
 ...If you want to know, what to do after you can read the
 [Quickstart](http://brig.readthedocs.io/en/latest/quickstart.html).
 
-There is also a ``#brig`` room on ``matrix.org`` you can join with any [Matrix](https://matrix.org) client.
+There is also a ``#brig`` room on ``matrix.org`` you can join with any
+[Matrix](https://matrix.org) client. Click [this
+link](https://riot.im/app/#/room/#brig:matrix.org) to join the room directly
+via [Riot.im](https://about.riot.im).
 
 ## Status
 
