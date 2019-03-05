@@ -213,7 +213,7 @@ func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType
 	}
 
 	if sy.cfg.ConflictStrategy == ConflictStragetyEmbrace {
-		return sy.handleAdd(src)
+		return sy.handleMerge(src, dst, srcMask, dstMask)
 	}
 
 	log.Debugf("handling conflict: %s <-> %s", src.Path(), dst.Path())
