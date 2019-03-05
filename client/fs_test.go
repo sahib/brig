@@ -305,7 +305,11 @@ func TestSyncPartial(t *testing.T) {
 			{
 				Name:        "bob",
 				Fingerprint: bobWhoami.Fingerprint,
-				Folders:     []string{"/photos"},
+				Folders: []RemoteFolder{
+					{
+						Folder: "/photos",
+					},
+				},
 			},
 		}))
 
@@ -313,7 +317,11 @@ func TestSyncPartial(t *testing.T) {
 			{
 				Name:        "ali",
 				Fingerprint: aliWhoami.Fingerprint,
-				Folders:     []string{"/photos"},
+				Folders: []RemoteFolder{
+					{
+						Folder: "/photos",
+					},
+				},
 			},
 		}))
 
