@@ -408,7 +408,7 @@ func handleRemoteFolderListAll(ctx *cli.Context, ctl *client.Client) error {
 	for _, remote := range remotes {
 		fmt.Println(remote.Name)
 		for _, folder := range remote.Folders {
-			fmt.Printf("  %s\n", folder)
+			fmt.Printf("  %s\n", folder.Folder)
 		}
 	}
 
