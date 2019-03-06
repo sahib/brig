@@ -39,6 +39,18 @@ pre {
     display: block;
 }
 
-#sidebar > li {
-    display: block;
+#sidebar {
+    padding-left: 10px;
+    position: relative;
+}
+
+/* Make the ``brig`` markup in page color */
+.pre {
+    color: #1866bc !important;
+    color: #18bc9c !important;
+}
+
+/* Maket the selected item in the sidebar a little darker */
+a.current {
+    background-color: #00000011;
 }

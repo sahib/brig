@@ -162,6 +162,7 @@ func (nh *netHandler) RemotePing(call capnp.Net_remotePing) error {
 }
 
 func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
+	// TODO: Create a /common library to share this code between client and server.
 	remoteName, err := remote.Name()
 	if err != nil {
 		return nil, err
@@ -174,6 +175,11 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 
 	// Check the fingerprint to be valid:
 	fingerprint, err := peer.CastFingerprint(capFingerprint)
+	if err != nil {
+		return nil, err
+	}
+
+	conflictStrategy, err := remote.ConflictStrategy()
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +207,8 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 		Fingerprint:       peer.Fingerprint(fingerprint),
 		Folders:           folders,
 		AcceptAutoUpdates: remote.AcceptAutoUpdates(),
+		AcceptPush:        remote.AcceptPush(),
+		ConflictStrategy:  conflictStrategy,
 	}, nil
 }
 
@@ -215,6 +223,10 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 	}
 
 	if err := capRemote.SetFingerprint(string(remote.Fingerprint)); err != nil {
+		return nil, err
+	}
+
+	if err := capRemote.SetConflictStrategy(remote.ConflictStrategy); err != nil {
 		return nil, err
 	}
 
@@ -243,6 +255,7 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 	}
 
 	capRemote.SetAcceptAutoUpdates(remote.AcceptAutoUpdates)
+	capRemote.SetAcceptPush(remote.AcceptPush)
 	return &capRemote, nil
 }
 

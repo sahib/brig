@@ -1466,7 +1466,7 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 // Sync will synchronize the state of two filesystems.
 // If one of filesystems have unstaged changes, they will be committted first.
 // If our filesystem was changed by Sync(), a new merge commit will also be created.
-func (fs *FS) Sync(remote *FS, msg string) error {
+func (fs *FS) Sync(remote *FS, msg string, opts *vcs.SyncOptions) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
