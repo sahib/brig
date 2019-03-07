@@ -206,6 +206,7 @@ func (b *base) loadBackend() error {
 	}
 
 	b.backend = realBackend
+	b.repo.StartAutoGCLoop(realBackend)
 	return nil
 }
 

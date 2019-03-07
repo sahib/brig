@@ -2,8 +2,10 @@ package repo
 
 import (
 	"fmt"
+	"time"
 
 	h "github.com/sahib/brig/util/hashlib"
+	log "github.com/sirupsen/logrus"
 )
 
 // GC runs the garbage collector of the backend.  If `aggressive` is true, also
@@ -52,4 +54,42 @@ func (rp *Repository) GC(backend Backend, aggressive bool) (map[string]map[strin
 	}
 
 	return result, nil
+}
+
+func (rp *Repository) StartAutoGCLoop(backend Backend) {
+	go rp.autoGCLoop(backend)
+}
+
+func (rp *Repository) stopAutoGCLoop() {
+	go func() {
+		rp.autoGCControl <- true
+	}()
+}
+
+func (rp *Repository) autoGCLoop(backend Backend) {
+	lastCheck := time.Now()
+	checkTicker := time.NewTicker(1 * time.Second)
+	defer checkTicker.Stop()
+
+	for {
+		select {
+		case <-rp.autoGCControl:
+			log.Debugf("quitting the auto commit loop")
+			return
+		case <-checkTicker.C:
+			isEnabled := rp.Config.Bool("repo.autogc.enabled")
+			if !isEnabled {
+				continue
+			}
+
+			if time.Since(lastCheck) >= rp.Config.Duration("repo.autogc.interval") {
+				lastCheck = time.Now()
+				log.Debugf("running backend GC due to automatic garbage collection")
+
+				if _, err := rp.GC(backend, false); err != nil {
+					log.Warningf("GC failed: %v", err)
+				}
+			}
+		}
+	}
 }

@@ -62,6 +62,9 @@ type Repository struct {
 
 	// Remotes gives access to all known remotes
 	Remotes *RemoteList
+
+	// channel to control the auto gc loop
+	autoGCControl chan bool
 }
 
 // CheckPassword will try to validate `password` by decrypting something
@@ -143,18 +146,22 @@ func Open(baseFolder, password string) (*Repository, error) {
 		return nil, err
 	}
 
-	return &Repository{
-		BaseFolder:  baseFolder,
-		backendName: string(backendName),
-		Config:      cfg,
-		Remotes:     remotes,
-		Owner:       string(owner),
-		fsMap:       make(map[string]*catfs.FS),
-	}, nil
+	rp := &Repository{
+		BaseFolder:    baseFolder,
+		backendName:   string(backendName),
+		Config:        cfg,
+		Remotes:       remotes,
+		Owner:         string(owner),
+		fsMap:         make(map[string]*catfs.FS),
+		autoGCControl: make(chan bool, 1),
+	}
+
+	return rp, nil
 }
 
 // Close will lock the repository, making this instance unusable.
 func (rp *Repository) Close(password string) error {
+	rp.stopAutoGCLoop()
 	return LockRepo(
 		rp.BaseFolder,
 		rp.Owner,

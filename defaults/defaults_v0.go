@@ -230,6 +230,19 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "If set, the repo password is taken from stdout of this command.",
 		},
+		"autogc": config.DefaultMapping{
+			"enabled": config.DefaultEntry{
+				Default:      true,
+				NeedsRestart: false,
+				Docs:         "Wether to make automatic commits in a fixed interval.",
+			},
+			"interval": config.DefaultEntry{
+				Default:      "60m",
+				NeedsRestart: false,
+				Docs:         "In what interval to make automatic commits.",
+				Validator:    config.DurationValidator(),
+			},
+		},
 	},
 	"mounts": config.DefaultMapping{
 		// This key stands for the fstab name entry:
