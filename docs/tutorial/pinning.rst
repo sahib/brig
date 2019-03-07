@@ -36,7 +36,9 @@ Garbage collection
 Strongly related to pinning is garbage collection. Whenever you need to clean up some
 space, you can just type ``brig gc`` to remove all unpinned files from the cache.
 
-.. todo:: The gc output seems to be broken somewhat.
+By default, the garbage collector is also run once every hour. You can change this interval
+by setting ``brig config set repo.autogc.interval`` to ``30m`` for example. You can also disable
+this automatic garbage collection by issuing ``brig config set repo.autogc.enabled false``.
 
 Repinning
 ~~~~~~~~~
