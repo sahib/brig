@@ -213,6 +213,14 @@ func RunCmdline(args []string) int {
 					Aliases: []string{"au"},
 					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAutoUpdate, true)),
 				}, {
+					Name:    "accept-push",
+					Aliases: []string{"ap"},
+					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAcceptPush, true)),
+				}, {
+					Name:    "conflict-strategy",
+					Aliases: []string{"cs"},
+					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteConflictStrategy, true)),
+				}, {
 					Name:    "folder",
 					Aliases: []string{"fld", "f"},
 					Action:  withDaemon(handleRemoteFolderListAll, true),
@@ -295,6 +303,10 @@ func RunCmdline(args []string) int {
 			Name:     "sync",
 			Category: vcscGroup,
 			Action:   withDaemon(handleSync, true),
+		}, {
+			Name:     "push",
+			Category: vcscGroup,
+			Action:   withArgCheck(needAtLeast(1), withDaemon(handlePush, true)),
 		}, {
 			Name:     "commit",
 			Aliases:  []string{"cmt"},

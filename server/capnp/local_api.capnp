@@ -204,6 +204,7 @@ interface Net {
     disconnect        @11 ();
     remoteOnlineList  @12 () -> (infos :List(RemoteStatus));
     remoteByName      @13 (name :Text) -> (remote :Remote);
+    push              @14 (remoteName :Text, dryRun :Bool);
 }
 
 # Group all interfaces together in one API object,

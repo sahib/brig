@@ -5,9 +5,11 @@ $Go.package("capnp");
 $Go.import("github.com/sahib/brig/net/capnp");
 
 interface Sync {
-    fetchStore @0 () -> (data :Data);
-    fetchPatch @1 (fromIndex :Int64) -> (data :Data);
+    fetchStore             @0 () -> (data :Data);
+    fetchPatch             @1 (fromIndex :Int64) -> (data :Data);
     isCompleteFetchAllowed @2 () -> (isAllowed :Bool);
+    isPushAllowed          @3 () -> (isAllowed :Bool);
+    push                   @4 ();
 }
 
 interface Meta {

@@ -50,7 +50,7 @@ func withNetServer(t *testing.T, name string, backendPort int, basePath string, 
 	rp, err := repo.Open(basePath, "password")
 	require.Nil(t, err)
 
-	srv, err := NewServer(rp, bk)
+	srv, err := NewServer(rp, bk, nil)
 	require.Nil(t, err)
 
 	fs, err := rp.FS(name, bk)

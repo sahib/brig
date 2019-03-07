@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/repo"
 	log "github.com/sirupsen/logrus"
@@ -16,6 +17,7 @@ type requestHandler struct {
 	bk             backend.Backend
 	rp             *repo.Repository
 	ctx            context.Context
+	rapi           remotesapi.RemotesAPI
 	currRemoteName string
 }
 
@@ -107,4 +109,30 @@ func (hdl *requestHandler) Ping(call capnp.Meta_ping) error {
 func (hdl *requestHandler) Version(call capnp.API_version) error {
 	call.Results.SetVersion(1)
 	return nil
+}
+
+func (hdl *requestHandler) IsPushAllowed(call capnp.Sync_isPushAllowed) error {
+	currRemote, err := hdl.rp.Remotes.Remote(hdl.currRemoteName)
+	if err != nil {
+		return err
+	}
+
+	call.Results.SetIsAllowed(currRemote.AcceptPush)
+	return nil
+}
+
+func (hdl *requestHandler) Push(call capnp.Sync_push) error {
+	// NOTE: You might be confused by the name "Push".
+	// This is the RECEIVING side of the push.
+	currRemote, err := hdl.rp.Remotes.Remote(hdl.currRemoteName)
+	if err != nil {
+		return err
+	}
+
+	if !currRemote.AcceptPush {
+		return fmt.Errorf("pushing is not allowed for you")
+	}
+
+	log.Infof("Syncing with »%s« because he asked us to via a push.", currRemote.Name)
+	return hdl.rapi.Sync(currRemote.Name)
 }

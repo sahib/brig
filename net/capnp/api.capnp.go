@@ -75,6 +75,46 @@ func (c Sync) IsCompleteFetchAllowed(ctx context.Context, params func(Sync_isCom
 	}
 	return Sync_isCompleteFetchAllowed_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c Sync) IsPushAllowed(ctx context.Context, params func(Sync_isPushAllowed_Params) error, opts ...capnp.CallOption) Sync_isPushAllowed_Results_Promise {
+	if c.Client == nil {
+		return Sync_isPushAllowed_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      3,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isPushAllowed",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_isPushAllowed_Params{Struct: s}) }
+	}
+	return Sync_isPushAllowed_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c Sync) Push(ctx context.Context, params func(Sync_push_Params) error, opts ...capnp.CallOption) Sync_push_Results_Promise {
+	if c.Client == nil {
+		return Sync_push_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      4,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "push",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_push_Params{Struct: s}) }
+	}
+	return Sync_push_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 
 type Sync_Server interface {
 	FetchStore(Sync_fetchStore) error
@@ -82,6 +122,10 @@ type Sync_Server interface {
 	FetchPatch(Sync_fetchPatch) error
 
 	IsCompleteFetchAllowed(Sync_isCompleteFetchAllowed) error
+
+	IsPushAllowed(Sync_isPushAllowed) error
+
+	Push(Sync_push) error
 }
 
 func Sync_ServerToClient(s Sync_Server) Sync {
@@ -91,7 +135,7 @@ func Sync_ServerToClient(s Sync_Server) Sync {
 
 func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 3)
+		methods = make([]server.Method, 0, 5)
 	}
 
 	methods = append(methods, server.Method{
@@ -136,6 +180,34 @@ func Sync_Methods(methods []server.Method, s Sync_Server) []server.Method {
 		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
 	})
 
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      3,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isPushAllowed",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_isPushAllowed{c, opts, Sync_isPushAllowed_Params{Struct: p}, Sync_isPushAllowed_Results{Struct: r}}
+			return s.IsPushAllowed(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      4,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "push",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_push{c, opts, Sync_push_Params{Struct: p}, Sync_push_Results{Struct: r}}
+			return s.Push(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
+	})
+
 	return methods
 }
 
@@ -161,6 +233,22 @@ type Sync_isCompleteFetchAllowed struct {
 	Options capnp.CallOptions
 	Params  Sync_isCompleteFetchAllowed_Params
 	Results Sync_isCompleteFetchAllowed_Results
+}
+
+// Sync_isPushAllowed holds the arguments for a server call to Sync.isPushAllowed.
+type Sync_isPushAllowed struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Sync_isPushAllowed_Params
+	Results Sync_isPushAllowed_Results
+}
+
+// Sync_push holds the arguments for a server call to Sync.push.
+type Sync_push struct {
+	Ctx     context.Context
+	Options capnp.CallOptions
+	Params  Sync_push_Params
+	Results Sync_push_Results
 }
 
 type Sync_fetchStore_Params struct{ capnp.Struct }
@@ -537,6 +625,232 @@ func (p Sync_isCompleteFetchAllowed_Results_Promise) Struct() (Sync_isCompleteFe
 	return Sync_isCompleteFetchAllowed_Results{s}, err
 }
 
+type Sync_isPushAllowed_Params struct{ capnp.Struct }
+
+// Sync_isPushAllowed_Params_TypeID is the unique identifier for the type Sync_isPushAllowed_Params.
+const Sync_isPushAllowed_Params_TypeID = 0xdcee0f1a1e882683
+
+func NewSync_isPushAllowed_Params(s *capnp.Segment) (Sync_isPushAllowed_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_isPushAllowed_Params{st}, err
+}
+
+func NewRootSync_isPushAllowed_Params(s *capnp.Segment) (Sync_isPushAllowed_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_isPushAllowed_Params{st}, err
+}
+
+func ReadRootSync_isPushAllowed_Params(msg *capnp.Message) (Sync_isPushAllowed_Params, error) {
+	root, err := msg.RootPtr()
+	return Sync_isPushAllowed_Params{root.Struct()}, err
+}
+
+func (s Sync_isPushAllowed_Params) String() string {
+	str, _ := text.Marshal(0xdcee0f1a1e882683, s.Struct)
+	return str
+}
+
+// Sync_isPushAllowed_Params_List is a list of Sync_isPushAllowed_Params.
+type Sync_isPushAllowed_Params_List struct{ capnp.List }
+
+// NewSync_isPushAllowed_Params creates a new list of Sync_isPushAllowed_Params.
+func NewSync_isPushAllowed_Params_List(s *capnp.Segment, sz int32) (Sync_isPushAllowed_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Sync_isPushAllowed_Params_List{l}, err
+}
+
+func (s Sync_isPushAllowed_Params_List) At(i int) Sync_isPushAllowed_Params {
+	return Sync_isPushAllowed_Params{s.List.Struct(i)}
+}
+
+func (s Sync_isPushAllowed_Params_List) Set(i int, v Sync_isPushAllowed_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_isPushAllowed_Params_List) String() string {
+	str, _ := text.MarshalList(0xdcee0f1a1e882683, s.List)
+	return str
+}
+
+// Sync_isPushAllowed_Params_Promise is a wrapper for a Sync_isPushAllowed_Params promised by a client call.
+type Sync_isPushAllowed_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_isPushAllowed_Params_Promise) Struct() (Sync_isPushAllowed_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_isPushAllowed_Params{s}, err
+}
+
+type Sync_isPushAllowed_Results struct{ capnp.Struct }
+
+// Sync_isPushAllowed_Results_TypeID is the unique identifier for the type Sync_isPushAllowed_Results.
+const Sync_isPushAllowed_Results_TypeID = 0xaa3182f28c82f848
+
+func NewSync_isPushAllowed_Results(s *capnp.Segment) (Sync_isPushAllowed_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Sync_isPushAllowed_Results{st}, err
+}
+
+func NewRootSync_isPushAllowed_Results(s *capnp.Segment) (Sync_isPushAllowed_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0})
+	return Sync_isPushAllowed_Results{st}, err
+}
+
+func ReadRootSync_isPushAllowed_Results(msg *capnp.Message) (Sync_isPushAllowed_Results, error) {
+	root, err := msg.RootPtr()
+	return Sync_isPushAllowed_Results{root.Struct()}, err
+}
+
+func (s Sync_isPushAllowed_Results) String() string {
+	str, _ := text.Marshal(0xaa3182f28c82f848, s.Struct)
+	return str
+}
+
+func (s Sync_isPushAllowed_Results) IsAllowed() bool {
+	return s.Struct.Bit(0)
+}
+
+func (s Sync_isPushAllowed_Results) SetIsAllowed(v bool) {
+	s.Struct.SetBit(0, v)
+}
+
+// Sync_isPushAllowed_Results_List is a list of Sync_isPushAllowed_Results.
+type Sync_isPushAllowed_Results_List struct{ capnp.List }
+
+// NewSync_isPushAllowed_Results creates a new list of Sync_isPushAllowed_Results.
+func NewSync_isPushAllowed_Results_List(s *capnp.Segment, sz int32) (Sync_isPushAllowed_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 8, PointerCount: 0}, sz)
+	return Sync_isPushAllowed_Results_List{l}, err
+}
+
+func (s Sync_isPushAllowed_Results_List) At(i int) Sync_isPushAllowed_Results {
+	return Sync_isPushAllowed_Results{s.List.Struct(i)}
+}
+
+func (s Sync_isPushAllowed_Results_List) Set(i int, v Sync_isPushAllowed_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_isPushAllowed_Results_List) String() string {
+	str, _ := text.MarshalList(0xaa3182f28c82f848, s.List)
+	return str
+}
+
+// Sync_isPushAllowed_Results_Promise is a wrapper for a Sync_isPushAllowed_Results promised by a client call.
+type Sync_isPushAllowed_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_isPushAllowed_Results_Promise) Struct() (Sync_isPushAllowed_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_isPushAllowed_Results{s}, err
+}
+
+type Sync_push_Params struct{ capnp.Struct }
+
+// Sync_push_Params_TypeID is the unique identifier for the type Sync_push_Params.
+const Sync_push_Params_TypeID = 0xf8fe6156816b7dc7
+
+func NewSync_push_Params(s *capnp.Segment) (Sync_push_Params, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_push_Params{st}, err
+}
+
+func NewRootSync_push_Params(s *capnp.Segment) (Sync_push_Params, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_push_Params{st}, err
+}
+
+func ReadRootSync_push_Params(msg *capnp.Message) (Sync_push_Params, error) {
+	root, err := msg.RootPtr()
+	return Sync_push_Params{root.Struct()}, err
+}
+
+func (s Sync_push_Params) String() string {
+	str, _ := text.Marshal(0xf8fe6156816b7dc7, s.Struct)
+	return str
+}
+
+// Sync_push_Params_List is a list of Sync_push_Params.
+type Sync_push_Params_List struct{ capnp.List }
+
+// NewSync_push_Params creates a new list of Sync_push_Params.
+func NewSync_push_Params_List(s *capnp.Segment, sz int32) (Sync_push_Params_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Sync_push_Params_List{l}, err
+}
+
+func (s Sync_push_Params_List) At(i int) Sync_push_Params { return Sync_push_Params{s.List.Struct(i)} }
+
+func (s Sync_push_Params_List) Set(i int, v Sync_push_Params) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_push_Params_List) String() string {
+	str, _ := text.MarshalList(0xf8fe6156816b7dc7, s.List)
+	return str
+}
+
+// Sync_push_Params_Promise is a wrapper for a Sync_push_Params promised by a client call.
+type Sync_push_Params_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_push_Params_Promise) Struct() (Sync_push_Params, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_push_Params{s}, err
+}
+
+type Sync_push_Results struct{ capnp.Struct }
+
+// Sync_push_Results_TypeID is the unique identifier for the type Sync_push_Results.
+const Sync_push_Results_TypeID = 0xceaa2020b2f72696
+
+func NewSync_push_Results(s *capnp.Segment) (Sync_push_Results, error) {
+	st, err := capnp.NewStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_push_Results{st}, err
+}
+
+func NewRootSync_push_Results(s *capnp.Segment) (Sync_push_Results, error) {
+	st, err := capnp.NewRootStruct(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0})
+	return Sync_push_Results{st}, err
+}
+
+func ReadRootSync_push_Results(msg *capnp.Message) (Sync_push_Results, error) {
+	root, err := msg.RootPtr()
+	return Sync_push_Results{root.Struct()}, err
+}
+
+func (s Sync_push_Results) String() string {
+	str, _ := text.Marshal(0xceaa2020b2f72696, s.Struct)
+	return str
+}
+
+// Sync_push_Results_List is a list of Sync_push_Results.
+type Sync_push_Results_List struct{ capnp.List }
+
+// NewSync_push_Results creates a new list of Sync_push_Results.
+func NewSync_push_Results_List(s *capnp.Segment, sz int32) (Sync_push_Results_List, error) {
+	l, err := capnp.NewCompositeList(s, capnp.ObjectSize{DataSize: 0, PointerCount: 0}, sz)
+	return Sync_push_Results_List{l}, err
+}
+
+func (s Sync_push_Results_List) At(i int) Sync_push_Results {
+	return Sync_push_Results{s.List.Struct(i)}
+}
+
+func (s Sync_push_Results_List) Set(i int, v Sync_push_Results) error {
+	return s.List.SetStruct(i, v.Struct)
+}
+
+func (s Sync_push_Results_List) String() string {
+	str, _ := text.MarshalList(0xceaa2020b2f72696, s.List)
+	return str
+}
+
+// Sync_push_Results_Promise is a wrapper for a Sync_push_Results promised by a client call.
+type Sync_push_Results_Promise struct{ *capnp.Pipeline }
+
+func (p Sync_push_Results_Promise) Struct() (Sync_push_Results, error) {
+	s, err := p.Pipeline.Struct()
+	return Sync_push_Results{s}, err
+}
+
 type Meta struct{ Client capnp.Client }
 
 // Meta_TypeID is the unique identifier for the type Meta.
@@ -814,6 +1128,46 @@ func (c API) IsCompleteFetchAllowed(ctx context.Context, params func(Sync_isComp
 	}
 	return Sync_isCompleteFetchAllowed_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
 }
+func (c API) IsPushAllowed(ctx context.Context, params func(Sync_isPushAllowed_Params) error, opts ...capnp.CallOption) Sync_isPushAllowed_Results_Promise {
+	if c.Client == nil {
+		return Sync_isPushAllowed_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      3,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isPushAllowed",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_isPushAllowed_Params{Struct: s}) }
+	}
+	return Sync_isPushAllowed_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
+func (c API) Push(ctx context.Context, params func(Sync_push_Params) error, opts ...capnp.CallOption) Sync_push_Results_Promise {
+	if c.Client == nil {
+		return Sync_push_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
+	}
+	call := &capnp.Call{
+		Ctx: ctx,
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      4,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "push",
+		},
+		Options: capnp.NewCallOptions(opts),
+	}
+	if params != nil {
+		call.ParamsSize = capnp.ObjectSize{DataSize: 0, PointerCount: 0}
+		call.ParamsFunc = func(s capnp.Struct) error { return params(Sync_push_Params{Struct: s}) }
+	}
+	return Sync_push_Results_Promise{Pipeline: capnp.NewPipeline(c.Client.Call(call))}
+}
 func (c API) Ping(ctx context.Context, params func(Meta_ping_Params) error, opts ...capnp.CallOption) Meta_ping_Results_Promise {
 	if c.Client == nil {
 		return Meta_ping_Results_Promise{Pipeline: capnp.NewPipeline(capnp.ErrorAnswer(capnp.ErrNullClient))}
@@ -844,6 +1198,10 @@ type API_Server interface {
 
 	IsCompleteFetchAllowed(Sync_isCompleteFetchAllowed) error
 
+	IsPushAllowed(Sync_isPushAllowed) error
+
+	Push(Sync_push) error
+
 	Ping(Meta_ping) error
 }
 
@@ -854,7 +1212,7 @@ func API_ServerToClient(s API_Server) API {
 
 func API_Methods(methods []server.Method, s API_Server) []server.Method {
 	if cap(methods) == 0 {
-		methods = make([]server.Method, 0, 5)
+		methods = make([]server.Method, 0, 7)
 	}
 
 	methods = append(methods, server.Method{
@@ -911,6 +1269,34 @@ func API_Methods(methods []server.Method, s API_Server) []server.Method {
 			return s.IsCompleteFetchAllowed(call)
 		},
 		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      3,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "isPushAllowed",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_isPushAllowed{c, opts, Sync_isPushAllowed_Params{Struct: p}, Sync_isPushAllowed_Results{Struct: r}}
+			return s.IsPushAllowed(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 8, PointerCount: 0},
+	})
+
+	methods = append(methods, server.Method{
+		Method: capnp.Method{
+			InterfaceID:   0xf5692a07c5cf7872,
+			MethodID:      4,
+			InterfaceName: "net/capnp/api.capnp:Sync",
+			MethodName:    "push",
+		},
+		Impl: func(c context.Context, opts capnp.CallOptions, p, r capnp.Struct) error {
+			call := Sync_push{c, opts, Sync_push_Params{Struct: p}, Sync_push_Results{Struct: r}}
+			return s.Push(call)
+		},
+		ResultsSize: capnp.ObjectSize{DataSize: 0, PointerCount: 0},
 	})
 
 	methods = append(methods, server.Method{
@@ -1056,66 +1442,79 @@ func (p API_version_Results_Promise) Struct() (API_version_Results, error) {
 	return API_version_Results{s}, err
 }
 
-const schema_9bcb07fb35756ee6 = "x\xda\x9c\x94OH\x14o\x18\xc7\x9f\xe7}g\x1c\xe1" +
-	"\xb7\xfe\x96\x97\xf1\xe0\x1e\xc2\xcb\x86\xb4\xe1j\x96\x84\x82" +
-	"\xb9\x9a){(f\xd6C\xe9\xa9iwt\x17vg" +
-	"\xd7\x99\xb1\xf4\x10\x9d\x84\x08\x95\xe8\xcfE%\xfaC\x07" +
-	"\xe9\x12\x81\x04B\x87\x8c\x10\xecP\x97N%%B\x05" +
-	"\xd1q\xa1\x90m\xe2\xdduvGmQ\xba\x0d\xbc\xcf" +
-	"|\x9f\xcf\xf3\xfd>\xef\xdb\xba\x88\x11rL\xfc$\x02" +
-	"\xa8}b\x8d\xd3\xb49\x15\xdb(\xdc\x9c\x03\x16@\x00" +
-	"\x11%\x80\xe3\xefI\x1b\x02\xca\xeb\xa4\x1b\xd0\xb9\xfdx" +
-	"+\xb0tc\xfea\xa9@\xe0\xe7\x05\xb2\x8c 8\xce" +
-	"\xea\xf4\xf9\xfbG\x9b\x9f\x02\xab\xa7\xce\x17c\xbc}K" +
-	"z3\x0f\x80\xf2\x0f\xb2&\xff\"\x12\x80\x9c'\x03\xf2" +
-	"!*\x018\xf9W\x17ggM\xff3P\x03\xe8\xea" +
-	"\x88t\x98\xf7a\x94\xf7)\xfc\xbe\xd5\xa2\\\x88>\xdf" +
-	"\xa3\xd6NW\xe4.\xae!w\xd0\x01Y\xa3M\x00\xce" +
-	"d0\xff\xff\x1c\xb9\xbe\xea\xa5\x1e\xa2\x97\xb8\x9a^T" +
-	"cw\xa2\xa3\xe7\x84\xf8G\x0f\xf5\x14\xef&8\xd3\xc1" +
-	"5\xa3\xbf\xb0\xb8\xe19\x19\xa3!~r\x8a\xf5\xb1\xab" +
-	"\x9f\x1f|\xf5\"\x0e\xd1\x15.\x9a*\x8a\xfew\xf2\xd1" +
-	"\x87\xcd\xc0\xfawP\x1b\xca\x053\xb4\x97\x17\xdc-\x16" +
-	"\x98\x13o_K\xa1T~\xcf\x0cKtM~Y\x9c" +
-	"\xe1\x05]\x95\xcf\xf0?\x0b\x0b\xdfZ\xefEN\xfc\xf4" +
-	"L\xd0,\x14'\xe8\x10\xb8\x96\x90\x1c{7\x13{\xb2" +
-	"\x05\xac\xa1\x0c#t\"\xb4:\x86n\xb7\xc4\xb5\x9cA" +
-	"s-Z.\x15\xe6\x9f\xb9\xce\xb3\xba\xad\x85s)c" +
-	"4\x18\xd3\x1b\xad\xf1\xb4m\xa9\x02\x15\x00\x04\x04`u" +
-	"m\x00j-E\xb5\x9e`\xa3\xa9\xe7\xd2\x93\xe8\x03\x82" +
-	">\xc0\xb2\x98\xe8\x15\x1b\x9c4\xe2\xe1\x94u:\x9b\xc9" +
-	"\xa5u[\xef\xd7\xedx\xb2'\x9d\xce^\xd1\x13\xc1n" +
-	"E3\xb5\x8cU\xfe\x91\xec\xa6\x00P\x10U\x81\x8a\x00" +
-	"e\xb3\xd1]3\xc6B@\x98(\xf99j\x04\x15\xac" +
-	"\x10\x08{\x08Fx_E\xb3\xe3\xc9 oJ3;" +
-	"f\x8a\x01\xa8>\x8aj\x03Ag\xc4\xccf\xa2FB" +
-	"\x07\x9c@\x11\x08\x8a\x9e\xc9v\x00\xf6(Q\x0f\x9e\xeb" +
-	"1\xba\xc92\xd6[\xc4\xbbvY7\xadT\xd6\x88\xa0" +
-	"Z\x8b\x9e\\\x01*[\x0fp0\xf4\x98n\x8dK\xbb" +
-	"\xf2\x08U\xf2\xf0'4[\xc3: X\x07\xfb\x9a1" +
-	"hgM\xdd5c\xbfEP4\xff\x8e\xa4j\x0e\x1a" +
-	"1'N\xdb\x16Ts;e\x95*\x01\x13\x88@\x10" +
-	"\xab\x81\xf7(\xd1\xf0\xb6\x93\x7f\x15\xed\xad\xd8\xe0:\x8e" +
-	"\x02\x10\x14\xaa\xc5\xc7\xa9K\xfb\xe5+\x06\xe8^s\\" +
-	"\x80\xed\xdb\xa4\x0e\x03aQ\x09\xb1\xfc\xe2\xa0\xfbX\xb0" +
-	".~\xd6.!)?j\xe8\xdeyvd\x19\x08;" +
-	",9\xae\xcd@M=\x82\x8e\x9b#\xd0x2\xc2'" +
-	"/\x19\x86\xaec\xdd%\xcb\x0e\xb4\xc9\xa5\xf0\xfei\x1d" +
-	"h5W\xb7o\xe3\x9f\x00\x00\x00\xff\xffbg\xb4q"
+const schema_9bcb07fb35756ee6 = "x\xda\xacU]h\x1cU\x14>\xe7\xde;\x9d\x82\x89" +
+	"\xcbe\"d\x85\x9a>\xac-D\xdc\xa4\xd1\"\xe9\x83" +
+	"\xbb\x1bm\xe3>Df\xb6\xe2O\x9e\x1cwo\xbb\x83" +
+	"\xbb\xb3\xd3\x99Ym\x84 V\x0aU\xd2\xe2\x1f>\xb4" +
+	"U\xfc\xc1\x87V\x04)\x88\xd0\xc7\x8a\x04\"\xfe\xbc\xf8" +
+	" *X\x8a? \x08\x0a\xc1@\xd8\x8e\xdc\x99\x9d\xc9" +
+	"t7\xab\x8b\xf4\xed\xb2\xdf\xb9\xdf~\xe7\x9c\xef~3" +
+	"\xcdI\x91\xecS\x0a*\x80\xf1\x88\xb2#\xd8{\xedd" +
+	"\xe5j\xe7\x95\xb3\xc0\xb3\x08\xa0\xa0\x0ap\xcfI:\x83" +
+	"\x80\xdaiZ\x00\x0c^\xff`3\xfb\xc9\xcb\xe7\xde\x8b" +
+	"\x0a\x98\xc4?\xa2\x97\x11X\xf0\xd0\xc6\x89\x95\xbfN\xec" +
+	"\xbb\x08F\x16c\xe8-\xfa\x9c\xbcz!\xbc\x1a\xac\xae" +
+	"<\xf6\xce]w\x7f\x0c|\x8c\x06\xbf\xd8\xed\xfd\x9b\xea" +
+	"\x17\xe7\x00P\xfb\x92\xaei\xdfQ\x15@\xfb\x96\xcek" +
+	"\x1dy\x0a\xd6?{\xf2\xcc\x197s)\xcd\xf63]" +
+	"\x94l\x7f\x86l\x9d\xeb\xafM\xe9\x8f\x97?\xedc\xbb" +
+	"\x8d]\xd1v\xc9z-\xcb\xe6\xb5\x12\xdb\x0b\x10,\xe5" +
+	"\xd6o=KN\xad\xa6\xdb\x9aeOI\xb6\x83L\xb2" +
+	"\xbd\xb9\xe7\xefK\xbbw_\xfc*\xd5\x96`3\xb2-" +
+	"\xfeF\xf9\xe8\xc3\xac\xfaC\x0aY`\x8b\x12yq\xcf" +
+	"\xa9;n\xcf\xfc\x91Ff\x99+\x91\x95\xdc\x9a}\xa8" +
+	"s\xe1j\x0a\xb9\x93MJ\xe4~\xfe _\xfe\xe9\xdd" +
+	"_\xd3m\x8d\xb2+R\xc8\xaeP\xc8-\xf7\xbd\xff\xfd" +
+	"\xb5\xec\x8f\xbf\x831\x9e\x14\x94\xd8\x9c,(\x87\x05\xee" +
+	"\xf1\xaf?W'\xad\xf5\xbe\xbe-\xb6\xa6\xb5\xc3\xfac" +
+	"l\x1e\xb5\x05E\x05\xe8\x9c\xffm\xfa\xed\xe2\xbd\x1b\xa9" +
+	"\xb6\xf7+a\xdb%E\x92\xad.?\xfd\xc2\xa3\xe6\xf5" +
+	"\x8d\x94PS\x09\x85\xb2\xfa\xb1oNW>\xdc\x04>" +
+	"\x1e#e\xe5\x00\xc2t`\x0b\x7f\xaaj:6u\xa6" +
+	"L\xc7\xca\xcb\xa3s`A\xf8f\xde\xb1\xec\xa3\xb9\x8a" +
+	"\x98\xf0\xda\x0d\xdf3\x18e\x00\x0c\x01\xf8\xe8\x0c\x80\xb1" +
+	"\x93\xa21Fp\xc2\x15Nc\x09G\x80\xe0\x08`B" +
+	"\xa6\xa4\xc9\x0e/\xd9\xd5\xbc\xe5=\xd0j:\x0d\xe1\x8b" +
+	"C\xc2\xaf\xd6K\x8dF\xebYQ\xcb\x15t\xd35\x9b" +
+	"^r\x91msQo{I}\xa5 \xfa\xe4T\x00" +
+	"\x8c\x11\x8a\xc68\xc1\xc0\xf2\xa2J\xc0\x1a\"\x10\xc4\x94" +
+	"(\xd2\xdb!\x80\x8eh0\xaa\x00$;\xc6\xf8\xc9p" +
+	">\x09\x84+jF\x8e\xa1\x88:\xe2\xbf\x88<\"{" +
+	"\xd2M\xbfZ\xcf\xc9\x86hs\xa0\xc0#n\xabY\xb6" +
+	"k\x02\xf08*@P\x19$\xb0\xa4\x97S\xf2\xe2\xfd" +
+	"al(\xce\xe7By\xcf?#\\\xcfj\xd9E4" +
+	"vb\xcaN\x00[\x0f\x14`8\xe9\x15\xe1\xb5\xd5\x9e" +
+	"\xe1Nn\xed:S3}\x13G\x81\xe0hJ4\xed" +
+	"ct\xda^=\xf1\xcd\x7f\xfd\xf3a\xbf\xe5\x8axh" +
+	"C\xdb@\x9f\xb8\xd16\x03\xcc\xab\x9b\x99\x1b\xcav\x0c" +
+	"k\xcbJ\xe42\xf8?6c=[\xccw7\xb4-" +
+	"\xe9\xdc\xd6x\xe3M\"\x03\x82l\x90-\xa4\xea\xc8\xb7" +
+	"c\xa11\xe2<\xc3\xf3\xd0\xcd\x86W\x17\x81\xf0\x97T" +
+	"\xc4$t1\xceK\xbe,\xb1\xb6\x8a$\x09~\x8c#" +
+	"\x8c[\x97\x81p\xa1\"M\x92\x10\xe3o\x00\x7f\xc2\x05" +
+	"\xc2\x0d\x15Y\x121\x18G,?(\xdf\xc9\xac\x1a\xc4" +
+	"\xeb\x04\xea\x8a\"\x06\xb1\xaf\x80V\xebE9\xb1h\xd0" +
+	"\x18O\xba\x10\x8d:\x84\xa2\xd5\xc2D\xf7\x97\x8ct\xd0" +
+	"PO.r\xcf\xcd\xf4m\xafe\xe8\xa0mv\x93\xeb" +
+	"\x9f\x00\x00\x00\xff\xff\x05x4\x05"
 
 func init() {
 	schemas.Register(schema_9bcb07fb35756ee6,
 		0x9a90fde15285e327,
 		0xa29b8ab519fba593,
+		0xaa3182f28c82f848,
 		0xb02d2ba0578cc7ff,
 		0xb20f728e8e60c3f5,
 		0xb74958502f92fefd,
 		0xc788029a0ef52479,
+		0xceaa2020b2f72696,
 		0xdc63044e67499411,
+		0xdcee0f1a1e882683,
 		0xe1a9fd466eca248c,
 		0xe7a1e07d1144113e,
 		0xebdd19e3dba3370b,
 		0xf5692a07c5cf7872,
 		0xf834409e30e8009c,
+		0xf8fe6156816b7dc7,
 		0xfbab528dd0716804)
 }

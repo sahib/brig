@@ -565,3 +565,27 @@ func (nh *netHandler) NetLocateNext(call capnp.Net_netLocateNext) error {
 
 	return call.Results.SetResult(capResult)
 }
+
+func (nh *netHandler) Push(call capnp.Net_push) error {
+	remoteName, err := call.Params.RemoteName()
+	if err != nil {
+		return err
+	}
+
+	return nh.base.withNetClient(remoteName, func(ctl *p2pnet.Client) error {
+		pushAllowed, err := ctl.IsPushAllowed()
+		if err != nil {
+			return err
+		}
+
+		if !pushAllowed {
+			return fmt.Errorf("cannot push: remote does not allow it")
+		}
+
+		if call.Params.DryRun() {
+			return nil
+		}
+
+		return ctl.Push()
+	})
+}

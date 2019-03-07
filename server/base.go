@@ -213,7 +213,7 @@ func (b *base) loadBackend() error {
 
 func (b *base) loadPeerServer() error {
 	log.Debugf("loading peer server")
-	srv, err := p2pnet.NewServer(b.repo, b.backend)
+	srv, err := p2pnet.NewServer(b.repo, b.backend, NewRemotesAPI(b))
 	if err != nil {
 		return err
 	}

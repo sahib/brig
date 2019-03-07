@@ -507,3 +507,15 @@ func (cl *Client) RemoteOnlineList() ([]RemoteStatus, error) {
 
 	return statuses, nil
 }
+
+// Push sets a push request to `remoteName`. If `dryRun` is true,
+// the push won't be send but we will still check if the push is allowed.
+func (cl *Client) Push(remoteName string, dryRun bool) error {
+	call := cl.api.Push(cl.ctx, func(p capnp.Net_push_Params) error {
+		p.SetDryRun(dryRun)
+		return p.SetRemoteName(remoteName)
+	})
+
+	_, err := call.Struct()
+	return err
+}

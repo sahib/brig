@@ -294,6 +294,49 @@ func handleRemoteAutoUpdate(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func handleRemoteAcceptPush(ctx *cli.Context, ctl *client.Client) error {
+	enable := true
+
+	switch ctx.Args().First() {
+	case "enable", "e":
+		enable = true
+	case "disable", "d":
+		enable = false
+	default:
+		return fmt.Errorf("please specify 'enable' or 'disable' as first argument")
+	}
+
+	for _, remoteName := range ctx.Args()[1:] {
+		rmt, err := ctl.RemoteByName(remoteName)
+		if err != nil {
+			return err
+		}
+
+		rmt.AcceptPush = enable
+		if err := ctl.RemoteAddOrUpdate(rmt); err != nil {
+			return fmt.Errorf("remote update: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func handleRemoteConflictStrategy(ctx *cli.Context, ctl *client.Client) error {
+	for _, remoteName := range ctx.Args()[1:] {
+		rmt, err := ctl.RemoteByName(remoteName)
+		if err != nil {
+			return err
+		}
+
+		rmt.ConflictStrategy = ctx.Args().First()
+		if err := ctl.RemoteAddOrUpdate(rmt); err != nil {
+			return fmt.Errorf("remote update: %v", err)
+		}
+	}
+
+	return nil
+}
+
 func handleRemoteRemove(ctx *cli.Context, ctl *client.Client) error {
 	name := ctx.Args().First()
 	if err := ctl.RemoteRm(name); err != nil {
@@ -612,4 +655,9 @@ func handleWhoami(ctx *cli.Context, ctl *client.Client) error {
 
 	fmt.Printf("\n")
 	return nil
+}
+
+func handlePush(ctx *cli.Context, ctl *client.Client) error {
+	remoteName := ctx.Args().First()
+	return ctl.Push(remoteName, ctx.Bool("dry-run"))
 }

@@ -147,7 +147,7 @@ EXAMPLES:
 `,
 	},
 	"remote.add": {
-		Usage:       "Add a new remote under a handy name with their fingerprint.",
+		Usage:       "Add/Update a remote under a handy name with their fingerprint.",
 		ArgsUsage:   "<name> <fingerprint>",
 		Complete:    completeArgsUsage,
 		Description: "",
@@ -248,15 +248,34 @@ EXAMPLES:
    It will be updated once you exit your editor.`,
 	},
 	"remote.auto-update": {
-		Usage:       "Enable auto-updating for this remote",
-		Complete:    completeArgsUsage,
-		Description: `When enabled you will get updates shortly after this remote made it.`,
+		Usage:    "Enable auto-updating for this remote",
+		Complete: completeArgsUsage,
+		Description: `When enabled you will get updates shortly after this remote made it.
+
+EXAMPLES:
+
+	# Enable auto-updating both for bob and charlie.
+	$ brig remote auto-update enable bob charlie
+
+	# or shorter to prevent you from RSI:
+	brig rmt au e bob charlie
+`,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "no-initial-sync,n",
 				Usage: "Do not sync initially when upon enabling.",
 			},
 		},
+	},
+	"remote.accept-push": {
+		Usage:       "Allow receiving push requests from this remote.",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
+	},
+	"remote.conflict-strategy": {
+		Usage:       "Change what conflict resolution strategy is used on conflicts.",
+		Complete:    completeArgsUsage,
+		Description: `TODO`,
 	},
 	"remote.folder": {
 		Usage:    "Configure what folders a remote is allowed to see.",
@@ -582,6 +601,17 @@ EXAMPLES:
 	See also »brig help diff« for some more details.
 	Files from other remotes are not pinned automatically.
 `,
+	},
+	"push": {
+		Usage:    "Ask a remote to sync with us.",
+		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "dry-run,d",
+				Usage: "Do not the actual push, but check if we may push.",
+			},
+		},
+		Description: ``,
 	},
 	"commit": {
 		Usage:    "Create a new commit",

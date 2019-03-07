@@ -11,6 +11,7 @@ import (
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/backend"
+	"github.com/sahib/brig/gateway/remotesapi"
 	"github.com/sahib/brig/net/capnp"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
@@ -75,10 +76,11 @@ func publishSelf(bk backend.Backend, owner string) error {
 }
 
 // NewServer returns a new inter-remote server.
-func NewServer(rp *repo.Repository, bk backend.Backend) (*Server, error) {
+func NewServer(rp *repo.Repository, bk backend.Backend, rapi remotesapi.RemotesAPI) (*Server, error) {
 	hdl := &connHandler{
-		rp: rp,
-		bk: bk,
+		rp:   rp,
+		bk:   bk,
+		rapi: rapi,
 	}
 
 	lst, err := bk.Listen("brig/caprpc")
@@ -288,8 +290,9 @@ func (sv *Server) Disconnect() error {
 /////////////////////////////////////
 
 type connHandler struct {
-	bk backend.Backend
-	rp *repo.Repository
+	bk   backend.Backend
+	rp   *repo.Repository
+	rapi remotesapi.RemotesAPI
 }
 
 // Handle is called whenever we receive a new connection from another brig peer.
@@ -310,9 +313,10 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 	// The respective handler should get its own context it can listen to.
 	reqCtx, reqCancel := context.WithCancel(ctx)
 	reqHdl := &requestHandler{
-		bk:  hdl.bk,
-		rp:  hdl.rp,
-		ctx: reqCtx,
+		bk:   hdl.bk,
+		rp:   hdl.rp,
+		ctx:  reqCtx,
+		rapi: hdl.rapi,
 	}
 
 	// This func will be called during the authentication process.

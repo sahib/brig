@@ -208,3 +208,27 @@ func (cl *Client) IsCompleteFetchAllowed() (bool, error) {
 
 	return result.IsAllowed(), nil
 }
+
+// IsPushAllowed asks the remote if we may push to them.
+func (cl *Client) IsPushAllowed() (bool, error) {
+	call := cl.api.IsPushAllowed(cl.ctx, func(p capnp.Sync_isPushAllowed_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return false, err
+	}
+
+	return result.IsAllowed(), nil
+}
+
+// Push asks the remote to do a "brig sync" with us.
+func (cl *Client) Push() error {
+	call := cl.api.Push(cl.ctx, func(p capnp.Sync_push_Params) error {
+		return nil
+	})
+
+	_, err := call.Struct()
+	return err
+}
