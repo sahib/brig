@@ -83,4 +83,4 @@ docs:
 	cd docs && make html
 
 cloc:
-	cloc $(find -iname '*.elm' -or -iname '*.go' -a ! -path '*vendor*' ! -path '*capnp*' | head -n -1 | sort | uniq)<Paste>
+	@cloc $(shell find -iname '*.elm' -or -iname '*.go' -a ! -path '*vendor*' ! -path '*capnp*' | head -n -1 | sort | uniq)

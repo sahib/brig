@@ -16,8 +16,9 @@ install:
     - go get -u github.com/rakyll/gotest
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
-    - go get -u github.com/ipfs/ipfs-update
-    - ipfs-update install v0.4.18
+    - wget https://dist.ipfs.io/go-ipfs/v0.4.18/go-ipfs_v0.4.18_linux-amd64.tar.gz -O /tmp/ipfs.tgz
+    - tar -C /tmp -xvfz /tmp/ipfs.tgz
+    - cp /tmp/go-ipfs/ipfs $GOBIN
     - make
 
 script:
