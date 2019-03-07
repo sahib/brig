@@ -156,9 +156,18 @@ EXAMPLES:
 				Name:  "auto-update,a",
 				Usage: "Take automatic updates from this node.",
 			},
+			cli.BoolFlag{
+				Name:  "accept-push,p",
+				Usage: "Allow this remote to push to our state.",
+			},
 			cli.StringSliceFlag{
 				Name:  "folder,f",
 				Usage: "Configure the folders this remote may see. Can be given more than once. If the first letter of the folder is »-« it is added as read-only.",
+			},
+			cli.StringFlag{
+				Name:  "conflict-strategy,c",
+				Usage: "Which conflict strategy to apply (either »marker«, »ignore« or »embrace«)",
+				Value: "",
 			},
 		},
 	},
@@ -265,10 +274,15 @@ EXAMPLES:
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "read-only,r",
-				Usage: "Add the folder as read-only",
+				Usage: "Add the folder as read-only.",
 			},
 		},
-		Description: `If a folder is added as read-only, we `,
+		Description: `If a folder is added as read-only, we do not accept changes when syncing from remotes.
+
+EXAMPLES:
+
+   $ brig remote folder add bob /public --read-only
+`,
 	},
 	"remote.folder.remove": {
 		Usage:       "Remove a folder from a specific remote. ",

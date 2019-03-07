@@ -1463,10 +1463,44 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 	}, nil
 }
 
+// SyncOption is a option that can be passed to Sync.
+type SyncOption func(cfg *vcs.SyncOptions)
+
+// SyncOptMessage sets the commit message that will be
+// given to MakeCommit() on a sync commit.
+func SyncOptMessage(msg string) SyncOption {
+	return func(cfg *vcs.SyncOptions) {
+		cfg.Message = msg
+	}
+}
+
+// SyncOptConflictStrategy overwrites the conflict strategy
+// (see also fs.sync.conflict_strategy which acts as default)
+func SyncOptConflictStrategy(strategy string) SyncOption {
+	return func(cfg *vcs.SyncOptions) {
+		if strategy == "" {
+			return
+		}
+
+		cfg.ConflictStrategy = vcs.ConflictStrategyFromString(strategy)
+	}
+}
+
+// SyncOptReadOnlyFolders allows you to set a set of folders
+// that will be protected from modifications by the sync.
+func SyncOptReadOnlyFolders(folders []string) SyncOption {
+	return func(cfg *vcs.SyncOptions) {
+		cfg.ReadOnlyFolders = make(map[string]bool)
+		for _, folder := range folders {
+			cfg.ReadOnlyFolders[folder] = true
+		}
+	}
+}
+
 // Sync will synchronize the state of two filesystems.
 // If one of filesystems have unstaged changes, they will be committted first.
 // If our filesystem was changed by Sync(), a new merge commit will also be created.
-func (fs *FS) Sync(remote *FS, msg string) error {
+func (fs *FS) Sync(remote *FS, options ...SyncOption) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -1474,12 +1508,17 @@ func (fs *FS) Sync(remote *FS, msg string) error {
 		return ErrReadOnly
 	}
 
+	// build default config from the defaults/base config:
 	syncCfg, err := fs.buildSyncCfg()
 	if err != nil {
 		return err
 	}
 
-	return vcs.Sync(remote.lkr, fs.lkr, syncCfg, msg)
+	for _, option := range options {
+		option(syncCfg)
+	}
+
+	return vcs.Sync(remote.lkr, fs.lkr, syncCfg)
 }
 
 // MakeDiff will return a diff between `headRevOwn` and `headRevRemote`.

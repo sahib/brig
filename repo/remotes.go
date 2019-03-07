@@ -3,11 +3,13 @@ package repo
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"sort"
 
+	"github.com/sahib/brig/catfs/vcs"
 	"github.com/sahib/brig/net/peer"
 
 	yml "gopkg.in/yaml.v2"
@@ -56,6 +58,19 @@ type Remote struct {
 
 	// AcceptPush will allow this remote to push data to us if true.
 	AcceptPush bool
+}
+
+// ReadOnlyFolders returns the folders that are set to read only
+// as string slice without the folder structure.
+func (r Remote) ReadOnlyFolders() []string {
+	folders := []string{}
+	for _, folder := range r.Folders {
+		if folder.ReadOnly {
+			folders = append(folders, folder.Folder)
+		}
+	}
+
+	return folders
 }
 
 // RemoteList is a helper that parses the remote access yml file
@@ -138,6 +153,13 @@ func dedupeFolders(folders []Folder) []Folder {
 
 // AddOrUpdateRemote will add/update a remote.
 func (rl *RemoteList) AddOrUpdateRemote(remote Remote) error {
+	if remote.ConflictStrategy != "" {
+		cs := vcs.ConflictStrategyFromString(remote.ConflictStrategy)
+		if cs == vcs.ConflictStragetyUnknown {
+			return fmt.Errorf("unknown conflict strategy: %s", remote.ConflictStrategy)
+		}
+	}
+
 	remote.Folders = dedupeFolders(remote.Folders)
 	rl.remotes[remote.Name] = &remote
 	return rl.save()

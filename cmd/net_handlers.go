@@ -46,6 +46,14 @@ func handleRemoteList(ctx *cli.Context, ctl *client.Client) error {
 	return handleRemoteListOnline(ctx, ctl)
 }
 
+func nFoldersToIcon(nFolders int) string {
+	if nFolders == 0 {
+		return color.GreenString("*")
+	}
+
+	return color.YellowString(fmt.Sprintf("%d", nFolders))
+}
+
 func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
 	remotes, err := ctl.RemoteLs()
 	if err != nil {
@@ -77,15 +85,23 @@ func handleRemoteListOffline(ctx *cli.Context, ctl *client.Client) error {
 		tabwriter.StripEscape,
 	)
 
-	fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tAUTO-UPDATE\t")
+	fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tAUTO-UPDATE\tACCEPT PUSH\tCONFLICT STRATEGY\tFOLDERS\t")
 
 	for _, remote := range remotes {
+		cs := remote.ConflictStrategy
+		if cs == "" {
+			cs = "marker"
+		}
+
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			remote.Name,
 			remote.Fingerprint,
 			yesOrNo(remote.AutoUpdate),
+			yesOrNo(remote.AcceptPush),
+			cs,
+			nFoldersToIcon(len(remote.Folders)),
 		)
 	}
 
@@ -109,7 +125,7 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if !ctx.IsSet("format") {
-		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tONLINE\tAUTHENTICATED\tLASTSEEN\tAUTO-UPDATE\t")
+		fmt.Fprintln(tabW, "NAME\tFINGERPRINT\tROUNDTRIP\tONLINE\tAUTHENTICATED\tLASTSEEN\tAUTO-UPDATE\tACCEPT PUSH\tCONFLICT STRATEGY\tFOLDERS\t")
 	}
 
 	tmpl, err := readFormatTemplate(ctx)
@@ -166,9 +182,14 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			shortFp += shortPubKeyID
 		}
 
+		cs := status.Remote.ConflictStrategy
+		if cs == "" {
+			cs = "marker"
+		}
+
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t\n",
 			status.Remote.Name,
 			shortFp,
 			roundtrip,
@@ -176,6 +197,9 @@ func handleRemoteListOnline(ctx *cli.Context, ctl *client.Client) error {
 			authenticated,
 			status.LastSeen.Format(time.UnixDate),
 			yesOrNo(status.Remote.AutoUpdate),
+			yesOrNo(status.Remote.AcceptPush),
+			cs,
+			nFoldersToIcon(len(status.Remote.Folders)),
 		)
 	}
 
@@ -210,9 +234,11 @@ func ymlToRemoteList(data []byte) ([]client.Remote, error) {
 
 func handleRemoteAdd(ctx *cli.Context, ctl *client.Client) error {
 	remote := client.Remote{
-		Name:        ctx.Args().Get(0),
-		Fingerprint: ctx.Args().Get(1),
-		AutoUpdate:  ctx.Bool("auto-update"),
+		Name:             ctx.Args().Get(0),
+		Fingerprint:      ctx.Args().Get(1),
+		AutoUpdate:       ctx.Bool("auto-update"),
+		ConflictStrategy: ctx.String("conflict-strategy"),
+		AcceptPush:       ctx.Bool("accept-push"),
 	}
 
 	for _, folder := range ctx.StringSlice("folder") {
@@ -339,7 +365,7 @@ func handleRemoteFolderAdd(ctx *cli.Context, ctl *client.Client) error {
 
 	for _, folder := range ctx.Args().Tail() {
 		if _, err := ctl.Stat(folder); err != nil {
-			fmt.Printf("warning: »%s« has no stat info: %s\n", folder, err)
+			fmt.Printf("warning: »%s« does not seem to exist. That's fine though, just in case you made a typo.\n", folder)
 		}
 
 		remote.Folders = append(remote.Folders, client.RemoteFolder{
@@ -392,11 +418,19 @@ func handleRemoteFolderList(ctx *cli.Context, ctl *client.Client) error {
 		return nil
 	}
 
+	tabW := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.StripEscape)
+	fmt.Fprintln(tabW, "FOLDER\tREAD ONLY\t")
+
 	for _, folder := range remote.Folders {
-		fmt.Println(folder)
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t\n",
+			folder.Folder,
+			yesOrNo(folder.ReadOnly),
+		)
 	}
 
-	return nil
+	return tabW.Flush()
 }
 
 func handleRemoteFolderListAll(ctx *cli.Context, ctl *client.Client) error {
@@ -405,14 +439,22 @@ func handleRemoteFolderListAll(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
+	tabW := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.StripEscape)
+	fmt.Fprintln(tabW, "REMOTE\tFOLDER\tREAD ONLY\t")
+
 	for _, remote := range remotes {
-		fmt.Println(remote.Name)
 		for _, folder := range remote.Folders {
-			fmt.Printf("  %s\n", folder.Folder)
+			fmt.Fprintf(
+				tabW,
+				"%s\t%s\t%s\t\n",
+				remote.Name,
+				folder.Folder,
+				yesOrNo(folder.ReadOnly),
+			)
 		}
 	}
 
-	return nil
+	return tabW.Flush()
 }
 
 func handleNetLocate(ctx *cli.Context, ctl *client.Client) error {

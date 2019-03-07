@@ -200,7 +200,7 @@ func TestSync(t *testing.T) {
 				c.MustCommitIfPossible(t, lkrDst, "setup dst")
 				c.MustCommitIfPossible(t, lkrSrc, "setup src")
 
-				if err := Sync(lkrSrc, lkrDst, nil, ""); err != nil {
+				if err := Sync(lkrSrc, lkrDst, nil); err != nil {
 					t.Fatalf("sync failed: %v", err)
 				}
 
@@ -215,7 +215,7 @@ func TestSyncMergeMarker(t *testing.T) {
 		c.MustTouchAndCommit(t, lkrSrc, "/x.png", 1)
 		c.MustTouchAndCommit(t, lkrDst, "/y.png", 2)
 
-		if err := Sync(lkrSrc, lkrDst, nil, ""); err != nil {
+		if err := Sync(lkrSrc, lkrDst, nil); err != nil {
 			t.Fatalf("sync failed: %v", err)
 		}
 
@@ -254,7 +254,7 @@ func TestSyncConflictMergeMarker(t *testing.T) {
 		c.MustTouchAndCommit(t, lkrSrc, "/x.png", 1)
 		c.MustTouchAndCommit(t, lkrDst, "/x.png", 2)
 
-		if err := Sync(lkrSrc, lkrDst, nil, ""); err != nil {
+		if err := Sync(lkrSrc, lkrDst, nil); err != nil {
 			t.Fatalf("sync failed: %v", err)
 		}
 
@@ -297,8 +297,8 @@ func TestSyncTwiceWithMovedFile(t *testing.T) {
 		aliNd, _ := c.MustTouchAndCommit(t, lkrAli, "/ali-file", 1)
 		bobNd, _ := c.MustTouchAndCommit(t, lkrBob, "/bob-file", 2)
 
-		require.Nil(t, Sync(lkrAli, lkrBob, nil, ""))
-		require.Nil(t, Sync(lkrBob, lkrAli, nil, ""))
+		require.Nil(t, Sync(lkrAli, lkrBob, nil))
+		require.Nil(t, Sync(lkrBob, lkrAli, nil))
 
 		c.MustMove(t, lkrAli, aliNd, "/bali-bile")
 		c.MustMove(t, lkrBob, bobNd, "/blob-lile")

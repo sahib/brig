@@ -162,7 +162,6 @@ func (nh *netHandler) RemotePing(call capnp.Net_remotePing) error {
 }
 
 func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
-	// TODO: Create a /common library to share this code between client and server.
 	remoteName, err := remote.Name()
 	if err != nil {
 		return nil, err
@@ -191,14 +190,15 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 
 	folders := []repo.Folder{}
 	for idx := 0; idx < remoteFolders.Len(); idx++ {
-		folder := remoteFolders.At(idx)
-		folderName, err := folder.Folder()
+		capFolder := remoteFolders.At(idx)
+		folderName, err := capFolder.Folder()
 		if err != nil {
 			return nil, err
 		}
 
 		folders = append(folders, repo.Folder{
-			Folder: folderName,
+			Folder:   folderName,
+			ReadOnly: capFolder.ReadOnly(),
 		})
 	}
 
@@ -241,6 +241,7 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 			return nil, err
 		}
 
+		capFolder.SetReadOnly(folder.ReadOnly)
 		if err := capFolder.SetFolder(folder.Folder); err != nil {
 			return nil, err
 		}

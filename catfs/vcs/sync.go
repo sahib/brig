@@ -62,6 +62,8 @@ type SyncOptions struct {
 	ConflictStrategy ConflictStrategy
 	IgnoreDeletes    bool
 	IgnoreMoves      bool
+	Message          string
+	ReadOnlyFolders  map[string]bool
 
 	OnAdd      func(newNd n.ModNode) bool
 	OnRemove   func(oldNd n.ModNode) bool
@@ -156,8 +158,31 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 	return nil
 }
 
+func isReadOnly(folders map[string]bool, nodePaths ...string) bool {
+	for _, nodePath := range nodePaths {
+		for {
+			if folders[nodePath] {
+				return true
+			}
+
+			newNodePath := path.Dir(nodePath)
+			if newNodePath == nodePath {
+				break
+			}
+
+			nodePath = newNodePath
+		}
+	}
+
+	return false
+}
+
 func (sy *syncer) handleAdd(src n.ModNode) error {
 	log.Debugf("handling add: %s", src.Path())
+
+	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path()) {
+		return nil
+	}
 
 	if sy.cfg.OnAdd != nil {
 		if !sy.cfg.OnAdd(src) {
@@ -170,6 +195,10 @@ func (sy *syncer) handleAdd(src n.ModNode) error {
 
 func (sy *syncer) handleMove(src, dst n.ModNode) error {
 	if sy.cfg.IgnoreMoves {
+		return nil
+	}
+
+	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path(), dst.Path()) {
 		return nil
 	}
 
@@ -194,9 +223,12 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 		return nil
 	}
 
+	if isReadOnly(sy.cfg.ReadOnlyFolders, dst.Path()) {
+		return nil
+	}
+
 	log.Debugf("handling remove: %s", dst.Path())
 
-	// We should check if dst really exists for us.
 	if sy.cfg.OnRemove != nil {
 		if !sy.cfg.OnRemove(dst) {
 			return nil
@@ -214,6 +246,10 @@ func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType
 
 	if sy.cfg.ConflictStrategy == ConflictStragetyEmbrace {
 		return sy.handleMerge(src, dst, srcMask, dstMask)
+	}
+
+	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path(), dst.Path()) {
+		return nil
 	}
 
 	log.Debugf("handling conflict: %s <-> %s", src.Path(), dst.Path())
@@ -248,6 +284,14 @@ func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType
 }
 
 func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
+	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path(), dst.Path()) {
+		return nil
+	}
+
+	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path(), dst.Path()) {
+		return nil
+	}
+
 	log.Debugf("handling merge: %s <-> %s", src.Path(), dst.Path())
 
 	if src.Path() != dst.Path() {
@@ -321,7 +365,7 @@ func (sy *syncer) handleConflictNode(src n.ModNode) error {
 // according to the options set in `cfg`. This is atomic.
 // A new commit might be created with `message`, defaulting to a default message
 // when an empty string was given.
-func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions, message string) error {
+func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions) error {
 	if cfg == nil {
 		cfg = defaultSyncConfig
 	}
@@ -368,6 +412,7 @@ func Sync(lkrSrc, lkrDst *c.Linker, cfg *SyncOptions, message string) error {
 				return true, err
 			}
 
+			message := cfg.Message
 			if message == "" {
 				message = fmt.Sprintf("merge with »%s«", srcOwner)
 			}

@@ -189,7 +189,7 @@ func RunCmdline(args []string) int {
 			Subcommands: []cli.Command{
 				{
 					Name:    "add",
-					Aliases: []string{"a"},
+					Aliases: []string{"a", "set"},
 					Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteAdd, true)),
 				}, {
 					Name:    "remove",

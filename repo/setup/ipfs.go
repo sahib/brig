@@ -342,9 +342,9 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig bool, ipfsPath string) (strin
 		fmt.Fprintf(out, "-- Waiting up to 60s for it to fully boot up...\n")
 
 		port := 5001
-		splitApiAddr := strings.Split(apiAddr, "/")
-		if len(splitApiAddr) > 0 {
-			port, err = strconv.Atoi(splitApiAddr[len(splitApiAddr)-1])
+		splitAPIAddr := strings.Split(apiAddr, "/")
+		if len(splitAPIAddr) > 0 {
+			port, err = strconv.Atoi(splitAPIAddr[len(splitAPIAddr)-1])
 			if err != nil {
 				return "", fmt.Errorf("api addr seems wrong: %v", err)
 			}

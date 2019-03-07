@@ -519,7 +519,19 @@ func (b *base) doSync(withWhom string, needFetch bool, msg string) (*catfs.Diff,
 
 			log.Debugf("Starting sync with %s", withWhom)
 
-			if err := ownFs.Sync(remoteFs, msg); err != nil {
+			rmt, err := b.repo.Remotes.Remote(withWhom)
+			if err != nil {
+				return err
+			}
+
+			err = ownFs.Sync(
+				remoteFs,
+				catfs.SyncOptMessage(msg),
+				catfs.SyncOptConflictStrategy(rmt.ConflictStrategy),
+				catfs.SyncOptReadOnlyFolders(rmt.ReadOnlyFolders()),
+			)
+
+			if err != nil {
 				return err
 			}
 
