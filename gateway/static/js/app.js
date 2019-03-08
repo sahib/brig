@@ -11992,6 +11992,14 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					model,
 					author$project$Commands$doLogout(author$project$Main$GotLogoutResp));
+			case 'GotoLogin':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							loginState: A2(author$project$Main$LoginReady, '', '')
+						}),
+					elm$core$Platform$Cmd$none);
 			case 'WebsocketIn':
 				var event = msg.a;
 				var _n13 = author$project$Main$eventType(event);
@@ -19781,36 +19789,67 @@ var author$project$Main$viewSidebarItems = F2(
 													]))
 											]))
 									])),
-							_List_fromArray(
-								[
-									A2(
-									elm$html$Html$li,
-									_List_fromArray(
-										[
-											elm$html$Html$Attributes$class('nav-item')
-										]),
-									_List_fromArray(
-										[
-											A2(
-											elm$html$Html$a,
-											_List_fromArray(
-												[
-													elm$html$Html$Attributes$class('nav-link pl-0'),
-													elm$html$Html$Attributes$href('#'),
-													elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
-												]),
-											_List_fromArray(
-												[
-													A2(
-													elm$html$Html$span,
-													_List_Nil,
-													_List_fromArray(
-														[
-															elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
-														]))
-												]))
-										]))
-								]))))));
+							_Utils_ap(
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$li,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('nav-item')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$a,
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('nav-link pl-0'),
+														elm$html$Html$Attributes$href('#'),
+														elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+													]),
+												_List_fromArray(
+													[
+														A2(
+														elm$html$Html$span,
+														_List_Nil,
+														_List_fromArray(
+															[
+																elm$html$Html$text('Login page')
+															]))
+													]))
+											]))
+									]),
+								_List_fromArray(
+									[
+										A2(
+										elm$html$Html$li,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$class('nav-item')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												elm$html$Html$a,
+												_List_fromArray(
+													[
+														elm$html$Html$Attributes$class('nav-link pl-0'),
+														elm$html$Html$Attributes$href('#'),
+														elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+													]),
+												_List_fromArray(
+													[
+														A2(
+														elm$html$Html$span,
+														_List_Nil,
+														_List_fromArray(
+															[
+																elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
+															]))
+													]))
+											]))
+									])))))));
 	});
 var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$History$PinClicked = F3(

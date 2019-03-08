@@ -60,6 +60,7 @@ type Msg
     | PasswordInput String
     | LoginSubmit
     | LogoutSubmit
+    | GotoLogin
     | WebsocketIn String
       -- View parent messages:
     | ListMsg Ls.Msg
@@ -438,6 +439,9 @@ update msg model =
         LogoutSubmit ->
             ( model, Commands.doLogout GotLogoutResp )
 
+        GotoLogin ->
+            ( { model | loginState = LoginReady "" "" }, Cmd.none )
+
         WebsocketIn event ->
             -- The backend lets us know that some of the data changed.
             -- Depending on the event type these are currently either
@@ -729,6 +733,11 @@ viewSidebarItems model viewState =
                         [ span [] [ text "Remotes" ] ]
                     ]
                 ]
+            ++ [ li [ class "nav-item" ]
+                    [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                        [ span [] [ text "Login page" ] ]
+                    ]
+               ]
             ++ [ li [ class "nav-item" ]
                     [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
                         [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
