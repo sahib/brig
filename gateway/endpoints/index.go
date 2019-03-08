@@ -62,9 +62,15 @@ func (ih *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		wsScheme = "wss://"
 	}
 
+	httpScheme := "http://"
+	if r.TLS != nil {
+		httpScheme = "https://"
+	}
+
 	err = t.Execute(w, map[string]interface{}{
 		"csrfToken": csrf.Token(r),
 		"wsAddr":    wsScheme + r.Host + "/events",
+		"httpAddr":  httpScheme + r.Host,
 	})
 
 	if err != nil {

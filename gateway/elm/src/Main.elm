@@ -17,6 +17,7 @@ import Html.Lazy as Lazy
 import Http
 import Json.Decode as D
 import List
+import Pinger
 import Routes.Commits as Commits
 import Routes.DeletedFiles as DeletedFiles
 import Routes.Diff as Diff
@@ -61,6 +62,7 @@ type Msg
     | LoginSubmit
     | LogoutSubmit
     | GotoLogin
+    | PingerIn String
     | WebsocketIn String
       -- View parent messages:
     | ListMsg Ls.Msg
@@ -108,6 +110,7 @@ type alias Model =
     , key : Nav.Key
     , url : Url.Url
     , loginState : LoginState
+    , serverIsOnline : Bool
     }
 
 
@@ -117,6 +120,7 @@ init _ url key =
       , key = key
       , url = url
       , loginState = LoginLimbo
+      , serverIsOnline = True
       }
     , Cmd.batch
         [ Task.perform AdjustTimeZone Time.here
@@ -237,6 +241,20 @@ eventType data =
 
         Err _ ->
             "failed"
+
+
+pingerMsgToBool : String -> Bool
+pingerMsgToBool data =
+    let
+        result =
+            D.decodeString (D.field "isOnline" D.bool) data
+    in
+    case result of
+        Ok typ ->
+            typ
+
+        Err _ ->
+            False
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -442,6 +460,9 @@ update msg model =
         GotoLogin ->
             ( { model | loginState = LoginReady "" "" }, Cmd.none )
 
+        PingerIn pingMsg ->
+            ( { model | serverIsOnline = pingerMsgToBool pingMsg }, Cmd.none )
+
         WebsocketIn event ->
             -- The backend lets us know that some of the data changed.
             -- Depending on the event type these are currently either
@@ -547,16 +568,43 @@ view model =
     }
 
 
+viewAppIcon : Model -> Html Msg
+viewAppIcon model =
+    a [ class "nav-link active", href "/view" ]
+        (if model.serverIsOnline then
+            [ span [ class "fas fa-2x fa-fw logo fa-torii-gate" ] []
+            , span [ class "badge badge-success text-center" ] [ text "beta" ]
+            ]
+
+         else
+            [ span [ class "fas fa-2x fa-fw logo logo-failure fa-plug" ] []
+            , span [ class "badge badge-danger text-center" ] [ text "offline" ]
+            ]
+        )
+
+
+viewOfflineMarker : Html Msg
+viewOfflineMarker =
+    div [ class "row h-100" ]
+        [ div
+            [ class "col-12 my-auto text-center w-100 text-muted" ]
+            [ span [ class "fas fa-4x fa-fw logo-failure fa-plug" ] []
+            , br [] []
+            , br [] []
+            , text "It seems that we have lost connection to the server."
+            , br [] []
+            , text "This application will go into a working state again when we have a connection again."
+            ]
+        ]
+
+
 viewMainContent : Model -> ViewState -> List (Html Msg)
 viewMainContent model viewState =
     [ div [ class "container-fluid" ]
         [ div [ class "row wrapper" ]
             [ aside [ class "col-12 col-md-2 p-0 bg-light tabbar" ]
                 [ nav [ class "navbar navbar-expand-md navbar-light bg-align-items-start flex-md-column flex-row" ]
-                    [ a [ class "nav-link active", href "/view" ]
-                        [ span [ class "fas fa-2x fa-fw fa-torii-gate logo" ] []
-                        , span [ class "badge badge-success text-center" ] [ text "beta" ]
-                        ]
+                    [ viewAppIcon model
                     , a [ class "navbar-toggler", attribute "data-toggle" "collapse", attribute "data-target" ".sidebar" ]
                         [ span [ class "navbar-toggler-icon" ] []
                         ]
@@ -567,10 +615,15 @@ viewMainContent model viewState =
                 , viewSidebarBottom model
                 ]
             , main_ [ class "col" ]
-                [ viewCurrentRoute model viewState
-                , Html.map ListMsg (Ls.buildModals viewState.listState)
-                , Html.map RemotesMsg (Remotes.buildModals viewState.remoteState)
-                ]
+                (if model.serverIsOnline then
+                    [ viewCurrentRoute model viewState
+                    , Html.map ListMsg (Ls.buildModals viewState.listState)
+                    , Html.map RemotesMsg (Remotes.buildModals viewState.remoteState)
+                    ]
+
+                 else
+                    [ viewOfflineMarker ]
+                )
             ]
         ]
     ]
@@ -774,6 +827,7 @@ subscriptions model =
                 , Sub.map RemotesMsg (Remotes.subscriptions viewState.remoteState)
                 , Sub.map DeletedFilesMsg (DeletedFiles.subscriptions viewState.deletedFilesState)
                 , Websocket.incoming WebsocketIn
+                , Pinger.pinger PingerIn
                 ]
 
         _ ->

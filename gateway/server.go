@@ -207,7 +207,7 @@ func (gw *Gateway) Start() {
 		apiRouter := router.PathPrefix("/api/v0").Methods("POST").Subrouter()
 		apiRouter.Handle("/login", endpoints.NewLoginHandler(gw.state))
 		apiRouter.Handle("/whoami", endpoints.NewWhoamiHandler(gw.state))
-		apiRouter.Handle("/ping", needsAuth(endpoints.NewPingHandler(gw.state)))
+		apiRouter.Handle("/ping", endpoints.NewPingHandler(gw.state))
 		apiRouter.Handle("/logout", needsAuth(endpoints.NewLogoutHandler(gw.state)))
 		apiRouter.Handle("/ls", needsAuth(endpoints.NewLsHandler(gw.state)))
 		apiRouter.Handle("/upload", needsAuth(endpoints.NewUploadHandler(gw.state)))

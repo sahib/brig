@@ -9,7 +9,7 @@
     };
 }());
 
-function openWebsocket() {
+function openWebsocket(app) {
     // Forward all websocket messages received from our websocket module
     // to the elm runtime where we receive them as subscription.
     // Elm 0.19.0 sadly has no up2date websocket package yet.
@@ -37,6 +37,45 @@ function openWebsocket() {
         console.log("event websocket errored: " + evt.data);
         console.log("you might not see updates of your actions.");
     };
+}
+
+function pingServer(app) {
+    var addr = document.getElementsByTagName('meta')['brig.http.addr'].getAttribute('content');
+    var currentState = undefined;
+
+    // Check if the server is still running.
+    // If state changes, notify elm app.
+    window.setInterval(function() {
+        const Http = new XMLHttpRequest();
+        Http.open("POST", addr + "/api/v0/ping");
+        Http.send();
+
+        Http.onreadystatechange = function() {
+            if(this.readyState == 4) {
+                if(this.status == 200) {
+                    // Only trigger on level change.
+                    if(currentState != true) {
+                        app.ports.pinger.send(
+                            JSON.stringify({
+                                isOnline: true,
+                            })
+                        );
+                        currentState = true;
+                    }
+                } else {
+                    // Only trigger on level change.
+                    if(currentState != false) {
+                        app.ports.pinger.send(
+                            JSON.stringify({
+                                isOnline: false,
+                            })
+                        );
+                        currentState = false;
+                    }
+                }
+            }
+        }
+    }, 5000);
 }
 
 var processScrollOrResize = function() {
@@ -85,8 +124,10 @@ var app = Elm.Main.init({
 });
 
 app.ports.open.subscribe(function(data) {
-    openWebsocket();
+    openWebsocket(app);
 });
+
+pingServer(app);
 
 window.addEventListener('scroll', scrolledOrResized);
 window.addEventListener('resize', scrolledOrResized);

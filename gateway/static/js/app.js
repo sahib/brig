@@ -6302,7 +6302,7 @@ var elm$time$Time$utc = A2(elm$time$Time$Zone, 0, _List_Nil);
 var author$project$Main$init = F3(
 	function (_n0, url, key) {
 		return _Utils_Tuple2(
-			{key: key, loginState: author$project$Main$LoginLimbo, url: url, zone: elm$time$Time$utc},
+			{key: key, loginState: author$project$Main$LoginLimbo, serverIsOnline: true, url: url, zone: elm$time$Time$utc},
 			elm$core$Platform$Cmd$batch(
 				_List_fromArray(
 					[
@@ -6319,12 +6319,16 @@ var author$project$Main$DeletedFilesMsg = function (a) {
 var author$project$Main$ListMsg = function (a) {
 	return {$: 'ListMsg', a: a};
 };
+var author$project$Main$PingerIn = function (a) {
+	return {$: 'PingerIn', a: a};
+};
 var author$project$Main$RemotesMsg = function (a) {
 	return {$: 'RemotesMsg', a: a};
 };
 var author$project$Main$WebsocketIn = function (a) {
 	return {$: 'WebsocketIn', a: a};
 };
+var author$project$Pinger$pinger = _Platform_incomingPort('pinger', elm$json$Json$Decode$string);
 var author$project$Routes$Commits$OnScroll = function (a) {
 	return {$: 'OnScroll', a: a};
 };
@@ -7441,7 +7445,8 @@ var author$project$Main$subscriptions = function (model) {
 					elm$core$Platform$Sub$map,
 					author$project$Main$DeletedFilesMsg,
 					author$project$Routes$DeletedFiles$subscriptions(viewState.deletedFilesState)),
-					author$project$Websocket$incoming(author$project$Main$WebsocketIn)
+					author$project$Websocket$incoming(author$project$Main$WebsocketIn),
+					author$project$Pinger$pinger(author$project$Main$PingerIn)
 				]));
 	} else {
 		return elm$core$Platform$Sub$none;
@@ -8928,6 +8933,18 @@ var author$project$Main$eventType = function (data) {
 		return typ;
 	} else {
 		return 'failed';
+	}
+};
+var author$project$Main$pingerMsgToBool = function (data) {
+	var result = A2(
+		elm$json$Json$Decode$decodeString,
+		A2(elm$json$Json$Decode$field, 'isOnline', elm$json$Json$Decode$bool),
+		data);
+	if (result.$ === 'Ok') {
+		var typ = result.a;
+		return typ;
+	} else {
+		return false;
 	}
 };
 var author$project$Main$withSubUpdate = F6(
@@ -12000,6 +12017,15 @@ var author$project$Main$update = F2(
 							loginState: A2(author$project$Main$LoginReady, '', '')
 						}),
 					elm$core$Platform$Cmd$none);
+			case 'PingerIn':
+				var pingMsg = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							serverIsOnline: author$project$Main$pingerMsgToBool(pingMsg)
+						}),
+					elm$core$Platform$Cmd$none);
 			case 'WebsocketIn':
 				var event = msg.a;
 				var _n13 = author$project$Main$eventType(event);
@@ -13863,6 +13889,61 @@ var author$project$Main$viewLoginForm = function (model) {
 										}())
 									]))
 							]))
+					]))
+			]));
+};
+var elm$html$Html$a = _VirtualDom_node('a');
+var elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
+var author$project$Main$viewAppIcon = function (model) {
+	return A2(
+		elm$html$Html$a,
+		_List_fromArray(
+			[
+				elm$html$Html$Attributes$class('nav-link active'),
+				elm$html$Html$Attributes$href('/view')
+			]),
+		model.serverIsOnline ? _List_fromArray(
+			[
+				A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('fas fa-2x fa-fw logo fa-torii-gate')
+					]),
+				_List_Nil),
+				A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('badge badge-success text-center')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('beta')
+					]))
+			]) : _List_fromArray(
+			[
+				A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('fas fa-2x fa-fw logo logo-failure fa-plug')
+					]),
+				_List_Nil),
+				A2(
+				elm$html$Html$span,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('badge badge-danger text-center')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('offline')
 					]))
 			]));
 };
@@ -16879,13 +16960,6 @@ var author$project$Routes$Ls$buildDownloadUrl = function (model) {
 				elm$url$Url$Builder$string('include'),
 				author$project$Routes$Ls$selectedPaths(model)) : _List_Nil));
 };
-var elm$html$Html$Attributes$href = function (url) {
-	return A2(
-		elm$html$Html$Attributes$stringProperty,
-		'href',
-		_VirtualDom_noJavaScriptUri(url));
-};
-var elm$html$Html$a = _VirtualDom_node('a');
 var rundis$elm_bootstrap$Bootstrap$Button$linkButton = F2(
 	function (options, children) {
 		return A2(
@@ -19576,6 +19650,36 @@ var author$project$Main$viewCurrentRoute = F2(
 				return elm$html$Html$text('You seem to have hit a route that does not exist...');
 		}
 	});
+var author$project$Main$viewOfflineMarker = A2(
+	elm$html$Html$div,
+	_List_fromArray(
+		[
+			elm$html$Html$Attributes$class('row h-100')
+		]),
+	_List_fromArray(
+		[
+			A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					elm$html$Html$Attributes$class('col-12 my-auto text-center w-100 text-muted')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$class('fas fa-4x fa-fw logo-failure fa-plug')
+						]),
+					_List_Nil),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					elm$html$Html$text('It seems that we have lost connection to the server.'),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					elm$html$Html$text('This application will go into a working state again when we have a connection again.')
+				]))
+		]));
 var elm$html$Html$hr = _VirtualDom_node('hr');
 var author$project$Main$viewSidebarBottom = function (model) {
 	return A2(
@@ -22234,33 +22338,7 @@ var author$project$Main$viewMainContent = F2(
 											]),
 										_List_fromArray(
 											[
-												A2(
-												elm$html$Html$a,
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('nav-link active'),
-														elm$html$Html$Attributes$href('/view')
-													]),
-												_List_fromArray(
-													[
-														A2(
-														elm$html$Html$span,
-														_List_fromArray(
-															[
-																elm$html$Html$Attributes$class('fas fa-2x fa-fw fa-torii-gate logo')
-															]),
-														_List_Nil),
-														A2(
-														elm$html$Html$span,
-														_List_fromArray(
-															[
-																elm$html$Html$Attributes$class('badge badge-success text-center')
-															]),
-														_List_fromArray(
-															[
-																elm$html$Html$text('beta')
-															]))
-													])),
+												author$project$Main$viewAppIcon(model),
 												A2(
 												elm$html$Html$a,
 												_List_fromArray(
@@ -22298,7 +22376,7 @@ var author$project$Main$viewMainContent = F2(
 									[
 										elm$html$Html$Attributes$class('col')
 									]),
-								_List_fromArray(
+								model.serverIsOnline ? _List_fromArray(
 									[
 										A2(author$project$Main$viewCurrentRoute, model, viewState),
 										A2(
@@ -22309,7 +22387,8 @@ var author$project$Main$viewMainContent = F2(
 										elm$html$Html$map,
 										author$project$Main$RemotesMsg,
 										author$project$Routes$Remotes$buildModals(viewState.remoteState))
-									]))
+									]) : _List_fromArray(
+									[author$project$Main$viewOfflineMarker]))
 							]))
 					]))
 			]);
