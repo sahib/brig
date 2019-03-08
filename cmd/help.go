@@ -268,14 +268,41 @@ EXAMPLES:
 		},
 	},
 	"remote.accept-push": {
-		Usage:       "Allow receiving push requests from this remote.",
-		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Usage:    "Allow receiving push requests from this remote.",
+		Complete: completeArgsUsage,
+		Description: `When enabled, other remotes can do »brig push <name>« to us.
+   When we receive a push request we will sync with this remote.
+
+EXAMPLES:
+
+   # Allow bob and charlie to push to us:
+   $ brig remote accept-push enable bob charlie
+
+   # or shorter to prevent you from RSI:
+   brig rmt ap e bob charlie
+`,
 	},
 	"remote.conflict-strategy": {
-		Usage:       "Change what conflict resolution strategy is used on conflicts.",
-		Complete:    completeArgsUsage,
-		Description: `TODO`,
+		Usage:    "Change what conflict resolution strategy is used on conflicts.",
+		Complete: completeArgsUsage,
+		Description: `The conflict strategy defines how to act on sync conflicts.
+   There are three different types:
+
+   - marker: Create a conflict file with the remote's version. (default)
+   - ignore: Ignore the remote version completely and keep our version.
+   - embrace: Take the remote version and replace ours with it.
+
+   See also »brig config doc fs.sync.conflict_strategy«.
+   In case of an empty string, the config value above is used.
+
+EXAMPLES:
+
+   # Allow bob and charlie to push to us:
+   $ brig remote conflict-strategy embrace bob charlie
+
+   # or shorter to prevent you from RSI:
+   brig rmt cs embrace bob charlie
+`,
 	},
 	"remote.folder": {
 		Usage:    "Configure what folders a remote is allowed to see.",
