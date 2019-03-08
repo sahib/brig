@@ -37,7 +37,7 @@ func setSession(store *sessions.CookieStore, userName string, w http.ResponseWri
 	// Ignore the error here, since it will usually trigger when there was a previously
 	// outdated session that fails to decode. Since we overwrite the session anyways, it
 	// doesn't really matter in this case.
-	sess, _ := store.New(r, "sess")
+	sess, _ := store.Get(r, "sess")
 
 	isHTTPS := r.TLS != nil
 	sess.Options = &sessions.Options{
@@ -184,16 +184,17 @@ type WhoamiResponse struct {
 
 func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if wh.cfg.Bool("auth.enabled") {
-		name := getUserName(wh.store, w, r)
-		if name != "" {
-			// renew the session, if already logged in:
-			setSession(wh.store, name, w, r)
-		}
-
 		rights := []string{}
-		user, err := wh.userDb.Get(name)
-		if err == nil {
-			rights = user.Rights
+		name := getUserName(wh.store, w, r)
+
+		if name != "" {
+			user, err := wh.userDb.Get(name)
+			if err == nil {
+				rights = user.Rights
+
+				// renew the session, if already logged in:
+				setSession(wh.store, name, w, r)
+			}
 		}
 
 		jsonify(w, http.StatusOK, WhoamiResponse{
