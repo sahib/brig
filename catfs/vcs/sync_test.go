@@ -312,3 +312,71 @@ func TestSyncTwiceWithMovedFile(t *testing.T) {
 		require.Len(t, diff.Moved, 2)
 	})
 }
+
+func TestSyncConflictStrategyEmbrace(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		c.MustTouchAndCommit(t, lkrSrc, "/x.png", 1)
+		c.MustTouchAndCommit(t, lkrDst, "/x.png", 2)
+
+		cfg := &SyncOptions{
+			ConflictStrategy: ConflictStragetyEmbrace,
+		}
+
+		diff, err := MakeDiff(lkrSrc, lkrDst, nil, nil, cfg)
+		require.Nil(t, err)
+
+		require.Len(t, diff.Conflict, 1)
+		require.Empty(t, diff.Merged)
+		require.Empty(t, diff.Ignored)
+		require.Empty(t, diff.Moved)
+		require.Empty(t, diff.Missing)
+		require.Empty(t, diff.Added)
+		require.Empty(t, diff.Removed)
+
+		require.Nil(t, Sync(lkrSrc, lkrDst, cfg))
+
+		srcX, err := lkrSrc.LookupFile("/x.png")
+		require.Nil(t, err)
+		dstX, err := lkrDst.LookupFile("/x.png")
+		require.Nil(t, err)
+
+		require.Equal(t, srcX.ContentHash(), dstX.ContentHash())
+	})
+}
+
+func TestSyncReadOnlyFolders(t *testing.T) {
+	c.WithLinkerPair(t, func(lkrSrc, lkrDst *c.Linker) {
+		// Create a file on alice' side:
+		c.MustTouchAndCommit(t, lkrSrc, "/public/x.png", 1)
+		cfg := &SyncOptions{
+			ReadOnlyFolders: map[string]bool{
+				"/public": true,
+			},
+		}
+
+		// Sync without a config - this is "bob's" side.
+		// (he does not have any read-only folders)
+		require.Nil(t, Sync(lkrSrc, lkrDst, nil))
+
+		// Both alice and bob should have the same file/content:
+		srcX, err := lkrSrc.LookupFile("/public/x.png")
+		require.Nil(t, err)
+		dstX, err := lkrDst.LookupFile("/public/x.png")
+		require.Nil(t, err)
+		require.Equal(t, srcX.ContentHash(), dstX.ContentHash())
+
+		// bob modifies /public/x.png
+		c.MustModify(t, lkrDst, dstX, 2)
+		dstX, err = lkrDst.LookupFile("/public/x.png")
+		require.Nil(t, err)
+
+		// let alice sync back the change of bob:
+		require.Nil(t, Sync(lkrDst, lkrSrc, cfg))
+
+		srcX, err = lkrSrc.LookupFile("/public/x.png")
+		require.Nil(t, err)
+
+		require.NotEqual(t, srcX.ContentHash(), dstX.ContentHash())
+		require.Equal(t, srcX.ContentHash(), h.TestDummy(t, byte(1)))
+	})
+}

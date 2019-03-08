@@ -178,12 +178,11 @@ func isReadOnly(folders map[string]bool, nodePaths ...string) bool {
 }
 
 func (sy *syncer) handleAdd(src n.ModNode) error {
-	log.Debugf("handling add: %s", src.Path())
-
 	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path()) {
 		return nil
 	}
 
+	log.Debugf("handling add: %s", src.Path())
 	if sy.cfg.OnAdd != nil {
 		if !sy.cfg.OnAdd(src) {
 			return nil

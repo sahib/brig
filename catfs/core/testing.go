@@ -207,12 +207,13 @@ func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.F
 
 // MustModify changes the content of an existing node.
 func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
-	root, err := lkr.Root()
+	parent, err := lkr.LookupDirectory(path.Dir(file.Path()))
+	// root, err := lkr.Root()
 	if err != nil {
 		t.Fatalf("Failed to get root: %v", err)
 	}
 
-	if err := root.RemoveChild(lkr, file); err != nil && !ie.IsNoSuchFileError(err) {
+	if err := parent.RemoveChild(lkr, file); err != nil && !ie.IsNoSuchFileError(err) {
 		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
 	}
 
@@ -220,7 +221,7 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 	file.SetBackend(lkr, h.TestDummy(t, byte(seed)))
 	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
 
-	if err := root.Add(lkr, file); err != nil {
+	if err := parent.Add(lkr, file); err != nil {
 		t.Fatalf("Unable to add %s to /: %v", file.Path(), err)
 	}
 
