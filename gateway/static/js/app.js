@@ -17021,7 +17021,7 @@ var author$project$Routes$Ls$viewActionList = function (model) {
 										author$project$Routes$Ls$selectedPaths(model))),
 								'fa-trash',
 								'Delete',
-								(!nSelected) || (!A2(elm$core$List$member, 'fs.edit', model.rights)))
+								author$project$Routes$Ls$currIsFile(model) || ((!nSelected) || (!A2(elm$core$List$member, 'fs.edit', model.rights))))
 							]))
 					])),
 				A2(
@@ -21207,6 +21207,9 @@ var author$project$Modals$Remove$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$Remove$RemoveAll = function (a) {
 	return {$: 'RemoveAll', a: a};
 };
+var author$project$Modals$Remove$pluralizeItems = function (count) {
+	return (count === 1) ? 'item' : 'items';
+};
 var author$project$Modals$Remove$viewRemoveContent = F2(
 	function (model, nSelected) {
 		return _List_fromArray(
@@ -21221,7 +21224,7 @@ var author$project$Modals$Remove$viewRemoveContent = F2(
 						var _n0 = model.state;
 						if (_n0.$ === 'Ready') {
 							return elm$html$Html$text(
-								'This would remove the ' + (elm$core$String$fromInt(nSelected) + ' selected items.'));
+								'This would remove the ' + (elm$core$String$fromInt(nSelected) + (' selected ' + (author$project$Modals$Remove$pluralizeItems(nSelected) + '.'))));
 						} else {
 							var message = _n0.a;
 							return A5(author$project$Util$buildAlert, model.alert, author$project$Modals$Remove$AlertMsg, rundis$elm_bootstrap$Bootstrap$Alert$danger, 'Oh no!', 'Could not remove directory: ' + message);

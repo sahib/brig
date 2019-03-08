@@ -1157,7 +1157,7 @@ viewActionList model =
                     (RemoveMsg <| Remove.show (selectedPaths model))
                     "fa-trash"
                     "Delete"
-                    (nSelected == 0 || not (List.member "fs.edit" model.rights))
+                    (currIsFile model || nSelected == 0 || not (List.member "fs.edit" model.rights))
                 ]
             ]
         , div []

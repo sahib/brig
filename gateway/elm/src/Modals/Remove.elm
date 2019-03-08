@@ -101,12 +101,21 @@ update msg model =
 -- VIEW
 
 
+pluralizeItems : Int -> String
+pluralizeItems count =
+    if count == 1 then
+        "item"
+
+    else
+        "items"
+
+
 viewRemoveContent : Model -> Int -> List (Grid.Column Msg)
 viewRemoveContent model nSelected =
     [ Grid.col [ Col.xs12 ]
         [ case model.state of
             Ready ->
-                text ("This would remove the " ++ String.fromInt nSelected ++ " selected items.")
+                text ("This would remove the " ++ String.fromInt nSelected ++ " selected " ++ pluralizeItems nSelected ++ ".")
 
             Fail message ->
                 Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not remove directory: " ++ message)
