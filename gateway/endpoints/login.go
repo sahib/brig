@@ -34,12 +34,10 @@ func getUserName(store *sessions.CookieStore, w http.ResponseWriter, r *http.Req
 }
 
 func setSession(store *sessions.CookieStore, userName string, w http.ResponseWriter, r *http.Request) {
-	sess, err := store.Get(r, "sess")
-	if err != nil {
-		log.Warningf("failed to get session: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// Ignore the error here, since it will usually trigger when there was a previously
+	// outdated session that fails to decode. Since we overwrite the session anyways, it
+	// doesn't really matter in this case.
+	sess, _ := store.New(r, "sess")
 
 	isHTTPS := r.TLS != nil
 	sess.Options = &sessions.Options{
