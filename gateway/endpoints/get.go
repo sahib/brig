@@ -138,12 +138,12 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if gh.cfg.Bool("auth.enabled") {
+	if !gh.cfg.Bool("auth.anon_allowed") {
 		// validatePath will check if the user is actually logged in
 		// and may access the path in question. The login could come
 		// from a previous login to the UI (the /get endpoint could be used separately)
 		if !gh.validatePath(nodePath, w, r) {
-			// If the user was not previously logged in the UI,
+			// If the user was not previously logged into the UI,
 			// we also accept basic auth for this endpoint.
 			// This way hyperlinks can be shared without having to login.
 			// Using HTTPS here is strongly recommended.
@@ -159,6 +159,11 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// All good. Proceed with the content.
+	} else {
+		if !gh.checkDownloadRight(w, r) {
+			http.Error(w, "insufficient rights for anon", http.StatusUnauthorized)
+			return
+		}
 	}
 
 	info, err := gh.fs.Stat(nodePath)

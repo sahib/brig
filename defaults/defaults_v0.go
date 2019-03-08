@@ -108,10 +108,15 @@ var DefaultsV0 = config.DefaultMapping{
 			},
 		},
 		"auth": config.DefaultMapping{
-			"enabled": config.DefaultEntry{
-				Default:      true,
+			"anon_allowed": config.DefaultEntry{
+				Default:      false,
 				NeedsRestart: false,
-				Docs:         "Wether user need to login to the gateway.",
+				Docs:         "Wether a login is required.",
+			},
+			"anon_user": config.DefaultEntry{
+				Default:      "anon",
+				NeedsRestart: false,
+				Docs:         "What user to copy settings (folder, rights etc.) from.",
 			},
 			"session-encryption-key": config.DefaultEntry{
 				Default:      "",

@@ -178,14 +178,18 @@ func NewWhoamiHandler(s *State) *WhoamiHandler {
 // WhoamiResponse is the response sent back by this endpoint.
 type WhoamiResponse struct {
 	IsLoggedIn bool     `json:"is_logged_in"`
+	IsAnon     bool     `json:"is_anon"`
 	User       string   `json:"user"`
 	Rights     []string `json:"rights"`
 }
 
 func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if wh.cfg.Bool("auth.enabled") {
-		rights := []string{}
-		name := getUserName(wh.store, w, r)
+	// TODO: Clean this up.
+	rights := []string{}
+	anonIsAllowed := wh.cfg.Bool("auth.anon_allowed")
+	name := getUserName(wh.store, w, r)
+
+	if !anonIsAllowed {
 
 		if name != "" {
 			user, err := wh.userDb.Get(name)
@@ -199,6 +203,7 @@ func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		jsonify(w, http.StatusOK, WhoamiResponse{
 			IsLoggedIn: len(name) > 0,
+			IsAnon:     false,
 			User:       name,
 			Rights:     rights,
 		})
@@ -206,12 +211,28 @@ func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If no auth is used, fake a anon session:
-	setSession(wh.store, "anon", w, r)
+	isAnon := false
+	if name == "" {
+		isAnon = true
+		name = wh.cfg.String("auth.anon_user")
+	}
+
+	possiblyAnonUser, err := wh.userDb.Get(name)
+	if err != nil {
+		log.Warningf("there is no user »%s« used as anon template: %v", name, err)
+		rights = db.DefaultRights
+	} else {
+		rights = possiblyAnonUser.Rights
+	}
+
+	// If no auth is used, fake an anon session
+	// which is granted automatically.
+	setSession(wh.store, name, w, r)
 	jsonify(w, http.StatusOK, WhoamiResponse{
 		IsLoggedIn: true,
-		User:       "anon",
-		Rights:     db.DefaultRights,
+		IsAnon:     isAnon,
+		User:       name,
+		Rights:     rights,
 	})
 }
 
@@ -225,8 +246,10 @@ type authMiddleware struct {
 type dbUserKey string
 
 func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if am.cfg.Bool("auth.enabled") {
-		name := getUserName(am.store, w, r)
+	// TODO: cleanup.
+
+	name := getUserName(am.store, w, r)
+	if !am.cfg.Bool("auth.anon_allowed") {
 		if name == "" {
 			// invalid token.
 			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
@@ -242,6 +265,24 @@ func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		r = r.WithContext(context.WithValue(r.Context(), dbUserKey("brig.db_user"), user))
+	} else {
+		if name == "" {
+			name = am.cfg.String("auth.anon_user")
+		}
+
+		possiblyAnonUser, err := am.userDb.Get(name)
+		if err != nil {
+			// probably an error during setup.
+			// anon user is referenced but not used.
+			// This is not an error!
+			log.Warningf("there is no user »%s« used as anon template: %v", name, err)
+		} else {
+			r = r.WithContext(
+				context.WithValue(r.Context(), dbUserKey("brig.db_user"),
+					possiblyAnonUser,
+				),
+			)
+		}
 	}
 
 	am.SubHandler.ServeHTTP(w, r)
@@ -249,6 +290,7 @@ func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func checkRights(w http.ResponseWriter, r *http.Request, rights ...string) bool {
 	user, ok := r.Context().Value(dbUserKey("brig.db_user")).(db.User)
+
 	if !ok {
 		jsonifyErrf(w, http.StatusInternalServerError, "could not cast user")
 		return false

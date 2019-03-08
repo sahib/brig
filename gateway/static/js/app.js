@@ -4828,9 +4828,9 @@ var author$project$Main$LinkClicked = function (a) {
 var author$project$Main$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
-var author$project$Commands$WhoamiResponse = F3(
-	function (username, isLoggedIn, rights) {
-		return {isLoggedIn: isLoggedIn, rights: rights, username: username};
+var author$project$Commands$WhoamiResponse = F4(
+	function (username, isLoggedIn, isAnon, rights) {
+		return {isAnon: isAnon, isLoggedIn: isLoggedIn, rights: rights, username: username};
 	});
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
@@ -5310,13 +5310,14 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 var elm$json$Json$Decode$bool = _Json_decodeBool;
 var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$list = _Json_decodeList;
-var elm$json$Json$Decode$map3 = _Json_map3;
+var elm$json$Json$Decode$map4 = _Json_map4;
 var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Commands$decodeWhoami = A4(
-	elm$json$Json$Decode$map3,
+var author$project$Commands$decodeWhoami = A5(
+	elm$json$Json$Decode$map4,
 	author$project$Commands$WhoamiResponse,
 	A2(elm$json$Json$Decode$field, 'user', elm$json$Json$Decode$string),
 	A2(elm$json$Json$Decode$field, 'is_logged_in', elm$json$Json$Decode$bool),
+	A2(elm$json$Json$Decode$field, 'is_anon', elm$json$Json$Decode$bool),
 	A2(
 		elm$json$Json$Decode$field,
 		'rights',
@@ -8185,6 +8186,7 @@ var author$project$Commands$ListResponse = F3(
 	function (self, isFiltered, entries) {
 		return {entries: entries, isFiltered: isFiltered, self: self};
 	});
+var elm$json$Json$Decode$map3 = _Json_map3;
 var author$project$Commands$decodeListResponse = A4(
 	elm$json$Json$Decode$map3,
 	author$project$Commands$ListResponse,
@@ -8882,13 +8884,14 @@ var author$project$Websocket$open = _Platform_outgoingPort(
 		return elm$json$Json$Encode$null;
 	});
 var elm$core$Platform$Cmd$map = _Platform_map;
-var author$project$Main$doInitAfterLogin = F3(
-	function (model, loginName, rights) {
+var author$project$Main$doInitAfterLogin = F4(
+	function (model, loginName, rights, isAnon) {
 		var newViewState = {
 			commitsState: A4(author$project$Routes$Commits$newModel, model.url, model.key, model.zone, rights),
 			currentView: A2(author$project$Main$viewFromUrl, rights, model.url),
 			deletedFilesState: A4(author$project$Routes$DeletedFiles$newModel, model.url, model.key, model.zone, rights),
 			diffState: A3(author$project$Routes$Diff$newModel, model.key, model.url, model.zone),
+			isAnon: isAnon,
 			listState: A3(author$project$Routes$Ls$newModel, model.key, model.url, rights),
 			loginName: loginName,
 			remoteState: A3(author$project$Routes$Remotes$newModel, model.key, model.zone, rights),
@@ -11734,7 +11737,7 @@ var author$project$Main$update = F2(
 					var whoami = result.a;
 					var _n3 = whoami.isLoggedIn;
 					if (_n3) {
-						return A3(author$project$Main$doInitAfterLogin, model, whoami.username, whoami.rights);
+						return A4(author$project$Main$doInitAfterLogin, model, whoami.username, whoami.rights, whoami.isAnon);
 					} else {
 						return _Utils_Tuple2(
 							_Utils_update(
@@ -11757,7 +11760,7 @@ var author$project$Main$update = F2(
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var response = result.a;
-					return A3(author$project$Main$doInitAfterLogin, model, response.username, response.rights);
+					return A4(author$project$Main$doInitAfterLogin, model, response.username, response.rights, false);
 				} else {
 					var err = result.a;
 					return _Utils_Tuple2(
@@ -17693,7 +17696,6 @@ var rundis$elm_bootstrap$Bootstrap$Dropdown$toggler = F2(
 var elm$json$Json$Decode$float = _Json_decodeFloat;
 var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$offsetHeight = A2(elm$json$Json$Decode$field, 'offsetHeight', elm$json$Json$Decode$float);
 var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$offsetWidth = A2(elm$json$Json$Decode$field, 'offsetWidth', elm$json$Json$Decode$float);
-var elm$json$Json$Decode$map4 = _Json_map4;
 var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$offsetLeft = A2(elm$json$Json$Decode$field, 'offsetLeft', elm$json$Json$Decode$float);
 var rundis$elm_bootstrap$Bootstrap$Utilities$DomHelper$offsetParent = F2(
 	function (x, decoder) {
@@ -19540,7 +19542,7 @@ var author$project$Routes$Remotes$view = function (model) {
 			return elm$html$Html$text('Still loading');
 		case 'Failure':
 			var err = _n0.a;
-			return elm$html$Html$text('Failed to load log: ' + err);
+			return elm$html$Html$text('Failed to load remote list: ' + err);
 		default:
 			var remotes = _n0.a;
 			return A2(
@@ -19893,67 +19895,65 @@ var author$project$Main$viewSidebarItems = F2(
 													]))
 											]))
 									])),
-							_Utils_ap(
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$li,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('nav-item')
-											]),
-										_List_fromArray(
-											[
-												A2(
-												elm$html$Html$a,
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('nav-link pl-0'),
-														elm$html$Html$Attributes$href('#'),
-														elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
-													]),
-												_List_fromArray(
-													[
-														A2(
-														elm$html$Html$span,
-														_List_Nil,
-														_List_fromArray(
-															[
-																elm$html$Html$text('Login page')
-															]))
-													]))
-											]))
-									]),
-								_List_fromArray(
-									[
-										A2(
-										elm$html$Html$li,
-										_List_fromArray(
-											[
-												elm$html$Html$Attributes$class('nav-item')
-											]),
-										_List_fromArray(
-											[
-												A2(
-												elm$html$Html$a,
-												_List_fromArray(
-													[
-														elm$html$Html$Attributes$class('nav-link pl-0'),
-														elm$html$Html$Attributes$href('#'),
-														elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
-													]),
-												_List_fromArray(
-													[
-														A2(
-														elm$html$Html$span,
-														_List_Nil,
-														_List_fromArray(
-															[
-																elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
-															]))
-													]))
-											]))
-									])))))));
+							viewState.isAnon ? _List_fromArray(
+								[
+									A2(
+									elm$html$Html$li,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('nav-item')
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$a,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('nav-link pl-0'),
+													elm$html$Html$Attributes$href('#'),
+													elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+												]),
+											_List_fromArray(
+												[
+													A2(
+													elm$html$Html$span,
+													_List_Nil,
+													_List_fromArray(
+														[
+															elm$html$Html$text('Login page')
+														]))
+												]))
+										]))
+								]) : _List_fromArray(
+								[
+									A2(
+									elm$html$Html$li,
+									_List_fromArray(
+										[
+											elm$html$Html$Attributes$class('nav-item')
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$a,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('nav-link pl-0'),
+													elm$html$Html$Attributes$href('#'),
+													elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+												]),
+											_List_fromArray(
+												[
+													A2(
+													elm$html$Html$span,
+													_List_Nil,
+													_List_fromArray(
+														[
+															elm$html$Html$text('Logout »' + (viewState.loginName + '«'))
+														]))
+												]))
+										]))
+								]))))));
 	});
 var author$project$Modals$History$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$History$PinClicked = F3(
@@ -22401,7 +22401,7 @@ var author$project$Main$view = function (model) {
 				case 'LoginLimbo':
 					return _List_fromArray(
 						[
-							elm$html$Html$text('Waiting in Limbo...')
+							elm$html$Html$text('Waiting for login data')
 						]);
 				case 'LoginReady':
 					return _List_fromArray(

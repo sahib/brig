@@ -459,15 +459,17 @@ doLogout msg =
 type alias WhoamiResponse =
     { username : String
     , isLoggedIn : Bool
+    , isAnon : Bool
     , rights : List String
     }
 
 
 decodeWhoami : D.Decoder WhoamiResponse
 decodeWhoami =
-    D.map3 WhoamiResponse
+    D.map4 WhoamiResponse
         (D.field "user" D.string)
         (D.field "is_logged_in" D.bool)
+        (D.field "is_anon" D.bool)
         (D.field "rights" (D.list D.string))
 
 

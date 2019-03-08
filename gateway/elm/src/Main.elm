@@ -94,6 +94,7 @@ type alias ViewState =
     , loginName : String
     , currentView : View
     , rights : List String
+    , isAnon : Bool
     }
 
 
@@ -147,8 +148,8 @@ withSubUpdate subMsg subModel model msg subUpdate viewStateUpdate =
             ( model, Cmd.none )
 
 
-doInitAfterLogin : Model -> String -> List String -> ( Model, Cmd Msg )
-doInitAfterLogin model loginName rights =
+doInitAfterLogin : Model -> String -> List String -> Bool -> ( Model, Cmd Msg )
+doInitAfterLogin model loginName rights isAnon =
     let
         newViewState =
             { listState = Ls.newModel model.key model.url rights
@@ -159,6 +160,7 @@ doInitAfterLogin model loginName rights =
             , loginName = loginName
             , currentView = viewFromUrl rights model.url
             , rights = rights
+            , isAnon = isAnon
             }
     in
     ( { model | loginState = LoginSuccess newViewState }
@@ -280,7 +282,7 @@ update msg model =
                     -- the list view. Take the path from the current URL.
                     case whoami.isLoggedIn of
                         True ->
-                            doInitAfterLogin model whoami.username whoami.rights
+                            doInitAfterLogin model whoami.username whoami.rights whoami.isAnon
 
                         False ->
                             ( { model | loginState = LoginReady "" "" }, Cmd.none )
@@ -293,7 +295,7 @@ update msg model =
                 Ok response ->
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
-                    doInitAfterLogin model response.username response.rights
+                    doInitAfterLogin model response.username response.rights False
 
                 Err err ->
                     ( { model | loginState = LoginFailure "" "" (Util.httpErrorToString err) }, Cmd.none )
@@ -552,7 +554,7 @@ view model =
     , body =
         case model.loginState of
             LoginLimbo ->
-                [ text "Waiting in Limbo..." ]
+                [ text "Waiting for login data" ]
 
             LoginReady _ _ ->
                 [ Lazy.lazy viewLoginForm model ]
@@ -786,16 +788,20 @@ viewSidebarItems model viewState =
                         [ span [] [ text "Remotes" ] ]
                     ]
                 ]
-            ++ [ li [ class "nav-item" ]
-                    [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
-                        [ span [] [ text "Login page" ] ]
+            ++ (if viewState.isAnon then
+                    [ li [ class "nav-item" ]
+                        [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                            [ span [] [ text "Login page" ] ]
+                        ]
                     ]
-               ]
-            ++ [ li [ class "nav-item" ]
-                    [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
-                        [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
+
+                else
+                    [ li [ class "nav-item" ]
+                        [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                            [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
+                        ]
                     ]
-               ]
+               )
         )
 
 

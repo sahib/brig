@@ -25,10 +25,10 @@ import (
 	_ "github.com/sahib/brig/gateway/static"
 )
 
-// allow at max. 1000 request per hour before limiting.
+// set a max. amount of requests per hour:
 var rate = limiter.Rate{
 	Period: 1 * time.Hour,
-	Limit:  1000,
+	Limit:  50000,
 }
 
 // Gateway is a small HTTP server that is able to serve

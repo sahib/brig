@@ -408,7 +408,7 @@ view model =
             text "Still loading"
 
         Failure err ->
-            text ("Failed to load log: " ++ err)
+            text ("Failed to load remote list: " ++ err)
 
         Success remotes ->
             Grid.row []

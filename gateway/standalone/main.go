@@ -72,7 +72,7 @@ func main() {
 	cfg.SetInt("gateway.port", 6001)
 	cfg.SetBool("gateway.cert.redirect.enabled", false)
 
-	cfg.SetBool("gateway.auth.enabled", true)
+	cfg.SetBool("gateway.auth.anon_allowed", true)
 	cfg.SetString("gateway.cert.domain", "")
 	cfg.SetString("gateway.cert.certfile", "")
 	cfg.SetString("gateway.cert.keyfile", "")
@@ -155,6 +155,10 @@ func main() {
 	}
 
 	if err := gw.UserDatabase().Add("guest", "guest", []string{"/endpoints"}, []string{"fs.view"}); err != nil {
+		log.Fatalf("failed to add user: %v", err)
+	}
+
+	if err := gw.UserDatabase().Add("anon", "anon", []string{"/endpoints"}, []string{"fs.view"}); err != nil {
 		log.Fatalf("failed to add user: %v", err)
 	}
 
