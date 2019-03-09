@@ -53,14 +53,14 @@ main =
 type Msg
     = GotLoginResp (Result Http.Error Commands.LoginResponse)
     | GotWhoamiResp (Result Http.Error Commands.WhoamiResponse)
-    | GotLogoutResp (Result Http.Error Bool)
+    | GotLogoutResp Bool (Result Http.Error Bool)
     | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | UsernameInput String
     | PasswordInput String
     | LoginSubmit
-    | LogoutSubmit
+    | LogoutSubmit Bool
     | GotoLogin
     | PingerIn String
     | WebsocketIn String
@@ -95,6 +95,7 @@ type alias ViewState =
     , currentView : View
     , rights : List String
     , isAnon : Bool
+    , anonIsAllowed : Bool
     }
 
 
@@ -148,8 +149,8 @@ withSubUpdate subMsg subModel model msg subUpdate viewStateUpdate =
             ( model, Cmd.none )
 
 
-doInitAfterLogin : Model -> String -> List String -> Bool -> ( Model, Cmd Msg )
-doInitAfterLogin model loginName rights isAnon =
+doInitAfterLogin : Model -> String -> List String -> Bool -> Bool -> ( Model, Cmd Msg )
+doInitAfterLogin model loginName rights isAnon anonIsAllowed =
     let
         newViewState =
             { listState = Ls.newModel model.key model.url rights
@@ -161,6 +162,7 @@ doInitAfterLogin model loginName rights isAnon =
             , currentView = viewFromUrl rights model.url
             , rights = rights
             , isAnon = isAnon
+            , anonIsAllowed = anonIsAllowed
             }
     in
     ( { model | loginState = LoginSuccess newViewState }
@@ -282,7 +284,7 @@ update msg model =
                     -- the list view. Take the path from the current URL.
                     case whoami.isLoggedIn of
                         True ->
-                            doInitAfterLogin model whoami.username whoami.rights whoami.isAnon
+                            doInitAfterLogin model whoami.username whoami.rights whoami.isAnon whoami.anonIsAllowed
 
                         False ->
                             ( { model | loginState = LoginReady "" "" }, Cmd.none )
@@ -295,13 +297,22 @@ update msg model =
                 Ok response ->
                     -- Immediately hit off a list query, which will in turn populate
                     -- the list view. Take the path from the current URL.
-                    doInitAfterLogin model response.username response.rights False
+                    doInitAfterLogin model response.username response.rights response.isAnon response.anonIsAllowed
 
                 Err err ->
                     ( { model | loginState = LoginFailure "" "" (Util.httpErrorToString err) }, Cmd.none )
 
-        GotLogoutResp _ ->
-            ( { model | loginState = LoginReady "" "" }, Cmd.none )
+        GotLogoutResp mayReloginAsAnon _ ->
+            case model.loginState of
+                LoginSuccess viewState ->
+                    if mayReloginAsAnon && viewState.anonIsAllowed then
+                        ( model, Commands.doWhoami GotWhoamiResp )
+
+                    else
+                        ( { model | loginState = LoginReady "" "" }, Cmd.none )
+
+                _ ->
+                    ( { model | loginState = LoginReady "" "" }, Cmd.none )
 
         LinkClicked urlRequest ->
             case urlRequest of
@@ -456,8 +467,8 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        LogoutSubmit ->
-            ( model, Commands.doLogout GotLogoutResp )
+        LogoutSubmit mayReloginAsAnon ->
+            ( model, Commands.doLogout (GotLogoutResp mayReloginAsAnon) )
 
         GotoLogin ->
             ( { model | loginState = LoginReady "" "" }, Cmd.none )
@@ -579,7 +590,7 @@ viewAppIcon model =
             ]
 
          else
-            [ span [ class "fas fa-2x fa-fw logo logo-failure fa-plug" ] []
+            [ span [ class "fas fa-2x fa-fw logo logo-failure fa-torii-gate" ] []
             , span [ class "badge badge-danger text-center" ] [ text "offline" ]
             ]
         )
@@ -790,14 +801,14 @@ viewSidebarItems model viewState =
                 ]
             ++ (if viewState.isAnon then
                     [ li [ class "nav-item" ]
-                        [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                        [ a [ class "nav-link pl-0", href "#", onClick (LogoutSubmit False) ]
                             [ span [] [ text "Login page" ] ]
                         ]
                     ]
 
                 else
                     [ li [ class "nav-item" ]
-                        [ a [ class "nav-link pl-0", href "#", onClick LogoutSubmit ]
+                        [ a [ class "nav-link pl-0", href "#", onClick (LogoutSubmit True) ]
                             [ span [] [ text ("Logout »" ++ viewState.loginName ++ "«") ] ]
                         ]
                     ]

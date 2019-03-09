@@ -91,9 +91,11 @@ type LoginRequest struct {
 
 // LoginResponse is what the endpoint will return.
 type LoginResponse struct {
-	Success  bool     `json:"success"`
-	Username string   `json:"username"`
-	Rights   []string `json:"rights"`
+	Success       bool     `json:"success"`
+	Username      string   `json:"username"`
+	Rights        []string `json:"rights"`
+	IsAnon        bool     `json:"is_anon"`
+	AnonIsAllowed bool     `json:"anon_is_allowed"`
 }
 
 func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -131,11 +133,16 @@ func (lih *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	anonIsAllowed := lih.cfg.Bool("auth.anon_allowed")
+	anonUserName := lih.cfg.String("auth.anon_user")
+
 	setSession(lih.store, dbUser.Name, w, r)
 	jsonify(w, http.StatusOK, &LoginResponse{
-		Success:  true,
-		Username: loginReq.Username,
-		Rights:   dbUser.Rights,
+		Success:       true,
+		Username:      loginReq.Username,
+		Rights:        dbUser.Rights,
+		IsAnon:        anonUserName == loginReq.Username,
+		AnonIsAllowed: anonIsAllowed,
 	})
 }
 
@@ -177,62 +184,41 @@ func NewWhoamiHandler(s *State) *WhoamiHandler {
 
 // WhoamiResponse is the response sent back by this endpoint.
 type WhoamiResponse struct {
-	IsLoggedIn bool     `json:"is_logged_in"`
-	IsAnon     bool     `json:"is_anon"`
-	User       string   `json:"user"`
-	Rights     []string `json:"rights"`
+	IsLoggedIn    bool     `json:"is_logged_in"`
+	IsAnon        bool     `json:"is_anon"`
+	AnonIsAllowed bool     `json:"anon_is_allowed"`
+	User          string   `json:"user"`
+	Rights        []string `json:"rights"`
 }
 
 func (wh *WhoamiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: Clean this up.
 	rights := []string{}
+	isAnon := false
+
 	anonIsAllowed := wh.cfg.Bool("auth.anon_allowed")
 	name := getUserName(wh.store, w, r)
 
-	if !anonIsAllowed {
-
-		if name != "" {
-			user, err := wh.userDb.Get(name)
-			if err == nil {
-				rights = user.Rights
-
-				// renew the session, if already logged in:
-				setSession(wh.store, name, w, r)
-			}
-		}
-
-		jsonify(w, http.StatusOK, WhoamiResponse{
-			IsLoggedIn: len(name) > 0,
-			IsAnon:     false,
-			User:       name,
-			Rights:     rights,
-		})
-
-		return
-	}
-
-	isAnon := false
-	if name == "" {
+	if name == "" && anonIsAllowed {
 		isAnon = true
 		name = wh.cfg.String("auth.anon_user")
 	}
 
-	possiblyAnonUser, err := wh.userDb.Get(name)
-	if err != nil {
-		log.Warningf("there is no user »%s« used as anon template: %v", name, err)
-		rights = db.DefaultRights
-	} else {
-		rights = possiblyAnonUser.Rights
+	if name != "" {
+		possiblyAnonUser, err := wh.userDb.Get(name)
+		if err != nil {
+			log.Warningf("could not get user »%s« : %v", name, err)
+		} else {
+			rights = possiblyAnonUser.Rights
+			setSession(wh.store, name, w, r)
+		}
 	}
 
-	// If no auth is used, fake an anon session
-	// which is granted automatically.
-	setSession(wh.store, name, w, r)
 	jsonify(w, http.StatusOK, WhoamiResponse{
-		IsLoggedIn: true,
-		IsAnon:     isAnon,
-		User:       name,
-		Rights:     rights,
+		IsLoggedIn:    len(name) > 0,
+		IsAnon:        isAnon,
+		AnonIsAllowed: anonIsAllowed,
+		User:          name,
+		Rights:        rights,
 	})
 }
 
@@ -246,44 +232,32 @@ type authMiddleware struct {
 type dbUserKey string
 
 func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO: cleanup.
-
+	anonIsAllowed := am.cfg.Bool("auth.anon_allowed")
 	name := getUserName(am.store, w, r)
-	if !am.cfg.Bool("auth.anon_allowed") {
-		if name == "" {
+
+	if name == "" {
+		if !anonIsAllowed {
 			// invalid token.
 			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
 			return
-		}
-
-		user, err := am.userDb.Get(name)
-		if err != nil {
-			// valid token, but invalid user.
-			// (user might have been deleted on our side)
-			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
-			return
-		}
-
-		r = r.WithContext(context.WithValue(r.Context(), dbUserKey("brig.db_user"), user))
-	} else {
-		if name == "" {
+		} else {
 			name = am.cfg.String("auth.anon_user")
 		}
-
-		possiblyAnonUser, err := am.userDb.Get(name)
-		if err != nil {
-			// probably an error during setup.
-			// anon user is referenced but not used.
-			// This is not an error!
-			log.Warningf("there is no user »%s« used as anon template: %v", name, err)
-		} else {
-			r = r.WithContext(
-				context.WithValue(r.Context(), dbUserKey("brig.db_user"),
-					possiblyAnonUser,
-				),
-			)
-		}
 	}
+
+	user, err := am.userDb.Get(name)
+	if err != nil {
+		// valid token, but invalid user.
+		// (user might have been deleted on our side)
+		jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
+		return
+	}
+
+	r = r.WithContext(
+		context.WithValue(r.Context(), dbUserKey("brig.db_user"),
+			user,
+		),
+	)
 
 	am.SubHandler.ServeHTTP(w, r)
 }

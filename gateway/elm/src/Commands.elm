@@ -412,6 +412,8 @@ type alias LoginQuery =
 type alias LoginResponse =
     { username : String
     , rights : List String
+    , isAnon : Bool
+    , anonIsAllowed : Bool
     }
 
 
@@ -425,9 +427,11 @@ encodeLoginQuery q =
 
 decodeLoginResponse : D.Decoder LoginResponse
 decodeLoginResponse =
-    D.map2 LoginResponse
+    D.map4 LoginResponse
         (D.field "username" D.string)
         (D.field "rights" (D.list D.string))
+        (D.field "is_anon" D.bool)
+        (D.field "anon_is_allowed" D.bool)
 
 
 doLogin : (Result Http.Error LoginResponse -> msg) -> String -> String -> Cmd msg
@@ -460,16 +464,18 @@ type alias WhoamiResponse =
     { username : String
     , isLoggedIn : Bool
     , isAnon : Bool
+    , anonIsAllowed : Bool
     , rights : List String
     }
 
 
 decodeWhoami : D.Decoder WhoamiResponse
 decodeWhoami =
-    D.map4 WhoamiResponse
+    D.map5 WhoamiResponse
         (D.field "user" D.string)
         (D.field "is_logged_in" D.bool)
         (D.field "is_anon" D.bool)
+        (D.field "anon_is_allowed" D.bool)
         (D.field "rights" (D.list D.string))
 
 

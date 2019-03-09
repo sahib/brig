@@ -4828,9 +4828,9 @@ var author$project$Main$LinkClicked = function (a) {
 var author$project$Main$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
-var author$project$Commands$WhoamiResponse = F4(
-	function (username, isLoggedIn, isAnon, rights) {
-		return {isAnon: isAnon, isLoggedIn: isLoggedIn, rights: rights, username: username};
+var author$project$Commands$WhoamiResponse = F5(
+	function (username, isLoggedIn, isAnon, anonIsAllowed, rights) {
+		return {anonIsAllowed: anonIsAllowed, isAnon: isAnon, isLoggedIn: isLoggedIn, rights: rights, username: username};
 	});
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
@@ -5310,14 +5310,15 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 var elm$json$Json$Decode$bool = _Json_decodeBool;
 var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$list = _Json_decodeList;
-var elm$json$Json$Decode$map4 = _Json_map4;
+var elm$json$Json$Decode$map5 = _Json_map5;
 var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Commands$decodeWhoami = A5(
-	elm$json$Json$Decode$map4,
+var author$project$Commands$decodeWhoami = A6(
+	elm$json$Json$Decode$map5,
 	author$project$Commands$WhoamiResponse,
 	A2(elm$json$Json$Decode$field, 'user', elm$json$Json$Decode$string),
 	A2(elm$json$Json$Decode$field, 'is_logged_in', elm$json$Json$Decode$bool),
 	A2(elm$json$Json$Decode$field, 'is_anon', elm$json$Json$Decode$bool),
+	A2(elm$json$Json$Decode$field, 'anon_is_allowed', elm$json$Json$Decode$bool),
 	A2(
 		elm$json$Json$Decode$field,
 		'rights',
@@ -7457,18 +7458,21 @@ var author$project$Commands$LoginQuery = F2(
 	function (username, password) {
 		return {password: password, username: username};
 	});
-var author$project$Commands$LoginResponse = F2(
-	function (username, rights) {
-		return {rights: rights, username: username};
+var author$project$Commands$LoginResponse = F4(
+	function (username, rights, isAnon, anonIsAllowed) {
+		return {anonIsAllowed: anonIsAllowed, isAnon: isAnon, rights: rights, username: username};
 	});
-var author$project$Commands$decodeLoginResponse = A3(
-	elm$json$Json$Decode$map2,
+var elm$json$Json$Decode$map4 = _Json_map4;
+var author$project$Commands$decodeLoginResponse = A5(
+	elm$json$Json$Decode$map4,
 	author$project$Commands$LoginResponse,
 	A2(elm$json$Json$Decode$field, 'username', elm$json$Json$Decode$string),
 	A2(
 		elm$json$Json$Decode$field,
 		'rights',
-		elm$json$Json$Decode$list(elm$json$Json$Decode$string)));
+		elm$json$Json$Decode$list(elm$json$Json$Decode$string)),
+	A2(elm$json$Json$Decode$field, 'is_anon', elm$json$Json$Decode$bool),
+	A2(elm$json$Json$Decode$field, 'anon_is_allowed', elm$json$Json$Decode$bool));
 var elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
 		A3(
@@ -7529,9 +7533,10 @@ var author$project$Main$DiffMsg = function (a) {
 var author$project$Main$GotLoginResp = function (a) {
 	return {$: 'GotLoginResp', a: a};
 };
-var author$project$Main$GotLogoutResp = function (a) {
-	return {$: 'GotLogoutResp', a: a};
-};
+var author$project$Main$GotLogoutResp = F2(
+	function (a, b) {
+		return {$: 'GotLogoutResp', a: a, b: b};
+	});
 var author$project$Main$LoginFailure = F3(
 	function (a, b, c) {
 		return {$: 'LoginFailure', a: a, b: b, c: c};
@@ -8884,9 +8889,10 @@ var author$project$Websocket$open = _Platform_outgoingPort(
 		return elm$json$Json$Encode$null;
 	});
 var elm$core$Platform$Cmd$map = _Platform_map;
-var author$project$Main$doInitAfterLogin = F4(
-	function (model, loginName, rights, isAnon) {
+var author$project$Main$doInitAfterLogin = F5(
+	function (model, loginName, rights, isAnon, anonIsAllowed) {
 		var newViewState = {
+			anonIsAllowed: anonIsAllowed,
 			commitsState: A4(author$project$Routes$Commits$newModel, model.url, model.key, model.zone, rights),
 			currentView: A2(author$project$Main$viewFromUrl, rights, model.url),
 			deletedFilesState: A4(author$project$Routes$DeletedFiles$newModel, model.url, model.key, model.zone, rights),
@@ -11737,7 +11743,7 @@ var author$project$Main$update = F2(
 					var whoami = result.a;
 					var _n3 = whoami.isLoggedIn;
 					if (_n3) {
-						return A4(author$project$Main$doInitAfterLogin, model, whoami.username, whoami.rights, whoami.isAnon);
+						return A5(author$project$Main$doInitAfterLogin, model, whoami.username, whoami.rights, whoami.isAnon, whoami.anonIsAllowed);
 					} else {
 						return _Utils_Tuple2(
 							_Utils_update(
@@ -11760,7 +11766,7 @@ var author$project$Main$update = F2(
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var response = result.a;
-					return A4(author$project$Main$doInitAfterLogin, model, response.username, response.rights, false);
+					return A5(author$project$Main$doInitAfterLogin, model, response.username, response.rights, response.isAnon, response.anonIsAllowed);
 				} else {
 					var err = result.a;
 					return _Utils_Tuple2(
@@ -11776,19 +11782,34 @@ var author$project$Main$update = F2(
 						elm$core$Platform$Cmd$none);
 				}
 			case 'GotLogoutResp':
-				return _Utils_Tuple2(
-					_Utils_update(
+				var mayReloginAsAnon = msg.a;
+				var _n5 = model.loginState;
+				if (_n5.$ === 'LoginSuccess') {
+					var viewState = _n5.a;
+					return (mayReloginAsAnon && viewState.anonIsAllowed) ? _Utils_Tuple2(
 						model,
-						{
-							loginState: A2(author$project$Main$LoginReady, '', '')
-						}),
-					elm$core$Platform$Cmd$none);
+						author$project$Commands$doWhoami(author$project$Main$GotWhoamiResp)) : _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								loginState: A2(author$project$Main$LoginReady, '', '')
+							}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								loginState: A2(author$project$Main$LoginReady, '', '')
+							}),
+						elm$core$Platform$Cmd$none);
+				}
 			case 'LinkClicked':
 				var urlRequest = msg.a;
 				if (urlRequest.$ === 'Internal') {
 					var url = urlRequest.a;
-					var _n6 = A2(elm$core$String$startsWith, '/get', url.path);
-					if (_n6) {
+					var _n7 = A2(elm$core$String$startsWith, '/get', url.path);
+					if (_n7) {
 						return _Utils_Tuple2(
 							model,
 							elm$browser$Browser$Navigation$load(
@@ -11820,11 +11841,11 @@ var author$project$Main$update = F2(
 				}
 			case 'UrlChanged':
 				var url = msg.a;
-				var _n8 = model.loginState;
-				if (_n8.$ === 'LoginSuccess') {
-					var viewState = _n8.a;
-					var _n9 = A2(author$project$Main$viewFromUrl, viewState.rights, url);
-					switch (_n9.$) {
+				var _n9 = model.loginState;
+				if (_n9.$ === 'LoginSuccess') {
+					var viewState = _n9.a;
+					var _n10 = A2(author$project$Main$viewFromUrl, viewState.rights, url);
+					switch (_n10.$) {
 						case 'ViewList':
 							return _Utils_Tuple2(
 								_Utils_update(
@@ -11907,7 +11928,7 @@ var author$project$Main$update = F2(
 									author$project$Main$DeletedFilesMsg,
 									author$project$Routes$DeletedFiles$reloadIfNeeded(viewState.deletedFilesState)));
 						default:
-							var other = _n9;
+							var other = _n10;
 							return _Utils_Tuple2(
 								_Utils_update(
 									model,
@@ -11934,10 +11955,10 @@ var author$project$Main$update = F2(
 				}
 			case 'UsernameInput':
 				var username = msg.a;
-				var _n10 = model.loginState;
-				switch (_n10.$) {
+				var _n11 = model.loginState;
+				switch (_n11.$) {
 					case 'LoginReady':
-						var password = _n10.b;
+						var password = _n11.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -11946,7 +11967,7 @@ var author$project$Main$update = F2(
 								}),
 							elm$core$Platform$Cmd$none);
 					case 'LoginFailure':
-						var password = _n10.b;
+						var password = _n11.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -11959,10 +11980,10 @@ var author$project$Main$update = F2(
 				}
 			case 'PasswordInput':
 				var password = msg.a;
-				var _n11 = model.loginState;
-				switch (_n11.$) {
+				var _n12 = model.loginState;
+				switch (_n12.$) {
 					case 'LoginReady':
-						var username = _n11.a;
+						var username = _n12.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -11971,7 +11992,7 @@ var author$project$Main$update = F2(
 								}),
 							elm$core$Platform$Cmd$none);
 					case 'LoginFailure':
-						var username = _n11.a;
+						var username = _n12.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -11983,11 +12004,11 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
 			case 'LoginSubmit':
-				var _n12 = model.loginState;
-				switch (_n12.$) {
+				var _n13 = model.loginState;
+				switch (_n13.$) {
 					case 'LoginReady':
-						var username = _n12.a;
-						var password = _n12.b;
+						var username = _n13.a;
+						var password = _n13.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -11996,8 +12017,8 @@ var author$project$Main$update = F2(
 								}),
 							A3(author$project$Commands$doLogin, author$project$Main$GotLoginResp, username, password));
 					case 'LoginFailure':
-						var username = _n12.a;
-						var password = _n12.b;
+						var username = _n13.a;
+						var password = _n13.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -12009,9 +12030,11 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
 			case 'LogoutSubmit':
+				var mayReloginAsAnon = msg.a;
 				return _Utils_Tuple2(
 					model,
-					author$project$Commands$doLogout(author$project$Main$GotLogoutResp));
+					author$project$Commands$doLogout(
+						author$project$Main$GotLogoutResp(mayReloginAsAnon)));
 			case 'GotoLogin':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -12031,12 +12054,12 @@ var author$project$Main$update = F2(
 					elm$core$Platform$Cmd$none);
 			case 'WebsocketIn':
 				var event = msg.a;
-				var _n13 = author$project$Main$eventType(event);
-				switch (_n13) {
+				var _n14 = author$project$Main$eventType(event);
+				switch (_n14) {
 					case 'pin':
-						var _n14 = model.loginState;
-						if (_n14.$ === 'LoginSuccess') {
-							var viewState = _n14.a;
+						var _n15 = model.loginState;
+						if (_n15.$ === 'LoginSuccess') {
+							var viewState = _n15.a;
 							return _Utils_Tuple2(
 								model,
 								A2(
@@ -12047,9 +12070,9 @@ var author$project$Main$update = F2(
 							return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 						}
 					case 'fs':
-						var _n15 = model.loginState;
-						if (_n15.$ === 'LoginSuccess') {
-							var viewState = _n15.a;
+						var _n16 = model.loginState;
+						if (_n16.$ === 'LoginSuccess') {
+							var viewState = _n16.a;
 							return _Utils_Tuple2(
 								model,
 								elm$core$Platform$Cmd$batch(
@@ -13935,7 +13958,7 @@ var author$project$Main$viewAppIcon = function (model) {
 				elm$html$Html$span,
 				_List_fromArray(
 					[
-						elm$html$Html$Attributes$class('fas fa-2x fa-fw logo logo-failure fa-plug')
+						elm$html$Html$Attributes$class('fas fa-2x fa-fw logo logo-failure fa-torii-gate')
 					]),
 				_List_Nil),
 				A2(
@@ -19723,7 +19746,9 @@ var author$project$Main$viewSidebarBottom = function (model) {
 					]))
 			]));
 };
-var author$project$Main$LogoutSubmit = {$: 'LogoutSubmit'};
+var author$project$Main$LogoutSubmit = function (a) {
+	return {$: 'LogoutSubmit', a: a};
+};
 var author$project$Main$hasRight = F3(
 	function (viewState, right, elements) {
 		return A2(elm$core$List$member, right, viewState.rights) ? elements : _List_Nil;
@@ -19911,7 +19936,8 @@ var author$project$Main$viewSidebarItems = F2(
 												[
 													elm$html$Html$Attributes$class('nav-link pl-0'),
 													elm$html$Html$Attributes$href('#'),
-													elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+													elm$html$Html$Events$onClick(
+													author$project$Main$LogoutSubmit(false))
 												]),
 											_List_fromArray(
 												[
@@ -19940,7 +19966,8 @@ var author$project$Main$viewSidebarItems = F2(
 												[
 													elm$html$Html$Attributes$class('nav-link pl-0'),
 													elm$html$Html$Attributes$href('#'),
-													elm$html$Html$Events$onClick(author$project$Main$LogoutSubmit)
+													elm$html$Html$Events$onClick(
+													author$project$Main$LogoutSubmit(true))
 												]),
 											_List_fromArray(
 												[
