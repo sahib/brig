@@ -30,14 +30,12 @@ require (
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/gox v0.4.0 // indirect
-	github.com/mitchellh/iochan v1.0.0 // indirect
 	github.com/multiformats/go-multiaddr v1.4.0 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.2.5 // indirect
 	github.com/multiformats/go-multiaddr-net v1.7.1 // indirect
 	github.com/multiformats/go-multihash v1.0.10
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
-	github.com/onsi/ginkgo v1.7.0 // indirect
+	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/phogolabs/parcello v0.8.1
@@ -55,12 +53,12 @@ require (
 	github.com/vbauerster/mpb v3.3.4+incompatible
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0
 	github.com/xrash/smetrics v0.0.0-20170218160415-a3153f7040e9
-	golang.org/x/crypto v0.0.0-20190225124518-7f87c0fbb88b
-	golang.org/x/net v0.0.0-20190226215741-afe646ca25a4
-	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
-	golang.org/x/sys v0.0.0-20190226215855-775f8194d0f9 // indirect
+	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95
+	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6 // indirect
+	golang.org/x/sys v0.0.0-20190309122539-980fc434d28e // indirect
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
-	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	zombiezen.com/go/capnproto2 v2.17.0+incompatible
