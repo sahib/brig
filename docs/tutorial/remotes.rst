@@ -245,6 +245,15 @@ aliases for most subcommands:
 
     $ brig rmt f a bob /videos
 
+In some cases you might not trust your peers with some folders or don't want to
+have modifications in that specific folder. For this case, ``brig`` supports
+adding a folder as ``--read-only``. Other remotes still will have access to the
+folder, but whenever we sync with them the changes they made are ignored.
+You can add a read-only folder by adding the ``--read-only`` switch to the command above:
+
+.. code-block:: bash
+
+   $ brig rmt f a bob /videos --read-only
 
 Conflicts
 ---------
@@ -264,6 +273,17 @@ You can configure this behavior by using ``brig cfg``:
 .. code-block:: bash
 
    $ brig cfg set fs.sync.conflict_strategy marker
+
+In some cases this might not be enough though. Sometimes you might want to say
+»I trust this remote, always accept their changes«. You can do this by setting
+the conflict strategy per remote. If no specific conflict strategy is set,
+``fs.sync.conflict_strategy`` is used. You can set the strategy by using a subcommand
+of the ``brig remote`` family:
+
+.. code-block:: bash
+
+   # Always take the versions of bob on conflicts:
+   $ brig remote conflict-strategy embrace bob
 
 Automatic Updating
 ------------------
@@ -304,3 +324,31 @@ was updated automatically by looking at ``brig log``:
          -       Sun Dec 16 18:24:27 CET 2018 • (curr)
     W1kGKKviWCBY Sun Dec 16 18:24:27 CET 2018 sync due to notification from »bob« (head)
     ...
+
+Pushing changes
+---------------
+
+As you saw above, doing a ``brig sync`` won't do a bidirectional
+synchronisation. It will only fetch metadata from the remote and modify our
+local state with it. In some cases you might want to push data to a remote
+- especially when it is on one of your machines and you use for example as
+archival repository. By default pushing to a remote is rejected. You can enable
+it on a per-remote basis with this command out of the ``brig remote`` family of
+commands:
+
+.. code-block:: bash
+
+   # Allow bob and charlie to auto push to us.
+   $ brig remote auto-push enable bob charlie
+
+
+Now either ``bob`` or ``charlie`` can do this from their machines:
+
+
+.. code-block:: bash
+
+   # bob's machine:
+   $ brig push ali
+
+
+This will simply ask ``ali`` to do a sync with ``bob``.

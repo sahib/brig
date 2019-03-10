@@ -4,8 +4,13 @@ Using the gateway
 Gateway Screenshots
 ~~~~~~~~~~~~~~~~~~~
 
+The gateway UI consists of several tabs.
+
 Login screen
 ^^^^^^^^^^^^
+
+Allows you to login. You can also come back here to change the user.
+It is also possible to login anonymously, as you will see below.
 
 .. image:: ../_static/gateway-login.png
     :alt: Gateway login screen
@@ -14,12 +19,17 @@ Login screen
 File Browser
 ^^^^^^^^^^^^
 
+The main view. Lists the directory tree and file attributes.
+Allows for modification, uploading and everything what you'd expect.
+
 .. image:: ../_static/gateway-files.png
     :alt: Gateway files view
     :width: 66%
 
 Changelog View
 ^^^^^^^^^^^^^^
+
+A list of commits. You are able to jump back to a specific commit.
 
 .. image:: ../_static/gateway-changelog.png
     :alt: Gateway changelog view
@@ -28,6 +38,8 @@ Changelog View
 Trashbin
 ^^^^^^^^
 
+A list of deleted files. If you deleted something you will be able to get it back here.
+
 .. image:: ../_static/gateway-trashbin.png
     :alt: Gateway trashbin view
     :width: 66%
@@ -35,12 +47,17 @@ Trashbin
 Remote List
 ^^^^^^^^^^^
 
+If your user is privileged enough, you can see and edit the list of remotes and
+adjust settings in it.
+
 .. image:: ../_static/gateway-remotes.png
     :alt: Gateway remotes view
     :width: 66%
 
 Remote Add Dialog
 ^^^^^^^^^^^^^^^^^
+
+A sample dialog.
 
 .. image:: ../_static/gateway-add-remote.png
     :alt: Gateway add remote view
@@ -258,3 +275,33 @@ will be redirected directly to port 443.
     $ brig cfg set gateway.port 443
     $ brig cfg set gateway.cert.redirect.enabled true
     $ brig cfg set gateway.cert.redirect.http_port 80
+
+Allowing anonymous access
+-------------------------
+
+If you want to run a public gateway (for example for a group of friends), then
+you might want to enable anonymous access. In this mode you will be logged in
+right away to the gateway without facing the login screen. You still have the
+option to go to the login screen and become another user.
+
+You can enable the anonymous mode like this:
+
+.. code-block:: bash
+
+    $ brig cfg set gateway.auth.anon_allowed true
+
+Additionally you have to create an ``anon`` user. This allows you to define
+what rights the anonymous users have and what folders they may access:
+
+.. code-block:: bash
+
+   # Give the anonymous users only access to /public and don't let them modify anything:
+   $ brig gw u add anon anon --role-viewer /public
+
+
+If you want to change the name of the ``anon`` user to something else (for whatever reason) you can do so by
+setting the ``auth.anon_user`` variable. You also have to re-add the user above with the new name.
+
+.. code-block:: bash
+
+    $ brig cfg set gateway.auth.anon_user some_other_anon_name_that_is_not_used
