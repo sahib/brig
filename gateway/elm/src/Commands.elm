@@ -3,12 +3,13 @@ module Commands exposing
     , Diff
     , DiffPair
     , Entry
+    , Folder
     , HistoryEntry
     , ListResponse
     , Log
     , LoginResponse
     , Remote
-    , Self
+    , SelfResponse
     , WhoamiResponse
     , diffChangeCount
     , doCopy
@@ -597,14 +598,22 @@ doUndelete toMsg path =
 -- REMOTE LIST
 
 
+type alias Folder =
+    { folder : String
+    , readOnly : Bool
+    }
+
+
 type alias Remote =
     { name : String
-    , folders : List String
+    , folders : List Folder
     , fingerprint : String
     , acceptAutoUpdates : Bool
     , isOnline : Bool
     , isAuthenticated : Bool
     , lastSeen : Time.Posix
+    , acceptPush : Bool
+    , conflictStrategy : String
     }
 
 
@@ -617,6 +626,8 @@ emptyRemote =
     , isOnline = False
     , isAuthenticated = False
     , lastSeen = Time.millisToPosix 0
+    , conflictStrategy = ""
+    , acceptPush = False
     }
 
 
@@ -629,12 +640,21 @@ decodeRemote : D.Decoder Remote
 decodeRemote =
     D.succeed Remote
         |> DP.required "name" D.string
-        |> DP.required "folders" (D.oneOf [ D.list D.string, D.null [] ])
+        |> DP.required "folders" (D.oneOf [ D.list decodeFolder, D.null [] ])
         |> DP.required "fingerprint" D.string
         |> DP.required "accept_auto_updates" D.bool
         |> DP.required "is_online" D.bool
         |> DP.required "is_authenticated" D.bool
         |> DP.required "last_seen" iso8601ToPosix
+        |> DP.required "accept_push" D.bool
+        |> DP.required "conflict_strategy" D.string
+
+
+decodeFolder : D.Decoder Folder
+decodeFolder =
+    D.succeed Folder
+        |> DP.required "folder" D.string
+        |> DP.required "read_only" D.bool
 
 
 doRemoteList : (Result Http.Error (List Remote) -> msg) -> Cmd msg
@@ -711,9 +731,19 @@ doRemoteSync toMsg name =
 type alias RemoteAddQuery =
     { name : String
     , fingerprint : String
-    , folders : List String
+    , folders : List Folder
     , doAutoUpdate : Bool
+    , acceptPush : Bool
+    , conflictStrategy : String
     }
+
+
+encodeFolder : Folder -> E.Value
+encodeFolder f =
+    E.object
+        [ ( "folder", E.string f.folder )
+        , ( "read_only", E.bool f.readOnly )
+        ]
 
 
 encodeRemoteAddQuery : RemoteAddQuery -> E.Value
@@ -722,7 +752,9 @@ encodeRemoteAddQuery q =
         [ ( "name", E.string q.name )
         , ( "fingerprint", E.string q.fingerprint )
         , ( "accept_auto_updates", E.bool q.doAutoUpdate )
-        , ( "folders", E.list E.string q.folders )
+        , ( "folders", E.list encodeFolder q.folders )
+        , ( "accept_push", E.bool q.acceptPush )
+        , ( "conflict_strategy", E.string q.conflictStrategy )
         ]
 
 
@@ -731,8 +763,9 @@ decodeRemoteAddQuery =
     D.field "message" D.string
 
 
-doRemoteAdd : (Result Http.Error String -> msg) -> String -> String -> Bool -> List String -> Cmd msg
-doRemoteAdd toMsg name fingerprint doAutoUpdate folders =
+
+doRemoteAdd : (Result Http.Error String -> msg) -> String -> String -> Bool -> Bool -> String -> List Folder -> Cmd msg
+doRemoteAdd toMsg name fingerprint doAutoUpdate acceptPush conflictStrategy folders =
     Http.post
         { url = "/api/v0/remotes/add"
         , body =
@@ -742,6 +775,8 @@ doRemoteAdd toMsg name fingerprint doAutoUpdate folders =
                     , fingerprint = fingerprint
                     , doAutoUpdate = doAutoUpdate
                     , folders = folders
+                    , acceptPush = acceptPush
+                    , conflictStrategy = conflictStrategy
                     }
         , expect = Http.expectJson toMsg decodeRemoteAddQuery
         }
@@ -758,6 +793,8 @@ doRemoteModify toMsg remote =
                     , fingerprint = remote.fingerprint
                     , doAutoUpdate = remote.acceptAutoUpdates
                     , folders = remote.folders
+                    , acceptPush = remote.acceptPush
+                    , conflictStrategy = remote.conflictStrategy
                     }
         , expect = Http.expectJson toMsg decodeRemoteAddQuery
         }
@@ -767,30 +804,38 @@ doRemoteModify toMsg remote =
 -- REMOTE SELF
 
 
-type alias Self =
+type alias SelfResponse =
+    { self : Identity
+    , defaultConflictStrategy : String
+    }
+
+
+type alias Identity =
     { name : String
     , fingerprint : String
     }
 
 
-emptySelf : Self
+emptySelf : SelfResponse
 emptySelf =
-    Self "" ""
+    SelfResponse (Identity "" "") "marker"
 
 
-decodeSelfResponse : D.Decoder Self
+decodeSelfResponse : D.Decoder SelfResponse
 decodeSelfResponse =
-    D.field "self" decodeSelf
+    D.succeed SelfResponse
+        |> DP.required "self" decodeIdentity
+        |> DP.required "default_conflict_strategy" D.string
 
 
-decodeSelf : D.Decoder Self
-decodeSelf =
-    D.succeed Self
+decodeIdentity : D.Decoder Identity
+decodeIdentity =
+    D.succeed Identity
         |> DP.required "name" D.string
         |> DP.required "fingerprint" D.string
 
 
-doSelfQuery : (Result Http.Error Self -> msg) -> Cmd msg
+doSelfQuery : (Result Http.Error SelfResponse -> msg) -> Cmd msg
 doSelfQuery toMsg =
     Http.post
         { url = "/api/v0/remotes/self"

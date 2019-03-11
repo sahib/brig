@@ -54,6 +54,11 @@
     color: red;
 }
 
+#remote-add-conflict-dropdown{
+    padding-left: 2px !important;
+    padding-bottom: 4px !important;
+}
+
 /* ---------------- */
 
 

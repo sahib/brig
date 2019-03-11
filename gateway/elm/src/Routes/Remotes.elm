@@ -48,12 +48,13 @@ type alias Model =
     { key : Nav.Key
     , zone : Time.Zone
     , state : State
-    , self : Commands.Self
+    , self : Commands.SelfResponse
     , alert : Util.AlertState
     , remoteAddState : RemoteAdd.Model
     , remoteRemoveState : RemoteRemove.Model
     , remoteFoldersState : RemoteFolders.Model
-    , dropdowns : Dict.Dict String Dropdown.State
+    , actionDropdowns : Dict.Dict String Dropdown.State
+    , conflictDropdowns : Dict.Dict String Dropdown.State
     , rights : List String
     }
 
@@ -68,7 +69,8 @@ newModel key zone rights =
     , remoteAddState = RemoteAdd.newModel
     , remoteRemoveState = RemoteRemove.newModel
     , remoteFoldersState = RemoteFolders.newModel
-    , dropdowns = Dict.empty
+    , actionDropdowns = Dict.empty
+    , conflictDropdowns = Dict.empty
     , alert = Util.defaultAlertState
     }
 
@@ -80,15 +82,18 @@ newModel key zone rights =
 type Msg
     = GotRemoteListResponse (Result Http.Error (List Commands.Remote))
     | GotSyncResponse (Result Http.Error String)
-    | GotSelfResponse (Result Http.Error Commands.Self)
+    | GotSelfResponse (Result Http.Error Commands.SelfResponse)
     | GotRemoteModifyResponse (Result Http.Error String)
     | SyncClicked String
     | AutoUpdateToggled Commands.Remote Bool
+    | AcceptPushToggled Commands.Remote Bool
+    | ConflictStrategyToggled Commands.Remote String
       -- Sub messages:
     | RemoteAddMsg RemoteAdd.Msg
     | RemoteRemoveMsg RemoteRemove.Msg
     | RemoteFolderMsg RemoteFolders.Msg
-    | DropdownMsg String Dropdown.State
+    | ActionDropdownMsg String Dropdown.State
+    | ConflictDropdownMsg String Dropdown.State
     | AlertMsg Alert.Visibility
 
 
@@ -151,14 +156,23 @@ update msg model =
                 Err err ->
                     showAlert model 20 Util.Danger ("Failed to get information about ourselves: " ++ Util.httpErrorToString err)
 
-        DropdownMsg name state ->
-            ( { model | dropdowns = Dict.insert name state model.dropdowns }, Cmd.none )
+        ActionDropdownMsg name state ->
+            ( { model | actionDropdowns = Dict.insert name state model.actionDropdowns }, Cmd.none )
+
+        ConflictDropdownMsg name state ->
+            ( { model | conflictDropdowns = Dict.insert name state model.conflictDropdowns }, Cmd.none )
 
         SyncClicked name ->
             ( model, Commands.doRemoteSync GotSyncResponse name )
 
         AutoUpdateToggled remote state ->
             ( model, Commands.doRemoteModify GotRemoteModifyResponse { remote | acceptAutoUpdates = state } )
+
+        AcceptPushToggled remote state ->
+            ( model, Commands.doRemoteModify GotRemoteModifyResponse { remote | acceptPush = state } )
+
+        ConflictStrategyToggled remote state ->
+            ( model, Commands.doRemoteModify GotRemoteModifyResponse { remote | conflictStrategy = state } )
 
         RemoteAddMsg subMsg ->
             let
@@ -198,6 +212,11 @@ viewAutoUpdatesIcon state remote =
     Util.viewToggleSwitch (AutoUpdateToggled remote) "" state
 
 
+viewAcceptPushToggle : Bool -> Commands.Remote -> Html Msg
+viewAcceptPushToggle state remote =
+    Util.viewToggleSwitch (AcceptPushToggled remote) "" state
+
+
 viewRemoteState : Model -> Commands.Remote -> Html Msg
 viewRemoteState model remote =
     if remote.isAuthenticated then
@@ -220,12 +239,12 @@ viewFullFingerprint fingerprint =
         |> span [ class "fingerprint" ]
 
 
-viewDropdown : Model -> Commands.Remote -> Html Msg
-viewDropdown model remote =
+viewActionDropdown : Model -> Commands.Remote -> Html Msg
+viewActionDropdown model remote =
     Dropdown.dropdown
-        (Maybe.withDefault Dropdown.initialState (Dict.get remote.name model.dropdowns))
+        (Maybe.withDefault Dropdown.initialState (Dict.get remote.name model.actionDropdowns))
         { options = [ Dropdown.alignMenuRight ]
-        , toggleMsg = DropdownMsg remote.name
+        , toggleMsg = ActionDropdownMsg remote.name
         , toggleButton =
             Dropdown.toggle
                 [ Button.roleLink ]
@@ -265,6 +284,63 @@ viewDropdown model remote =
         }
 
 
+conflictStrategyToIconName : Model -> String -> String
+conflictStrategyToIconName model strategy =
+    case strategy of
+        "" ->
+            if model.self.defaultConflictStrategy == "" then
+                "fa-question"
+
+            else
+                conflictStrategyToIconName model model.self.defaultConflictStrategy
+
+        "ignore" ->
+            "fa-eject"
+
+        "marker" ->
+            "fa-marker"
+
+        "embrace" ->
+            "fa-handshake"
+
+        _ ->
+            "fa-question"
+
+
+viewConflictDropdown : Model -> Commands.Remote -> Html Msg
+viewConflictDropdown model remote =
+    let
+        isDisabled =
+            not (List.member "fs.edit" model.rights)
+    in
+    Dropdown.dropdown
+        (Maybe.withDefault Dropdown.initialState (Dict.get remote.name model.conflictDropdowns))
+        { options = [ Dropdown.alignMenuRight ]
+        , toggleMsg = ConflictDropdownMsg remote.name
+        , toggleButton =
+            Dropdown.toggle
+                [ Button.roleLink ]
+                [ span [ class "fas", class <| conflictStrategyToIconName model remote.conflictStrategy ] [] ]
+        , items =
+            [ Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled remote "ignore")
+                , disabled isDisabled
+                ]
+                [ span [ class "fas fa-md fa-eject" ] [], text " Ignore" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled remote "marker")
+                , disabled isDisabled
+                ]
+                [ span [ class "fas fa-md fa-marker" ] [], text " Marker" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled remote "embrace")
+                , disabled isDisabled
+                ]
+                [ span [ class "fas fa-md fa-handshake" ] [], text " Embrace" ]
+            ]
+        }
+
+
 viewRemote : Model -> Commands.Remote -> Table.Row Msg
 viewRemote model remote =
     Table.tr []
@@ -283,6 +359,12 @@ viewRemote model remote =
         , Table.td
             []
             [ viewAutoUpdatesIcon remote.acceptAutoUpdates remote ]
+        , Table.td
+            []
+            [ viewAcceptPushToggle remote.acceptPush remote ]
+        , Table.td
+            []
+            [ viewConflictDropdown model remote ]
         , Table.td
             []
             [ Button.button
@@ -305,7 +387,7 @@ viewRemote model remote =
             ]
         , Table.td
             [ Table.cellAttr (class "text-right") ]
-            [ viewDropdown model remote ]
+            [ viewActionDropdown model remote ]
         ]
 
 
@@ -334,6 +416,12 @@ viewRemoteList model remotes =
                     , Table.th
                         [ Table.cellAttr (style "width" "10%") ]
                         [ span [ class "text-muted" ] [ text "Auto Update" ] ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "10%") ]
+                        [ span [ class "text-muted" ] [ text "May Push" ] ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "10%") ]
+                        [ span [ class "text-muted" ] [ text "Conflicts" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "10%") ]
                         [ span [ class "text-muted" ] [ text "Folders" ] ]
@@ -366,10 +454,10 @@ viewSelf model =
         , Grid.col [ Col.xs12, Col.lg8, Col.textAlign Text.alignXsCenter ]
             [ ListGroup.ul
                 [ ListGroup.li []
-                    [ viewMetaRow "Name" (text model.self.name)
+                    [ viewMetaRow "Name" (text model.self.self.name)
                     ]
                 , ListGroup.li []
-                    [ viewMetaRow "Fingerprint" (viewFullFingerprint model.self.fingerprint)
+                    [ viewMetaRow "Fingerprint" (viewFullFingerprint model.self.self.fingerprint)
                     ]
                 ]
             ]
@@ -457,7 +545,12 @@ subscriptions model =
         , Sub.map RemoteFolderMsg <| RemoteFolders.subscriptions model.remoteFoldersState
         , Sub.batch
             (List.map
-                (\( name, state ) -> Dropdown.subscriptions state (DropdownMsg name))
-                (Dict.toList model.dropdowns)
+                (\( name, state ) -> Dropdown.subscriptions state (ActionDropdownMsg name))
+                (Dict.toList model.actionDropdowns)
+            )
+        , Sub.batch
+            (List.map
+                (\( name, state ) -> Dropdown.subscriptions state (ConflictDropdownMsg name))
+                (Dict.toList model.conflictDropdowns)
             )
         ]

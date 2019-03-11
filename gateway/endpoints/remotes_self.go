@@ -19,8 +19,9 @@ func NewRemotesSelfHandler(s *State) *RemoteSelfHandler {
 
 // RemoteSelfResponse is the data being sent to this endpoint.
 type RemoteSelfResponse struct {
-	Success bool                `json:"success"`
-	Self    remotesapi.Identity `json:"self"`
+	Success                 bool                `json:"success"`
+	Self                    remotesapi.Identity `json:"self"`
+	DefaultConflictStrategy string              `json:"default_conflict_strategy"`
 }
 
 func (rh *RemoteSelfHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +36,8 @@ func (rh *RemoteSelfHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonify(w, http.StatusOK, RemoteSelfResponse{
-		Success: true,
-		Self:    self,
+		Success:                 true,
+		Self:                    self,
+		DefaultConflictStrategy: "marker",
 	})
 }

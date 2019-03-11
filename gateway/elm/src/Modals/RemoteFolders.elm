@@ -20,11 +20,13 @@ import Bootstrap.Modal as Modal
 import Bootstrap.Text as Text
 import Browser.Events as Events
 import Commands
+import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Decode as D
+import List.Extra as LE
 import Modals.MoveCopy as MoveCopy
 import Set
 import Util
@@ -48,6 +50,7 @@ type alias Model =
 type Msg
     = ModalShow Commands.Remote
     | FolderRemove String
+    | ReadOnlyChanged String Bool
     | GotResponse (Result Http.Error String)
     | AnimateModal Modal.Visibility
     | AlertMsg Alert.Visibility
@@ -81,9 +84,9 @@ newModelWithState state remote =
 -- UPDATE
 
 
-submit : Model -> Cmd Msg
-submit model =
-    Commands.doRemoteModify GotResponse model.remote
+submit : Commands.Remote -> Cmd Msg
+submit remote =
+    Commands.doRemoteModify GotResponse remote
 
 
 fixFolder : String -> String
@@ -98,15 +101,15 @@ addFolder model folder =
             model.remote
 
         cleanFolder =
-            fixFolder folder
+            Commands.Folder (fixFolder folder) False
 
         newRemote =
-            { oldRemote | folders = List.sort <| cleanFolder :: oldRemote.folders }
+            { oldRemote | folders = List.sortBy .folder <| cleanFolder :: oldRemote.folders }
 
         upModel =
             { model | remote = newRemote }
     in
-    ( upModel, submit upModel )
+    ( upModel, submit upModel.remote )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -127,12 +130,12 @@ update msg model =
                     model.remote
 
                 newRemote =
-                    { oldRemote | folders = List.filter (\f -> f /= folder) oldRemote.folders }
+                    { oldRemote | folders = List.filter (\f -> f.folder /= folder) oldRemote.folders }
 
                 upModel =
                     { model | remote = newRemote }
             in
-            ( upModel, submit upModel )
+            ( upModel, submit upModel.remote )
 
         AnimateModal visibility ->
             ( { model | modal = visibility }, Cmd.none )
@@ -162,6 +165,27 @@ update msg model =
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
 
+        ReadOnlyChanged path state ->
+            let
+                oldRemote =
+                    model.remote
+
+                newRemote =
+                    { oldRemote
+                        | folders =
+                            List.map
+                                (\f ->
+                                    if f.folder == path then
+                                        { f | readOnly = state }
+
+                                    else
+                                        f
+                                )
+                                model.remote.folders
+                    }
+            in
+            ( { model | remote = newRemote }, submit newRemote )
+
 
 
 -- VIEW
@@ -171,19 +195,22 @@ viewRow : Html Msg -> Html Msg -> Html Msg -> Html Msg
 viewRow a b c =
     Grid.row []
         [ Grid.col [ Col.xs1, Col.textAlign Text.alignXsRight ] [ a ]
-        , Grid.col [ Col.xs10, Col.textAlign Text.alignXsLeft ] [ b ]
-        , Grid.col [ Col.xs1, Col.textAlign Text.alignXsLeft ] [ c ]
+        , Grid.col [ Col.xs9, Col.textAlign Text.alignXsLeft ] [ b ]
+        , Grid.col [ Col.xs2, Col.textAlign Text.alignXsLeft ] [ c ]
         ]
 
 
-viewFolder : String -> Html Msg
+viewFolder : Commands.Folder -> Html Msg
 viewFolder folder =
     viewRow
         (span [ class "fas fa-md fa-folder text-muted" ] [])
-        (text folder)
-        (Button.button
-            [ Button.attrs [ class "close", onClick <| FolderRemove folder ] ]
-            [ span [ class "fas fa-xs fa-times text-muted" ] []
+        (text folder.folder)
+        (span []
+            [ Util.viewToggleSwitch (ReadOnlyChanged folder.folder) "" folder.readOnly
+            , Button.button
+                [ Button.attrs [ class "close", onClick <| FolderRemove folder.folder ] ]
+                [ span [ class "fas fa-xs fa-times text-muted" ] []
+                ]
             ]
         )
 
@@ -192,7 +219,7 @@ viewFolders : Commands.Remote -> Html Msg
 viewFolders remote =
     let
         folders =
-            List.sort (Set.toList (Set.fromList remote.folders))
+            LE.uniqueBy .folder remote.folders
     in
     if List.length folders <= 0 then
         span
@@ -205,8 +232,11 @@ viewFolders remote =
             ]
 
     else
-        ListGroup.ul
-            (List.map (\f -> ListGroup.li [] [ viewFolder f ]) folders)
+        div []
+            [ viewRow (text "") (text "") (span [ class "small text-muted" ] [ text "read only?" ])
+            , ListGroup.ul
+                (List.map (\f -> ListGroup.li [] [ viewFolder f ]) folders)
+            ]
 
 
 viewRemoteFoldersContent : Model -> List (Grid.Column Msg)

@@ -61,8 +61,14 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 	extRmt.Name = rmt.Name
 	extRmt.Fingerprint = string(rmt.Fingerprint)
 	extRmt.AcceptAutoUpdates = rmt.AcceptAutoUpdates
+	extRmt.AcceptPush = rmt.AcceptPush
+	extRmt.ConflictStrategy = rmt.ConflictStrategy
+
 	for _, folder := range rmt.Folders {
-		extRmt.Folders = append(extRmt.Folders, folder.Folder)
+		extRmt.Folders = append(extRmt.Folders, remotesapi.Folder{
+			Folder:   folder.Folder,
+			ReadOnly: folder.ReadOnly,
+		})
 	}
 
 	psrv := a.base.peerServer
@@ -97,9 +103,10 @@ func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
 	}
 
 	folders := []repo.Folder{}
-	for _, path := range rm.Folders {
+	for _, folder := range rm.Folders {
 		folders = append(folders, repo.Folder{
-			Folder: path,
+			Folder:   folder.Folder,
+			ReadOnly: folder.ReadOnly,
 		})
 	}
 

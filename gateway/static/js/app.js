@@ -7324,6 +7324,9 @@ var author$project$Modals$RemoteAdd$AlertMsg = function (a) {
 var author$project$Modals$RemoteAdd$AnimateModal = function (a) {
 	return {$: 'AnimateModal', a: a};
 };
+var author$project$Modals$RemoteAdd$ConflictDropdownMsg = function (a) {
+	return {$: 'ConflictDropdownMsg', a: a};
+};
 var author$project$Modals$RemoteAdd$KeyPress = function (a) {
 	return {$: 'KeyPress', a: a};
 };
@@ -7337,7 +7340,8 @@ var author$project$Modals$RemoteAdd$subscriptions = function (model) {
 				A2(
 					elm$json$Json$Decode$map,
 					author$project$Modals$RemoteAdd$KeyPress,
-					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
+					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string))),
+				A2(rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions, model.conflictDropdown, author$project$Modals$RemoteAdd$ConflictDropdownMsg)
 			]));
 };
 var author$project$Modals$RemoteFolders$AlertMsg = function (a) {
@@ -7376,12 +7380,16 @@ var author$project$Modals$RemoteRemove$subscriptions = function (model) {
 					A2(elm$json$Json$Decode$field, 'key', elm$json$Json$Decode$string)))
 			]));
 };
+var author$project$Routes$Remotes$ActionDropdownMsg = F2(
+	function (a, b) {
+		return {$: 'ActionDropdownMsg', a: a, b: b};
+	});
 var author$project$Routes$Remotes$AlertMsg = function (a) {
 	return {$: 'AlertMsg', a: a};
 };
-var author$project$Routes$Remotes$DropdownMsg = F2(
+var author$project$Routes$Remotes$ConflictDropdownMsg = F2(
 	function (a, b) {
-		return {$: 'DropdownMsg', a: a, b: b};
+		return {$: 'ConflictDropdownMsg', a: a, b: b};
 	});
 var author$project$Routes$Remotes$RemoteAddMsg = function (a) {
 	return {$: 'RemoteAddMsg', a: a};
@@ -7418,9 +7426,21 @@ var author$project$Routes$Remotes$subscriptions = function (model) {
 						return A2(
 							rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions,
 							state,
-							author$project$Routes$Remotes$DropdownMsg(name));
+							author$project$Routes$Remotes$ActionDropdownMsg(name));
 					},
-					elm$core$Dict$toList(model.dropdowns)))
+					elm$core$Dict$toList(model.actionDropdowns))),
+				elm$core$Platform$Sub$batch(
+				A2(
+					elm$core$List$map,
+					function (_n1) {
+						var name = _n1.a;
+						var state = _n1.b;
+						return A2(
+							rundis$elm_bootstrap$Bootstrap$Dropdown$subscriptions,
+							state,
+							author$project$Routes$Remotes$ConflictDropdownMsg(name));
+					},
+					elm$core$Dict$toList(model.conflictDropdowns)))
 			]));
 };
 var author$project$Websocket$incoming = _Platform_incomingPort('incoming', elm$json$Json$Decode$string);
@@ -8346,18 +8366,27 @@ var author$project$Routes$Ls$newModel = F3(
 			zone: elm$time$Time$utc
 		};
 	});
-var author$project$Commands$Self = F2(
+var author$project$Commands$Identity = F2(
 	function (name, fingerprint) {
 		return {fingerprint: fingerprint, name: name};
 	});
-var author$project$Commands$emptySelf = A2(author$project$Commands$Self, '', '');
+var author$project$Commands$SelfResponse = F2(
+	function (self, defaultConflictStrategy) {
+		return {defaultConflictStrategy: defaultConflictStrategy, self: self};
+	});
+var author$project$Commands$emptySelf = A2(
+	author$project$Commands$SelfResponse,
+	A2(author$project$Commands$Identity, '', ''),
+	'marker');
 var author$project$Modals$RemoteAdd$Ready = {$: 'Ready'};
 var author$project$Modals$RemoteAdd$newModelWithState = function (state) {
-	return {alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, doAutoUdate: false, fingerprint: '', modal: state, name: '', state: author$project$Modals$RemoteAdd$Ready};
+	return {acceptPush: false, alert: rundis$elm_bootstrap$Bootstrap$Alert$shown, conflictDropdown: rundis$elm_bootstrap$Bootstrap$Dropdown$initialState, conflictStrategy: '', doAutoUdate: false, fingerprint: '', modal: state, name: '', state: author$project$Modals$RemoteAdd$Ready};
 };
 var author$project$Modals$RemoteAdd$newModel = author$project$Modals$RemoteAdd$newModelWithState(rundis$elm_bootstrap$Bootstrap$Modal$hidden);
 var author$project$Commands$emptyRemote = {
 	acceptAutoUpdates: false,
+	acceptPush: false,
+	conflictStrategy: '',
 	fingerprint: '',
 	folders: _List_Nil,
 	isAuthenticated: false,
@@ -8380,12 +8409,25 @@ var author$project$Modals$RemoteRemove$newModel = A2(author$project$Modals$Remot
 var author$project$Routes$Remotes$Loading = {$: 'Loading'};
 var author$project$Routes$Remotes$newModel = F3(
 	function (key, zone, rights) {
-		return {alert: author$project$Util$defaultAlertState, dropdowns: elm$core$Dict$empty, key: key, remoteAddState: author$project$Modals$RemoteAdd$newModel, remoteFoldersState: author$project$Modals$RemoteFolders$newModel, remoteRemoveState: author$project$Modals$RemoteRemove$newModel, rights: rights, self: author$project$Commands$emptySelf, state: author$project$Routes$Remotes$Loading, zone: zone};
+		return {actionDropdowns: elm$core$Dict$empty, alert: author$project$Util$defaultAlertState, conflictDropdowns: elm$core$Dict$empty, key: key, remoteAddState: author$project$Modals$RemoteAdd$newModel, remoteFoldersState: author$project$Modals$RemoteFolders$newModel, remoteRemoveState: author$project$Modals$RemoteRemove$newModel, rights: rights, self: author$project$Commands$emptySelf, state: author$project$Routes$Remotes$Loading, zone: zone};
 	});
-var author$project$Commands$Remote = F7(
-	function (name, folders, fingerprint, acceptAutoUpdates, isOnline, isAuthenticated, lastSeen) {
-		return {acceptAutoUpdates: acceptAutoUpdates, fingerprint: fingerprint, folders: folders, isAuthenticated: isAuthenticated, isOnline: isOnline, lastSeen: lastSeen, name: name};
+var author$project$Commands$Remote = F9(
+	function (name, folders, fingerprint, acceptAutoUpdates, isOnline, isAuthenticated, lastSeen, acceptPush, conflictStrategy) {
+		return {acceptAutoUpdates: acceptAutoUpdates, acceptPush: acceptPush, conflictStrategy: conflictStrategy, fingerprint: fingerprint, folders: folders, isAuthenticated: isAuthenticated, isOnline: isOnline, lastSeen: lastSeen, name: name};
 	});
+var author$project$Commands$Folder = F2(
+	function (folder, readOnly) {
+		return {folder: folder, readOnly: readOnly};
+	});
+var author$project$Commands$decodeFolder = A3(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'read_only',
+	elm$json$Json$Decode$bool,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'folder',
+		elm$json$Json$Decode$string,
+		elm$json$Json$Decode$succeed(author$project$Commands$Folder)));
 var elm$json$Json$Decode$fail = _Json_fail;
 var elm$regex$Regex$Match = F4(
 	function (match, index, number, submatches) {
@@ -8808,38 +8850,46 @@ var elm$json$Json$Decode$null = _Json_decodeNull;
 var elm$json$Json$Decode$oneOf = _Json_oneOf;
 var author$project$Commands$decodeRemote = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'last_seen',
-	author$project$Commands$iso8601ToPosix,
+	'conflict_strategy',
+	elm$json$Json$Decode$string,
 	A3(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'is_authenticated',
+		'accept_push',
 		elm$json$Json$Decode$bool,
 		A3(
 			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'is_online',
-			elm$json$Json$Decode$bool,
+			'last_seen',
+			author$project$Commands$iso8601ToPosix,
 			A3(
 				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'accept_auto_updates',
+				'is_authenticated',
 				elm$json$Json$Decode$bool,
 				A3(
 					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-					'fingerprint',
-					elm$json$Json$Decode$string,
+					'is_online',
+					elm$json$Json$Decode$bool,
 					A3(
 						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-						'folders',
-						elm$json$Json$Decode$oneOf(
-							_List_fromArray(
-								[
-									elm$json$Json$Decode$list(elm$json$Json$Decode$string),
-									elm$json$Json$Decode$null(_List_Nil)
-								])),
+						'accept_auto_updates',
+						elm$json$Json$Decode$bool,
 						A3(
 							NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-							'name',
+							'fingerprint',
 							elm$json$Json$Decode$string,
-							elm$json$Json$Decode$succeed(author$project$Commands$Remote))))))));
+							A3(
+								NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+								'folders',
+								elm$json$Json$Decode$oneOf(
+									_List_fromArray(
+										[
+											elm$json$Json$Decode$list(author$project$Commands$decodeFolder),
+											elm$json$Json$Decode$null(_List_Nil)
+										])),
+								A3(
+									NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+									'name',
+									elm$json$Json$Decode$string,
+									elm$json$Json$Decode$succeed(author$project$Commands$Remote))))))))));
 var author$project$Commands$decodeRemoteListResponse = A2(
 	elm$json$Json$Decode$field,
 	'remotes',
@@ -8852,7 +8902,7 @@ var author$project$Commands$doRemoteList = function (toMsg) {
 			url: '/api/v0/remotes/list'
 		});
 };
-var author$project$Commands$decodeSelf = A3(
+var author$project$Commands$decodeIdentity = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'fingerprint',
 	elm$json$Json$Decode$string,
@@ -8860,8 +8910,16 @@ var author$project$Commands$decodeSelf = A3(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 		'name',
 		elm$json$Json$Decode$string,
-		elm$json$Json$Decode$succeed(author$project$Commands$Self)));
-var author$project$Commands$decodeSelfResponse = A2(elm$json$Json$Decode$field, 'self', author$project$Commands$decodeSelf);
+		elm$json$Json$Decode$succeed(author$project$Commands$Identity)));
+var author$project$Commands$decodeSelfResponse = A3(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'default_conflict_strategy',
+	elm$json$Json$Decode$string,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'self',
+		author$project$Commands$decodeIdentity,
+		elm$json$Json$Decode$succeed(author$project$Commands$SelfResponse)));
 var author$project$Commands$doSelfQuery = function (toMsg) {
 	return elm$http$Http$post(
 		{
@@ -11117,6 +11175,18 @@ var author$project$Routes$Ls$update = F2(
 	});
 var author$project$Commands$decodeRemoteAddQuery = A2(elm$json$Json$Decode$field, 'message', elm$json$Json$Decode$string);
 var elm$json$Json$Encode$bool = _Json_wrap;
+var author$project$Commands$encodeFolder = function (f) {
+	return elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'folder',
+				elm$json$Json$Encode$string(f.folder)),
+				_Utils_Tuple2(
+				'read_only',
+				elm$json$Json$Encode$bool(f.readOnly))
+			]));
+};
 var author$project$Commands$encodeRemoteAddQuery = function (q) {
 	return elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -11132,7 +11202,13 @@ var author$project$Commands$encodeRemoteAddQuery = function (q) {
 				elm$json$Json$Encode$bool(q.doAutoUpdate)),
 				_Utils_Tuple2(
 				'folders',
-				A2(elm$json$Json$Encode$list, elm$json$Json$Encode$string, q.folders))
+				A2(elm$json$Json$Encode$list, author$project$Commands$encodeFolder, q.folders)),
+				_Utils_Tuple2(
+				'accept_push',
+				elm$json$Json$Encode$bool(q.acceptPush)),
+				_Utils_Tuple2(
+				'conflict_strategy',
+				elm$json$Json$Encode$string(q.conflictStrategy))
 			]));
 };
 var author$project$Commands$doRemoteModify = F2(
@@ -11141,7 +11217,7 @@ var author$project$Commands$doRemoteModify = F2(
 			{
 				body: elm$http$Http$jsonBody(
 					author$project$Commands$encodeRemoteAddQuery(
-						{doAutoUpdate: remote.acceptAutoUpdates, fingerprint: remote.fingerprint, folders: remote.folders, name: remote.name})),
+						{acceptPush: remote.acceptPush, conflictStrategy: remote.conflictStrategy, doAutoUpdate: remote.acceptAutoUpdates, fingerprint: remote.fingerprint, folders: remote.folders, name: remote.name})),
 				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeRemoteAddQuery),
 				url: '/api/v0/remotes/modify'
 			});
@@ -11173,13 +11249,13 @@ var author$project$Commands$doRemoteSync = F2(
 var author$project$Modals$RemoteAdd$Fail = function (a) {
 	return {$: 'Fail', a: a};
 };
-var author$project$Commands$doRemoteAdd = F5(
-	function (toMsg, name, fingerprint, doAutoUpdate, folders) {
+var author$project$Commands$doRemoteAdd = F7(
+	function (toMsg, name, fingerprint, doAutoUpdate, acceptPush, conflictStrategy, folders) {
 		return elm$http$Http$post(
 			{
 				body: elm$http$Http$jsonBody(
 					author$project$Commands$encodeRemoteAddQuery(
-						{doAutoUpdate: doAutoUpdate, fingerprint: fingerprint, folders: folders, name: name})),
+						{acceptPush: acceptPush, conflictStrategy: conflictStrategy, doAutoUpdate: doAutoUpdate, fingerprint: fingerprint, folders: folders, name: name})),
 				expect: A2(elm$http$Http$expectJson, toMsg, author$project$Commands$decodeRemoteAddQuery),
 				url: '/api/v0/remotes/add'
 			});
@@ -11188,7 +11264,7 @@ var author$project$Modals$RemoteAdd$GotResponse = function (a) {
 	return {$: 'GotResponse', a: a};
 };
 var author$project$Modals$RemoteAdd$submit = function (model) {
-	return A5(author$project$Commands$doRemoteAdd, author$project$Modals$RemoteAdd$GotResponse, model.name, model.fingerprint, model.doAutoUdate, _List_Nil);
+	return A7(author$project$Commands$doRemoteAdd, author$project$Modals$RemoteAdd$GotResponse, model.name, model.fingerprint, model.doAutoUdate, model.acceptPush, model.conflictStrategy, _List_Nil);
 };
 var author$project$Modals$RemoteAdd$update = F2(
 	function (msg, model) {
@@ -11217,6 +11293,13 @@ var author$project$Modals$RemoteAdd$update = F2(
 					_Utils_update(
 						model,
 						{doAutoUdate: doAutoUdate}),
+					elm$core$Platform$Cmd$none);
+			case 'AcceptPushChanged':
+				var acceptPush = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{acceptPush: acceptPush}),
 					elm$core$Platform$Cmd$none);
 			case 'GotResponse':
 				var result = msg.a;
@@ -11261,6 +11344,20 @@ var author$project$Modals$RemoteAdd$update = F2(
 						model,
 						{alert: vis}),
 					elm$core$Platform$Cmd$none);
+			case 'ConflictDropdownMsg':
+				var state = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{conflictDropdown: state}),
+					elm$core$Platform$Cmd$none);
+			case 'ConflictStrategyChanged':
+				var state = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{conflictStrategy: state}),
+					elm$core$Platform$Cmd$none);
 			default:
 				var key = msg.a;
 				if (_Utils_eq(model.modal, rundis$elm_bootstrap$Bootstrap$Modal$hidden)) {
@@ -11288,20 +11385,24 @@ var author$project$Modals$RemoteFolders$fixFolder = function (path) {
 var author$project$Modals$RemoteFolders$GotResponse = function (a) {
 	return {$: 'GotResponse', a: a};
 };
-var author$project$Modals$RemoteFolders$submit = function (model) {
-	return A2(author$project$Commands$doRemoteModify, author$project$Modals$RemoteFolders$GotResponse, model.remote);
-};
-var elm$core$List$sort = function (xs) {
-	return A2(elm$core$List$sortBy, elm$core$Basics$identity, xs);
+var author$project$Modals$RemoteFolders$submit = function (remote) {
+	return A2(author$project$Commands$doRemoteModify, author$project$Modals$RemoteFolders$GotResponse, remote);
 };
 var author$project$Modals$RemoteFolders$addFolder = F2(
 	function (model, folder) {
 		var oldRemote = model.remote;
-		var cleanFolder = author$project$Modals$RemoteFolders$fixFolder(folder);
+		var cleanFolder = A2(
+			author$project$Commands$Folder,
+			author$project$Modals$RemoteFolders$fixFolder(folder),
+			false);
 		var newRemote = _Utils_update(
 			oldRemote,
 			{
-				folders: elm$core$List$sort(
+				folders: A2(
+					elm$core$List$sortBy,
+					function ($) {
+						return $.folder;
+					},
 					A2(elm$core$List$cons, cleanFolder, oldRemote.folders))
 			});
 		var upModel = _Utils_update(
@@ -11309,7 +11410,7 @@ var author$project$Modals$RemoteFolders$addFolder = F2(
 			{remote: newRemote});
 		return _Utils_Tuple2(
 			upModel,
-			author$project$Modals$RemoteFolders$submit(upModel));
+			author$project$Modals$RemoteFolders$submit(upModel.remote));
 	});
 var author$project$Modals$RemoteFolders$update = F2(
 	function (msg, model) {
@@ -11342,7 +11443,7 @@ var author$project$Modals$RemoteFolders$update = F2(
 						folders: A2(
 							elm$core$List$filter,
 							function (f) {
-								return !_Utils_eq(f, folder);
+								return !_Utils_eq(f.folder, folder);
 							},
 							oldRemote.folders)
 					});
@@ -11351,7 +11452,7 @@ var author$project$Modals$RemoteFolders$update = F2(
 					{remote: newRemote});
 				return _Utils_Tuple2(
 					upModel,
-					author$project$Modals$RemoteFolders$submit(upModel));
+					author$project$Modals$RemoteFolders$submit(upModel.remote));
 			case 'AnimateModal':
 				var visibility = msg.a;
 				return _Utils_Tuple2(
@@ -11392,13 +11493,34 @@ var author$project$Modals$RemoteFolders$update = F2(
 						model,
 						{filter: '', modal: rundis$elm_bootstrap$Bootstrap$Modal$hidden}),
 					elm$core$Platform$Cmd$none);
-			default:
+			case 'AlertMsg':
 				var vis = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{alert: vis}),
 					elm$core$Platform$Cmd$none);
+			default:
+				var path = msg.a;
+				var state = msg.b;
+				var oldRemote = model.remote;
+				var newRemote = _Utils_update(
+					oldRemote,
+					{
+						folders: A2(
+							elm$core$List$map,
+							function (f) {
+								return _Utils_eq(f.folder, path) ? _Utils_update(
+									f,
+									{readOnly: state}) : f;
+							},
+							model.remote.folders)
+					});
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{remote: newRemote}),
+					author$project$Modals$RemoteFolders$submit(newRemote));
 		}
 	});
 var author$project$Modals$RemoteRemove$Fail = function (a) {
@@ -11598,14 +11720,24 @@ var author$project$Routes$Remotes$update = F2(
 						author$project$Util$Danger,
 						'Failed to get information about ourselves: ' + author$project$Util$httpErrorToString(err));
 				}
-			case 'DropdownMsg':
+			case 'ActionDropdownMsg':
 				var name = msg.a;
 				var state = msg.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							dropdowns: A3(elm$core$Dict$insert, name, state, model.dropdowns)
+							actionDropdowns: A3(elm$core$Dict$insert, name, state, model.actionDropdowns)
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'ConflictDropdownMsg':
+				var name = msg.a;
+				var state = msg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							conflictDropdowns: A3(elm$core$Dict$insert, name, state, model.conflictDropdowns)
 						}),
 					elm$core$Platform$Cmd$none);
 			case 'SyncClicked':
@@ -11624,6 +11756,28 @@ var author$project$Routes$Remotes$update = F2(
 						_Utils_update(
 							remote,
 							{acceptAutoUpdates: state})));
+			case 'AcceptPushToggled':
+				var remote = msg.a;
+				var state = msg.b;
+				return _Utils_Tuple2(
+					model,
+					A2(
+						author$project$Commands$doRemoteModify,
+						author$project$Routes$Remotes$GotRemoteModifyResponse,
+						_Utils_update(
+							remote,
+							{acceptPush: state})));
+			case 'ConflictStrategyToggled':
+				var remote = msg.a;
+				var state = msg.b;
+				return _Utils_Tuple2(
+					model,
+					A2(
+						author$project$Commands$doRemoteModify,
+						author$project$Routes$Remotes$GotRemoteModifyResponse,
+						_Utils_update(
+							remote,
+							{conflictStrategy: state})));
 			case 'RemoteAddMsg':
 				var subMsg = msg.a;
 				var _n5 = A2(author$project$Modals$RemoteAdd$update, subMsg, model.remoteAddState);
@@ -18856,9 +19010,9 @@ var author$project$Modals$RemoteFolders$ModalShow = function (a) {
 var author$project$Modals$RemoteFolders$show = function (remote) {
 	return author$project$Modals$RemoteFolders$ModalShow(remote);
 };
-var author$project$Routes$Remotes$AutoUpdateToggled = F2(
+var author$project$Routes$Remotes$AcceptPushToggled = F2(
 	function (a, b) {
-		return {$: 'AutoUpdateToggled', a: a, b: b};
+		return {$: 'AcceptPushToggled', a: a, b: b};
 	});
 var author$project$Util$viewToggleSwitch = F3(
 	function (toMsg, message, isChecked) {
@@ -18910,11 +19064,11 @@ var author$project$Util$viewToggleSwitch = F3(
 						]))
 				]));
 	});
-var author$project$Routes$Remotes$viewAutoUpdatesIcon = F2(
+var author$project$Routes$Remotes$viewAcceptPushToggle = F2(
 	function (state, remote) {
 		return A3(
 			author$project$Util$viewToggleSwitch,
-			author$project$Routes$Remotes$AutoUpdateToggled(remote),
+			author$project$Routes$Remotes$AcceptPushToggled(remote),
 			'',
 			state);
 	});
@@ -18929,14 +19083,14 @@ var author$project$Routes$Remotes$SyncClicked = function (a) {
 };
 var rundis$elm_bootstrap$Bootstrap$Dropdown$AlignMenuRight = {$: 'AlignMenuRight'};
 var rundis$elm_bootstrap$Bootstrap$Dropdown$alignMenuRight = rundis$elm_bootstrap$Bootstrap$Dropdown$AlignMenuRight;
-var author$project$Routes$Remotes$viewDropdown = F2(
+var author$project$Routes$Remotes$viewActionDropdown = F2(
 	function (model, remote) {
 		return A2(
 			rundis$elm_bootstrap$Bootstrap$Dropdown$dropdown,
 			A2(
 				elm$core$Maybe$withDefault,
 				rundis$elm_bootstrap$Bootstrap$Dropdown$initialState,
-				A2(elm$core$Dict$get, remote.name, model.dropdowns)),
+				A2(elm$core$Dict$get, remote.name, model.actionDropdowns)),
 			{
 				items: _List_fromArray(
 					[
@@ -19028,7 +19182,140 @@ var author$project$Routes$Remotes$viewDropdown = F2(
 								]),
 							_List_Nil)
 						])),
-				toggleMsg: author$project$Routes$Remotes$DropdownMsg(remote.name)
+				toggleMsg: author$project$Routes$Remotes$ActionDropdownMsg(remote.name)
+			});
+	});
+var author$project$Routes$Remotes$AutoUpdateToggled = F2(
+	function (a, b) {
+		return {$: 'AutoUpdateToggled', a: a, b: b};
+	});
+var author$project$Routes$Remotes$viewAutoUpdatesIcon = F2(
+	function (state, remote) {
+		return A3(
+			author$project$Util$viewToggleSwitch,
+			author$project$Routes$Remotes$AutoUpdateToggled(remote),
+			'',
+			state);
+	});
+var author$project$Routes$Remotes$ConflictStrategyToggled = F2(
+	function (a, b) {
+		return {$: 'ConflictStrategyToggled', a: a, b: b};
+	});
+var author$project$Routes$Remotes$conflictStrategyToIconName = F2(
+	function (model, strategy) {
+		conflictStrategyToIconName:
+		while (true) {
+			switch (strategy) {
+				case '':
+					if (model.self.defaultConflictStrategy === '') {
+						return 'fa-question';
+					} else {
+						var $temp$model = model,
+							$temp$strategy = model.self.defaultConflictStrategy;
+						model = $temp$model;
+						strategy = $temp$strategy;
+						continue conflictStrategyToIconName;
+					}
+				case 'ignore':
+					return 'fa-eject';
+				case 'marker':
+					return 'fa-marker';
+				case 'embrace':
+					return 'fa-handshake';
+				default:
+					return 'fa-question';
+			}
+		}
+	});
+var author$project$Routes$Remotes$viewConflictDropdown = F2(
+	function (model, remote) {
+		var isDisabled = !A2(elm$core$List$member, 'fs.edit', model.rights);
+		return A2(
+			rundis$elm_bootstrap$Bootstrap$Dropdown$dropdown,
+			A2(
+				elm$core$Maybe$withDefault,
+				rundis$elm_bootstrap$Bootstrap$Dropdown$initialState,
+				A2(elm$core$Dict$get, remote.name, model.conflictDropdowns)),
+			{
+				items: _List_fromArray(
+					[
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								A2(author$project$Routes$Remotes$ConflictStrategyToggled, remote, 'ignore')),
+								elm$html$Html$Attributes$disabled(isDisabled)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('fas fa-md fa-eject')
+									]),
+								_List_Nil),
+								elm$html$Html$text(' Ignore')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								A2(author$project$Routes$Remotes$ConflictStrategyToggled, remote, 'marker')),
+								elm$html$Html$Attributes$disabled(isDisabled)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('fas fa-md fa-marker')
+									]),
+								_List_Nil),
+								elm$html$Html$text(' Marker')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								A2(author$project$Routes$Remotes$ConflictStrategyToggled, remote, 'embrace')),
+								elm$html$Html$Attributes$disabled(isDisabled)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('fas fa-md fa-handshake')
+									]),
+								_List_Nil),
+								elm$html$Html$text(' Embrace')
+							]))
+					]),
+				options: _List_fromArray(
+					[rundis$elm_bootstrap$Bootstrap$Dropdown$alignMenuRight]),
+				toggleButton: A2(
+					rundis$elm_bootstrap$Bootstrap$Dropdown$toggle,
+					_List_fromArray(
+						[rundis$elm_bootstrap$Bootstrap$Button$roleLink]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas'),
+									elm$html$Html$Attributes$class(
+									A2(author$project$Routes$Remotes$conflictStrategyToIconName, model, remote.conflictStrategy))
+								]),
+							_List_Nil)
+						])),
+				toggleMsg: author$project$Routes$Remotes$ConflictDropdownMsg(remote.name)
 			});
 	});
 var elm$core$List$intersperse = F2(
@@ -19173,6 +19460,20 @@ var author$project$Routes$Remotes$viewRemote = F2(
 					_List_Nil,
 					_List_fromArray(
 						[
+							A2(author$project$Routes$Remotes$viewAcceptPushToggle, remote.acceptPush, remote)
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Table$td,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(author$project$Routes$Remotes$viewConflictDropdown, model, remote)
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Table$td,
+					_List_Nil,
+					_List_fromArray(
+						[
 							A2(
 							rundis$elm_bootstrap$Bootstrap$Button$button,
 							_List_fromArray(
@@ -19223,7 +19524,7 @@ var author$project$Routes$Remotes$viewRemote = F2(
 						]),
 					_List_fromArray(
 						[
-							A2(author$project$Routes$Remotes$viewDropdown, model, remote)
+							A2(author$project$Routes$Remotes$viewActionDropdown, model, remote)
 						]))
 				]));
 	});
@@ -19343,6 +19644,46 @@ var author$project$Routes$Remotes$viewRemoteList = F2(
 											_List_fromArray(
 												[
 													elm$html$Html$text('Auto Update')
+												]))
+										])),
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Table$th,
+									_List_fromArray(
+										[
+											rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
+											A2(elm$html$Html$Attributes$style, 'width', '10%'))
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$span,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('text-muted')
+												]),
+											_List_fromArray(
+												[
+													elm$html$Html$text('May Push')
+												]))
+										])),
+									A2(
+									rundis$elm_bootstrap$Bootstrap$Table$th,
+									_List_fromArray(
+										[
+											rundis$elm_bootstrap$Bootstrap$Table$cellAttr(
+											A2(elm$html$Html$Attributes$style, 'width', '10%'))
+										]),
+									_List_fromArray(
+										[
+											A2(
+											elm$html$Html$span,
+											_List_fromArray(
+												[
+													elm$html$Html$Attributes$class('text-muted')
+												]),
+											_List_fromArray(
+												[
+													elm$html$Html$text('Conflicts')
 												]))
 										])),
 									A2(
@@ -19530,7 +19871,7 @@ var author$project$Routes$Remotes$viewSelf = function (model) {
 										A2(
 										author$project$Routes$Remotes$viewMetaRow,
 										'Name',
-										elm$html$Html$text(model.self.name))
+										elm$html$Html$text(model.self.self.name))
 									])),
 								A2(
 								rundis$elm_bootstrap$Bootstrap$ListGroup$li,
@@ -19540,7 +19881,7 @@ var author$project$Routes$Remotes$viewSelf = function (model) {
 										A2(
 										author$project$Routes$Remotes$viewMetaRow,
 										'Fingerprint',
-										author$project$Routes$Remotes$viewFullFingerprint(model.self.fingerprint))
+										author$project$Routes$Remotes$viewFullFingerprint(model.self.self.fingerprint))
 									]))
 							]))
 					])),
@@ -21818,6 +22159,9 @@ var author$project$Routes$Ls$buildModals = function (model) {
 };
 var author$project$Modals$RemoteAdd$ModalClose = {$: 'ModalClose'};
 var author$project$Modals$RemoteAdd$RemoteAdd = {$: 'RemoteAdd'};
+var author$project$Modals$RemoteAdd$AcceptPushChanged = function (a) {
+	return {$: 'AcceptPushChanged', a: a};
+};
 var author$project$Modals$RemoteAdd$AutoUpdateChanged = function (a) {
 	return {$: 'AutoUpdateChanged', a: a};
 };
@@ -21826,6 +22170,177 @@ var author$project$Modals$RemoteAdd$FingerprintInputChanged = function (a) {
 };
 var author$project$Modals$RemoteAdd$NameInputChanged = function (a) {
 	return {$: 'NameInputChanged', a: a};
+};
+var author$project$Modals$RemoteAdd$ConflictStrategyChanged = function (a) {
+	return {$: 'ConflictStrategyChanged', a: a};
+};
+var author$project$Modals$RemoteAdd$showCurrentConflictStrategy = function (model) {
+	var _n0 = model.conflictStrategy;
+	switch (_n0) {
+		case '':
+			return A2(
+				elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Marker '),
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fas fa-marker')
+							]),
+						_List_Nil)
+					]));
+		case 'ignore':
+			return A2(
+				elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Ignore '),
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fas fa-eject')
+							]),
+						_List_Nil)
+					]));
+		case 'marker':
+			return A2(
+				elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Marker '),
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fas fa-marker')
+							]),
+						_List_Nil)
+					]));
+		case 'embrace':
+			return A2(
+				elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Embrace '),
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fas fa-handshake')
+							]),
+						_List_Nil)
+					]));
+		default:
+			return A2(
+				elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Unknown '),
+						A2(
+						elm$html$Html$span,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('fas fa-question')
+							]),
+						_List_Nil)
+					]));
+	}
+};
+var rundis$elm_bootstrap$Bootstrap$Dropdown$Attrs = function (a) {
+	return {$: 'Attrs', a: a};
+};
+var rundis$elm_bootstrap$Bootstrap$Dropdown$attrs = function (attrs_) {
+	return rundis$elm_bootstrap$Bootstrap$Dropdown$Attrs(attrs_);
+};
+var author$project$Modals$RemoteAdd$viewConflictDropdown = function (model) {
+	return A2(
+		rundis$elm_bootstrap$Bootstrap$Dropdown$dropdown,
+		model.conflictDropdown,
+		{
+			items: _List_fromArray(
+				[
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+					_List_fromArray(
+						[
+							elm$html$Html$Events$onClick(
+							author$project$Modals$RemoteAdd$ConflictStrategyChanged('ignore'))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas fa-md fa-eject')
+								]),
+							_List_Nil),
+							elm$html$Html$text(' Ignore')
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+					_List_fromArray(
+						[
+							elm$html$Html$Events$onClick(
+							author$project$Modals$RemoteAdd$ConflictStrategyChanged('marker'))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas fa-md fa-marker')
+								]),
+							_List_Nil),
+							elm$html$Html$text(' Marker')
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+					_List_fromArray(
+						[
+							elm$html$Html$Events$onClick(
+							author$project$Modals$RemoteAdd$ConflictStrategyChanged('embrace'))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas fa-md fa-handshake')
+								]),
+							_List_Nil),
+							elm$html$Html$text(' Embrace')
+						]))
+				]),
+			options: _List_fromArray(
+				[
+					rundis$elm_bootstrap$Bootstrap$Dropdown$alignMenuRight,
+					rundis$elm_bootstrap$Bootstrap$Dropdown$attrs(
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$id('remote-add-conflict-dropdown')
+						]))
+				]),
+			toggleButton: A2(
+				rundis$elm_bootstrap$Bootstrap$Dropdown$toggle,
+				_List_fromArray(
+					[rundis$elm_bootstrap$Bootstrap$Button$roleLink]),
+				_List_fromArray(
+					[
+						author$project$Modals$RemoteAdd$showCurrentConflictStrategy(model)
+					])),
+			toggleMsg: author$project$Modals$RemoteAdd$ConflictDropdownMsg
+		});
 };
 var author$project$Modals$RemoteAdd$viewRemoteAddContent = function (model) {
 	return _List_fromArray(
@@ -21865,6 +22380,42 @@ var author$project$Modals$RemoteAdd$viewRemoteAddContent = function (model) {
 					_List_fromArray(
 						[
 							A3(author$project$Util$viewToggleSwitch, author$project$Modals$RemoteAdd$AutoUpdateChanged, 'Accept automatic updates?', model.doAutoUdate)
+						])),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(
+					elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A3(author$project$Util$viewToggleSwitch, author$project$Modals$RemoteAdd$AcceptPushChanged, 'Accept other remotes pushing data to us?', model.acceptPush)
+						])),
+					A2(elm$html$Html$br, _List_Nil, _List_Nil),
+					A2(
+					elm$html$Html$span,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('text-muted')
+								]),
+							_List_fromArray(
+								[
+									elm$html$Html$text('The current conflict strategy is')
+								])),
+							author$project$Modals$RemoteAdd$viewConflictDropdown(model),
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('text-muted')
+								]),
+							_List_fromArray(
+								[
+									elm$html$Html$text('.')
+								]))
 						])),
 					function () {
 					var _n0 = model.state;
@@ -21977,6 +22528,10 @@ var author$project$Modals$RemoteFolders$SearchInput = function (a) {
 var author$project$Modals$RemoteFolders$FolderRemove = function (a) {
 	return {$: 'FolderRemove', a: a};
 };
+var author$project$Modals$RemoteFolders$ReadOnlyChanged = F2(
+	function (a, b) {
+		return {$: 'ReadOnlyChanged', a: a, b: b};
+	});
 var author$project$Modals$RemoteFolders$viewRow = F3(
 	function (a, b, c) {
 		return A2(
@@ -21997,7 +22552,7 @@ var author$project$Modals$RemoteFolders$viewRow = F3(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
 						[
-							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs10,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs9,
 							rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft)
 						]),
 					_List_fromArray(
@@ -22006,7 +22561,7 @@ var author$project$Modals$RemoteFolders$viewRow = F3(
 					rundis$elm_bootstrap$Bootstrap$Grid$col,
 					_List_fromArray(
 						[
-							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs1,
+							rundis$elm_bootstrap$Bootstrap$Grid$Col$xs2,
 							rundis$elm_bootstrap$Bootstrap$Grid$Col$textAlign(rundis$elm_bootstrap$Bootstrap$Text$alignXsLeft)
 						]),
 					_List_fromArray(
@@ -22023,34 +22578,86 @@ var author$project$Modals$RemoteFolders$viewFolder = function (folder) {
 					elm$html$Html$Attributes$class('fas fa-md fa-folder text-muted')
 				]),
 			_List_Nil),
-		elm$html$Html$text(folder),
+		elm$html$Html$text(folder.folder),
 		A2(
-			rundis$elm_bootstrap$Bootstrap$Button$button,
+			elm$html$Html$span,
+			_List_Nil,
 			_List_fromArray(
 				[
-					rundis$elm_bootstrap$Bootstrap$Button$attrs(
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$class('close'),
-							elm$html$Html$Events$onClick(
-							author$project$Modals$RemoteFolders$FolderRemove(folder))
-						]))
-				]),
-			_List_fromArray(
-				[
+					A3(
+					author$project$Util$viewToggleSwitch,
+					author$project$Modals$RemoteFolders$ReadOnlyChanged(folder.folder),
+					'',
+					folder.readOnly),
 					A2(
-					elm$html$Html$span,
+					rundis$elm_bootstrap$Bootstrap$Button$button,
 					_List_fromArray(
 						[
-							elm$html$Html$Attributes$class('fas fa-xs fa-times text-muted')
+							rundis$elm_bootstrap$Bootstrap$Button$attrs(
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('close'),
+									elm$html$Html$Events$onClick(
+									author$project$Modals$RemoteFolders$FolderRemove(folder.folder))
+								]))
 						]),
-					_List_Nil)
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas fa-xs fa-times text-muted')
+								]),
+							_List_Nil)
+						]))
 				])));
 };
+var elm_community$list_extra$List$Extra$uniqueHelp = F4(
+	function (f, existing, remaining, accumulator) {
+		uniqueHelp:
+		while (true) {
+			if (!remaining.b) {
+				return elm$core$List$reverse(accumulator);
+			} else {
+				var first = remaining.a;
+				var rest = remaining.b;
+				var computedFirst = f(first);
+				if (A2(elm$core$Set$member, computedFirst, existing)) {
+					var $temp$f = f,
+						$temp$existing = existing,
+						$temp$remaining = rest,
+						$temp$accumulator = accumulator;
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				} else {
+					var $temp$f = f,
+						$temp$existing = A2(elm$core$Set$insert, computedFirst, existing),
+						$temp$remaining = rest,
+						$temp$accumulator = A2(elm$core$List$cons, first, accumulator);
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				}
+			}
+		}
+	});
+var elm_community$list_extra$List$Extra$uniqueBy = F2(
+	function (f, list) {
+		return A4(elm_community$list_extra$List$Extra$uniqueHelp, f, elm$core$Set$empty, list, _List_Nil);
+	});
 var author$project$Modals$RemoteFolders$viewFolders = function (remote) {
-	var folders = elm$core$List$sort(
-		elm$core$Set$toList(
-			elm$core$Set$fromList(remote.folders)));
+	var folders = A2(
+		elm_community$list_extra$List$Extra$uniqueBy,
+		function ($) {
+			return $.folder;
+		},
+		remote.folders);
 	return (elm$core$List$length(folders) <= 0) ? A2(
 		elm$html$Html$span,
 		_List_fromArray(
@@ -22064,19 +22671,39 @@ var author$project$Modals$RemoteFolders$viewFolders = function (remote) {
 				elm$html$Html$text('Add a new folder below to limit what this remote can see.'),
 				A2(elm$html$Html$br, _List_Nil, _List_Nil),
 				A2(elm$html$Html$br, _List_Nil, _List_Nil)
-			])) : rundis$elm_bootstrap$Bootstrap$ListGroup$ul(
-		A2(
-			elm$core$List$map,
-			function (f) {
-				return A2(
-					rundis$elm_bootstrap$Bootstrap$ListGroup$li,
-					_List_Nil,
+			])) : A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A3(
+				author$project$Modals$RemoteFolders$viewRow,
+				elm$html$Html$text(''),
+				elm$html$Html$text(''),
+				A2(
+					elm$html$Html$span,
 					_List_fromArray(
 						[
-							author$project$Modals$RemoteFolders$viewFolder(f)
-						]));
-			},
-			folders));
+							elm$html$Html$Attributes$class('small text-muted')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text('read only?')
+						]))),
+				rundis$elm_bootstrap$Bootstrap$ListGroup$ul(
+				A2(
+					elm$core$List$map,
+					function (f) {
+						return A2(
+							rundis$elm_bootstrap$Bootstrap$ListGroup$li,
+							_List_Nil,
+							_List_fromArray(
+								[
+									author$project$Modals$RemoteFolders$viewFolder(f)
+								]));
+					},
+					folders))
+			]));
 };
 var author$project$Modals$RemoteFolders$viewRemoteFoldersContent = function (model) {
 	return _List_fromArray(

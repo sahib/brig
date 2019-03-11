@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -23,27 +24,30 @@ func NewRemotesAddHandler(s *State) *RemotesAddHandler {
 
 // RemoteAddRequest is the data being sent to this endpoint.
 type RemoteAddRequest struct {
-	Name              string   `json:"name"`
-	Folders           []string `json:"folders"`
-	Fingerprint       string   `json:"fingerprint"`
-	AcceptAutoUpdates bool     `json:"accept_auto_updates"`
+	Name              string              `json:"name"`
+	Folders           []remotesapi.Folder `json:"folders"`
+	Fingerprint       string              `json:"fingerprint"`
+	AcceptAutoUpdates bool                `json:"accept_auto_updates"`
+	AcceptPush        bool                `json:"accept_push"`
+	ConflictStrategy  string              `json:"conflict_strategy"`
 }
 
-func dedupeFolders(folders []string) []string {
+func dedupeFolders(folders []remotesapi.Folder) []remotesapi.Folder {
 	seen := make(map[string]bool)
-	deduped := []string{}
+	deduped := []remotesapi.Folder{}
 
 	for _, folder := range folders {
-		if !strings.HasPrefix(folder, "/") {
-			folder = "/" + folder
+		path := folder.Folder
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
 		}
 
-		if seen[folder] {
+		if seen[path] {
 			continue
 		}
 
 		deduped = append(deduped, folder)
-		seen[folder] = true
+		seen[path] = true
 	}
 
 	return deduped
@@ -59,30 +63,43 @@ func validateFingerprint(fingerprint string, w http.ResponseWriter, r *http.Requ
 	return true
 }
 
-func (rh *RemotesAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func readRemoteRequest(w http.ResponseWriter, r *http.Request) (*remotesapi.Remote, error) {
+	if !checkRights(w, r, db.RightRemotesEdit) {
+		return nil, fmt.Errorf("bad rights")
+	}
+
 	remoteAddReq := RemoteAddRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&remoteAddReq); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "bad json")
-		return
+		return nil, fmt.Errorf("bad json")
 	}
 
 	if !validateFingerprint(remoteAddReq.Fingerprint, w, r) {
-		return
+		return nil, fmt.Errorf("bad fingerprint")
 	}
 
-	if _, err := rh.rapi.Get(remoteAddReq.Name); err == nil {
-		jsonifyErrf(w, http.StatusBadRequest, "remote does exist already")
-		return
-	}
-
-	rmt := remotesapi.Remote{
+	return &remotesapi.Remote{
 		Name:              remoteAddReq.Name,
 		Folders:           dedupeFolders(remoteAddReq.Folders),
 		Fingerprint:       remoteAddReq.Fingerprint,
 		AcceptAutoUpdates: remoteAddReq.AcceptAutoUpdates,
+		AcceptPush:        remoteAddReq.AcceptPush,
+		ConflictStrategy:  remoteAddReq.ConflictStrategy,
+	}, nil
+}
+
+func (rh *RemotesAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rmt, err := readRemoteRequest(w, r)
+	if err != nil {
+		return
 	}
 
-	if err := rh.rapi.Set(rmt); err != nil {
+	if _, err := rh.rapi.Get(rmt.Name); err == nil {
+		jsonifyErrf(w, http.StatusBadRequest, "remote does exist already")
+		return
+	}
+
+	if err := rh.rapi.Set(*rmt); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to add")
 		return
 	}
@@ -103,33 +120,17 @@ func NewRemotesModifyHandler(s *State) *RemotesModifyHandler {
 }
 
 func (rh *RemotesModifyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !checkRights(w, r, db.RightRemotesEdit) {
+	rmt, err := readRemoteRequest(w, r)
+	if err != nil {
 		return
 	}
 
-	remoteAddReq := RemoteAddRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&remoteAddReq); err != nil {
-		jsonifyErrf(w, http.StatusBadRequest, "bad json")
-		return
-	}
-
-	if !validateFingerprint(remoteAddReq.Fingerprint, w, r) {
-		return
-	}
-
-	if _, err := rh.rapi.Get(remoteAddReq.Name); err != nil {
+	if _, err := rh.rapi.Get(rmt.Name); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "remote does not exist yet")
 		return
 	}
 
-	rmt := remotesapi.Remote{
-		Name:              remoteAddReq.Name,
-		Folders:           dedupeFolders(remoteAddReq.Folders),
-		Fingerprint:       remoteAddReq.Fingerprint,
-		AcceptAutoUpdates: remoteAddReq.AcceptAutoUpdates,
-	}
-
-	if err := rh.rapi.Set(rmt); err != nil {
+	if err := rh.rapi.Set(*rmt); err != nil {
 		jsonifyErrf(w, http.StatusBadRequest, "failed to add")
 		return
 	}

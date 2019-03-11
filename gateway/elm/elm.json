@@ -17,6 +17,7 @@
             "elm/json": "1.1.0",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
+            "elm-community/list-extra": "8.1.0",
             "jweir/elm-iso8601": "5.0.2",
             "rundis/elm-bootstrap": "5.0.0"
         },

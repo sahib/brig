@@ -2,12 +2,14 @@ module Modals.RemoteAdd exposing (Model, Msg, newModel, show, subscriptions, upd
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
+import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Modal as Modal
 import Browser.Events as Events
 import Commands
+import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -26,8 +28,11 @@ type alias Model =
     , name : String
     , fingerprint : String
     , doAutoUdate : Bool
+    , acceptPush : Bool
+    , conflictStrategy : String
     , modal : Modal.Visibility
     , alert : Alert.Visibility
+    , conflictDropdown : Dropdown.State
     }
 
 
@@ -36,6 +41,9 @@ type Msg
     | NameInputChanged String
     | FingerprintInputChanged String
     | AutoUpdateChanged Bool
+    | AcceptPushChanged Bool
+    | ConflictStrategyChanged String
+    | ConflictDropdownMsg Dropdown.State
     | ModalShow
     | GotResponse (Result Http.Error String)
     | AnimateModal Modal.Visibility
@@ -60,7 +68,10 @@ newModelWithState state =
     , name = ""
     , fingerprint = ""
     , doAutoUdate = False
+    , acceptPush = False
     , alert = Alert.shown
+    , conflictDropdown = Dropdown.initialState
+    , conflictStrategy = ""
     }
 
 
@@ -74,6 +85,8 @@ submit model =
         model.name
         model.fingerprint
         model.doAutoUdate
+        model.acceptPush
+        model.conflictStrategy
         []
 
 
@@ -91,6 +104,9 @@ update msg model =
 
         AutoUpdateChanged doAutoUdate ->
             ( { model | doAutoUdate = doAutoUdate }, Cmd.none )
+
+        AcceptPushChanged acceptPush ->
+            ( { model | acceptPush = acceptPush }, Cmd.none )
 
         GotResponse result ->
             case result of
@@ -112,6 +128,12 @@ update msg model =
 
         AlertMsg vis ->
             ( { model | alert = vis }, Cmd.none )
+
+        ConflictDropdownMsg state ->
+            ( { model | conflictDropdown = state }, Cmd.none )
+
+        ConflictStrategyChanged state ->
+            ( { model | conflictStrategy = state }, Cmd.none )
 
         KeyPress key ->
             if model.modal == Modal.hidden then
@@ -148,7 +170,25 @@ viewRemoteAddContent model =
             , Input.onInput FingerprintInputChanged
             ]
         , br [] []
-        , span [] [ Util.viewToggleSwitch AutoUpdateChanged "Accept automatic updates?" model.doAutoUdate ]
+        , span []
+            [ Util.viewToggleSwitch
+                AutoUpdateChanged
+                "Accept automatic updates?"
+                model.doAutoUdate
+            ]
+        , br [] []
+        , span []
+            [ Util.viewToggleSwitch
+                AcceptPushChanged
+                "Accept other remotes pushing data to us?"
+                model.acceptPush
+            ]
+        , br [] []
+        , span []
+            [ span [ class "text-muted" ] [ text "The current conflict strategy is" ]
+            , viewConflictDropdown model
+            , span [ class "text-muted" ] [ text "." ]
+            ]
         , case model.state of
             Ready ->
                 text ""
@@ -157,6 +197,52 @@ viewRemoteAddContent model =
                 Util.buildAlert model.alert AlertMsg Alert.danger "Oh no!" ("Could not add remote: " ++ message)
         ]
     ]
+
+
+showCurrentConflictStrategy : Model -> Html Msg
+showCurrentConflictStrategy model =
+    case model.conflictStrategy of
+        "" ->
+            span [] [ text "Marker ", span [ class "fas fa-marker" ] [] ]
+
+        "ignore" ->
+            span [] [ text "Ignore ", span [ class "fas fa-eject" ] [] ]
+
+        "marker" ->
+            span [] [ text "Marker ", span [ class "fas fa-marker" ] [] ]
+
+        "embrace" ->
+            span [] [ text "Embrace ", span [ class "fas fa-handshake" ] [] ]
+
+        _ ->
+            span [] [ text "Unknown ", span [ class "fas fa-question" ] [] ]
+
+
+viewConflictDropdown : Model -> Html Msg
+viewConflictDropdown model =
+    Dropdown.dropdown
+        model.conflictDropdown
+        { options =
+            [ Dropdown.alignMenuRight
+            , Dropdown.attrs [ id "remote-add-conflict-dropdown" ]
+            ]
+        , toggleMsg = ConflictDropdownMsg
+        , toggleButton =
+            Dropdown.toggle
+                [ Button.roleLink ]
+                [ showCurrentConflictStrategy model ]
+        , items =
+            [ Dropdown.buttonItem
+                [ onClick (ConflictStrategyChanged "ignore") ]
+                [ span [ class "fas fa-md fa-eject" ] [], text " Ignore" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyChanged "marker") ]
+                [ span [ class "fas fa-md fa-marker" ] [], text " Marker" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyChanged "embrace") ]
+                [ span [ class "fas fa-md fa-handshake" ] [], text " Embrace" ]
+            ]
+        }
 
 
 view : Model -> Html Msg
@@ -216,4 +302,5 @@ subscriptions model =
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
         , Events.onKeyPress (D.map KeyPress <| D.field "key" D.string)
+        , Dropdown.subscriptions model.conflictDropdown ConflictDropdownMsg
         ]

@@ -48,7 +48,7 @@ func TestRemoteModifyEndpoint(t *testing.T) {
 		require.Nil(t, s.State.rapi.Set(remotesapi.Remote{
 			Name:        "bob",
 			Fingerprint: TestFingerprint + "xxx",
-			Folders:     []string{"/public"},
+			Folders:     []remotesapi.Folder{{"/public", false}},
 		}))
 
 		resp := s.mustRun(

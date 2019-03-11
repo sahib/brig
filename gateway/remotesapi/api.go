@@ -9,14 +9,22 @@ import (
 	"github.com/sahib/brig/catfs"
 )
 
+// Folder is a single folder limit for a remote.
+type Folder struct {
+	Folder   string `json:"folder"`
+	ReadOnly bool   `json:"read_only"`
+}
+
 // Remote is a the result of List and Get.
 type Remote struct {
 	Name              string    `json:"name"`
-	Folders           []string  `json:"folders"`
+	Folders           []Folder  `json:"folders"`
 	Fingerprint       string    `json:"fingerprint"`
 	AcceptAutoUpdates bool      `json:"accept_auto_updates"`
 	IsOnline          bool      `json:"is_online"`
 	IsAuthenticated   bool      `json:"is_authenticated"`
+	AcceptPush        bool      `json:"accept_push"`
+	ConflictStrategy  string    `json:"conflict_strategy"`
 	LastSeen          time.Time `json:"last_seen"`
 }
 
