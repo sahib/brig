@@ -56,6 +56,7 @@ func (rp *Repository) GC(backend Backend, aggressive bool) (map[string]map[strin
 	return result, nil
 }
 
+// StartAutoGCLoop starts the auto gc loop on `backend`.
 func (rp *Repository) StartAutoGCLoop(backend Backend) {
 	go rp.autoGCLoop(backend)
 }

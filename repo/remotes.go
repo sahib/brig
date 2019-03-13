@@ -77,6 +77,8 @@ func (r Remote) ReadOnlyFolders() []string {
 	return folders
 }
 
+// ConflictStrategyPerFolder returns a map of folders (as key)
+// which have a dedicated conflict strategy (as value).
 func (r Remote) ConflictStrategyPerFolder() map[string]string {
 	cspf := make(map[string]string)
 

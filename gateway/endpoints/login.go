@@ -240,9 +240,9 @@ func (am *authMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			// invalid token.
 			jsonifyErrf(w, http.StatusUnauthorized, "not authorized")
 			return
-		} else {
-			name = am.cfg.String("auth.anon_user")
 		}
+
+		name = am.cfg.String("auth.anon_user")
 	}
 
 	user, err := am.userDb.Get(name)
