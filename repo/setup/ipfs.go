@@ -8,13 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -267,21 +265,12 @@ func isCommandAvailable(name string) bool {
 	return path != ""
 }
 
-func waitForOpenPort(port int, maxWaitTime time.Duration) {
-	for maxWaitTime >= 0 {
-		lst, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if err != nil {
-			time.Sleep(1 * time.Second)
-			maxWaitTime -= time.Second
-			continue
+func waitForRunningIPFS(addr string, maxWaitTime time.Duration) {
+	waitStart := time.Now()
+	for time.Since(waitStart) > maxWaitTime {
+		if isRunning(addr) {
+			break
 		}
-
-		lst.Close()
-
-		// Timeout added for cases where IPFS's port is open
-		// but it does not really process requests yet.
-		time.Sleep(2 * time.Second)
-		break
 	}
 }
 
@@ -341,16 +330,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig bool, ipfsPath string) (strin
 
 		fmt.Fprintf(out, "-- Waiting up to 60s for it to fully boot up...\n")
 
-		port := 5001
-		splitAPIAddr := strings.Split(apiAddr, "/")
-		if len(splitAPIAddr) > 0 {
-			port, err = strconv.Atoi(splitAPIAddr[len(splitAPIAddr)-1])
-			if err != nil {
-				return "", fmt.Errorf("api addr seems wrong: %v", err)
-			}
-		}
-
-		waitForOpenPort(port, 60)
+		waitForRunningIPFS(apiAddr, 60)
 		fmt.Fprintf(out, "-- Started IPFS as child of this process.\n")
 	} else {
 		fmt.Fprintf(out, "-- IPFS Daemon seems to be running. Let's go!\n")
