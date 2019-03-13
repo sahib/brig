@@ -412,8 +412,9 @@ func handleRemoteFolderAdd(ctx *cli.Context, ctl *client.Client) error {
 		}
 
 		remote.Folders = append(remote.Folders, client.RemoteFolder{
-			Folder:   folder,
-			ReadOnly: ctx.Bool("read-only"),
+			Folder:           folder,
+			ReadOnly:         ctx.Bool("read-only"),
+			ConflictStrategy: ctx.String("conflict-strategy"),
 		})
 	}
 
@@ -462,14 +463,15 @@ func handleRemoteFolderList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	tabW := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.StripEscape)
-	fmt.Fprintln(tabW, "FOLDER\tREAD ONLY\t")
+	fmt.Fprintln(tabW, "FOLDER\tREAD ONLY\tCONFLICT STRATEGY\t")
 
 	for _, folder := range remote.Folders {
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t\n",
+			"%s\t%s\t%s\t\n",
 			folder.Folder,
 			yesOrNo(folder.ReadOnly),
+			folder.ConflictStrategy,
 		)
 	}
 
@@ -483,16 +485,17 @@ func handleRemoteFolderListAll(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	tabW := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.StripEscape)
-	fmt.Fprintln(tabW, "REMOTE\tFOLDER\tREAD ONLY\t")
+	fmt.Fprintln(tabW, "REMOTE\tFOLDER\tREAD ONLY\tCONFLICT STRATEGY\t")
 
 	for _, remote := range remotes {
 		for _, folder := range remote.Folders {
 			fmt.Fprintf(
 				tabW,
-				"%s\t%s\t%s\t\n",
+				"%s\t%s\t%s\t%s\t\n",
 				remote.Name,
 				folder.Folder,
 				yesOrNo(folder.ReadOnly),
+				folder.ConflictStrategy,
 			)
 		}
 	}

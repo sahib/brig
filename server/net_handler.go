@@ -196,9 +196,15 @@ func capRemoteToRemote(remote capnp.Remote) (*repo.Remote, error) {
 			return nil, err
 		}
 
+		cs, err := capFolder.ConflictStrategy()
+		if err != nil {
+			return nil, err
+		}
+
 		folders = append(folders, repo.Folder{
-			Folder:   folderName,
-			ReadOnly: capFolder.ReadOnly(),
+			Folder:           folderName,
+			ReadOnly:         capFolder.ReadOnly(),
+			ConflictStrategy: cs,
 		})
 	}
 
@@ -243,6 +249,10 @@ func remoteToCapRemote(remote repo.Remote, seg *capnplib.Segment) (*capnp.Remote
 
 		capFolder.SetReadOnly(folder.ReadOnly)
 		if err := capFolder.SetFolder(folder.Folder); err != nil {
+			return nil, err
+		}
+
+		if err := capFolder.SetConflictStrategy(folder.ConflictStrategy); err != nil {
 			return nil, err
 		}
 

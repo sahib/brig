@@ -15,8 +15,9 @@ import (
 
 // RemoteFolder is a single folder shared with a remote.
 type RemoteFolder struct {
-	Folder   string `yaml:"Folder"`
-	ReadOnly bool   `yaml:"ReadOnly"`
+	Folder           string `yaml:"Folder"`
+	ReadOnly         bool   `yaml:"ReadOnly"`
+	ConflictStrategy string `yaml:"ConflictStrategy"`
 }
 
 // Remote describes a single remote in the remote list.
@@ -58,9 +59,15 @@ func capRemoteToRemote(capRemote capnp.Remote) (*Remote, error) {
 			return nil, err
 		}
 
+		cs, err := folder.ConflictStrategy()
+		if err != nil {
+			return nil, err
+		}
+
 		folders = append(folders, RemoteFolder{
-			Folder:   folderName,
-			ReadOnly: folder.ReadOnly(),
+			Folder:           folderName,
+			ReadOnly:         folder.ReadOnly(),
+			ConflictStrategy: cs,
 		})
 	}
 
@@ -105,6 +112,10 @@ func remoteToCapRemote(remote Remote, seg *capnplib.Segment) (*capnp.Remote, err
 
 		capFolder.SetReadOnly(folder.ReadOnly)
 		if err := capFolder.SetFolder(folder.Folder); err != nil {
+			return nil, err
+		}
+
+		if err := capFolder.SetConflictStrategy(folder.ConflictStrategy); err != nil {
 			return nil, err
 		}
 

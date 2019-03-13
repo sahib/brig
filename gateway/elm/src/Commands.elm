@@ -601,6 +601,7 @@ doUndelete toMsg path =
 type alias Folder =
     { folder : String
     , readOnly : Bool
+    , conflictStrategy : String
     }
 
 
@@ -655,6 +656,7 @@ decodeFolder =
     D.succeed Folder
         |> DP.required "folder" D.string
         |> DP.required "read_only" D.bool
+        |> DP.required "conflict_strategy" D.string
 
 
 doRemoteList : (Result Http.Error (List Remote) -> msg) -> Cmd msg
@@ -743,6 +745,7 @@ encodeFolder f =
     E.object
         [ ( "folder", E.string f.folder )
         , ( "read_only", E.bool f.readOnly )
+        , ( "conflict_strategy", E.string f.conflictStrategy )
         ]
 
 
@@ -761,7 +764,6 @@ encodeRemoteAddQuery q =
 decodeRemoteAddQuery : D.Decoder String
 decodeRemoteAddQuery =
     D.field "message" D.string
-
 
 
 doRemoteAdd : (Result Http.Error String -> msg) -> String -> String -> Bool -> Bool -> String -> List Folder -> Cmd msg

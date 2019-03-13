@@ -11,8 +11,9 @@ import (
 
 // Folder is a single folder limit for a remote.
 type Folder struct {
-	Folder   string `json:"folder"`
-	ReadOnly bool   `json:"read_only"`
+	Folder           string `json:"folder"`
+	ReadOnly         bool   `json:"read_only"`
+	ConflictStrategy string `json:"conflict_strategy"`
 }
 
 // Remote is a the result of List and Get.

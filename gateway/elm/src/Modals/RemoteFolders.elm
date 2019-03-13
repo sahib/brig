@@ -10,6 +10,7 @@ module Modals.RemoteFolders exposing
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
+import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
@@ -17,6 +18,7 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Modal as Modal
+import Bootstrap.Table as Table
 import Bootstrap.Text as Text
 import Browser.Events as Events
 import Commands
@@ -44,6 +46,7 @@ type alias Model =
     , remote : Commands.Remote
     , modal : Modal.Visibility
     , alert : Alert.Visibility
+    , conflictDropdowns : Dict.Dict String Dropdown.State
     }
 
 
@@ -58,6 +61,8 @@ type Msg
     | GotAllDirsResponse (Result Http.Error (List String))
     | DirChosen String
     | SearchInput String
+    | ConflictStrategyToggled String String
+    | ConflictDropdownMsg String Dropdown.State
 
 
 
@@ -77,6 +82,7 @@ newModelWithState state remote =
     , filter = ""
     , remote = remote
     , alert = Alert.shown
+    , conflictDropdowns = Dict.empty
     }
 
 
@@ -101,7 +107,7 @@ addFolder model folder =
             model.remote
 
         cleanFolder =
-            Commands.Folder (fixFolder folder) False
+            Commands.Folder (fixFolder folder) False ""
 
         newRemote =
             { oldRemote | folders = List.sortBy .folder <| cleanFolder :: oldRemote.folders }
@@ -186,6 +192,33 @@ update msg model =
             in
             ( { model | remote = newRemote }, submit newRemote )
 
+        ConflictDropdownMsg folder state ->
+            ( { model | conflictDropdowns = Dict.insert folder state model.conflictDropdowns }, Cmd.none )
+
+        ConflictStrategyToggled folder strategy ->
+            let
+                oldRemote =
+                    model.remote
+
+                newFolders =
+                    List.map
+                        (\f ->
+                            if f.folder == folder then
+                                { f | conflictStrategy = strategy }
+
+                            else
+                                f
+                        )
+                        model.remote.folders
+
+                newRemote =
+                    { oldRemote | folders = newFolders }
+
+                upModel =
+                    { model | remote = newRemote }
+            in
+            ( upModel, submit upModel.remote )
+
 
 
 -- VIEW
@@ -195,28 +228,117 @@ viewRow : Html Msg -> Html Msg -> Html Msg -> Html Msg
 viewRow a b c =
     Grid.row []
         [ Grid.col [ Col.xs1, Col.textAlign Text.alignXsRight ] [ a ]
-        , Grid.col [ Col.xs9, Col.textAlign Text.alignXsLeft ] [ b ]
-        , Grid.col [ Col.xs2, Col.textAlign Text.alignXsLeft ] [ c ]
+        , Grid.col [ Col.xs8, Col.textAlign Text.alignXsLeft ] [ b ]
+        , Grid.col [ Col.xs3, Col.textAlign Text.alignXsLeft ] [ c ]
         ]
 
 
-viewFolder : Commands.Folder -> Html Msg
-viewFolder folder =
-    viewRow
-        (span [ class "fas fa-md fa-folder text-muted" ] [])
-        (text folder.folder)
-        (span []
-            [ Util.viewToggleSwitch (ReadOnlyChanged folder.folder) "" folder.readOnly
-            , Button.button
+conflictStrategyToIconName : String -> String
+conflictStrategyToIconName strategy =
+    case strategy of
+        "" ->
+            "fa-marker text-muted"
+
+        "ignore" ->
+            "fa-eject"
+
+        "marker" ->
+            "fa-marker"
+
+        "embrace" ->
+            "fa-handshake"
+
+        _ ->
+            "fa-question"
+
+
+viewConflictDropdown : Model -> Commands.Folder -> Html Msg
+viewConflictDropdown model folder =
+    Dropdown.dropdown
+        (Maybe.withDefault Dropdown.initialState (Dict.get folder.folder model.conflictDropdowns))
+        { options = [ Dropdown.alignMenuRight ]
+        , toggleMsg = ConflictDropdownMsg folder.folder
+        , toggleButton =
+            Dropdown.toggle
+                [ Button.roleLink ]
+                [ span [ class "fas", class <| conflictStrategyToIconName folder.conflictStrategy ] [] ]
+        , items =
+            [ Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled folder.folder "ignore") ]
+                [ span [ class "fas fa-md fa-eject" ] [], text " Ignore" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled folder.folder "marker") ]
+                [ span [ class "fas fa-md fa-marker" ] [], text " Marker" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled folder.folder "embrace") ]
+                [ span [ class "fas fa-md fa-handshake" ] [], text " Embrace" ]
+            ]
+        }
+
+
+viewFolder : Model -> Commands.Folder -> Table.Row Msg
+viewFolder model folder =
+    Table.tr []
+        [ Table.td
+            []
+            [ span [ class "fas fa-md fa-folder text-muted" ] [] ]
+        , Table.td
+            []
+            [ text folder.folder ]
+        , Table.td
+            []
+            [ viewConflictDropdown model folder ]
+        , Table.td
+            []
+            [ Util.viewToggleSwitch (ReadOnlyChanged folder.folder) "" folder.readOnly ]
+        , Table.td
+            []
+            [ Button.button
                 [ Button.attrs [ class "close", onClick <| FolderRemove folder.folder ] ]
                 [ span [ class "fas fa-xs fa-times text-muted" ] []
                 ]
             ]
-        )
+        ]
 
 
-viewFolders : Commands.Remote -> Html Msg
-viewFolders remote =
+viewFolders : Model -> Commands.Remote -> Html Msg
+viewFolders model remote =
+    Table.table
+        { options =
+            [ Table.hover
+            , Table.attr (class "borderless-table")
+            ]
+        , thead =
+            Table.thead []
+                [ Table.tr []
+                    [ Table.th
+                        [ Table.cellAttr (style "width" "5%") ]
+                        [ text "" ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "55%") ]
+                        [ span [ class "text-muted small" ] [ text "Name" ] ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "20%") ]
+                        [ span [ class "text-muted small" ] [ text "Conflict Strategy" ] ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "15%") ]
+                        [ span [ class "text-muted small" ] [ text "Read Only?" ] ]
+                    , Table.th
+                        [ Table.cellAttr (style "width" "5%") ]
+                        []
+                    ]
+                ]
+        , tbody =
+            Table.tbody []
+                (List.map
+                    (\f -> viewFolder model f)
+                    remote.folders
+                )
+        }
+
+
+viewMaybeFolders : Model -> Commands.Remote -> Html Msg
+viewMaybeFolders model remote =
     let
         folders =
             LE.uniqueBy .folder remote.folders
@@ -233,9 +355,9 @@ viewFolders remote =
 
     else
         div []
-            [ viewRow (text "") (text "") (span [ class "small text-muted" ] [ text "read only?" ])
-            , ListGroup.ul
-                (List.map (\f -> ListGroup.li [] [ viewFolder f ]) folders)
+            [ viewFolders model remote
+            , br [] []
+            , hr [] []
             ]
 
 
@@ -243,7 +365,7 @@ viewRemoteFoldersContent : Model -> List (Grid.Column Msg)
 viewRemoteFoldersContent model =
     [ Grid.col [ Col.xs12 ]
         [ h4 [] [ span [ class "text-muted text-center" ] [ text "Visible folders" ] ]
-        , viewFolders model.remote
+        , viewMaybeFolders model model.remote
         , br [] []
         , br [] []
         , h4 [] [ span [ class "text-muted text-center" ] [ text "All folders" ] ]
@@ -298,4 +420,9 @@ subscriptions model =
     Sub.batch
         [ Modal.subscriptions model.modal AnimateModal
         , Alert.subscriptions model.alert AlertMsg
+        , Sub.batch
+            (List.map
+                (\( name, state ) -> Dropdown.subscriptions state (ConflictDropdownMsg name))
+                (Dict.toList model.conflictDropdowns)
+            )
         ]

@@ -27,6 +27,10 @@ type Folder struct {
 
 	// ReadOnly will exclude this folder from syncing if true.
 	ReadOnly bool
+
+	// ConflictStrategy for this folder.
+	// This overwrites the strategy per remote.
+	ConflictStrategy string
 }
 
 func (f Folder) String() string {
@@ -71,6 +75,18 @@ func (r Remote) ReadOnlyFolders() []string {
 	}
 
 	return folders
+}
+
+func (r Remote) ConflictStrategyPerFolder() map[string]string {
+	cspf := make(map[string]string)
+
+	for _, folder := range r.Folders {
+		if folder.ConflictStrategy != "" {
+			cspf[folder.Folder] = folder.ConflictStrategy
+		}
+	}
+
+	return cspf
 }
 
 // RemoteList is a helper that parses the remote access yml file

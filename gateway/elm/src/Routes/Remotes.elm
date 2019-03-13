@@ -289,7 +289,7 @@ conflictStrategyToIconName model strategy =
     case strategy of
         "" ->
             if model.self.defaultConflictStrategy == "" then
-                "fa-question"
+                "fa-question text-muted"
 
             else
                 conflictStrategyToIconName model model.self.defaultConflictStrategy

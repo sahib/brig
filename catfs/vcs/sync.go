@@ -59,11 +59,12 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 
 // SyncOptions gives you the possibility to configure the sync algorithm.
 type SyncOptions struct {
-	ConflictStrategy ConflictStrategy
-	IgnoreDeletes    bool
-	IgnoreMoves      bool
-	Message          string
-	ReadOnlyFolders  map[string]bool
+	ConflictStrategy          ConflictStrategy
+	IgnoreDeletes             bool
+	IgnoreMoves               bool
+	Message                   string
+	ReadOnlyFolders           map[string]bool
+	ConflictStrategyPerFolder map[string]ConflictStrategy
 
 	OnAdd      func(newNd n.ModNode) bool
 	OnRemove   func(oldNd n.ModNode) bool
@@ -238,12 +239,43 @@ func (sy *syncer) handleRemove(dst n.ModNode) error {
 	return err
 }
 
+func (sy *syncer) getConflictStrategy(nd n.ModNode) ConflictStrategy {
+	curr := nd.Path()
+
+	// Shortcurt: If the per-folder feature is not used,
+	// we can skip this whole loop below.
+	if len(sy.cfg.ConflictStrategyPerFolder) == 0 {
+		return sy.cfg.ConflictStrategy
+	}
+
+	log.Debugf("*** MAP %v", sy.cfg.ConflictStrategyPerFolder)
+
+	for {
+		cs, ok := sy.cfg.ConflictStrategyPerFolder[curr]
+		if ok {
+			return cs
+		}
+
+		parent := path.Dir(curr)
+		if parent == curr {
+			break
+		}
+
+		curr = parent
+	}
+
+	// No special strategy found for this folder
+	return sy.cfg.ConflictStrategy
+}
+
 func (sy *syncer) handleConflict(src, dst n.ModNode, srcMask, dstMask ChangeType) error {
-	if sy.cfg.ConflictStrategy == ConflictStragetyIgnore {
+	cs := sy.getConflictStrategy(dst)
+
+	if cs == ConflictStragetyIgnore {
 		return nil
 	}
 
-	if sy.cfg.ConflictStrategy == ConflictStragetyEmbrace {
+	if cs == ConflictStragetyEmbrace {
 		return sy.handleMerge(src, dst, srcMask, dstMask)
 	}
 
@@ -290,8 +322,6 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path(), dst.Path()) {
 		return nil
 	}
-
-	log.Debugf("handling merge: %s <-> %s", src.Path(), dst.Path())
 
 	if src.Path() != dst.Path() {
 		// Only move the file if it was only moved on the remote side.

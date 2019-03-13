@@ -530,6 +530,7 @@ func (b *base) doSync(withWhom string, needFetch bool, msg string) (*catfs.Diff,
 				catfs.SyncOptMessage(msg),
 				catfs.SyncOptConflictStrategy(rmt.ConflictStrategy),
 				catfs.SyncOptReadOnlyFolders(rmt.ReadOnlyFolders()),
+				catfs.SyncOptConflictgStrategyPerFolder(rmt.ConflictStrategyPerFolder()),
 			)
 
 			if err != nil {

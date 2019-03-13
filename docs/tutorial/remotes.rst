@@ -285,6 +285,14 @@ of the ``brig remote`` family:
    # Always take the versions of bob on conflicts:
    $ brig remote conflict-strategy embrace bob
 
+Still not enough? You can also set the conflict strategy per folder.
+This will trump the per-remote folder strategy:
+
+.. code-block:: bash
+
+   # Use the default in all folders but use "embrace" in this one:
+   $ brig remote folder add bob /collab -c embrace
+
 Automatic Updating
 ------------------
 

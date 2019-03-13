@@ -1490,9 +1490,32 @@ func SyncOptConflictStrategy(strategy string) SyncOption {
 // that will be protected from modifications by the sync.
 func SyncOptReadOnlyFolders(folders []string) SyncOption {
 	return func(cfg *vcs.SyncOptions) {
-		cfg.ReadOnlyFolders = make(map[string]bool)
+		if cfg.ReadOnlyFolders == nil {
+			cfg.ReadOnlyFolders = make(map[string]bool)
+		}
+
 		for _, folder := range folders {
 			cfg.ReadOnlyFolders[folder] = true
+		}
+	}
+}
+
+// SyncOptConflictgStrategyPerFolder allows you to set a specific conflict
+// resolution strategy for specific folders. The key of the map is the folder,
+// the key is the conflict strategy name.
+func SyncOptConflictgStrategyPerFolder(strategies map[string]string) SyncOption {
+	return func(cfg *vcs.SyncOptions) {
+		if cfg.ConflictStrategyPerFolder == nil {
+			cfg.ConflictStrategyPerFolder = make(map[string]vcs.ConflictStrategy)
+		}
+
+		for folder, strategy := range strategies {
+			cs := vcs.ConflictStrategyFromString(strategy)
+			if cs == vcs.ConflictStragetyUnknown {
+				continue
+			}
+
+			cfg.ConflictStrategyPerFolder[folder] = cs
 		}
 	}
 }

@@ -322,6 +322,11 @@ EXAMPLES:
 				Name:  "read-only,r",
 				Usage: "Add the folder as read-only.",
 			},
+			cli.StringFlag{
+				Name:  "conflict-strategy,c",
+				Usage: "What conflict strategy to use for this specific folder. Overwrites per-remote conflict strategy.",
+				Value: "",
+			},
 		},
 		Description: `If a folder is added as read-only, we do not accept changes when syncing from remotes.
 
