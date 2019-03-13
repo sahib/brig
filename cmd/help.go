@@ -40,7 +40,7 @@ var helpTexts = map[string]helpEntry{
 			},
 			cli.BoolFlag{
 				Name:  "no-password,x",
-				Usage: "Use a static password. Not recommended besides testing. Same as `-w 'echo no-password'.`",
+				Usage: "Use a static password. Not recommended besides testing.",
 			},
 			cli.BoolFlag{
 				Name:  "empty,e",
@@ -61,7 +61,11 @@ var helpTexts = map[string]helpEntry{
 			},
 			cli.BoolFlag{
 				Name:  "no-ipfs-config",
-				Usage: "Do not set brig specific configuration automatically.",
+				Usage: "Do not set brig specific IPFS configuration automatically. Use only when you know what you're doing.",
+			},
+			cli.BoolFlag{
+				Name:  "no-ipfs-optimization",
+				Usage: "Do not set IPFS config keys that help speed up brig.",
 			},
 		},
 		Description: `Initialize a new repository with a certain backend.

@@ -217,17 +217,20 @@ func initIPFS(ipfsPath string) error {
 	return cmd.Run()
 }
 
-func configureIPFS(out io.Writer, ipfsPath string) error {
+func configureIPFS(out io.Writer, ipfsPath string, setExtraConfig bool) error {
 	config := [][]string{
 		// Required: Required for talking to other nodes.
 		{"Experimental.Libp2pStreamMounting", "true"},
+	}
+
+	if setExtraConfig {
 		// Optional: Helps save us resources.
-		{"Experimental.QUIC", "true"},
-		{"Swarm.EnableRelayHop", "true"},
-		{"Reprovider.Interval", "\"2h\""},
-		{"Swarm.ConnMgr.LowWater", "100"},
-		{"Swarm.ConnMgr.HighWater", "200"},
-		{"Swarm.ConnMgr.GracePeriod", "\"60s\""},
+		config = append(config, [][]string{
+			{"Experimental.QUIC", "true"},
+			{"Swarm.EnableRelayHop", "true"},
+			{"Reprovider.Interval", "\"1h\""},
+			{"Swarm.ConnMgr.GracePeriod", "\"60s\""},
+		}...)
 	}
 
 	for _, args := range config {
@@ -288,7 +291,7 @@ func dirExistsAndIsNotEmpty(dir string) bool {
 // Otherwise it will install IPFS (if it needs to), init a repo, set config and
 // bring up the daemon in a fashion that should work for most cases.
 // It will output log messages to `out`.
-func IPFS(out io.Writer, doSetup, setDefaultConfig bool, ipfsPath string) (string, error) {
+func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPath string) (string, error) {
 	if ipfsPath == "" {
 		ipfsPath = guessIPFSRepo()
 		fmt.Fprintf(out, "-- Guessed IPFS repository as %s\n", ipfsPath)
@@ -340,7 +343,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig bool, ipfsPath string) (strin
 		fmt.Fprintf(out, "-- Will set some default settings for IPFS.\n")
 		fmt.Fprintf(out, "-- These are required for brig to work smoothly.\n")
 
-		if err := configureIPFS(out, ipfsPath); err != nil {
+		if err := configureIPFS(out, ipfsPath, setExtraConfig); err != nil {
 			fmt.Fprintf(out, "-- Failed to set defaults: %v\n", err)
 			return "", err
 		}

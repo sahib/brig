@@ -141,10 +141,11 @@ func handleInit(ctx *cli.Context) error {
 	ipfsPath := ctx.String("ipfs-path")
 	doIpfsSetup := !ctx.Bool("no-ipfs-setup")
 	doIpfsConfig := !ctx.Bool("no-ipfs-config")
+	doExtraIpfsConfig := !ctx.Bool("no-ipfs-optimization")
 
 	if backend == "httpipfs" {
 		var err error
-		ipfsPath, err = setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, ipfsPath)
+		ipfsPath, err = setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, doExtraIpfsConfig, ipfsPath)
 		if err != nil {
 			return err
 		}
