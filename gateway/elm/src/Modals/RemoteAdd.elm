@@ -175,6 +175,7 @@ viewRemoteAddContent model =
                 AutoUpdateChanged
                 "Accept automatic updates?"
                 model.doAutoUdate
+                False
             ]
         , br [] []
         , span []
@@ -182,6 +183,7 @@ viewRemoteAddContent model =
                 AcceptPushChanged
                 "Accept other remotes pushing data to us?"
                 model.acceptPush
+                False
             ]
         , br [] []
         , span []

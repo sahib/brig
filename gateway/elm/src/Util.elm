@@ -225,12 +225,20 @@ urlEncodePath path =
     joinPath (List.map Url.percentEncode (splitPath path))
 
 
-viewToggleSwitch : (Bool -> msg) -> String -> Bool -> Html msg
-viewToggleSwitch toMsg message isChecked =
+viewToggleSwitch : (Bool -> msg) -> String -> Bool -> Bool -> Html msg
+viewToggleSwitch toMsg message isChecked isDisabled =
     span []
         [ span []
-            [ label [ class "toggle-switch" ]
-                [ input [ type_ "checkbox", onCheck toMsg, checked isChecked ] []
+            [ label
+                [ class "toggle-switch"
+                , disabled isDisabled
+                , if isDisabled then
+                    class "toggle-switch-disabled"
+
+                  else
+                    class ""
+                ]
+                [ input [ type_ "checkbox", onCheck toMsg, checked isChecked, disabled isDisabled ] []
                 , span [ class "toggle-slider toggle-round" ] []
                 ]
             ]

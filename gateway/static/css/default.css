@@ -415,6 +415,10 @@ a:active, a:focus {
   height: 27px;
 }
 
+.toggle-switch-disabled {
+    color: red;
+}
+
 /* Hide default HTML checkbox */
 .toggle-switch input {
   opacity: 0;
@@ -454,6 +458,7 @@ input:checked + .toggle-slider {
 input:focus + .toggle-slider {
   box-shadow: 0 0 1px #2196F3;
 }
+
 
 input:checked + .toggle-slider:before {
   -webkit-transform: translateX(20px);

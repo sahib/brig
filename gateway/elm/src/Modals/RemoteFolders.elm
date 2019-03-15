@@ -290,7 +290,7 @@ viewFolder model folder =
             [ viewConflictDropdown model folder ]
         , Table.td
             []
-            [ Util.viewToggleSwitch (ReadOnlyChanged folder.folder) "" folder.readOnly ]
+            [ Util.viewToggleSwitch (ReadOnlyChanged folder.folder) "" folder.readOnly False ]
         , Table.td
             []
             [ Button.button

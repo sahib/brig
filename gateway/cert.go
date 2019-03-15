@@ -215,6 +215,7 @@ func FetchTLSCertificate(domain string, cacheDir string) (string, string, error)
 		perms = os.FileMode(0640) // #nosec
 	}
 
+	fmt.Println("WRITING", privPath, pubPath)
 	if err = ioutil.WriteFile(privPath, privData, perms); err != nil {
 		return "", "", err
 	}

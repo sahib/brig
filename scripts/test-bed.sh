@@ -42,7 +42,7 @@ if [ "$USE_SINGLE" = false ]; then
     brig-bob remote add ali $(brig-ali whoami -f)
 fi
 
-brig-ali -V stage BUGS ali-file
+brig-ali -V stage TODO ali-file
 brig-ali commit -m 'added ali-file'
 brig-bob stage LICENSE bob-file
 brig-bob commit -m 'added bob-file'

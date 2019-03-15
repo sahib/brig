@@ -207,14 +207,14 @@ update msg model =
 -- VIEW:
 
 
-viewAutoUpdatesIcon : Bool -> Commands.Remote -> Html Msg
-viewAutoUpdatesIcon state remote =
-    Util.viewToggleSwitch (AutoUpdateToggled remote) "" state
+viewAutoUpdatesIcon : Bool -> Commands.Remote -> Bool -> Html Msg
+viewAutoUpdatesIcon state remote isDisabled =
+    Util.viewToggleSwitch (AutoUpdateToggled remote) "" state isDisabled
 
 
-viewAcceptPushToggle : Bool -> Commands.Remote -> Html Msg
-viewAcceptPushToggle state remote =
-    Util.viewToggleSwitch (AcceptPushToggled remote) "" state
+viewAcceptPushToggle : Bool -> Commands.Remote -> Bool -> Html Msg
+viewAcceptPushToggle state remote isDisabled =
+    Util.viewToggleSwitch (AcceptPushToggled remote) "" state isDisabled
 
 
 viewRemoteState : Model -> Commands.Remote -> Html Msg
@@ -307,19 +307,18 @@ conflictStrategyToIconName model strategy =
             "fa-question"
 
 
-viewConflictDropdown : Model -> Commands.Remote -> Html Msg
-viewConflictDropdown model remote =
-    let
-        isDisabled =
-            not (List.member "fs.edit" model.rights)
-    in
+viewConflictDropdown : Model -> Commands.Remote -> Bool -> Html Msg
+viewConflictDropdown model remote isDisabled =
     Dropdown.dropdown
         (Maybe.withDefault Dropdown.initialState (Dict.get remote.name model.conflictDropdowns))
-        { options = [ Dropdown.alignMenuRight ]
+        { options =
+            [ Dropdown.alignMenuRight
+            , Dropdown.attrs [ disabled isDisabled ]
+            ]
         , toggleMsg = ConflictDropdownMsg remote.name
         , toggleButton =
             Dropdown.toggle
-                [ Button.roleLink ]
+                [ Button.roleLink, Button.attrs [ disabled isDisabled ] ]
                 [ span [ class "fas", class <| conflictStrategyToIconName model remote.conflictStrategy ] [] ]
         , items =
             [ Dropdown.buttonItem
@@ -343,6 +342,10 @@ viewConflictDropdown model remote =
 
 viewRemote : Model -> Commands.Remote -> Table.Row Msg
 viewRemote model remote =
+    let
+        isDisabled =
+            not (List.member "remotes.edit" model.rights)
+    in
     Table.tr []
         [ Table.td
             []
@@ -358,20 +361,20 @@ viewRemote model remote =
             [ span [ class "text-muted" ] [ viewFullFingerprint remote.fingerprint ] ]
         , Table.td
             []
-            [ viewAutoUpdatesIcon remote.acceptAutoUpdates remote ]
+            [ viewAutoUpdatesIcon remote.acceptAutoUpdates remote isDisabled ]
         , Table.td
             []
-            [ viewAcceptPushToggle remote.acceptPush remote ]
+            [ viewAcceptPushToggle remote.acceptPush remote isDisabled ]
         , Table.td
             []
-            [ viewConflictDropdown model remote ]
+            [ viewConflictDropdown model remote isDisabled ]
         , Table.td
             []
             [ Button.button
                 [ Button.roleLink
                 , Button.attrs
                     [ onClick <| RemoteFolderMsg (RemoteFolders.show remote)
-                    , disabled (not (List.member "remotes.edit" model.rights))
+                    , disabled isDisabled
                     ]
                 ]
                 [ span
