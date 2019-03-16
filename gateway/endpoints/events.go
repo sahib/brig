@@ -41,18 +41,20 @@ func NewEventsHandler(rapi remotesapi.RemotesAPI, ev *events.Listener) *EventsHa
 	}
 
 	if ev != nil {
+		// Incoming events from our own node:
 		ev.RegisterEventHandler(events.FsEvent, true, func(ev *events.Event) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 
-			hdl.notify(ctx, "fs", true)
+			hdl.notify(ctx, "fs", true, false)
 		})
 
+		// Incoming events from other nodes:
 		ev.RegisterEventHandler(events.FsEvent, false, func(ev *events.Event) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 
-			hdl.notify(ctx, "fs", false)
+			hdl.notify(ctx, "fs", false, false)
 		})
 
 		hdl.evListener = ev
@@ -63,10 +65,10 @@ func NewEventsHandler(rapi remotesapi.RemotesAPI, ev *events.Listener) *EventsHa
 // Notify sends `msg` to all connected clients, but stops in case `ctx`
 // was canceled before sending it all.
 func (eh *EventsHandler) Notify(ctx context.Context, msg string) error {
-	return eh.notify(ctx, msg, true)
+	return eh.notify(ctx, msg, true, true)
 }
 
-func (eh *EventsHandler) notify(ctx context.Context, msg string, isOwnEvent bool) error {
+func (eh *EventsHandler) notify(ctx context.Context, msg string, isOwnEvent, triggerPublish bool) error {
 	eh.mu.Lock()
 	chs := []chan string{}
 	for _, ch := range eh.chs {
@@ -88,7 +90,7 @@ func (eh *EventsHandler) notify(ctx context.Context, msg string, isOwnEvent bool
 		Type: events.FsEvent,
 	}
 
-	if !isOwnEvent && eh.evListener != nil {
+	if !isOwnEvent && triggerPublish && eh.evListener != nil {
 		return eh.evListener.PublishEvent(event)
 	}
 
