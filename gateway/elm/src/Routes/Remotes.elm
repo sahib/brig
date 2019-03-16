@@ -336,6 +336,11 @@ viewConflictDropdown model remote isDisabled =
                 , disabled isDisabled
                 ]
                 [ span [ class "fas fa-md fa-handshake" ] [], text " Embrace" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled remote "")
+                , disabled isDisabled
+                ]
+                [ span [ class "fas fa-md fa-eraser" ] [], text " Default" ]
             ]
         }
 

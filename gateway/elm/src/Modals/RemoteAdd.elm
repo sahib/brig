@@ -243,6 +243,9 @@ viewConflictDropdown model =
             , Dropdown.buttonItem
                 [ onClick (ConflictStrategyChanged "embrace") ]
                 [ span [ class "fas fa-md fa-handshake" ] [], text " Embrace" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyChanged "") ]
+                [ span [ class "fas fa-md fa-eraser" ] [], text " Default" ]
             ]
         }
 

@@ -272,6 +272,9 @@ viewConflictDropdown model folder =
             , Dropdown.buttonItem
                 [ onClick (ConflictStrategyToggled folder.folder "embrace") ]
                 [ span [ class "fas fa-md fa-handshake" ] [], text " Embrace" ]
+            , Dropdown.buttonItem
+                [ onClick (ConflictStrategyToggled folder.folder "") ]
+                [ span [ class "fas fa-md fa-eraser" ] [], text " Default" ]
             ]
         }
 

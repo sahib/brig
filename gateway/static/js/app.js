@@ -19360,6 +19360,25 @@ var author$project$Routes$Remotes$viewConflictDropdown = F3(
 									]),
 								_List_Nil),
 								elm$html$Html$text(' Embrace')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								A2(author$project$Routes$Remotes$ConflictStrategyToggled, remote, '')),
+								elm$html$Html$Attributes$disabled(isDisabled)
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('fas fa-md fa-eraser')
+									]),
+								_List_Nil),
+								elm$html$Html$text(' Default')
 							]))
 					]),
 				options: _List_fromArray(
@@ -22393,6 +22412,24 @@ var author$project$Modals$RemoteAdd$viewConflictDropdown = function (model) {
 								]),
 							_List_Nil),
 							elm$html$Html$text(' Embrace')
+						])),
+					A2(
+					rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+					_List_fromArray(
+						[
+							elm$html$Html$Events$onClick(
+							author$project$Modals$RemoteAdd$ConflictStrategyChanged(''))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									elm$html$Html$Attributes$class('fas fa-md fa-eraser')
+								]),
+							_List_Nil),
+							elm$html$Html$text(' Default')
 						]))
 				]),
 			options: _List_fromArray(
@@ -22687,6 +22724,24 @@ var author$project$Modals$RemoteFolders$viewConflictDropdown = F2(
 									]),
 								_List_Nil),
 								elm$html$Html$text(' Embrace')
+							])),
+						A2(
+						rundis$elm_bootstrap$Bootstrap$Dropdown$buttonItem,
+						_List_fromArray(
+							[
+								elm$html$Html$Events$onClick(
+								A2(author$project$Modals$RemoteFolders$ConflictStrategyToggled, folder.folder, ''))
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('fas fa-md fa-eraser')
+									]),
+								_List_Nil),
+								elm$html$Html$text(' Default')
 							]))
 					]),
 				options: _List_fromArray(
