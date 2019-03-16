@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/blang/semver"
 	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
@@ -57,6 +58,22 @@ func NewNode(port int, fingerprint string) (*Node, error) {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	log.Infof("Connecting to IPFS HTTP API at %s", addr)
 	sh := shell.NewShell(addr)
+
+	versionString, _, err := sh.Version()
+	if err != nil {
+		log.Warningf("failed to get version: %v", err)
+	}
+
+	version, err := semver.Parse(versionString)
+	if err != nil {
+		log.Warningf("failed to parse version string of IPFS (»%s«): %v", versionString, err)
+	}
+
+	log.Infof("The IPFS version is »%s«.", version)
+	if version.LT(semver.MustParse("0.4.18")) {
+		log.Warningf("This version is quite old. Please update.\n", version)
+		log.Warningf("We only test on newer versions (>= 0.4.18).\n")
+	}
 
 	features, err := getExperimentalFeatures(sh)
 	if err != nil {

@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	humanize "github.com/dustin/go-humanize"
 	homedir "github.com/mitchellh/go-homedir"
 	e "github.com/pkg/errors"
@@ -86,7 +87,7 @@ func isRunning(apiAddr string) bool {
 }
 
 func getLatestStableVersion() string {
-	fallbackStable := "v0.4.18"
+	fallbackStable := "v0.4.19"
 	url := "https://dist.ipfs.io/go-ipfs/versions"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -217,7 +218,27 @@ func initIPFS(ipfsPath string) error {
 	return cmd.Run()
 }
 
-func configureIPFS(out io.Writer, ipfsPath string, setExtraConfig bool) error {
+func getIPFSVersion(apiAddr string) (semver.Version, error) {
+	vers, _, err := shell.NewShell(apiAddr).Version()
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	return semver.Parse(vers)
+}
+
+func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool) error {
+	version, err := getIPFSVersion(apiAddr)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(out, "-- The IPFS version is »%s«.\n", version)
+	if version.LT(semver.MustParse("0.4.18")) {
+		fmt.Fprintf(out, "-- The IPFS version »%s« is quite old. Please update.\n", version)
+		fmt.Fprintf(out, "-- We only test on newer versions (>= 0.4.18).\n")
+	}
+
 	config := [][]string{
 		// Required: Required for talking to other nodes.
 		{"Experimental.Libp2pStreamMounting", "true"},
@@ -231,6 +252,13 @@ func configureIPFS(out io.Writer, ipfsPath string, setExtraConfig bool) error {
 			{"Reprovider.Interval", "\"1h\""},
 			{"Swarm.ConnMgr.GracePeriod", "\"60s\""},
 		}...)
+
+		if version.GE(semver.MustParse("0.4.19")) {
+			config = append(config, [][]string{
+				{"Swarm.EnableAutoNATService", "true"},
+				{"Swarm.EnableAutoRelay", "true"},
+			}...)
+		}
 	}
 
 	for _, args := range config {
@@ -251,9 +279,10 @@ func configureIPFS(out io.Writer, ipfsPath string, setExtraConfig bool) error {
 	return nil
 }
 
-func startIpfs(ipfsPath string) error {
+func startIpfs(out io.Writer, ipfsPath string) error {
 	// We don't call Wait() on cmd, so the process will survive the
 	// exit of your process and gets reparented to init.
+	fmt.Fprintf(out, "-- IPFS_PATH='%s' ipfs daemon --enable-pubsub-experiment\n", ipfsPath)
 	cmd := exec.Command("ipfs", "daemon", "--enable-pubsub-experiment")
 	cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
 	return cmd.Start()
@@ -326,8 +355,8 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 
 	if !isRunning(apiAddr) {
 		fmt.Fprintf(out, "-- IPFS Daemon does not seem to be running.\n")
-		fmt.Fprintf(out, "-- Will start one for you.\n")
-		if err := startIpfs(ipfsPath); err != nil {
+		fmt.Fprintf(out, "-- Will start one for you with the following command:\n")
+		if err := startIpfs(out, ipfsPath); err != nil {
 			return "", err
 		}
 
@@ -343,7 +372,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 		fmt.Fprintf(out, "-- Will set some default settings for IPFS.\n")
 		fmt.Fprintf(out, "-- These are required for brig to work smoothly.\n")
 
-		if err := configureIPFS(out, ipfsPath, setExtraConfig); err != nil {
+		if err := configureIPFS(out, apiAddr, ipfsPath, setExtraConfig); err != nil {
 			fmt.Fprintf(out, "-- Failed to set defaults: %v\n", err)
 			return "", err
 		}

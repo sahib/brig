@@ -12,6 +12,8 @@ github.com/VividCortex/ewma
 github.com/alokmenghrajani/gpgeez
 # github.com/bkaradzic/go-lz4 v1.0.0
 github.com/bkaradzic/go-lz4
+# github.com/blang/semver v3.5.1+incompatible
+github.com/blang/semver
 # github.com/blang/vfs v1.0.0
 github.com/blang/vfs/memfs
 github.com/blang/vfs
