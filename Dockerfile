@@ -9,10 +9,10 @@ RUN mkdir -p $BRIG_PATH
 ENV BRIG_SOURCE /go/src/github.com/sahib/brig
 COPY . $BRIG_SOURCE
 WORKDIR $BRIG_SOURCE
-RUN go install
+RUN make
 
 EXPOSE 6666
-EXPOSE 4002
+EXPOSE 4001
 
-COPY docker-normal-startup.sh /bin/run.sh
+COPY scripts/docker-normal-startup.sh /bin/run.sh
 CMD ["/bin/bash", "/bin/run.sh"]

@@ -50,6 +50,12 @@ Every command offers detailed built-in help, which you can view using the
 Shell autocompletion
 ~~~~~~~~~~~~~~~~~~~~
 
+.. warning::
+
+   The shell autocompletion is still under development. It might still yield
+   weird results and the usability needs to be improved definitely. Any help
+   welcome!
+
 If you don't like to remember the exact name of each command, you can use
 the provided autocompletion. For this to work you have to insert this
 at the end of your ``.bashrc``:
