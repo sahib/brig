@@ -83,6 +83,7 @@ feedback to pull requests is greatly appreciated.
 
 ### Changed
 
+* Starting with this release we will provide pre-compiled binaries for the most common platforms on the [release page](https://github.com/sahib/brig/releases).
 * Introduce proper linting process (``make lint``)
 * ``init`` will now set some IPFS config values that improve connectivity and performance
   of ``brig``. You can disable this via ``--no-ipfs-optimization``.
