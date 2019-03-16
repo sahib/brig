@@ -71,7 +71,7 @@ func NewNode(port int, fingerprint string) (*Node, error) {
 
 	log.Infof("The IPFS version is »%s«.", version)
 	if version.LT(semver.MustParse("0.4.18")) {
-		log.Warningf("This version is quite old. Please update.\n", version)
+		log.Warningf("This version is quite old. Please update.\n")
 		log.Warningf("We only test on newer versions (>= 0.4.18).\n")
 	}
 
