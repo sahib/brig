@@ -184,7 +184,7 @@ func RunCmdline(args []string) int {
 			Action:   withDaemon(handleWhoami, true),
 		}, {
 			Name:     "remote",
-			Aliases:  []string{"rmt"},
+			Aliases:  []string{"rmt", "r"},
 			Category: netwGroup,
 			Subcommands: []cli.Command{
 				{
@@ -226,8 +226,13 @@ func RunCmdline(args []string) int {
 					Action:  withDaemon(handleRemoteFolderListAll, true),
 					Subcommands: []cli.Command{
 						{
-							Name:   "add",
-							Action: withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderAdd, true)),
+							Name:    "add",
+							Aliases: []string{"a"},
+							Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderAdd, true)),
+						}, {
+							Name:    "set",
+							Aliases: []string{"s"},
+							Action:  withArgCheck(needAtLeast(2), withDaemon(handleRemoteFolderSet, true)),
 						}, {
 							Name:    "remove",
 							Aliases: []string{"rm"},

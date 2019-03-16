@@ -401,21 +401,65 @@ func findRemoteForName(ctl *client.Client, name string) (*client.Remote, error) 
 }
 
 func handleRemoteFolderAdd(ctx *cli.Context, ctl *client.Client) error {
+	return handleRemoteFolderAddOrReplace(ctx, ctl, false)
+}
+
+func handleRemoteFolderSet(ctx *cli.Context, ctl *client.Client) error {
+	return handleRemoteFolderAddOrReplace(ctx, ctl, true)
+}
+
+func handleRemoteFolderAddOrReplace(ctx *cli.Context, ctl *client.Client, replace bool) error {
 	remote, err := findRemoteForName(ctl, ctx.Args().First())
 	if err != nil {
 		return err
 	}
+
+	isReadOnly := ctx.Bool("read-only")
+	conflictStrategy := ctx.String("conflict-strategy")
 
 	for _, folder := range ctx.Args().Tail() {
 		if _, err := ctl.Stat(folder); err != nil {
 			fmt.Printf("warning: »%s« does not seem to exist. That's fine though, just in case you made a typo.\n", folder)
 		}
 
-		remote.Folders = append(remote.Folders, client.RemoteFolder{
-			Folder:           folder,
-			ReadOnly:         ctx.Bool("read-only"),
-			ConflictStrategy: ctx.String("conflict-strategy"),
-		})
+		folderFound := false
+
+		for idx, remoteFolder := range remote.Folders {
+			if remoteFolder.Folder == folder {
+				if replace {
+					if ctx.IsSet("read-only") {
+						remote.Folders[idx].ReadOnly = true
+					}
+
+					if ctx.IsSet("read-write") {
+						remote.Folders[idx].ReadOnly = false
+					}
+
+					if ctx.IsSet("conflict-strategy") {
+						remote.Folders[idx].ConflictStrategy = conflictStrategy
+					}
+				}
+
+				folderFound = true
+				break
+			}
+		}
+
+		if !replace && folderFound {
+			return fmt.Errorf("»%s« exists already", folder)
+		}
+
+		if replace && !folderFound {
+			return fmt.Errorf("»%s« does not exist", folder)
+		}
+
+		if !replace {
+			remote.Folders = append(remote.Folders, client.RemoteFolder{
+				Folder:           folder,
+				ReadOnly:         isReadOnly,
+				ConflictStrategy: conflictStrategy,
+			})
+		}
 	}
 
 	return ctl.RemoteUpdate(*remote)

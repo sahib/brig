@@ -339,6 +339,31 @@ EXAMPLES:
    $ brig remote folder add bob /public --read-only
 `,
 	},
+	"remote.folder.set": {
+		Usage:    "Update the settings of a remote folder.",
+		Complete: completeArgsUsage,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "read-only,r",
+				Usage: "Add the folder as read-only.",
+			},
+			cli.BoolFlag{
+				Name:  "read-write,w",
+				Usage: "Add the folder as read and writeable.",
+			},
+			cli.StringFlag{
+				Name:  "conflict-strategy,c",
+				Usage: "What conflict strategy to use for this specific folder. Overwrites per-remote conflict strategy.",
+				Value: "",
+			},
+		},
+		Description: `This works exactly like »add« but overwrites an existing folder.
+
+EXAMPLES:
+
+   $ brig remote folder set bob /public --read-only
+`,
+	},
 	"remote.folder.remove": {
 		Usage:       "Remove a folder from a specific remote. ",
 		Complete:    completeArgsUsage,
