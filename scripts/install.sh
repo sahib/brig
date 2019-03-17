@@ -1,4 +1,9 @@
 #!/bin/sh
+# This script will download the latest release of brig in your current
+# working directory. It also checks if the checksum is the one that
+# was advertised. It's meant as quick and dirty installation utility.
+# If you really want security, please also check the checksum on the release page:
+# https://github.com/sahib/brig/releases
 
 set -e
 
@@ -59,7 +64,7 @@ echo "-- Will attempt download from ${RELEASE_URL}"
 DOWNLOAD_ARCHIVE_PATH="$(mktemp --suffix '.brig-release.tar.gz')"
 EXTRACTION_PATH="$(mktemp -d --suffix '.brig-extract')"
 
-curl -L -s ${RELEASE_URL} -o "${DOWNLOAD_ARCHIVE_PATH}"
+curl --progress-bar -L ${RELEASE_URL} -o "${DOWNLOAD_ARCHIVE_PATH}"
 
 echo "-- Extracing to ${EXTRACTION_PATH}"
 tar xf ${DOWNLOAD_ARCHIVE_PATH} -C ${EXTRACTION_PATH}
@@ -70,7 +75,7 @@ RELEASE_CHECKSUM=$(find ${EXTRACTION_PATH} -type f -iname '*.sha256' -exec cat {
 
 
 if [ "${ACTUAL_CHECKSUM}" == "${RELEASE_CHECKSUM}" ]; then
-    echo "-- Checksums are looking good."
+    echo "-- Checksum looks good (${ACTUAL_CHECKSUM})"
 else
     echo "-- Checksums are not equal!"
     exit 1
