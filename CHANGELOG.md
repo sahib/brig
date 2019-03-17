@@ -82,6 +82,9 @@ feedback to pull requests is greatly appreciated.
   a performance graph of the last 30s by issuing ``go tool pprof -web
   "http://localhost:$(brig d p)/debug/pprof/profile?seconds=30"``
 
+* One way install script to easily get a ``brig`` binary in seconds on your computer:
+  ``bash <(curl -s https://raw.githubusercontent.com/sahib/brig/master/scripts/install.sh)``
+
 ### Changed
 
 * Starting with this release we will provide pre-compiled binaries for the most common platforms on the [release page](https://github.com/sahib/brig/releases).

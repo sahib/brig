@@ -23,6 +23,7 @@ import (
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util/pwutil"
+	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -113,6 +114,21 @@ func guessNextFreePort(ctx *cli.Context) (int, error) {
 	)
 }
 
+func openConfigOneshot(folder string) (*config.Config, error) {
+	configPath := filepath.Join(folder, "config.yml")
+	cfg, err := defaults.OpenMigratedConfig(configPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not read config to see which port I need to connect to.\n")
+		fmt.Fprintf(os.Stderr, "Please specify either --repo <path> or set BRIG_PATH so we know\n")
+		fmt.Fprintf(os.Stderr, "where the repository is to find out the right port number.\n")
+		fmt.Fprintf(os.Stderr, "I will continue by assuming the default port: 6666\n\n")
+		fmt.Fprintf(os.Stderr, "--------------------------------------------------\n\n")
+		return nil, fmt.Errorf("could not find config: %v", err)
+	}
+
+	return cfg, nil
+}
+
 func guessPort(ctx *cli.Context, readConfig bool) int {
 	if ctx.GlobalIsSet("port") {
 		return ctx.GlobalInt("port")
@@ -122,17 +138,8 @@ func guessPort(ctx *cli.Context, readConfig bool) int {
 		return 6666
 	}
 
-	folder := guessRepoFolder(ctx)
-	configPath := filepath.Join(folder, "config.yml")
-
-	cfg, err := defaults.OpenMigratedConfig(configPath)
+	cfg, err := openConfigOneshot(guessRepoFolder(ctx))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not read config to see which port I need to connect to.\n")
-		fmt.Fprintf(os.Stderr, "Please specify either --repo <path> or set BRIG_PATH so we know\n")
-		fmt.Fprintf(os.Stderr, "where the repository is to find out the right port number.\n")
-		fmt.Fprintf(os.Stderr, "I will continue by assuming the default port: 6666\n\n")
-		fmt.Fprintf(os.Stderr, "--------------------------------------------------\n\n")
-
 		// Assume default:
 		return 6666
 	}
@@ -276,15 +283,15 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	}
 
 	// This will likely suffice for most cases:
-	time.Sleep(300 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	warningPrinted := false
-	for i := 0; i < 25; i++ {
+	for i := 0; i < 500; i++ {
 		ctl, err := client.Dial(context.Background(), port)
 		if err != nil {
 			// Only print this warning once...
-			if !warningPrinted && i >= 10 {
-				log.Warnf("Waiting for daemon to bootup... :/")
+			if !warningPrinted && i >= 100 {
+				log.Warnf("waiting a bit long for daemon to bootup...")
 				warningPrinted = true
 			}
 			time.Sleep(50 * time.Millisecond)
@@ -568,4 +575,11 @@ func yesOrNo(v bool) string {
 	}
 
 	return color.RedString("no")
+}
+
+type logWriter struct{ prefix string }
+
+func (lw *logWriter) Write(buf []byte) (int, error) {
+	log.Infof("%s: %s", lw.prefix, string(bytes.TrimSpace(buf)))
+	return len(buf), nil
 }

@@ -382,6 +382,22 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	port := guessPort(ctx, true)
 	bindHost := ctx.GlobalString("bind")
 
+	startIPFSdaemon := true
+	backendPath := filepath.Join(brigPath, "BACKEND")
+	backendData, err := ioutil.ReadFile(backendPath)
+	if err != nil {
+		log.Warningf("failed to read %v: %v", backendPath, err)
+	} else {
+		startIPFSdaemon = string(backendData) == "httpipfs"
+	}
+
+	if startIPFSdaemon {
+		_, err = setup.IPFS(&logWriter{prefix: "ipfs"}, true, false, false, "")
+		if err != nil {
+			return err
+		}
+	}
+
 	var password string
 	passwordFn := func() (string, error) {
 		if !isInitialized {
@@ -400,11 +416,15 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	}
 
 	logToStdout := ctx.Bool("log-to-stdout")
+	if !logToStdout {
+		log.Infof("all further logs will be piped to the syslog daemon.")
+	}
+
 	server, err := server.BootServer(brigPath, passwordFn, bindHost, port, logToStdout)
 	if err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("Failed to boot brigd: %v", err),
+			fmt.Sprintf("failed to boot brigd: %v", err),
 		}
 	}
 
@@ -413,7 +433,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	if err := server.Serve(); err != nil {
 		return ExitCode{
 			UnknownError,
-			fmt.Sprintf("Failed to serve: %v", err),
+			fmt.Sprintf("failed to serve: %v", err),
 		}
 	}
 
