@@ -240,7 +240,7 @@ func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool)
 	}
 
 	config := [][]string{
-		// Required: Required for talking to other nodes.
+		// Required for talking to other nodes.
 		{"Experimental.Libp2pStreamMounting", "true"},
 	}
 
@@ -248,14 +248,12 @@ func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool)
 		// Optional: Helps save us resources.
 		config = append(config, [][]string{
 			{"Experimental.QUIC", "true"},
-			{"Swarm.EnableRelayHop", "true"},
 			{"Reprovider.Interval", "\"1h\""},
 			{"Swarm.ConnMgr.GracePeriod", "\"60s\""},
 		}...)
 
 		if version.GE(semver.MustParse("0.4.19")) {
 			config = append(config, [][]string{
-				{"Swarm.EnableAutoNATService", "true"},
 				{"Swarm.EnableAutoRelay", "true"},
 			}...)
 		}

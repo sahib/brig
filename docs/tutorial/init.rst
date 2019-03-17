@@ -47,6 +47,14 @@ the background. Every other ``brig`` commands will communicate with it via
 a local network socket. If the daemon does not run yet, it will be started for
 you in the background without you noticing.
 
+.. note::
+
+   If no IPFS daemon is running, ``brig`` will start one for you. If you don't
+   have ``ipfs`` installed, it will even install and set it up for you. By
+   default, ``brig init`` will also set some default options that help ``brig``
+   to run a bit smoother. If you do not want those, please add
+   ``--no-ipfs-optimization`` to the ``init`` command above.
+
 Passwords
 ~~~~~~~~~
 

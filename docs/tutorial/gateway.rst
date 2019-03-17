@@ -1,10 +1,10 @@
-Using the gateway
------------------
+Using the gateway / UI
+----------------------
 
 Gateway Screenshots
 ~~~~~~~~~~~~~~~~~~~
 
-The gateway UI consists of several tabs.
+The gateway UI consists of several tabs, which are briefly shown below to give you a short impression of it.
 
 Login screen
 ^^^^^^^^^^^^
@@ -57,7 +57,7 @@ adjust settings in it.
 Remote Add Dialog
 ^^^^^^^^^^^^^^^^^
 
-A sample dialog.
+A sample dialog. The UI uses many of them.
 
 .. image:: ../_static/gateway-add-remote.png
     :alt: Gateway add remote view
@@ -95,11 +95,11 @@ The gateway is disabled by default. If you want to start it, use this command:
     $ brig gateway start
 
 Without further configuration, this will create a HTTP (**not HTTPS!**) server
-on port ``5000``, which can be used already. If you access it under
-``http://localhost:5000`` you will see a login mask where you can log yourself
+on port ``6001``, which can be used already. If you access it under
+``http://localhost:6001`` you will see a login mask where you can log yourself
 in with the credentials you entered earlier.
 
-If you'd like to use another port than ``5000``, you can do so by setting the
+If you'd like to use another port than ``6001``, you can do so by setting the
 respective config key:
 
 .. code-block:: bash
@@ -125,7 +125,7 @@ The gateway can be stopped anytime with the following command:
 .. note::
 
     If you want to forward the gateway to the outside, but do not own
-    a dedicated server, you can forward port 5000 to your computer. With this
+    a dedicated server, you can forward port 6001 to your computer. With this
     setup you should also get a certficate which in turn requires a DNS name.
     An easy way to get one is to use dynamic DNS.
 
@@ -135,7 +135,7 @@ file called ``brig gateway url``:
 .. code-block:: bash
 
     $ brig gateway url README.md
-    http://localhost:5000/get/README.md
+    http://localhost:6001/get/README.md
 
 Folder management
 ~~~~~~~~~~~~~~~~~
@@ -212,7 +212,7 @@ was set:
     /home/user/.cache/brig/your.domain.org_cert.pem
     $ brig cfg get gateway.cert.keyfile
     /home/user/.cache/brig/your.domain.org_key.pem
-    $ curl -i https://your.domain.org:5000
+    $ curl -i https://your.domain.org:6001
     HTTP/2 200
     vary: Accept-Encoding
     content-type: text/plain; charset=utf-8

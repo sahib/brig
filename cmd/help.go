@@ -64,7 +64,7 @@ var helpTexts = map[string]helpEntry{
 				Usage: "Do not set brig specific IPFS configuration automatically. Use only when you know what you're doing.",
 			},
 			cli.BoolFlag{
-				Name:  "no-ipfs-optimization",
+				Name:  "no-ipfs-optimization,o",
 				Usage: "Do not set IPFS config keys that help speed up brig.",
 			},
 		},

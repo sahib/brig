@@ -10,7 +10,12 @@ as a single binary that includes everything you need. See here for the release l
 Just download the binary for you platform, unpack it and put in somewhere in your
 ``$PATH`` (for example ``/usr/local/bin``).
 
-If you trust me well know **and** have installed, you can
+If you trust us well enough, you can also use this online installer to download
+the latest stable ``brig`` binary to your current working directory:
+
+.. code-block:: bash
+
+   $ bash <(curl -s https://raw.githubusercontent.com/sahib/brig/master/scripts/install.sh)
 
 Compiling yourself
 ------------------
