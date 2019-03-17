@@ -7,9 +7,10 @@ The format follows [keepachangelog.com]. Please stick to it.
 ## [0.4.0 Capricious Clownfish] -- unreleased
 
 It's only been a few months since the last release (December 2018), but there
-are a ton of new features and general changes. The biggest changes are definitely
-refactoring IPFS into its own process and providing a nice UI written in Elm.
-But those are just two of the biggest ones, see the full list below.
+are a ton of new features general changes that total in about 15k added lines
+of code. The biggest changes are definitely refactoring IPFS into its own
+process and providing a nice UI written in Elm. But those are just two of the
+biggest ones, see the full list below.
 
 As always, ``brig`` is **always looking for contributors.** Anything from
 feedback to pull requests is greatly appreciated.
@@ -87,8 +88,10 @@ feedback to pull requests is greatly appreciated.
 * Introduce proper linting process (``make lint``)
 * ``init`` will now set some IPFS config values that improve connectivity and performance
   of ``brig``. You can disable this via ``--no-ipfs-optimization``.
-* Disable pre-caching.
+* Disable pre-caching by default due to extreme slow-ness.
 * Migrate to ``go mod`` since we do not need to deal with ``gx`` packages anymore.
+* There is no (broken) ``make install`` target anymore. Simply do ``make`` and
+  ``sudo cp brig /usr/local/bin`` or wherever you want to put it.
 
 ### Removed
 

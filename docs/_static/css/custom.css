@@ -9,12 +9,13 @@ a {
 }
 
 .alert-info {
-    background-color: #3498dba1;
+    background-color: #5cb7f5a1;
+    color: #333;
 }
 
 .alert-warning {
     background-color: #f39c1281;
-    color: black;
+    color: #333;
 }
 
 pre {
