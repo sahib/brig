@@ -61,11 +61,11 @@ var helpTexts = map[string]helpEntry{
 			},
 			cli.BoolFlag{
 				Name:  "no-ipfs-config",
-				Usage: "Do not set brig specific IPFS configuration automatically. Use only when you know what you're doing.",
+				Usage: "Do no changes in the IPFS config that are necessary for brig. Use only when you know what you're doing.",
 			},
 			cli.BoolFlag{
 				Name:  "no-ipfs-optimization,o",
-				Usage: "Do not set IPFS config keys that help speed up brig.",
+				Usage: "Do no changes in the IPFS config that will improve the performance of brig, but are not necessary to work.",
 			},
 		},
 		Description: `Initialize a new repository with a certain backend.
