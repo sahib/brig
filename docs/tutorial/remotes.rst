@@ -255,6 +255,16 @@ You can add a read-only folder by adding the ``--read-only`` switch to the comma
 
    $ brig rmt f a bob /videos --read-only
 
+.. note::
+
+   If you want to overwrite an existing folder with new settings, you can use the ``set`` subcommand:
+
+   .. code-block:: bash
+
+      $ brig remote folder set bob /videos -c embrace --read-only
+
+   See below for explanation on those additional options.
+
 Conflicts
 ---------
 
