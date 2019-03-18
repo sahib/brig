@@ -44,13 +44,24 @@ Also take a look [at the documentation](http://brig.readthedocs.io/en/latest/ind
 
 ## Installation
 
-If you have a recent version of `go` (`>= 1.10`) installed, it should be as easy as this:
+You can download the latest script with the following oneliner:
+
+```bash
+# Before you execute this, ask yourself if you trust me.
+$ bash <(curl -s https://raw.githubusercontent.com/sahib/brig/master/scripts/install.sh)
+```
+
+Alternatively, you can simply grab the latest binary from the [release tab](https://github.com/sahib/brig/releases).
+
+Development versions can be installed easily by compiling yourself. If you have
+a recent version of `go` (`>= 1.10`) installed, it should be as easy as this:
 
 ```bash
 $ go get -d -v -u github.com/sahib/brig  # Download the sources.
 $ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
+$ git checkout develop                   # Checkout the develop branch.
 $ make                                   # Build the software.
-$ $GOPATH/bin/brig help                  # Run the binary
+$ $GOPATH/bin/brig help                  # Run the binary.
 ```
 
 Please refer to the [install docs](https://brig.readthedocs.io/en/latest/installation.html) for more details.
@@ -62,25 +73,22 @@ Please refer to the [install docs](https://brig.readthedocs.io/en/latest/install
 ...If you want to know, what to do after you can read the
 [Quickstart](http://brig.readthedocs.io/en/latest/quickstart.html).
 
-There is also a ``#brig`` room on ``matrix.org`` you can join with any
-[Matrix](https://matrix.org) client. Click [this
-link](https://riot.im/app/#/room/#brig:matrix.org) to join the room directly
-via [Riot.im](https://about.riot.im).
+There is also a ``#brig`` room on ``matrix.org`` you can join with any [Matrix](https://matrix.org) client.
+Click [this link](https://riot.im/app/#/room/#brig:matrix.org) to join the room directly via [Riot.im](https://about.riot.im).
 
 ## Status
 
 This software is in a **beta phase** currently. All mentioned features should
-work. Things might still change rapdily and there will be no guarantee to
-change that until version `1.0.0`. Do not use `brig` yet as only storage
-for your production data. There are still bugs, but it should be safe enough to
-toy around with it quite a bit.
+work. Things might still change rapidly and there will be no guarantees given
+before version `1.0.0`. Do not use `brig` yet as only storage for your
+production data. There are still bugs, but it should be safe enough to toy
+around with it quite a bit.
 
 This project has started end of 2015 and has seen many conceptual changes in
-the meantime. It started out as research project of two computer science
-students (me and [qitta](https://github.com/qitta)). After writing our [master
+the meantime. It started out as research project. After writing my [master
 theses](https://github.com/disorganizer/brig-thesis) on it, it was put down for
-a few months until I ([sahib](https://github.com/sahib)) picked at up again and
-currently am trying to push it to usable software.
+a few months until I picked at up again and currently am trying to push it to
+usable software.
 
 If you want to open a bug report, just type `brig bug` to get a readily filled template for you.
 
@@ -90,21 +98,10 @@ All documentation can be found on [ReadTheDocs.org](http://brig.readthedocs.io/e
 
 ## Donations
 
-I really would like to work more on `brig`, but my day job (and the money
-that comes with it) forbids that. If you're interested in the development and
-would think about supporting me financially, then please [contact
-me!](mailto:sahib@online.de) If you'd like to give me a small & steady
-donation, you can always use *Liberapay*:
+If you're interested in the development and would think about supporting me
+financially, then please [contact me!](mailto:sahib@online.de) If you'd like to
+give me a small & steady donation, you can always use *Liberapay*:
 
 <noscript><a href="https://liberapay.com/sahib/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a></noscript>
 
 *Thank you!*
-
-## Focus
-
-`brig` tries to focus on being up conceptually simple, by hiding a lot of
-complicated details regarding storage and security. Therefore I hope the end
-result is easy and pleasant to use, while being secure by default.
-Since `brig` is a "general purpose" tool for file synchronization it of course
-cannot excel in all areas. This is especially true for efficiency, which is
-sometimes sacrificed to get the balance of usability and security right.
