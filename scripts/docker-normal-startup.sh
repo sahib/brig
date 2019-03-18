@@ -1,5 +1,8 @@
 #!/bin/bash
 
-export BRIG_USER="bob@wonderland.lit/container"
-brig --verbose init $BRIG_USER -x || exit 1
-brig --verbose -x --bind 0.0.0.0 daemon launch --log-to-stdout
+set -e
+
+brig --verbose init -x $BRIG_USER
+brig daemon quit
+sleep 2
+brig daemon launch -s

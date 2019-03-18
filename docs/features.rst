@@ -135,5 +135,5 @@ far not as efficient as other tools in all use cases. But to overcome this, we n
 a community that helps to overcome this over time.
 
 The best advice I can give you: Try it out and see if it fits your use case. If
-it doesn't I'm happy to here from you and wish you all the best with another
+it doesn't I'm happy to hear from you and wish you all the best with another
 tool.
