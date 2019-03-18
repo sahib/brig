@@ -61,14 +61,11 @@ func ForwardLogByName(name string, w io.Writer) error {
 
 // FromName returns a suitable backend for a human readable name.
 // If an invalid name is passed, nil is returned.
-func FromName(name, path, fingerprint string, port int) (Backend, error) {
+func FromName(name, path, fingerprint string) (Backend, error) {
 	switch name {
 	case "httpipfs":
-		return httpipfs.NewNode(port, fingerprint)
+		return httpipfs.NewNode(path, fingerprint)
 	case "mock":
-		// This is silly, but it's only for testing.
-		// Read the name and the port from the backend path.
-		// Side effect: user cannot contain slashes currently.
 		user := "alice"
 		if envUser := os.Getenv("BRIG_MOCK_USER"); envUser != "" {
 			user = envUser
@@ -78,7 +75,7 @@ func FromName(name, path, fingerprint string, port int) (Backend, error) {
 			path = envNetDbPath
 		}
 
-		return mock.NewMockBackend(path, user, port), nil
+		return mock.NewMockBackend(path, user), nil
 	}
 
 	return nil, ErrNoSuchBackend
@@ -95,12 +92,12 @@ func IsValidName(name string) bool {
 }
 
 // Version returns version info for the backend `name`.
-func Version(name string, port int) VersionInfo {
+func Version(name, path string) VersionInfo {
 	switch name {
 	case "mock":
 		return mock.Version()
 	case "httpipfs":
-		nd, err := httpipfs.NewNode(port, "")
+		nd, err := httpipfs.NewNode(path, "")
 		if err != nil {
 			log.Debugf("failed to get version")
 			return nil

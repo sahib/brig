@@ -10,8 +10,8 @@ import (
 
 func TestPubSub(t *testing.T) {
 	// Only use one ipfs instance, for test performance.
-	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
-		nd, err := NewNode(apiPort, "")
+	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
+		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
 
 		self, err := nd.Identity()

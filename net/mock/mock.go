@@ -13,6 +13,7 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/net/peer"
+	"github.com/sahib/brig/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,12 +29,12 @@ type NetBackend struct {
 }
 
 // NewNetBackend returns a new fake NetBackend
-func NewNetBackend(path, name string, port int) *NetBackend {
+func NewNetBackend(path, name string) *NetBackend {
 	return &NetBackend{
 		isOnline: true,
 		conns:    make(map[string]chan net.Conn),
 		name:     name,
-		port:     port,
+		port:     util.FindFreePort(),
 		path:     path,
 	}
 }

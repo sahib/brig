@@ -49,7 +49,7 @@ func Init(ctx *cli.Context, basePath, owner, password, backendName, ipfsPath str
 		)
 	}
 
-	err = repo.OverwriteConfigKey(basePath, "daemon.ipfs_port", int64(ipfsPort))
+	err = repo.OverwriteConfigKey(basePath, "daemon.ipfs_path", ipfsPath)
 	if err != nil {
 		return err
 	}

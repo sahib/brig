@@ -9,8 +9,8 @@ import (
 )
 
 func TestIpfsStartup(t *testing.T) {
-	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
-		nd, err := NewNode(apiPort, "")
+	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
+		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
 
 		hash, err := nd.Add(bytes.NewReader([]byte("hello")))
@@ -20,11 +20,11 @@ func TestIpfsStartup(t *testing.T) {
 }
 
 func TestDoubleIpfsStartup(t *testing.T) {
-	WithDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
-		ndA, err := NewNode(apiPortA, "")
+	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
+		ndA, err := NewNode(ipfsPathA, "")
 		require.Nil(t, err)
 
-		ndB, err := NewNode(apiPortB, "")
+		ndB, err := NewNode(ipfsPathB, "")
 		require.Nil(t, err)
 
 		idA, err := ndA.Identity()

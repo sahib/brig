@@ -25,7 +25,7 @@ func TestRepoInit(t *testing.T) {
 	rp, err := Open(testDir, "klaus")
 	require.Nil(t, err)
 
-	bk := mock.NewMockBackend("", "", 0)
+	bk := mock.NewMockBackend("", "")
 	fs, err := rp.FS(rp.CurrentUser(), bk)
 	require.Nil(t, err)
 	require.NotNil(t, fs)

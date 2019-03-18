@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sync"
 
 	"github.com/blang/semver"
+	"github.com/sahib/brig/repo/setup"
 	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,10 +52,13 @@ func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
 	return raw.Experimental, nil
 }
 
-// NewNode returns a new http based IPFS backend., "")
-// It uses the API server at `port`.
-func NewNode(port int, fingerprint string) (*Node, error) {
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
+// NewNode returns a new http based IPFS backend.
+func NewNode(ipfsPath, fingerprint string) (*Node, error) {
+	addr, err := setup.GetAPIAddrForPath(ipfsPath)
+	if err != nil {
+		return nil, err
+	}
+
 	log.Infof("Connecting to IPFS HTTP API at %s", addr)
 	sh := shell.NewShell(addr)
 

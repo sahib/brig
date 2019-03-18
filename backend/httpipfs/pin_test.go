@@ -9,8 +9,8 @@ import (
 )
 
 func TestPinUnpin(t *testing.T) {
-	WithIpfs(t, 1, func(t *testing.T, apiPort int) {
-		nd, err := NewNode(apiPort, "")
+	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
+		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
 
 		data := testutil.CreateDummyBuf(4096 * 1024)

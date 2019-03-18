@@ -13,11 +13,11 @@ func TestPublishResolve(t *testing.T) {
 	t.Skip("needs work")
 
 	// Only use one ipfs instance, for test performance.
-	WithDoubleIpfs(t, 1, func(t *testing.T, apiPortA, apiPortB int) {
-		ndA, err := NewNode(apiPortA, "")
+	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
+		ndA, err := NewNode(ipfsPathA, "")
 		require.Nil(t, err)
 
-		ndB, err := NewNode(apiPortB, "")
+		ndB, err := NewNode(ipfsPathB, "")
 		require.Nil(t, err)
 
 		// self, err := ndA.Identity()

@@ -3,19 +3,19 @@ package httpipfs
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
+	shell "github.com/sahib/go-ipfs-api"
 	"github.com/stretchr/testify/require"
 )
 
 // WithIpfs starts a new IPFS instance and calls `fn` with the API port to it.
 // `portOff` is the offset to add on all standard ports.
-func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
+func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, ipfsPath string)) {
 	ipfsPath, err := ioutil.TempDir("", "brig-httpipfs-test-")
 	require.Nil(t, err)
 	defer os.RemoveAll(ipfsPath)
@@ -51,10 +51,9 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 	}()
 
 	// Wait until the daemon actually offers the API interface:
+	localAddr := fmt.Sprintf("localhost:%d", apiPort)
 	for tries := 0; tries < 200; tries++ {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", apiPort))
-		if err == nil {
-			conn.Close()
+		if shell.NewShell(localAddr).IsUp() {
 			break
 		}
 
@@ -62,27 +61,27 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPort int)) {
 	}
 
 	// Actually call the test:
-	fn(t, apiPort)
+	fn(t, ipfsPath)
 
 }
 
 // WithDoubleIpfs starts two IPFS instances in parallel.
-func WithDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, apiPortA, apiPortB int)) {
-	chPortA := make(chan int)
-	chPortB := make(chan int)
+func WithDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, ipfsPathA, ipfsPathB string)) {
+	chPathA := make(chan string)
+	chPathB := make(chan string)
 	stop := make(chan bool)
 
-	go WithIpfs(t, portOff, func(t *testing.T, apiPortA int) {
-		chPortA <- apiPortA
+	go WithIpfs(t, portOff, func(t *testing.T, ipfsPathA string) {
+		chPathA <- ipfsPathA
 		<-stop
 	})
 
-	go WithIpfs(t, portOff+1, func(t *testing.T, apiPortB int) {
-		chPortB <- apiPortB
+	go WithIpfs(t, portOff+1, func(t *testing.T, ipfsPathB string) {
+		chPathB <- ipfsPathB
 		<-stop
 	})
 
-	fn(t, <-chPortA, <-chPortB)
+	fn(t, <-chPathA, <-chPathB)
 	stop <- true
 	stop <- true
 }

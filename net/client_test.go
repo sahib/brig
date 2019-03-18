@@ -24,7 +24,7 @@ type testUnit struct {
 	bk  backend.Backend
 }
 
-func withNetServer(t *testing.T, name string, backendPort int, basePath string, fn func(u testUnit)) {
+func withNetServer(t *testing.T, name string, basePath string, fn func(u testUnit)) {
 	basePath, err := ioutil.TempDir("", "brig-ctl-test")
 	require.Nil(t, err)
 
@@ -41,7 +41,7 @@ func withNetServer(t *testing.T, name string, backendPort int, basePath string, 
 	// The following env vars are only read in FromName.
 	require.Nil(t, os.Setenv("BRIG_MOCK_USER", name))
 	require.Nil(t, os.Setenv("BRIG_MOCK_NET_DB_PATH", netDbPath))
-	bk, err := backend.FromName("mock", basePath, "", backendPort)
+	bk, err := backend.FromName("mock", basePath, "")
 	require.Nil(t, err)
 
 	err = repo.Init(basePath, name, "password", "mock", 6666)
@@ -99,8 +99,8 @@ func withNetPair(t *testing.T, fn func(a, b testUnit)) {
 		require.Nil(t, os.RemoveAll(basePath))
 	}()
 
-	withNetServer(t, "alice", 9998, basePath, func(a testUnit) {
-		withNetServer(t, "bob", 9999, basePath, func(b testUnit) {
+	withNetServer(t, "alice", basePath, func(a testUnit) {
+		withNetServer(t, "bob", basePath, func(b testUnit) {
 			// Add each other's fingerprints:
 			require.Nil(t, a.rp.Remotes.AddOrUpdateRemote(repo.Remote{
 				Name:        "bob",

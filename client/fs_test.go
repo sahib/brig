@@ -45,7 +45,7 @@ func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
 	require.Nil(t, err, stringify(err))
 
 	bkPort := util.FindFreePort()
-	err = repo.OverwriteConfigKey(repoPath, "daemon.ipfs_port", int64(bkPort))
+	err = repo.OverwriteConfigKey(repoPath, "daemon.ipfs_path", int64(bkPort))
 	require.Nil(t, err, stringify(err))
 
 	passwordFn := func() (string, error) {

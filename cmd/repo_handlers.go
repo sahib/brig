@@ -392,7 +392,17 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	}
 
 	if startIPFSdaemon {
-		_, err = setup.IPFS(&logWriter{prefix: "ipfs"}, true, false, false, "")
+		// Make sure IPFS is running. Also set required options,
+		// but don't bother to set optimizations.
+		ipfsPath := ""
+		cfg, err := openConfigOneshot(brigPath)
+		if err != nil {
+			log.Warningf("failed to read config at %v: %v", brigPath, err)
+		} else {
+			ipfsPath = cfg.String("daemon.ipfs_path")
+		}
+
+		_, err = setup.IPFS(&logWriter{prefix: "ipfs"}, true, true, false, ipfsPath)
 		if err != nil {
 			return err
 		}

@@ -191,13 +191,10 @@ func (b *base) loadBackend() error {
 
 	fingerprint := peer.BuildFingerprint("", pubKey)
 
-	ipfsPort := int(b.repo.Config.Int("daemon.ipfs_port"))
-	backendPath := b.repo.BackendPath(backendName)
 	realBackend, err := backend.FromName(
 		backendName,
-		backendPath,
+		b.repo.Config.String("daemon.ipfs_path"),
 		fingerprint.PubKeyID(),
-		ipfsPort,
 	)
 
 	if err != nil {

@@ -246,11 +246,6 @@ func (rp *Repository) Keyring() *Keyring {
 	return newKeyringHandle(rp.BaseFolder)
 }
 
-// BackendPath returns the absolute path to the backend folder inside the repo.
-func (rp *Repository) BackendPath(name string) string {
-	return filepath.Join(rp.BaseFolder, "data", name)
-}
-
 // RepoID returns a unique ID specific to this repository.
 func (rp *Repository) RepoID() (string, error) {
 	data, err := ioutil.ReadFile(filepath.Join(rp.BaseFolder, "REPO_ID"))

@@ -17,8 +17,8 @@ var (
 	TestMessage = []byte("Hello World!")
 )
 
-func testClientSide(t *testing.T, portB int, addr string) {
-	nd, err := NewNode(portB, "")
+func testClientSide(t *testing.T, ipfsPathB string, addr string) {
+	nd, err := NewNode(ipfsPathB, "")
 	require.Nil(t, err)
 
 	conn, err := nd.Dial(addr, "", TestProtocol)
@@ -33,8 +33,8 @@ func testClientSide(t *testing.T, portB int, addr string) {
 }
 
 func TestDialAndListen(t *testing.T) {
-	WithDoubleIpfs(t, 1, func(t *testing.T, portA, portB int) {
-		nd, err := NewNode(portA, "")
+	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
+		nd, err := NewNode(ipfsPathA, "")
 		require.Nil(t, err)
 
 		lst, err := nd.Listen(TestProtocol)
@@ -46,7 +46,7 @@ func TestDialAndListen(t *testing.T) {
 		id, err := nd.Identity()
 		require.Nil(t, err)
 
-		go testClientSide(t, portB, id.Addr)
+		go testClientSide(t, ipfsPathB, id.Addr)
 
 		conn, err := lst.Accept()
 		require.Nil(t, err)
@@ -59,8 +59,8 @@ func TestDialAndListen(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
-	WithDoubleIpfs(t, 1, func(t *testing.T, portA, portB int) {
-		ndA, err := NewNode(portA, "")
+	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
+		ndA, err := NewNode(ipfsPathA, "")
 		require.Nil(t, err)
 
 		idA, err := ndA.Identity()
@@ -88,8 +88,8 @@ func TestPing(t *testing.T) {
 }
 
 func TestDialAndListenOnSingleNode(t *testing.T) {
-	WithIpfs(t, 1, func(t *testing.T, port int) {
-		nd, err := NewNode(port, "")
+	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
+		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
 
 		lst, err := nd.Listen(TestProtocol)
@@ -101,7 +101,7 @@ func TestDialAndListenOnSingleNode(t *testing.T) {
 		id, err := nd.Identity()
 		require.Nil(t, err)
 
-		go testClientSide(t, port, id.Addr)
+		go testClientSide(t, ipfsPath, id.Addr)
 
 		conn, err := lst.Accept()
 		require.Nil(t, err)
@@ -114,8 +114,8 @@ func TestDialAndListenOnSingleNode(t *testing.T) {
 }
 
 func TestPingSelf(t *testing.T) {
-	WithIpfs(t, 1, func(t *testing.T, port int) {
-		nd, err := NewNode(port, "")
+	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
+		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
 
 		id, err := nd.Identity()
