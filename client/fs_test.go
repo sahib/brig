@@ -44,10 +44,6 @@ func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
 	err = repo.Init(repoPath, name, "no-pass", "mock", int64(port))
 	require.Nil(t, err, stringify(err))
 
-	bkPort := util.FindFreePort()
-	err = repo.OverwriteConfigKey(repoPath, "daemon.ipfs_path", int64(bkPort))
-	require.Nil(t, err, stringify(err))
-
 	passwordFn := func() (string, error) {
 		return "no-pass", nil
 	}
