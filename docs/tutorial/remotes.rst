@@ -266,7 +266,7 @@ You can add a read-only folder by adding the ``--read-only`` switch to the comma
    See below for explanation on those additional options.
 
 Conflicts
----------
+~~~~~~~~~
 
 Whenever two repositories have a file at the same path, ``brig`` needs to do some conflict resolving.
 If those files are equal or if they share common history and did not diverge there is nothing to fear.
@@ -304,7 +304,7 @@ This will trump the per-remote folder strategy:
    $ brig remote folder add bob /collab -c embrace
 
 Automatic Updating
-------------------
+~~~~~~~~~~~~~~~~~~
 
 .. warning::
 
@@ -344,7 +344,7 @@ was updated automatically by looking at ``brig log``:
     ...
 
 Pushing changes
----------------
+~~~~~~~~~~~~~~~
 
 As you saw above, doing a ``brig sync`` won't do a bidirectional
 synchronisation. It will only fetch metadata from the remote and modify our

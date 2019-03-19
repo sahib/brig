@@ -277,7 +277,7 @@ will be redirected directly to port 443.
     $ brig cfg set gateway.cert.redirect.http_port 80
 
 Allowing anonymous access
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to run a public gateway (for example for a group of friends), then
 you might want to enable anonymous access. In this mode you will be logged in
