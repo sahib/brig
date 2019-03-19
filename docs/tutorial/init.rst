@@ -187,8 +187,8 @@ specific about the repository (``--repo``) path. Here is an example:
 .. code-block:: bash
 
    # Be explicit
-   $ brig --repo /tmp/ali init ali -x --ipfs-port 5001
-   $ brig --repo /tmp/bob init bob -x --ipfs-port 5002
+   $ brig --repo /tmp/ali init ali -x --ipfs-path ~/.ipfs
+   $ brig --repo /tmp/bob init bob -x --ipfs-path ~/.ipfs2
 
    # Since you specified --repo we know what daemon to talk to.
    # You can also set BRIG_PATH for the same effect:

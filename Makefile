@@ -3,7 +3,7 @@
 #       https://github.com/perkeep/perkeep/blob/master/make.go
 
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-VERSION_SPLIT=$(shell sed 's/v\(.*\)\.\(.*\)\.\(.*\)-\(.*\)/\1 \2 \3 \4/g' ${ROOT_DIR}/.version)
+VERSION_SPLIT=$(shell sed 's/v\(.*\)\.\(.*\)\.\(.*\)/\1 \2 \3/g' ${ROOT_DIR}/.version)
 
 # Build metadata:
 VERSION_MAJOR=$(word 1,${VERSION_SPLIT})
@@ -29,7 +29,7 @@ generate:
 	go generate ./...
 
 build:
-	@go build \
+	go build \
 		-o "${BRIG_BINARY_PATH}" \
 		-ldflags \
 		" \
