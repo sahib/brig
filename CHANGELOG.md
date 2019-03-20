@@ -7,7 +7,7 @@ The format follows [keepachangelog.com]. Please stick to it.
 ## [0.4.0 Capricious Clownfish] -- unreleased
 
 It's only been a few months since the last release (December 2018), but there
-are a ton of new features general changes that total in about 15k added lines
+are a ton of new features / general changes that total in about 15k added lines
 of code. The biggest changes are definitely refactoring IPFS into its own
 process and providing a nice UI written in Elm. But those are just two of the
 biggest ones, see the full list below.

@@ -90,10 +90,11 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 	repoRoot = filepath.Clean(repoRoot)
 
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
-		repoPath := filepath.Join(repoRoot, childPath[len(root):])
+		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
+
 		if info.IsDir() {
 			if err := ctl.Mkdir(repoPath, true); err != nil {
-				return e.Wrapf(err, "mkdir")
+				return e.Wrapf(err, "mkdir: %s", repoPath)
 			}
 		}
 
@@ -105,7 +106,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 	})
 
 	if err != nil {
-		return fmt.Errorf("Failed to create sub directories: %v", err)
+		return fmt.Errorf("failed to create sub directories: %v", err)
 	}
 
 	width, err := terminal.Width()
@@ -150,7 +151,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 				}
 
 				if err := ctl.Stage(pair.local, pair.repo); err != nil {
-					fmt.Printf("failed to stage %s: %v", pair.local, err)
+					fmt.Printf("failed to stage %s: %v\n", pair.local, err)
 				}
 
 				// Notify the bar. The op time is used for the ETA.

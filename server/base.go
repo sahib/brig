@@ -579,7 +579,6 @@ func (b *base) notifyFsChangeEvent() {
 		return
 	}
 
-	log.Debugf("publishing fs event")
 	ev := events.Event{
 		Type: events.FsEvent,
 	}
