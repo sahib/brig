@@ -111,9 +111,12 @@ func (a *RemotesAPI) Set(rm remotesapi.Remote) error {
 	}
 
 	err = a.base.repo.Remotes.AddOrUpdateRemote(repo.Remote{
-		Name:        rm.Name,
-		Fingerprint: fp,
-		Folders:     folders,
+		Name:              rm.Name,
+		Fingerprint:       fp,
+		Folders:           folders,
+		AcceptAutoUpdates: rm.AcceptAutoUpdates,
+		AcceptPush:        rm.AcceptPush,
+		ConflictStrategy:  rm.ConflictStrategy,
 	})
 
 	if err != nil {
