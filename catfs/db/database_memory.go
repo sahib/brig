@@ -102,8 +102,8 @@ func (mdb *MemoryDatabase) Erase(key ...string) {
 }
 
 // Keys will return all keys currently stored in the memory map
-func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) error {
-	keys := []string{}
+func (mdb *MemoryDatabase) Keys(prefix ...string) ([][]string, error) {
+	keys := [][]string{}
 	for key := range mdb.data {
 		splitKey := strings.Split(key, "/")
 
@@ -115,20 +115,18 @@ func (mdb *MemoryDatabase) Keys(fn func(key []string) error, prefix ...string) e
 		}
 
 		if hasPrefix {
-			keys = append(keys, key)
+			keys = append(keys, splitKey)
 		}
 
 	}
 
-	sort.Strings(keys)
+	sort.Slice(keys, func(i, j int) bool {
+		a := strings.Join(keys[i], ".")
+		b := strings.Join(keys[j], ".")
+		return a < b
+	})
 
-	for _, key := range keys {
-		if err := fn(strings.Split(key, "/")); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return keys, nil
 }
 
 // HaveWrites returns true if there are any open writes.
@@ -142,7 +140,12 @@ func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {
 
 	var result [][]string
 
-	err := mdb.Keys(func(key []string) error {
+	keys, err := mdb.Keys()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, key := range keys {
 		fullKey := path.Join(key...)
 		if strings.HasPrefix(fullKey, prefixKey) {
 			// Filter "directories":
@@ -151,12 +154,6 @@ func (mdb *MemoryDatabase) Glob(prefix []string) ([][]string, error) {
 				result = append(result, strings.Split(fullKey, "/"))
 			}
 		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
 	sort.Slice(result, func(i, j int) bool {

@@ -105,12 +105,13 @@ func TestLinkerRefs(t *testing.T) {
 
 		// Assert that staging is empy (except the "/stage/STATUS" part)
 		foundKeys := []string{}
-		keyIter := func(key []string) error {
+		keys, err := kv.Keys("stage")
+		require.Nil(t, err)
+
+		for _, key := range keys {
 			foundKeys = append(foundKeys, strings.Join(key, "/"))
-			return nil
 		}
 
-		require.Nil(t, kv.Keys(keyIter, "stage"))
 		require.Equal(t, []string{"stage/STATUS"}, foundKeys)
 
 		head, err := lkr.Head()

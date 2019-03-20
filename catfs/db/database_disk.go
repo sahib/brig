@@ -319,13 +319,14 @@ func (db *DiskDatabase) HaveWrites() bool {
 }
 
 // Keys is the disk implementation of Database.Keys
-func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) error {
+func (db *DiskDatabase) Keys(prefix ...string) ([][]string, error) {
 	fullPath := filepath.Join(db.basePath, fixDirectoryKeys(prefix))
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		return nil
+		return nil, nil
 	}
 
-	return filepath.Walk(fullPath, func(filePath string, info os.FileInfo, err error) error {
+	keys := [][]string{}
+	return keys, filepath.Walk(fullPath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -333,7 +334,7 @@ func (db *DiskDatabase) Keys(fn func(key []string) error, prefix ...string) erro
 		if !info.IsDir() {
 			key := reverseDirectoryKeys(filePath[len(db.basePath):])
 			if _, ok := db.deletes[path.Join(key...)]; !ok {
-				return fn(key)
+				keys = append(keys, key)
 			}
 		}
 

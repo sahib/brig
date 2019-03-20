@@ -29,7 +29,12 @@ func NewGarbageCollector(lkr *Linker, kv db.Database, kc func(nd n.Node) bool) *
 }
 
 func (gc *GarbageCollector) markMoveMap(key []string) error {
-	walker := func(key []string) error {
+	keys, err := gc.kv.Keys(key...)
+	if err != nil {
+		return err
+	}
+
+	for _, key := range keys {
 		data, err := gc.kv.Get(key...)
 		if err != nil {
 			return err
@@ -43,11 +48,9 @@ func (gc *GarbageCollector) markMoveMap(key []string) error {
 		if node != nil {
 			gc.markMap[node.TreeHash().B58String()] = struct{}{}
 		}
-
-		return nil
 	}
 
-	return gc.kv.Keys(walker, key...)
+	return nil
 }
 
 func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
@@ -87,44 +90,49 @@ func (gc *GarbageCollector) mark(cmt *n.Commit, recursive bool) error {
 	return nil
 }
 
-func (gc *GarbageCollector) sweep(key []string) (int, error) {
+func (gc *GarbageCollector) sweep(prefix []string) (int, error) {
 	removed := 0
 
 	return removed, gc.lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
-		sweeper := func(key []string) error {
-			b58Hash := key[len(key)-1]
-			if _, ok := gc.markMap[b58Hash]; !ok {
-				hash, err := h.FromB58String(b58Hash)
-				if err != nil {
-					return err
-				}
-
-				node, err := gc.lkr.NodeByHash(hash)
-				if err != nil {
-					return err
-				}
-
-				if node == nil {
-					return nil
-				}
-
-				// Allow the gc caller to check if he really
-				// wants to delete this node.
-				if gc.notifier != nil && !gc.notifier(node) {
-					return nil
-				}
-
-				// Actually get rid of the node:
-				gc.lkr.MemIndexPurge(node)
-
-				batch.Erase(key...)
-				removed++
-			}
-
-			return nil
+		keys, err := gc.kv.Keys(prefix...)
+		if err != nil {
+			return hintRollback(err)
 		}
 
-		return hintRollback(gc.kv.Keys(sweeper, key...))
+		for _, key := range keys {
+			b58Hash := key[len(key)-1]
+			if _, ok := gc.markMap[b58Hash]; ok {
+				continue
+			}
+
+			hash, err := h.FromB58String(b58Hash)
+			if err != nil {
+				return hintRollback(err)
+			}
+
+			node, err := gc.lkr.NodeByHash(hash)
+			if err != nil {
+				return hintRollback(err)
+			}
+
+			if node == nil {
+				continue
+			}
+
+			// Allow the gc caller to check if he really
+			// wants to delete this node.
+			if gc.notifier != nil && !gc.notifier(node) {
+				continue
+			}
+
+			// Actually get rid of the node:
+			gc.lkr.MemIndexPurge(node)
+
+			batch.Erase(key...)
+			removed++
+		}
+
+		return false, nil
 	})
 }
 

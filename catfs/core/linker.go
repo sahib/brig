@@ -186,33 +186,37 @@ func (lkr *Linker) NextInode() uint64 {
 // `contents`. It returns a map of content hash b58 to file. This method is
 // quite heavy and should not be used in loops. There is room for optimizations.
 func (lkr *Linker) FilesByContents(contents []h.Hash) (map[string]*n.File, error) {
-	result := make(map[string]*n.File)
+	keys, err := lkr.kv.Keys()
+	if err != nil {
+		return nil, err
+	}
 
-	err := lkr.kv.Keys(func(key []string) error {
+	result := make(map[string]*n.File)
+	for _, key := range keys {
 		// Filter non-node storage:
 		fullKey := strings.Join(key, "/")
 		if !strings.HasPrefix(fullKey, "objects") &&
 			!strings.HasPrefix(fullKey, "stage/objects") {
-			return nil
+			continue
 		}
 
 		data, err := lkr.kv.Get(key...)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		nd, err := n.UnmarshalNode(data)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if nd.Type() != n.NodeTypeFile {
-			return nil
+			continue
 		}
 
 		file, ok := nd.(*n.File)
 		if !ok {
-			return ie.ErrBadNode
+			return nil, ie.ErrBadNode
 		}
 
 		for _, content := range contents {
@@ -220,12 +224,6 @@ func (lkr *Linker) FilesByContents(contents []h.Hash) (map[string]*n.File, error
 				result[content.B58String()] = file
 			}
 		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
 	return result, nil
@@ -798,17 +796,17 @@ func (lkr *Linker) SaveRef(refname string, nd n.Node) error {
 // ListRefs lists all currently known refs.
 func (lkr *Linker) ListRefs() ([]string, error) {
 	refs := []string{}
-	walker := func(key []string) error {
+	keys, err := lkr.kv.Keys("refs")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, key := range keys {
 		if len(key) <= 1 {
-			return nil
+			continue
 		}
 
 		refs = append(refs, key[1])
-		return nil
-	}
-
-	if err := lkr.kv.Keys(walker, "refs"); err != nil {
-		return nil, err
 	}
 
 	return refs, nil
@@ -1440,11 +1438,18 @@ func (lkr *Linker) commitMoveMappingKey(
 
 func (lkr *Linker) commitMoveMapping(status *n.Commit, exported map[uint64]bool) error {
 	return lkr.AtomicWithBatch(func(batch db.Batch) (bool, error) {
-		walker := func(key []string) error {
-			return lkr.commitMoveMappingKey(batch, status, exported, key)
+		keys, err := lkr.kv.Keys("stage", "moves")
+		if err != nil {
+			return hintRollback(err)
 		}
 
-		return hintRollback(lkr.kv.Keys(walker, "stage", "moves"))
+		for _, key := range keys {
+			if err := lkr.commitMoveMappingKey(batch, status, exported, key); err != nil {
+				return hintRollback(err)
+			}
+		}
+
+		return false, nil
 	})
 }
 

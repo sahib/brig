@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -100,11 +101,12 @@ func (db *BadgerDatabase) Get(key ...string) ([]byte, error) {
 }
 
 // Keys is the badger implementation of Database.Keys.
-func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) error {
+func (db *BadgerDatabase) Keys(prefix ...string) ([][]string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	return db.view(func(txn *badger.Txn) error {
+	keys := [][]string{}
+	return keys, db.view(func(txn *badger.Txn) error {
 		iter := txn.NewIterator(badger.IteratorOptions{})
 		defer iter.Close()
 
@@ -122,12 +124,7 @@ func (db *BadgerDatabase) Keys(fn func(key []string) error, prefix ...string) er
 			}
 
 			if hasPrefix {
-				db.mu.Unlock()
-				if err := fn(strings.Split(fullKey, ".")); err != nil {
-					db.mu.Lock()
-					return err
-				}
-				db.mu.Lock()
+				keys = append(keys, strings.Split(fullKey, "."))
 			}
 		}
 
@@ -182,6 +179,10 @@ func (db *BadgerDatabase) Batch() Batch {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	return db.batch()
+}
+
+func (db *BadgerDatabase) batch() Batch {
 	if db.txn == nil {
 		db.txn = db.db.NewTransaction(true)
 	}
@@ -273,6 +274,7 @@ func (db *BadgerDatabase) Erase(key ...string) {
 
 	fullKey := []byte(strings.Join(key, "."))
 	err := db.withRetry(func() error {
+		fmt.Println("DEL", fullKey, db.txn)
 		return db.txn.Delete(fullKey)
 	})
 

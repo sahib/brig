@@ -2,10 +2,10 @@ package db
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 
@@ -86,6 +86,21 @@ func TestDatabase(t *testing.T) {
 	t.Run("badger", func(t *testing.T) {
 		testDatabaseOneDb(t, "badger")
 		testDatabaseTwoDbs(t, "badger")
+	})
+}
+
+func TestGCRace(t *testing.T) {
+	withDbByName("badger", func(db Database) {
+		b := db.Batch()
+		b.Put([]byte{0}, "0")
+		require.Nil(t, b.Flush())
+
+		keys, err := db.Keys()
+		require.Nil(t, err)
+		for _, key := range keys {
+			b := db.Batch()
+			b.Erase(key...)
+		}
 	})
 }
 
@@ -180,39 +195,34 @@ func testErase(t *testing.T, db Database) {
 
 func testKeys(t *testing.T, db Database) {
 	batch := db.Batch()
+	expect := [][]string{}
 	for i := 0; i < 15; i++ {
-		batch.Put([]byte{byte(i)}, fmt.Sprintf("%d", i))
+		key := fmt.Sprintf("%d", i)
+		batch.Put([]byte{byte(i)}, key)
+		expect = append(expect, []string{key})
 	}
 	batch.Flush()
 
-	extractKeys := func(prefixes []string) []string {
-		keys := []string{}
-		err := db.Keys(func(key []string) error {
-			keys = append(keys, strings.Join(key, "."))
-			return nil
-		}, prefixes...)
+	sort.Slice(expect, func(i, j int) bool {
+		a := strings.Join(expect[i], ".")
+		b := strings.Join(expect[j], ".")
+		return a < b
+	})
+
+	extractKeys := func(prefixes []string) [][]string {
+		keys, err := db.Keys(prefixes...)
 		require.Nil(t, err)
 		return keys
 	}
 
 	keys := extractKeys(nil)
-	require.Equal(t,
-		[]string{
-			"0", "1", "10", "11", "12", "13", "14",
-			"2", "3", "4", "5", "6", "7", "8", "9",
-		},
-		keys,
-	)
+	require.Equal(t, expect, keys)
 
 	keys = extractKeys([]string{"1"})
 	require.Equal(t,
-		[]string{"1"},
+		[][]string{{"1"}},
 		keys,
 	)
-
-	errSentinel := errors.New("weird error")
-	err := db.Keys(func(key []string) error { return errSentinel })
-	require.Equal(t, errSentinel, err)
 }
 
 func testRollback(t *testing.T, db Database) {
