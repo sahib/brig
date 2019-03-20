@@ -31,6 +31,13 @@ function openWebsocket(app) {
 
     ws.onclose = function(evt) {
         console.log("event websocket was closed");
+
+        // Attempt to reconnect on error.
+        // Note that "onclose" is also called when a new connection
+        // was attempted but errored (basically always).
+        scrollTimer = setTimeout(function() {
+            openWebsocket(app)
+        }, 2500)
     };
 
     ws.onerror = function(evt) {
