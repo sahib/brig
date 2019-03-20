@@ -146,7 +146,7 @@ func (a *RemotesAPI) Self() (remotesapi.Identity, error) {
 
 	fp := peer.BuildFingerprint(identity.Addr, ownPubKey)
 	return remotesapi.Identity{
-		Name:        string(identity.Name),
+		Name:        string(a.base.repo.Owner),
 		Fingerprint: string(fp),
 	}, nil
 }
