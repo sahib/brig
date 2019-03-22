@@ -476,7 +476,11 @@ input:checked + .toggle-slider:before {
 }
 
 .fingerprint {
-    font-size: 65%;
+    font-size: 85%;
+}
+
+.remote-heading {
+    font-size: 80%;
 }
 
 .download-btn {

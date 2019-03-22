@@ -73,12 +73,12 @@ func main() {
 	cfg.SetBool("gateway.cert.redirect.enabled", false)
 
 	cfg.SetBool("gateway.auth.anon_allowed", true)
-	// cfg.SetString("gateway.cert.domain", "")
-	// cfg.SetString("gateway.cert.certfile", "")
-	// cfg.SetString("gateway.cert.keyfile", "")
-	cfg.SetString("gateway.cert.domain", "nwzmlh4iouqikobq.myfritz.net")
-	cfg.SetString("gateway.cert.certfile", "/tmp/fullchain.pem")
-	cfg.SetString("gateway.cert.keyfile", "/tmp/privkey.pem")
+	cfg.SetString("gateway.cert.domain", "")
+	cfg.SetString("gateway.cert.certfile", "")
+	cfg.SetString("gateway.cert.keyfile", "")
+	// cfg.SetString("gateway.cert.domain", "nwzmlh4iouqikobq.myfritz.net")
+	// cfg.SetString("gateway.cert.certfile", "/tmp/fullchain.pem")
+	// cfg.SetString("gateway.cert.keyfile", "/tmp/privkey.pem")
 
 	bk, err := NewTmpFsBackend(filepath.Join(dbPath, "backend"))
 	if err != nil {

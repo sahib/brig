@@ -19,6 +19,7 @@ import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
 import Bootstrap.Text as Text
 import Browser.Navigation as Nav
+import Clipboard
 import Commands
 import Delay
 import Dict
@@ -26,10 +27,12 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
+import Json.Encode as E
 import Modals.RemoteAdd as RemoteAdd
 import Modals.RemoteFolders as RemoteFolders
 import Modals.RemoteRemove as RemoteRemove
 import Time
+import Tuple
 import Url
 import Util
 
@@ -88,6 +91,7 @@ type Msg
     | AutoUpdateToggled Commands.Remote Bool
     | AcceptPushToggled Commands.Remote Bool
     | ConflictStrategyToggled Commands.Remote String
+    | ClipboardCopyClicked String
       -- Sub messages:
     | RemoteAddMsg RemoteAdd.Msg
     | RemoteRemoveMsg RemoteRemove.Msg
@@ -202,6 +206,18 @@ update msg model =
             in
             ( { model | alert = newAlert }, Cmd.none )
 
+        ClipboardCopyClicked fingerprint ->
+            let
+                newModelCmd =
+                    showAlert model 2 Util.Info "Copied full fingerprint to clipboard."
+            in
+            ( Tuple.first newModelCmd
+            , Cmd.batch
+                [ Clipboard.copyToClipboard <| E.string fingerprint
+                , Tuple.second newModelCmd
+                ]
+            )
+
 
 
 -- VIEW:
@@ -231,11 +247,21 @@ viewRemoteState model remote =
         span [ class "text-danger" ] [ text "not authenticated" ]
 
 
-viewFullFingerprint : String -> Html Msg
-viewFullFingerprint fingerprint =
+viewFingerprintButton : String -> Html Msg
+viewFingerprintButton fingerprint =
+    Button.button
+        [ Button.roleLink
+        , Button.attrs
+            [ onClick <| ClipboardCopyClicked fingerprint ]
+        ]
+        [ viewFingerprint fingerprint ]
+
+
+viewFingerprint : String -> Html Msg
+viewFingerprint fingerprint =
     String.split ":" fingerprint
-        |> List.map (\t -> span [ class "text-muted" ] [ text t ])
-        |> List.intersperse (span [] [ text ":", br [] [] ])
+        |> List.map (\t -> span [ class "text-muted" ] [ text (String.slice 0 10 t) ])
+        |> List.intersperse (span [] [ text ":" ])
         |> span [ class "fingerprint" ]
 
 
@@ -363,7 +389,7 @@ viewRemote model remote =
             [ viewRemoteState model remote ]
         , Table.td
             []
-            [ span [ class "text-muted" ] [ viewFullFingerprint remote.fingerprint ] ]
+            [ span [ class "text-muted" ] [ viewFingerprintButton remote.fingerprint ] ]
         , Table.td
             []
             [ viewAutoUpdatesIcon remote.acceptAutoUpdates remote isDisabled ]
@@ -414,25 +440,25 @@ viewRemoteList model remotes =
                         [ text "" ]
                     , Table.th
                         [ Table.cellAttr (style "width" "20%") ]
-                        [ span [ class "text-muted" ] [ text "Name" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "Name" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "20%") ]
-                        [ span [ class "text-muted" ] [ text "Online" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "Online" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "30%") ]
-                        [ span [ class "text-muted" ] [ text "Fingerprint" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "Fingerprint" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "10%") ]
-                        [ span [ class "text-muted" ] [ text "Auto Update" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "Auto Update" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "10%") ]
-                        [ span [ class "text-muted" ] [ text "May Push" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "May Push" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "10%") ]
-                        [ span [ class "text-muted" ] [ text "Conflicts" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "Conflicts" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "10%") ]
-                        [ span [ class "text-muted" ] [ text "Folders" ] ]
+                        [ span [ class "text-muted remote-heading" ] [ text "Folders" ] ]
                     , Table.th
                         [ Table.cellAttr (style "width" "5%") ]
                         []
@@ -465,7 +491,7 @@ viewSelf model =
                     [ viewMetaRow "Name" (text model.self.self.name)
                     ]
                 , ListGroup.li []
-                    [ viewMetaRow "Fingerprint" (viewFullFingerprint model.self.self.fingerprint)
+                    [ viewMetaRow "Fingerprint" (viewFingerprintButton model.self.self.fingerprint)
                     ]
                 ]
             ]

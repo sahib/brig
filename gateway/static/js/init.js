@@ -130,8 +130,27 @@ var app = Elm.Main.init({
   node: document.getElementById('elm')
 });
 
-app.ports.open.subscribe(function(data) {
+app.ports.open.subscribe(function(_) {
     openWebsocket(app);
+});
+
+
+app.ports.copyToClipboard.subscribe(function(text) {
+    var textArea = document.createElement("textarea")
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        if(!document.execCommand("copy")) {
+            console.log("failed to copy");
+        }
+    } catch(err) {
+        console.log("Unable to copy: " + err)
+    }
+
+    document.body.removeChild(textArea);
 });
 
 pingServer(app);

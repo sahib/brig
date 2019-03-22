@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -274,7 +273,6 @@ func (db *BadgerDatabase) Erase(key ...string) {
 
 	fullKey := []byte(strings.Join(key, "."))
 	err := db.withRetry(func() error {
-		fmt.Println("DEL", fullKey, db.txn)
 		return db.txn.Delete(fullKey)
 	})
 
