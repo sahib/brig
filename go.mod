@@ -24,17 +24,17 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.1.3
 	github.com/gorilla/websocket v1.4.0
-	github.com/ipfs/go-ipfs-util v1.2.8
+	github.com/ipfs/go-ipfs-util v0.0.1
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/multiformats/go-multiaddr v1.4.0 // indirect
-	github.com/multiformats/go-multiaddr-dns v0.2.5 // indirect
-	github.com/multiformats/go-multiaddr-net v1.7.1 // indirect
-	github.com/multiformats/go-multihash v1.0.10
+	github.com/multiformats/go-multiaddr v0.0.2 // indirect
+	github.com/multiformats/go-multiaddr-dns v0.0.2 // indirect
+	github.com/multiformats/go-multiaddr-net v0.0.1 // indirect
+	github.com/multiformats/go-multihash v0.0.1
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
