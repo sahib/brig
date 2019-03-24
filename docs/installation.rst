@@ -17,6 +17,14 @@ the latest stable ``brig`` binary to your current working directory:
 
    $ bash <(curl -s https://raw.githubusercontent.com/sahib/brig/master/scripts/install.sh)
 
+Specific distributions
+----------------------
+
+Some distributions can install ``brig`` directly via their package manager.
+Those are currently:
+
+* Arch Linux (`PKGBUILD <https://aur.archlinux.org/packages/brig-git>`_)
+
 Compiling yourself
 ------------------
 

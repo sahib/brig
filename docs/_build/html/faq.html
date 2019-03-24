@@ -4,7 +4,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Frequently Asked Questions &#8212; brig v0.4.0-beta
+    <title>Frequently Asked Questions &#8212; brig v0.4.1-beta
  documentation</title>
     <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -40,7 +40,7 @@
         </button>
         <a class="navbar-brand" href="index.html">
           brig</a>
-        <span class="navbar-text navbar-version pull-left"><b>v0.4.0-beta
+        <span class="navbar-text navbar-version pull-left"><b>v0.4.1-beta
 </b></span>
       </div>
 
@@ -62,6 +62,7 @@
       aria-labelledby="dLabelGlobalToc"><p class="caption"><span class="caption-text">Installation:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#specific-distributions">Specific distributions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html#compiling-yourself">Compiling yourself</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#step-0-installing-go">Step 0: Installing Go</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#step-1-compile-install-brig">Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code></a></li>
@@ -102,10 +103,11 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#data-retrieval">Data retrieval</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#partial-synchronisation">Partial synchronisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/remotes.html#pushing-changes">Pushing changes</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#key-concepts">Key concepts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/vcs.html#commits">Commits</a></li>
@@ -119,7 +121,7 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/pinning.html#repinning">Repinning</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway / UI</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#gateway-screenshots">Gateway Screenshots</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#login-screen">Login screen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tutorial/gateway.html#file-browser">File Browser</a></li>
@@ -134,6 +136,7 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#user-right-management">User right management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#running-the-gateway-with-https">Running the gateway with HTTPS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#redirecting-http-traffic">Redirecting HTTP traffic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/gateway.html#allowing-anonymous-access">Allowing anonymous access</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a><ul>
@@ -227,6 +230,7 @@
         <div id="sidebar" class="bs-sidenav" role="complementary"><p class="caption"><span class="caption-text">Installation:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#specific-distributions">Specific distributions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html#compiling-yourself">Compiling yourself</a></li>
 <li class="toctree-l1"><a class="reference internal" href="installation.html#setting-up-ipfs">Setting up IPFS</a></li>
 </ul>
@@ -240,11 +244,9 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html">Remotes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#conflicts">Conflicts</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#automatic-updating">Automatic Updating</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/vcs.html">Version control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/pinning.html">Pinning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/gateway.html">Using the gateway / UI</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/config.html">Configuration</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Additional resources</span></p>
@@ -404,7 +406,7 @@ speed (see the »baseline« line).</p>
     </p>
     <p>
         &copy; Copyright 2018, Chris Pahl.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.<br/>
     </p>
   </div>
 </footer>
