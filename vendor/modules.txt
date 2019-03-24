@@ -58,7 +58,7 @@ github.com/gxed/hashland/keccakpg
 github.com/gxed/hashland/murmur3
 # github.com/ipfs/go-ipfs-files v0.0.0-20190211184658-b9ab59872849
 github.com/ipfs/go-ipfs-files
-# github.com/ipfs/go-ipfs-util v1.2.8
+# github.com/ipfs/go-ipfs-util v0.0.1
 github.com/ipfs/go-ipfs-util
 # github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1
 github.com/kardianos/osext
@@ -76,13 +76,13 @@ github.com/minio/sha256-simd
 github.com/mitchellh/go-homedir
 # github.com/mr-tron/base58 v1.1.0
 github.com/mr-tron/base58/base58
-# github.com/multiformats/go-multiaddr v1.4.0
+# github.com/multiformats/go-multiaddr v0.0.2
 github.com/multiformats/go-multiaddr
-# github.com/multiformats/go-multiaddr-dns v0.2.5
+# github.com/multiformats/go-multiaddr-dns v0.0.2
 github.com/multiformats/go-multiaddr-dns
-# github.com/multiformats/go-multiaddr-net v1.7.1
+# github.com/multiformats/go-multiaddr-net v0.0.1
 github.com/multiformats/go-multiaddr-net
-# github.com/multiformats/go-multihash v1.0.10
+# github.com/multiformats/go-multihash v0.0.1
 github.com/multiformats/go-multihash
 # github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
 github.com/nbutton23/zxcvbn-go
