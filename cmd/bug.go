@@ -58,6 +58,7 @@ Please include anything else you think is helpful. Thanks!
 
 	fmt.Fprintf(buf, "go version:     ``%s``\n", cmdOutput("go", "version"))
 	fmt.Fprintf(buf, "uname -s -v -m: ``%s``\n", cmdOutput("uname", "-s", "-v", "-m"))
+	fmt.Fprintf(buf, "IPFS config:    ``%s``\n", cmdOutput("ipfs", "config", "show"))
 	fmt.Fprintf(buf, "\n")
 
 	fmt.Fprintf(
@@ -81,13 +82,13 @@ Please include anything else you think is helpful. Thanks!
 			)
 			fmt.Fprintf(
 				buf,
-				"ipfs version:        ``%s+%s``\n",
+				"IPFS Version:        ``%s+%s``\n",
 				version.BackendSemVer,
 				version.BackendRev,
 			)
 		}
 	} else {
-		printError("Cannot get server and ipfs version.")
+		printError("Cannot get server and IPFS version.")
 		printError("If it is possible to start the daemon, do it now.")
 		printError("This will make the bug report more helpful. Thanks.")
 	}
