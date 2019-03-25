@@ -109,8 +109,6 @@ func (Build) Generate() error {
 }
 
 func (Build) Binary() error {
-	mg.Deps(Build.Generate)
-
 	version, err := readVersion()
 	if err != nil {
 		return err

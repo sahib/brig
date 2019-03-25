@@ -60,7 +60,7 @@ a recent version of `go` (`>= 1.10`) installed, it should be as easy as this:
 $ go get -d -v -u github.com/sahib/brig  # Download the sources.
 $ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
 $ git checkout develop                   # Checkout the develop branch.
-$ make                                   # Build the software.
+$ go run mage.go                         # Build the software.
 $ $GOPATH/bin/brig help                  # Run the binary.
 ```
 
