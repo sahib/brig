@@ -76,11 +76,11 @@ This step requires setting ``GOPATH``, as discussed in the previous section.
 
     $ go get -d -v -u github.com/sahib/brig  # Download the sources.
     $ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
-    $ make                                   # Build the software.
+    $ go run mage.go                         # Build the software.
 
 All dependencies of brig are downloaded for you during the first step.
 Execution might take a few minutes though because all of ``brig`` is being
-compiled during the ``make`` step.
+compiled during the ``go run mage.go`` step.
 
 If you cannot or want to install ``git`` for some reason, you can `manually
 download a zip <https://github.com/sahib/brig/archive/master.zip>`_ from GitHub

@@ -64,6 +64,10 @@ github.com/ipfs/go-ipfs-util
 github.com/kardianos/osext
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/magefile/mage v1.8.0
+github.com/magefile/mage/mg
+github.com/magefile/mage/sh
+github.com/magefile/mage/target
 # github.com/mattn/go-colorable v0.1.0
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.4
