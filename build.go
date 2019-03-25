@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	_ "github.com/magefile/mage/mage"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 	"github.com/magefile/mage/target"

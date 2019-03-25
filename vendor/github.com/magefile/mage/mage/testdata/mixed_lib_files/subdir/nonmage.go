@@ -1,3 +1,0 @@
-package subdir
-
-func Build() {}
