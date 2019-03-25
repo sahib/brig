@@ -170,7 +170,7 @@ func (a *RemotesAPI) MakeDiff(name string) (*catfs.Diff, error) {
 	var diff *catfs.Diff
 	return diff, a.base.withCurrFs(func(localFs *catfs.FS) error {
 		return a.base.withRemoteFs(name, func(remoteFs *catfs.FS) error {
-			newDiff, err := localFs.MakeDiff(remoteFs, "HEAD", "HEAD")
+			newDiff, err := localFs.MakeDiff(remoteFs, "CURR", "CURR")
 			if err != nil {
 				return err
 			}

@@ -158,7 +158,7 @@ viewDiff model diff =
                 [ viewSingle diff.added (viewHeading "text-success" "Added")
                 , viewSingle diff.removed (viewHeading "text-warning" "Removed")
                 , viewSingle diff.ignored (viewHeading "text-muted" "Ignored")
-                , viewSingle diff.missing (viewHeading "text-secondary" "Missing")
+                -- , viewSingle diff.missing (viewHeading "text-secondary" "Missing")
                 , viewPairs diff.moved (viewHeading "text-primary" "Moved")
                 , viewPairs diff.merged (viewHeading "text-info" "Merged")
                 , viewPairs diff.conflict (viewHeading "text-danger" "Conflicts")

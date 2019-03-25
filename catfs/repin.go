@@ -195,7 +195,7 @@ func (fs *FS) repin(root string) error {
 	// repinning doesn't modify any metadata,
 	// but still affects the filesystem.
 	if fs.readOnly {
-		return ErrReadOnly
+		return nil
 	}
 
 	if !fs.cfg.Bool("repin.enabled") {

@@ -322,9 +322,9 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 		bk:                backend,
 		cfg:               fsCfg,
 		readOnly:          readOnly,
-		gcControl:         make(chan bool),
-		autoCommitControl: make(chan bool),
-		repinControl:      make(chan string),
+		gcControl:         make(chan bool, 1),
+		autoCommitControl: make(chan bool, 1),
+		repinControl:      make(chan string, 1),
 		pinner:            pinCache,
 	}
 
@@ -387,6 +387,10 @@ func (fs *FS) autoCommitLoop() {
 }
 
 func (fs *FS) repinLoop() {
+	if fs.readOnly {
+		return
+	}
+
 	lastCheck := time.Now()
 	checkTicker := time.NewTicker(1 * time.Second)
 	defer checkTicker.Stop()
