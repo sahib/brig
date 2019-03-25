@@ -12,6 +12,9 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+
+	// This import is needed for the mage.go file.
+	// Due to the build tag it is ignored by go mod.
 	_ "github.com/magefile/mage/mage"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
