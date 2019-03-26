@@ -54,7 +54,7 @@ func pingerByName(addr string) (*dummyPinger, error) {
 	}
 
 	dp := &dummyPinger{
-		quitCh: make(chan bool),
+		quitCh: make(chan bool, 10),
 	}
 
 	go func() {
