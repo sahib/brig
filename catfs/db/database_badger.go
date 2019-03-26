@@ -133,12 +133,18 @@ func (db *BadgerDatabase) Keys(prefix ...string) ([][]string, error) {
 
 // Export is the badger implementation of Database.Export.
 func (db *BadgerDatabase) Export(w io.Writer) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	_, err := db.db.Backup(w, 0)
 	return err
 }
 
 // Import is the badger implementation of Database.Import.
 func (db *BadgerDatabase) Import(r io.Reader) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	return db.db.Load(r)
 }
 
@@ -234,8 +240,6 @@ func (db *BadgerDatabase) Clear(key ...string) error {
 	db.haveWrites = true
 
 	iter := db.txn.NewIterator(badger.IteratorOptions{})
-	defer iter.Close()
-
 	prefix := strings.Join(key, ".")
 
 	keys := [][]byte{}
@@ -246,6 +250,11 @@ func (db *BadgerDatabase) Clear(key ...string) error {
 		copy(key, item.Key())
 		keys = append(keys, key)
 	}
+
+	// This has to happen here, since withRetry might call
+	// txn.Discard() which will complain about open iterators.
+	// (I previously used a defer which executed too late)
+	iter.Close()
 
 	for _, key := range keys {
 		if !strings.HasPrefix(string(key), prefix) {
