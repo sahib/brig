@@ -86,9 +86,6 @@ func (pm *PingMap) doUpdate() {
 func (pm *PingMap) doUpdateSingle(addr string, checkAuthentication bool) {
 	pinger, err := pm.netBk.Ping(addr)
 	if err != nil {
-		if pinger != nil {
-			pinger.Close()
-		}
 		return
 	}
 
