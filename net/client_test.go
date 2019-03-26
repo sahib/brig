@@ -112,10 +112,10 @@ func withNetPair(t *testing.T, fn func(a, b testUnit)) {
 			}))
 
 			ctx := context.Background()
-			aliCtl, err := Dial(ctx, "alice", b.rp, b.bk)
+			aliCtl, err := Dial(ctx, "alice", b.rp, b.bk, nil)
 			require.Nil(t, err)
 
-			bobCtl, err := Dial(ctx, "bob", a.rp, a.bk)
+			bobCtl, err := Dial(ctx, "bob", a.rp, a.bk, nil)
 			require.Nil(t, err)
 
 			a.ctl = bobCtl

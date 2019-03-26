@@ -120,7 +120,7 @@ func (pm *PingMap) doUpdateSingle(addr string, checkAuthentication bool) {
 	}
 
 	ctx := context.Background()
-	conn, err := DialByAddr(ctx, addr, rmt.Fingerprint, pm.rp, pm.netBk)
+	conn, err := DialByAddr(ctx, addr, rmt.Fingerprint, pm.rp, pm.netBk, nil)
 	if err != nil {
 		log.Infof("can ping, but not authenticated: %v", err)
 		return
@@ -215,14 +215,20 @@ func (pm *PingMap) IsAuthenticated(addr string) bool {
 	return isAuthenticated
 }
 
-// This is called by net handlers when we encountered an succesful connection
-// opened to us.
-func (pm *PingMap) markSuccesfullConnection(addr string) {
+// This is called by all network related code that establish a connection
+// to a client. If so, it gives the ping map a hint that a remote was succesfully
+// reached and/or authenticated (or not).
+func (pm *PingMap) hintNetAttempt(addr string, isAuthenticated bool) {
+	if pm == nil {
+		return
+	}
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
+	// go check the pinger state immediately.
+	pm.authenticated[addr] = isAuthenticated
 	go pm.doUpdateSingle(addr, false)
-	pm.authenticated[addr] = true
 }
 
 // Close shuts down the ping map. Do not use afterwards.

@@ -176,12 +176,27 @@ func (sa *addrWrapper) String() string {
 }
 
 type listenerWrapper struct {
-	net.Listener
+	lst         net.Listener
 	protocol    string
 	peer        string
 	targetAddr  string
 	fingerprint string
 	sh          *shell.Shell
+}
+
+func (lw *listenerWrapper) Accept() (net.Conn, error) {
+	conn, err := lw.lst.Accept()
+	if err != nil {
+		return nil, err
+	}
+
+	return &connWrapper{
+		Conn:       conn,
+		peer:       lw.peer,
+		protocol:   lw.protocol,
+		targetAddr: lw.targetAddr,
+		sh:         lw.sh,
+	}, nil
 }
 
 func (lw *listenerWrapper) Addr() net.Addr {
@@ -192,7 +207,7 @@ func (lw *listenerWrapper) Addr() net.Addr {
 }
 
 func (lw *listenerWrapper) Close() error {
-	defer lw.Listener.Close()
+	defer lw.lst.Close()
 	defer deleteLocalAddr(lw.peer, lw.fingerprint)
 	return closeStream(lw.sh, lw.protocol, lw.targetAddr, "")
 }
@@ -261,7 +276,7 @@ func (nd *Node) Listen(protocol string) (net.Listener, error) {
 	}
 
 	return &listenerWrapper{
-		Listener:    lst,
+		lst:         lst,
 		protocol:    protocol,
 		peer:        self.Addr,
 		targetAddr:  addr,
@@ -355,14 +370,13 @@ func (p *pinger) Run(ctx context.Context, addr string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			return ctx.Err()
 		case <-tckr.C:
 			p.update(ctx, addr, self.Addr)
 		}
 	}
 }
 
-// TODO: Make a PR with those functions.
 func ping(sh *shell.Shell, peerID string) (time.Duration, error) {
 	ctx := context.Background()
 	resp, err := sh.Request("ping", peerID).Send(ctx)

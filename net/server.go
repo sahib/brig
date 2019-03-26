@@ -345,10 +345,15 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 			if remote.Fingerprint.PubKeyID() == remoteFp.PubKeyID() {
 				addr := remote.Fingerprint.Addr()
 				log.Infof("starting connection with addr `%s`", addr)
-				hdl.pingMap.markSuccesfullConnection(addr)
+				hdl.pingMap.hintNetAttempt(addr, true)
 				reqHdl.currRemoteName = remote.Name
 				return nil
 			}
+		}
+
+		netAddr := conn.RemoteAddr()
+		if netAddr != nil {
+			hdl.pingMap.hintNetAttempt(netAddr.String(), false)
 		}
 
 		return fmt.Errorf("remote uses no public key known to us")

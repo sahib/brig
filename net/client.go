@@ -29,14 +29,14 @@ type Client struct {
 }
 
 // Dial creates a new Client connected to `name`.
-func Dial(ctx context.Context, name string, rp *repo.Repository, bk netBackend.Backend) (*Client, error) {
+func Dial(ctx context.Context, name string, rp *repo.Repository, bk netBackend.Backend, pingMap *PingMap) (*Client, error) {
 	remote, err := rp.Remotes.Remote(name)
 	if err != nil {
 		return nil, err
 	}
 
 	addr := remote.Fingerprint.Addr()
-	ctl, err := DialByAddr(ctx, addr, remote.Fingerprint, rp, bk)
+	ctl, err := DialByAddr(ctx, addr, remote.Fingerprint, rp, bk, pingMap)
 	if err != nil {
 		return nil, e.Wrapf(err, "by-addr")
 	}
@@ -51,6 +51,7 @@ func DialByAddr(
 	fingerprint peer.Fingerprint,
 	rp *repo.Repository,
 	bk netBackend.Backend,
+	pingMap *PingMap,
 ) (*Client, error) {
 	kr := rp.Keyring()
 	ownPubKey, err := kr.OwnPubKey()
@@ -62,6 +63,7 @@ func DialByAddr(
 	log.Debugf("raw dial to %s:%s", addr, fingerprint.PubKeyID())
 	rawConn, err := bk.Dial(addr, fingerprint.PubKeyID(), "brig/caprpc")
 	if err != nil {
+		pingMap.hintNetAttempt(addr, false)
 		return nil, e.Wrapf(err, "raw")
 	}
 
@@ -72,6 +74,7 @@ func DialByAddr(
 
 	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, ownName, func(pubKey []byte) error {
 		if !fingerprint.PubKeyMatches(pubKey) {
+			pingMap.hintNetAttempt(addr, false)
 			return fmt.Errorf("remote pubkey does not match fingerprint")
 		}
 
@@ -81,8 +84,11 @@ func DialByAddr(
 	// Trigger the authentication:
 	// (otherwise it would be triggered on the first read/write)
 	if err := authConn.Trigger(); err != nil {
+		pingMap.hintNetAttempt(addr, false)
 		return nil, e.Wrapf(err, "auth")
 	}
+
+	pingMap.hintNetAttempt(addr, true)
 
 	// Setup capnp-rpc:
 	transport := rpc.StreamTransport(rawConn)

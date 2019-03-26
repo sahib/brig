@@ -381,7 +381,7 @@ func (b *base) withNetClient(who string, fn func(ctl *p2pnet.Client) error) erro
 	subCtx, cancel := context.WithCancel(b.ctx)
 	defer cancel()
 
-	ctl, err := p2pnet.Dial(subCtx, who, b.repo, b.backend)
+	ctl, err := p2pnet.Dial(subCtx, who, b.repo, b.backend, b.peerServer.PingMap())
 	if err != nil {
 		return e.Wrapf(err, "dial")
 	}
