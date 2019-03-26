@@ -152,8 +152,9 @@ func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
 
 // Cat outputs the contents of the node at `path`.
 // The node must be a file.
-func (cl *Client) Cat(path string) (io.ReadCloser, error) {
+func (cl *Client) Cat(path string, offline bool) (io.ReadCloser, error) {
 	call := cl.api.Cat(cl.ctx, func(p capnp.FS_cat_Params) error {
+		p.SetOffline(offline)
 		return p.SetPath(path)
 	})
 
@@ -173,8 +174,9 @@ func (cl *Client) Cat(path string) (io.ReadCloser, error) {
 
 // Tar outputs a tar archive with the contents of `path`.
 // `path` can be either a file or directory.
-func (cl *Client) Tar(path string) (io.ReadCloser, error) {
+func (cl *Client) Tar(path string, offline bool) (io.ReadCloser, error) {
 	call := cl.api.Tar(cl.ctx, func(p capnp.FS_tar_Params) error {
+		p.SetOffline(offline)
 		return p.SetPath(path)
 	})
 
@@ -354,4 +356,17 @@ func (cl *Client) DeletedNodes(root string) ([]StatInfo, error) {
 	}
 
 	return results, err
+}
+
+func (cl *Client) IsCached(path string) (bool, error) {
+	call := cl.api.IsCached(cl.ctx, func(p capnp.FS_isCached_Params) error {
+		return p.SetPath(path)
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return false, err
+	}
+
+	return result.IsCached(), nil
 }

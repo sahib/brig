@@ -149,7 +149,7 @@ func (Build) Binary() error {
 	minusld := strings.Join(ldflags, " ")
 	err = sh.Run("go", "build", "-ldflags", minusld, "-o", binPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("go build failed; see above.")
 	}
 
 	if useUPX {
@@ -211,7 +211,7 @@ func (Dev) Capnp() error {
 }
 
 func (Dev) Lint() error {
-	findCmd := "find -iname '*.go' -type f ! -path '*vendor*' ! -path '*capnp*' ! -iname 'build.go'"
+	findCmd := "find -iname '*.go' -type f ! -path '*vendor*' ! -path '*capnp*' ! -iname 'build.go' ! -path '*gateway/static/resource.go'"
 
 	linters := []string{
 		fmt.Sprintf("%s -exec gofmt -s -w {} \\;", findCmd),
@@ -229,6 +229,6 @@ func (Dev) Lint() error {
 }
 
 func (Dev) Cloc() error {
-	cmd := "cloc $(find -iname '*.elm' -or -iname '*.go' -a ! -path '*vendor*' ! -path '*capnp*' | head -n -1 | sort | uniq)"
+	cmd := "cloc $(find -iname '*.elm' -or -iname '*.go' -a ! -path '*vendor*' ! -path '*capnp*' ! -path '*gateway/static/resource.go' | head -n -1 | sort | uniq)"
 	return sh.RunV("sh", "-c", cmd)
 }

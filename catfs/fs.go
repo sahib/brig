@@ -1940,5 +1940,57 @@ func (fs *FS) CommitInfo(rev string) (*Commit, error) {
 
 // HaveStagedChanges returns true if there are changes that were not committed yet.
 func (fs *FS) HaveStagedChanges() (bool, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	return fs.lkr.HaveStagedChanges()
+}
+
+// IsCached will return true when the file is cached locally.
+func (fs *FS) IsCached(path string) (bool, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	nd, err := fs.lkr.LookupNode(path)
+	if err != nil {
+		return false, err
+	}
+
+	if nd.Type() == n.NodeTypeDirectory && nd.NChildren() == 0 {
+		return true, nil
+	}
+
+	totalCount := 0
+	cachedCount := 0
+	errNotCachedSentinel := errors.New("not cached found")
+
+	err = n.Walk(fs.lkr, nd, true, func(child n.Node) error {
+		if child.Type() != n.NodeTypeFile {
+			return nil
+		}
+
+		totalCount++
+		isCached, err := fs.bk.IsCached(child.BackendHash())
+		if err != nil {
+			return err
+		}
+
+		if isCached {
+			// Make sure that we do not count empty directories
+			// as pinned nodes.
+			cachedCount++
+		} else {
+			// Return a special error here to stop Walk() iterating.
+			// One file is enough to stop IsPinned() from being true.
+			return errNotCachedSentinel
+		}
+
+		return nil
+	})
+
+	if err != nil && err != errNotCachedSentinel {
+		return false, err
+	}
+
+	return cachedCount == totalCount, nil
 }

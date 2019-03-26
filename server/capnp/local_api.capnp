@@ -134,7 +134,7 @@ struct FsTabEntry {
 interface FS {
     stage             @0   (localPath :Text, repoPath :Text);
     list              @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
-    cat               @2   (path :Text) -> (port :Int32);
+    cat               @2   (path :Text, offline :Bool) -> (port :Int32);
     mkdir             @3   (path :Text, createParents :Bool);
     remove            @4   (path :Text);
     move              @5   (srcPath :Text, dstPath :Text);
@@ -145,10 +145,11 @@ interface FS {
     garbageCollect    @10  (aggressive :Bool) -> (freed :List(GarbageItem));
     touch             @11  (path :Text);
     exists            @12  (path :Text) -> (exists :Bool);
-    tar               @13  (path :Text) -> (port :Int32);
+    tar               @13  (path :Text, offline :Bool) -> (port :Int32);
     deletedNodes      @14  (root :Text) -> (nodes :List(StatInfo));
     undelete          @15  (path :Text);
     repin             @16  (path :Text);
+    isCached          @17  (path :Text) -> (isCached :Bool);
 }
 
 interface VCS {

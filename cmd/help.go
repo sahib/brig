@@ -822,6 +822,12 @@ EXAMPLES:
 		Usage:     "Output the content of a file to standard output",
 		ArgsUsage: "[<path>]",
 		Complete:  completeBrigPath(true, false),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "offline,o",
+				Usage: "Only output the file if it is cached locally.",
+			},
+		},
 		Description: `Decrypt and decompress the stream from IPFS and write it to standard output.
 
    When specifying a directory instead of a file, the directory content will be

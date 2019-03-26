@@ -189,11 +189,13 @@ func handleCat(ctx *cli.Context, ctl *client.Client) error {
 		return err
 	}
 
+	doOffline := ctx.Bool("offline")
+
 	var stream io.ReadCloser
 	if info.IsDir {
-		stream, err = ctl.Tar(path)
+		stream, err = ctl.Tar(path, doOffline)
 	} else {
-		stream, err = ctl.Cat(path)
+		stream, err = ctl.Cat(path, doOffline)
 	}
 
 	if err != nil {
@@ -475,8 +477,14 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 		return tmpl.Execute(os.Stdout, info)
 	}
 
+	isCached, err := ctl.IsCached(path)
+	if err != nil {
+		return err
+	}
+
 	pinState := yesify(info.IsPinned)
 	explicitState := yesify(info.IsExplicit)
+	cachedState := yesify(isCached)
 
 	nodeType := "file"
 	if info.IsDir {
@@ -504,6 +512,7 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)
+	printPair("Cached", cachedState)
 	printPair("ModTime", info.ModTime.Format(time.RFC3339))
 	printPair("Tree Hash", info.TreeHash.B58String())
 	printPair("Content Hash", info.ContentHash.B58String())
@@ -527,7 +536,7 @@ func handleEdit(ctx *cli.Context, ctl *client.Client) error {
 
 	data := []byte{}
 	if exists {
-		r, err := ctl.Cat(repoPath)
+		r, err := ctl.Cat(repoPath, false)
 		if err != nil {
 			return err
 		}

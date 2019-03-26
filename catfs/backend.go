@@ -41,9 +41,11 @@ type FsBackend interface {
 	// If an object is already unpinned this is a no op.
 	Unpin(hash h.Hash) error
 
-	// IsPinned return two boolean values:
-	// - If the first value is true, the file is pinned.
+	// IsPinned checks if the file is pinned.
 	IsPinned(hash h.Hash) (bool, error)
+
+	// IsCached checks if the file contents are available locally.
+	IsCached(hash h.Hash) (bool, error)
 }
 
 // MemFsBackend is a mock structure that implements FsBackend.
@@ -102,4 +104,11 @@ func (mb *MemFsBackend) IsPinned(hash h.Hash) (bool, error) {
 	}
 
 	return isPinned, nil
+}
+
+// IsCached implements FsBackend.IsCached by checking if the file exists.
+// If yes, the file is cached always.
+func (mb *MemFsBackend) IsCached(hash h.Hash) (bool, error) {
+	_, ok := mb.data[hash.B58String()]
+	return ok, nil
 }

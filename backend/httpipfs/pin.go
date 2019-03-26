@@ -3,8 +3,12 @@ package httpipfs
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"strings"
 
+	"github.com/blang/semver"
 	h "github.com/sahib/brig/util/hashlib"
 )
 
@@ -51,4 +55,29 @@ func (nd *Node) Pin(hash h.Hash) error {
 // Unpin will unpin `hash`.
 func (nd *Node) Unpin(hash h.Hash) error {
 	return nd.sh.Unpin(hash.B58String())
+}
+
+func (nd *Node) IsCached(hash h.Hash) (bool, error) {
+	// This feature is only supported for ipfs >= 0.4.19.
+	// Check this and issue a warning if that's not the case.
+	if nd.version.LT(semver.MustParse("0.4.19")) {
+		return false, fmt.Errorf("cache queries are not supported in ipfs < 0.4.19")
+	}
+
+	ctx := context.Background()
+	req := nd.sh.Request("block/stat", hash.B58String())
+	req.Option("offline", "true")
+	resp, err := req.Send(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	defer resp.Close()
+
+	if resp.Error != nil {
+		return false, nil
+	}
+
+	io.Copy(ioutil.Discard, resp.Output)
+	return true, nil
 }

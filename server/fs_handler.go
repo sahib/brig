@@ -146,7 +146,18 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		stream, err := fs.Cat(path)
+		if call.Params.Offline() {
+			isCached, err := fs.IsCached(url.Path)
+			if err != nil {
+				return err
+			}
+
+			if !isCached {
+				return fmt.Errorf("file is not in local cache")
+			}
+		}
+
+		stream, err := fs.Cat(url.Path)
 		if err != nil {
 			return err
 		}
@@ -184,6 +195,17 @@ func (fh *fsHandler) Tar(call capnp.FS_tar) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		if call.Params.Offline() {
+			isCached, err := fs.IsCached(url.Path)
+			if err != nil {
+				return err
+			}
+
+			if !isCached {
+				return fmt.Errorf("data is not in local cache")
+			}
+		}
+
 		if _, err := fs.Stat(path); err != nil {
 			return err
 		}
@@ -501,5 +523,22 @@ func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
 		}
 
 		return call.Results.SetNodes(lst)
+	})
+}
+
+func (fh *fsHandler) IsCached(call capnp.FS_isCached) error {
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		isCached, err := fs.IsCached(url.Path)
+		if err != nil {
+			return err
+		}
+
+		call.Results.SetIsCached(isCached)
+		return nil
 	})
 }

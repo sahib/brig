@@ -23,7 +23,7 @@ Specific distributions
 Some distributions can install ``brig`` directly via their package manager.
 Those are currently:
 
-* Arch Linux (`PKGBUILD <https://aur.archlinux.org/packages/brig-git>`_)
+* Arch Linux (`PKGBUILD <https://aur.archlinux.org/packages/brig-git>`_; builds ``develop`` branch)
 
 Compiling yourself
 ------------------

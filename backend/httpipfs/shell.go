@@ -26,6 +26,7 @@ type Node struct {
 	cachedIdentity string
 	allowNetOps    bool
 	fingerprint    string
+	version        *semver.Version
 }
 
 func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
@@ -93,6 +94,7 @@ func NewNode(ipfsPath, fingerprint string) (*Node, error) {
 		sh:          sh,
 		allowNetOps: true,
 		fingerprint: fingerprint,
+		version:     &version,
 	}, nil
 }
 
