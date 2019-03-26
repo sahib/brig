@@ -103,12 +103,12 @@ func (nh *netHandler) RemoteOnlineList(call capnp.Net_remoteOnlineList) error {
 			return err
 		}
 
-		pinger, err := psrv.PingMap().For(remote.Fingerprint.Addr())
+		addr := remote.Fingerprint.Addr()
+		pinger, err := psrv.PingMap().For(addr)
 		if err != nil {
 			status.SetError(err.Error())
 		}
 
-		authenticated := false
 		if pinger != nil {
 			roundtrip := int32(pinger.Roundtrip() / time.Millisecond)
 			status.SetRoundtripMs(roundtrip)
@@ -118,16 +118,7 @@ func (nh *netHandler) RemoteOnlineList(call capnp.Net_remoteOnlineList) error {
 				return err
 			}
 
-			err = nh.base.withNetClient(remote.Name, func(ctl *p2pnet.Client) error {
-				authenticated = ctl.Ping() == nil
-				return nil
-			})
-
-			status.SetAuthenticated(authenticated)
-
-			if err != nil {
-				return err
-			}
+			status.SetAuthenticated(psrv.PingMap().IsAuthenticated(addr))
 		} else {
 			errMsg := fmt.Sprintf("no route")
 			if err := status.SetError(errMsg); err != nil {

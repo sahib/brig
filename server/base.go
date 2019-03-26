@@ -555,7 +555,7 @@ func (b *base) handleFsEvent(ev *events.Event) {
 		return
 	}
 
-	log.Debugf("resolved to remote: %v", rmt)
+	log.Debugf("resolved to remote: %v", rmt.Name)
 	if !rmt.AcceptAutoUpdates {
 		log.Debugf("currently not accepting events from %s", rmt.Name)
 		return

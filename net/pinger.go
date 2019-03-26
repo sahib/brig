@@ -1,12 +1,14 @@
 package net
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/sahib/brig/net/backend"
+	"github.com/sahib/brig/repo"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,18 +23,22 @@ var (
 
 // PingMap remembers the times we last accessed a remote.
 type PingMap struct {
-	mu    sync.Mutex
-	tickr *time.Ticker
-	peers map[string]backend.Pinger
-	netBk backend.Backend
+	mu            sync.Mutex
+	tickr         *time.Ticker
+	peers         map[string]backend.Pinger
+	authenticated map[string]bool
+	netBk         backend.Backend
+	rp            *repo.Repository
 }
 
 // NewPingMap returns a new PingMap.
-func NewPingMap(netBk backend.Backend) *PingMap {
+func NewPingMap(rp *repo.Repository, netBk backend.Backend) *PingMap {
 	pm := &PingMap{
-		peers: make(map[string]backend.Pinger),
-		netBk: netBk,
-		tickr: time.NewTicker(30 * time.Second),
+		peers:         make(map[string]backend.Pinger),
+		authenticated: make(map[string]bool),
+		netBk:         netBk,
+		tickr:         time.NewTicker(30 * time.Second),
+		rp:            rp,
 	}
 
 	go pm.updateLoop()
@@ -58,16 +64,16 @@ func (pm *PingMap) doUpdate() {
 			// Try to get a pinger in the background.
 			// This will already update the pingmap,
 			// but next time we continue in this loop.
-			go pm.doUpdateSingle(addr)
+			go pm.doUpdateSingle(addr, true)
 			continue
 		}
 
 		if err := pinger.Err(); err != nil {
 			// Maybe the pinger errored in between?
-			log.Warningf("Pinger %s failed: %v", addr, err)
+			log.Warningf("pinger »%s« failed: %v", addr, err)
 			pinger.Close()
 
-			// Mark this addr to be tried later again.
+			// Mark this addr to be tried next time again.
 			pm.peers[addr] = nil
 			continue
 		}
@@ -77,7 +83,7 @@ func (pm *PingMap) doUpdate() {
 	}
 }
 
-func (pm *PingMap) doUpdateSingle(addr string) {
+func (pm *PingMap) doUpdateSingle(addr string, checkAuthentication bool) {
 	pinger, err := pm.netBk.Ping(addr)
 	if err != nil {
 		if pinger != nil {
@@ -86,14 +92,49 @@ func (pm *PingMap) doUpdateSingle(addr string) {
 		return
 	}
 
-	// We fixed this addr. Yay.
-	log.Infof("Pinger %s recovered", addr)
+	// this address seems to work.
+	log.Infof("pinger »%s« responding", addr)
 
-	// Only do the map update in parallel:
+	// this method is called in parallel:
 	pm.mu.Lock()
-	defer pm.mu.Unlock()
-
 	pm.peers[addr] = pinger
+	pm.mu.Unlock()
+
+	if !checkAuthentication {
+		return
+	}
+
+	isAuthenticated := false
+
+	// Always set the authenticated flag if we get past this point.
+	defer func() {
+		pm.mu.Lock()
+		pm.authenticated[addr] = isAuthenticated
+		pm.mu.Unlock()
+	}()
+
+	rmt, err := pm.rp.Remotes.RemoteByAddr(addr)
+	if err != nil {
+		log.Debugf("failed to get remote for addr »%s«: %v", addr, err)
+		return
+	}
+
+	ctx := context.Background()
+	conn, err := DialByAddr(ctx, addr, rmt.Fingerprint, pm.rp, pm.netBk)
+	if err != nil {
+		log.Infof("can ping, but not authenticated: %v", err)
+		return
+	}
+
+	defer conn.Close()
+
+	// Check if we can send them an authenticated ping message.
+	// If so, we are sure they authenticated us also.
+	if err := conn.Ping(); err != nil {
+		return
+	}
+
+	isAuthenticated = true
 }
 
 // Sync makes sure all addresses in `addrs` are being watched.
@@ -160,6 +201,28 @@ func (pm *PingMap) For(addr string) (backend.Pinger, error) {
 	}
 
 	return pinger, nil
+}
+
+func (pm *PingMap) IsAuthenticated(addr string) bool {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	isAuthenticated, ok := pm.authenticated[addr]
+	if !ok {
+		return false
+	}
+
+	return isAuthenticated
+}
+
+// This is called by net handlers when we encountered an succesful connection
+// opened to us.
+func (pm *PingMap) markSuccesfullConnection(addr string) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	go pm.doUpdateSingle(addr, false)
+	pm.authenticated[addr] = true
 }
 
 // Close shuts down the ping map. Do not use afterwards.

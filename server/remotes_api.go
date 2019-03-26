@@ -6,7 +6,6 @@ import (
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	"github.com/sahib/brig/gateway/remotesapi"
-	p2pnet "github.com/sahib/brig/net"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
 )
@@ -55,8 +54,6 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 		return nil, err
 	}
 
-	// TODO: Use some basic caching.
-	// TODO: Use this also for server/net_handlers.go
 	extRmt := &remotesapi.Remote{}
 	extRmt.Name = rmt.Name
 	extRmt.Fingerprint = string(rmt.Fingerprint)
@@ -71,8 +68,9 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 		})
 	}
 
+	addr := rmt.Fingerprint.Addr()
 	psrv := a.base.peerServer
-	pinger, err := psrv.PingMap().For(rmt.Fingerprint.Addr())
+	pinger, err := psrv.PingMap().For(addr)
 	if err != nil {
 		// early exit: peer is not online.
 		return extRmt, nil
@@ -80,17 +78,7 @@ func (a *RemotesAPI) get(name string) (*remotesapi.Remote, error) {
 
 	extRmt.IsOnline = pinger.Roundtrip() > 0
 	extRmt.LastSeen = pinger.LastSeen()
-
-	// Try to ping the client:
-	a.base.withNetClient(name, func(ctl *p2pnet.Client) error {
-		if err := ctl.Ping(); err != nil {
-			return err
-		}
-
-		extRmt.IsAuthenticated = true
-		return nil
-	})
-
+	extRmt.IsAuthenticated = psrv.PingMap().IsAuthenticated(addr)
 	return extRmt, nil
 }
 

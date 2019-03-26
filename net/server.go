@@ -77,10 +77,13 @@ func publishSelf(bk backend.Backend, owner string) error {
 
 // NewServer returns a new inter-remote server.
 func NewServer(rp *repo.Repository, bk backend.Backend, rapi remotesapi.RemotesAPI) (*Server, error) {
+	pingMap := NewPingMap(rp, bk)
+
 	hdl := &connHandler{
-		rp:   rp,
-		bk:   bk,
-		rapi: rapi,
+		rp:      rp,
+		bk:      bk,
+		rapi:    rapi,
+		pingMap: pingMap,
 	}
 
 	lst, err := bk.Listen("brig/caprpc")
@@ -104,7 +107,7 @@ func NewServer(rp *repo.Repository, bk backend.Backend, rapi remotesapi.RemotesA
 		baseServer: baseServer,
 		bk:         bk,
 		hdl:        hdl,
-		pingMap:    NewPingMap(bk),
+		pingMap:    pingMap,
 	}, nil
 }
 
@@ -290,9 +293,10 @@ func (sv *Server) Disconnect() error {
 /////////////////////////////////////
 
 type connHandler struct {
-	bk   backend.Backend
-	rp   *repo.Repository
-	rapi remotesapi.RemotesAPI
+	bk      backend.Backend
+	rp      *repo.Repository
+	rapi    remotesapi.RemotesAPI
+	pingMap *PingMap
 }
 
 // Handle is called whenever we receive a new connection from another brig peer.
@@ -339,7 +343,9 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 		// If this proves to be a performance problem, we can fix it later.
 		for _, remote := range remotes {
 			if remote.Fingerprint.PubKeyID() == remoteFp.PubKeyID() {
-				log.Infof("starting connection with addr `%s`", remote.Fingerprint.Addr())
+				addr := remote.Fingerprint.Addr()
+				log.Infof("starting connection with addr `%s`", addr)
+				hdl.pingMap.markSuccesfullConnection(addr)
 				reqHdl.currRemoteName = remote.Name
 				return nil
 			}
