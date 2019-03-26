@@ -91,3 +91,8 @@ func (tb *TmpFsBackend) IsPinned(hash h.Hash) (bool, error) {
 
 	return true, nil
 }
+
+// IsCached implements FsBackend.IsCached by always returning true.
+func (tb *TmpFsBackend) IsCached(hash h.Hash) (bool, error) {
+	return true, nil
+}
