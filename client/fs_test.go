@@ -107,7 +107,7 @@ func TestStageAndCat(t *testing.T) {
 		require.Nil(t, fd.Close())
 
 		require.Nil(t, ctl.Stage(path, "/hello"))
-		rw, err := ctl.Cat("hello")
+		rw, err := ctl.Cat("hello", false)
 		require.Nil(t, err, stringify(err))
 
 		data, err := ioutil.ReadAll(rw)
