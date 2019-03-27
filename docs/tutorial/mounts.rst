@@ -51,6 +51,31 @@ An existing mount can be removed again with ``brig unmount <path>``:
     $ brig unmount ~/rw-data
     $ brig rm writable
 
+
+Remote access
+~~~~~~~~~~~~~
+
+Working with remote data does often not work extremely well with the file
+abstraction that does not play well with timeouts. This often causes
+applications to hang for indefinite times, since they are not most of the time
+not build for data that might not be delivered immediately. For this very
+common case we have the ``--offline`` flag. It will error out immediately on
+files that are not in our local cache:
+
+.. code-block:: bash
+
+   $ brig mount /tmp/mount --offline
+   # Or with fstab:
+   $ brig fstab add some-mount /tmp/mount --offline
+
+If you have a remote file you want to read, you can do this to make it cached locally:
+
+.. code-block:: bash
+
+   $ brig cat /remote-file > /dev/null
+
+After ``brig cat`` run, you should be able to view the file normally in the mount.
+
 .. _permanent-mounts:
 
 Making mounts permanent
