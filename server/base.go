@@ -548,20 +548,17 @@ func (b *base) doSync(withWhom string, needFetch bool, msg string) (*catfs.Diff,
 }
 
 func (b *base) handleFsEvent(ev *events.Event) {
-	log.Debugf("received fs event: %v", ev)
 	rmt, err := b.repo.Remotes.RemoteByAddr(ev.Source)
 	if err != nil {
 		log.Debugf("failed to resolve '%s' to a known remote name: %v", ev.Source, err)
 		return
 	}
 
-	log.Debugf("resolved to remote: %v", rmt.Name)
 	if !rmt.AcceptAutoUpdates {
-		log.Debugf("currently not accepting events from %s", rmt.Name)
 		return
 	}
 
-	log.Infof("doing sync with '%s' since we received an update notification.", rmt.Name)
+	log.Infof("doing sync with »%s« since we received an update notification.", rmt.Name)
 
 	msg := fmt.Sprintf("sync due to notification from »%s«", rmt.Name)
 	if _, err := b.doSync(rmt.Name, true, msg); err != nil {
