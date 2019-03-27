@@ -35,6 +35,9 @@ type MountOptions struct {
 	ReadOnly bool
 	// Root determines what the root directory is.
 	Root string
+	// Offline tells the mount to error out on files that would need
+	// to be fetched from far.
+	Offline bool
 }
 
 // This is very similar (and indeed mostly copied) code from:

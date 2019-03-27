@@ -86,6 +86,7 @@ struct Identity $Go.doc("Info about our current user state") {
 struct MountOptions {
     readOnly @0 :Bool;
     rootPath @1 :Text;
+    offline  @2 :Bool;
 }
 
 struct Remote $Go.doc("Info a remote peer we might sync with") {
@@ -129,6 +130,7 @@ struct FsTabEntry {
     readOnly @2 :Bool;
     root     @3 :Text;
     active   @4 :Bool;
+    offline  @5 :Bool;
 }
 
 interface FS {

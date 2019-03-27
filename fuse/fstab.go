@@ -36,6 +36,10 @@ func FsTabAdd(cfg *config.Config, name, path string, opts MountOptions) error {
 		return err
 	}
 
+	if err := cfg.SetBool(name+".offline", opts.Offline); err != nil {
+		return err
+	}
+
 	if opts.Root == "" {
 		opts.Root = "/"
 	}
@@ -46,6 +50,10 @@ func FsTabAdd(cfg *config.Config, name, path string, opts MountOptions) error {
 // FsTabRemove removes a mount. It does not directly unmount it,
 // call FsTabApply for this.
 func FsTabRemove(cfg *config.Config, name string) error {
+	if !cfg.IsValidKey(name) {
+		return fmt.Errorf("no such mount: %v", name)
+	}
+
 	return cfg.Reset(name)
 }
 
@@ -87,6 +95,9 @@ func FsTabApply(cfg *config.Config, mounts *MountTable) error {
 
 			readOnlyKey := key[:len(key)-len(".path")] + ".read_only"
 			entry.ReadOnly = cfg.Bool(readOnlyKey)
+
+			offlineKey := key[:len(key)-len(".path")] + ".offline"
+			entry.Offline = cfg.Bool(offlineKey)
 
 			rootPathKey := key[:len(key)-len(".path")] + ".root"
 			entry.Root = cfg.String(rootPathKey)
@@ -130,6 +141,7 @@ type FsTabEntry struct {
 	Root     string
 	Active   bool
 	ReadOnly bool
+	Offline  bool
 }
 
 // FsTabList lists all entries in the filesystem tab in a nice way.
@@ -158,6 +170,8 @@ func FsTabList(cfg *config.Config, mounts *MountTable) ([]FsTabEntry, error) {
 			mountMap[mountName].Active = isActive
 		case "read_only":
 			mountMap[mountName].ReadOnly = cfg.Bool(key)
+		case "offline":
+			mountMap[mountName].Offline = cfg.Bool(key)
 		case "root":
 			mountMap[mountName].Root = cfg.String(key)
 		}

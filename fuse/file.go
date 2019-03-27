@@ -3,6 +3,7 @@
 package fuse
 
 import (
+	"errors"
 	"os"
 	"path"
 	"time"
@@ -12,6 +13,10 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	ErrNotCached = errors.New("content is not cached and may not download")
 )
 
 // File is a file inside a directory.
@@ -54,6 +59,18 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 // Open is called to get an opened handle of a file, suitable for reading and writing.
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	defer logPanic("file: open")
+
+	// Check if the file is actually available locally.
+	if fi.m.options.Offline {
+		isCached, err := fi.m.fs.IsCached(fi.path)
+		if err != nil {
+			return nil, errorize("file-is-cached", err)
+		}
+
+		if !isCached {
+			return nil, errorize("file-not-cached", ErrNotCached)
+		}
+	}
 
 	debugLog("fuse-open: %s", fi.path)
 	fd, err := fi.m.fs.Open(fi.path)

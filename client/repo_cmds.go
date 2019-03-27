@@ -36,6 +36,7 @@ func (ctl *Client) Ping() error {
 type MountOptions struct {
 	ReadOnly bool
 	RootPath string
+	Offline  bool
 }
 
 func mountOptionsToCapnp(opts MountOptions, seg *capnplib.Segment) (*capnp.MountOptions, error) {
@@ -45,6 +46,7 @@ func mountOptionsToCapnp(opts MountOptions, seg *capnplib.Segment) (*capnp.Mount
 	}
 
 	capOpts.SetReadOnly(opts.ReadOnly)
+	capOpts.SetOffline(opts.Offline)
 	if err := capOpts.SetRootPath(opts.RootPath); err != nil {
 		return nil, err
 	}
@@ -312,6 +314,7 @@ type FsTabEntry struct {
 	Root     string
 	Active   bool
 	ReadOnly bool
+	Offline  bool
 }
 
 func capMountToMount(capEntry capnp.FsTabEntry) (*FsTabEntry, error) {
@@ -336,6 +339,7 @@ func capMountToMount(capEntry capnp.FsTabEntry) (*FsTabEntry, error) {
 		Root:     root,
 		Active:   capEntry.Active(),
 		ReadOnly: capEntry.ReadOnly(),
+		Offline:  capEntry.Offline(),
 	}, nil
 }
 

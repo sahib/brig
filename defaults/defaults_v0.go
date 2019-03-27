@@ -261,6 +261,11 @@ var DefaultsV0 = config.DefaultMapping{
 				NeedsRestart: true,
 				Docs:         "Wether this mount should be done read-only.",
 			},
+			"offline": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: true,
+				Docs:         "Error out on remote files early if set true.",
+			},
 			"root": config.DefaultEntry{
 				Default:      "/",
 				NeedsRestart: true,

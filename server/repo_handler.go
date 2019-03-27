@@ -64,6 +64,7 @@ func (rh *repoHandler) Unmount(call capnp.Repo_unmount) error {
 
 func capMountOptionsToMountOptions(capOpts capnp.MountOptions) (fuse.MountOptions, error) {
 	readOnly := capOpts.ReadOnly()
+	offline := capOpts.Offline()
 	rootPath, err := capOpts.RootPath()
 	if err != nil {
 		return fuse.MountOptions{}, err
@@ -72,6 +73,7 @@ func capMountOptionsToMountOptions(capOpts capnp.MountOptions) (fuse.MountOption
 	return fuse.MountOptions{
 		ReadOnly: readOnly,
 		Root:     rootPath,
+		Offline:  offline,
 	}, nil
 }
 
@@ -141,6 +143,7 @@ func fsTabEntryToCap(entry fuse.FsTabEntry, seg *capnplib.Segment) (*capnp.FsTab
 	}
 
 	capEntry.SetReadOnly(entry.ReadOnly)
+	capEntry.SetOffline(entry.Offline)
 	capEntry.SetActive(entry.Active)
 
 	if err := capEntry.SetPath(entry.Path); err != nil {

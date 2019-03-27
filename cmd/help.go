@@ -1091,6 +1091,10 @@ if the service needs a restart when setting the value.
 				Name:  "r,readonly",
 				Usage: "Create the filesystem as readonly.",
 			},
+			cli.BoolFlag{
+				Name:  "offline,o",
+				Usage: "Error out on files that are only remotely available.",
+			},
 			cli.StringFlag{
 				Name:  "x,root",
 				Usage: "Specify a root directory other than »/«.",
@@ -1149,6 +1153,10 @@ CAVEATS
 			cli.BoolFlag{
 				Name:  "r,readonly",
 				Usage: "Create the filesystem as readonly",
+			},
+			cli.BoolFlag{
+				Name:  "offline,o",
+				Usage: "Error out on files that are only remotely available.",
 			},
 			cli.StringFlag{
 				Name:  "x,root",

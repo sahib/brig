@@ -471,6 +471,7 @@ func handleMount(ctx *cli.Context, ctl *client.Client) error {
 
 	options := client.MountOptions{
 		ReadOnly: ctx.Bool("readonly"),
+		Offline:  ctx.Bool("offline"),
 		RootPath: ctx.String("root"),
 	}
 
@@ -561,6 +562,7 @@ func handleFstabAdd(ctx *cli.Context, ctl *client.Client) error {
 	options := client.MountOptions{
 		ReadOnly: ctx.Bool("readonly"),
 		RootPath: ctx.String("root"),
+		Offline:  ctx.Bool("offline"),
 	}
 
 	return ctl.FstabAdd(mountName, mountPath, options)
@@ -604,7 +606,7 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if tmpl == nil && len(mounts) != 0 {
-		fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tROOT\tACTIVE\t")
+		fmt.Fprintln(tabW, "NAME\tPATH\tREAD_ONLY\tOFFLINE\tROOT\tACTIVE\t")
 	}
 
 	for _, entry := range mounts {
@@ -618,10 +620,11 @@ func handleFstabList(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\n",
 			entry.Name,
 			entry.Path,
 			yesify(entry.ReadOnly),
+			yesify(entry.Offline),
 			entry.Root,
 			checkmarkify(entry.Active),
 		)
