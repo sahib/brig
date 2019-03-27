@@ -9,11 +9,14 @@ import (
 
 	goipfsutil "github.com/ipfs/go-ipfs-util"
 	"github.com/multiformats/go-multihash"
-	"golang.org/x/crypto/sha3"
+	"golang.org/x/crypto/blake2s"
 )
 
 const (
-	internalHashAlgo = multihash.SHA3_256
+	// The + 4 is for making sure 32 byte length is encoded (4 * 8 = 32).
+	// This is a weird convention by multihash apparently.
+	internalHashAlgo   = multihash.BLAKE2S_MIN + 4
+	internalHashLength = 32
 )
 
 var (
@@ -33,7 +36,7 @@ func init() {
 
 	EmptyBackendHash = Hash(hash)
 
-	data = make([]byte, multihash.DefaultLengths[internalHashAlgo])
+	data = make([]byte, internalHashLength)
 	hash, err = multihash.Encode(data, internalHashAlgo)
 	if err != nil {
 		panic(fmt.Sprintf("Unable to create empty content hash: %v", err))
@@ -147,7 +150,13 @@ func (h Hash) Mix(o Hash) Hash {
 
 // Sum hashes `data` with the internal hashing algorithm.
 func Sum(data []byte) Hash {
-	return sum(data, internalHashAlgo, multihash.DefaultLengths[internalHashAlgo])
+	d := blake2s.Sum256(data)
+	mh, err := multihash.Encode(d[:], internalHashAlgo)
+	if err != nil {
+		panic(err)
+	}
+
+	return Hash(mh)
 }
 
 // SumWithBackendHash creates a hash with the same algorithm the backend uses.
@@ -181,7 +190,7 @@ func Cast(data []byte) (Hash, error) {
 // TestDummy returns a blake2b hash based on `seed`.
 // The same `seed` will always generate the same hash.
 func TestDummy(t *testing.T, seed byte) Hash {
-	data := make([]byte, multihash.DefaultLengths[internalHashAlgo])
+	data := make([]byte, internalHashLength)
 	for idx := range data {
 		data[idx] = seed
 	}
@@ -203,7 +212,8 @@ type HashWriter struct {
 // NewHashWriter returns a new HashWriter.
 // Currently it is always sha3-256.
 func NewHashWriter() *HashWriter {
-	return &HashWriter{hash: sha3.New256()}
+	b, _ := blake2s.New256(nil)
+	return &HashWriter{hash: b}
 }
 
 // Finalize returns the final hash of the written data.
