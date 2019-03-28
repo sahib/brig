@@ -31,6 +31,10 @@ import (
 	h "github.com/sahib/brig/util/hashlib"
 )
 
+const (
+	abiVersion = 1
+)
+
 // FS (short for Filesystem) is the central API entry for everything related to
 // paths.  It exposes a POSIX-like interface where path are mapped to the
 // actual underlying hashes and the associated metadata.
@@ -302,8 +306,12 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 	}
 
 	lkr := c.NewLinker(kv)
-
 	if err := lkr.SetOwner(owner); err != nil {
+		return nil, err
+	}
+
+	// NOTE: This is the place to start migrations in the future.
+	if err := lkr.SetABIVersion(abiVersion); err != nil {
 		return nil, err
 	}
 

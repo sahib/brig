@@ -21,9 +21,6 @@ package core
 // Defined by caller:
 //
 // metadata/                             => BYTES (Caller defined data)
-// metadata/id      => USER_ID
-// metadata/hash    => USER_HASH
-// metadata/version => DB_FORMAT_VERSION_NUMBER
 //
 // NODE is either a Commit, a Directory or a File.
 // FULL_NODE_PATH may contain slashes and in case of directories,
@@ -683,6 +680,12 @@ func (lkr *Linker) Owner() (string, error) {
 func (lkr *Linker) SetOwner(owner string) error {
 	lkr.owner = owner
 	return lkr.MetadataPut("owner", []byte(owner))
+}
+
+// SetABIVersion will set the ABI version to `version`.
+func (lkr *Linker) SetABIVersion(version int) error {
+	sv := strconv.Itoa(version)
+	return lkr.MetadataPut("version", []byte(sv))
 }
 
 ////////////////////////
