@@ -4,7 +4,65 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
-## [0.4.0 Capricious Clownfish] -- unreleased
+## [0.4.1 Capricious Clownfish] -- unreleased
+
+A smaller release with some bug fixes and a few new features. Also one bigger
+stability and speed improvement. Thanks to everyone that gave feedback!
+
+### Fixed
+
+- Fix two badger db related crashes that lead to a crash in the daemon. One was
+  related to having nested transactions, the one was related to having an open
+  iterator while committing data to the database.
+- Fix some dependencies that led to errors for some users (thanks @vasket)
+- The gateway code now tries to reconnect the websocket whenever it was closed
+  due to bad connectivity or similar issues. This led to a state where files
+  were only updated after reloading the page.
+- Several smaller fixes in the remotes view, i.e. the owner name was displayed
+  wrong and most of the settings could not be set outside the test environment.
+  Also the diff output was different in the UI and brig diff.
+- We now error out early if e.g. »brig ls« was issued, but there is no repo.
+  Before it tried to start a daemon and waited a long time before timing out.
+- Made »brig mkdir« always prefix a »/« to a path which would lead to funny
+  issues otherwise.
+
+### Added
+
+- Add a --offline flag to the following subcommands: ``cat``, ``tar``,
+  ``mount`` and ``fstab add``. These flags will only output files that are
+  locally cached and will not cause timeouts therefore. Trying other files will
+  result in an error.
+- »brig show« now outputs if a file/directory is locally cached. This is not
+  the same as pinned, since you can pin a file but it might not be cached yet.
+- Make the gateway host all of its JavaScript, fonts and CSS code itself by
+  baking it into the binary. This will enable people running the gateway in
+  environments where no internet connection is available to reach the CDN used
+  before.
+- Add the possibility to copy the fingerprint in the UI via a button click.
+  Before the fingerprint was shown over two lines which made copying tricky.
+- A PKGBUILD for ArchLinux was added, which builds ``brig`` from the
+  ``develop`` branch. Thanks @vasket!
+
+### Changed
+
+- The ``brig remote ls`` command no longer does active I/O between nodes to check
+  if a node is authenticated. Instead it relies on info from the peer server
+  which can apply better caching. The peer server is also able to use information
+  from dials and requests to/from other peers to update the ping information.
+- Switch the internal checksum algorithm to ``blake2s-256`` from ``sha3-256``.
+  This change was made for speed reasons and leads to a slightly different looking
+  checksum format in the command line output. This change MIGHT lead to incompatibilities.
+- Also swap ``scrypt`` with ``argon2`` for key derivation and lower the hashing settings
+  until acceptable performance was achieved.
+- Replace the Makefile with a magefile, i.e. a build script written in Go only which has
+  no dependencies and can bootstrap itself.
+- Include IPFS config output in »brig bug«.
+
+### Removed
+
+* The old Makefile was removed and replaced with a Go only solution.
+
+## [0.4.0 Capricious Clownfish] -- 2019-03-19
 
 It's only been a few months since the last release (December 2018), but there
 are a ton of new features / general changes that total in about 15k added lines
