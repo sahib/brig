@@ -223,6 +223,15 @@ func getExecutablePath() (string, error) {
 }
 
 func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, error) {
+	stat, err := os.Stat(repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if !stat.IsDir() {
+		return nil, fmt.Errorf("»%s« is not a directory", repoPath)
+	}
+
 	exePath, err := getExecutablePath()
 	if err != nil {
 		return nil, err
