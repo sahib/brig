@@ -437,6 +437,9 @@ func (fs *FS) repinLoop() {
 
 // Close will clean up internal storage.
 func (fs *FS) Close() error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	for _, ch := range []chan bool{fs.gcControl, fs.autoCommitControl} {
 		go func() {
 			ch <- false

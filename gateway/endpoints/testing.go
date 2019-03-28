@@ -63,8 +63,8 @@ func withState(t *testing.T, fn func(state *testState)) {
 	state.UserDatabase().Add("ali", "ila", nil, nil)
 	fn(&testState{state})
 
-	require.Nil(t, state.fs.Close())
 	require.Nil(t, state.Close())
+	require.Nil(t, state.fs.Close())
 }
 
 func mustEncodeBody(t *testing.T, v interface{}) io.Reader {
