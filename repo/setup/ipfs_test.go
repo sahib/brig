@@ -27,5 +27,5 @@ func TestCommandAvailable(t *testing.T) {
 func TestRepoInit(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "ipfs-tmp-test-")
 	require.Nil(t, err)
-	require.Nil(t, initIPFS(tmpDir))
+	require.Nil(t, initIPFS(os.Stdout, tmpDir))
 }

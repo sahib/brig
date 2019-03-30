@@ -440,15 +440,9 @@ func (fs *FS) Close() error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	for _, ch := range []chan bool{fs.gcControl, fs.autoCommitControl} {
-		go func() {
-			ch <- false
-		}()
-	}
-
-	go func() {
-		fs.repinControl <- ""
-	}()
+	go func() { fs.gcControl <- false }()
+	go func() { fs.autoCommitControl <- false }()
+	go func() { fs.repinControl <- "" }()
 
 	if err := fs.pinner.Close(); err != nil {
 		log.Warnf("Failed to close pin cache: %v", err)
@@ -939,6 +933,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
 
 	if fs.readOnly {
+		fs.mu.Unlock()
 		return ErrReadOnly
 	}
 
