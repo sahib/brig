@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -212,10 +213,79 @@ func installIPFS(out io.Writer) error {
 	return util.CopyFile(binPath, cwdPath)
 }
 
-func initIPFS(ipfsPath string) error {
+func isPortTaken(port int) bool {
+	lst, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		// probably cannot take it because it's already taken.
+		return true
+	}
+
+	lst.Close()
+	return false
+}
+
+func ipfsSetConfigKey(out io.Writer, ipfsPath, key, value string) {
+	args := []string{"config", "--json", key, value}
+	cmd := exec.Command("ipfs", args...)
+	cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
+	fmt.Fprintf(out, "  -- Setting config: IPFS_PATH='%s' ipfs %s\n", ipfsPath, strings.Join(args, " "))
+
+	errBuf := &bytes.Buffer{}
+	cmd.Stderr = errBuf
+
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(out, "could not set config: %s\n", strings.TrimSpace(errBuf.String()))
+		fmt.Fprintf(out, "command was: `ipfs %s\n`", strings.Join(args, " "))
+	}
+}
+
+func initIPFS(out io.Writer, ipfsPath string) error {
 	cmd := exec.Command("ipfs", "init")
 	cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// default IPFS ports:
+	apiPort := 5001
+	swarmPort := 4001
+	ipfsGwPort := 8080
+
+	// try to find a suitable port for the new ipfs instance.
+	// This is used for cases where you have several ipfs instances.
+	for off := 0; off < 100; off++ {
+		if isPortTaken(apiPort+off) ||
+			isPortTaken(swarmPort+off) ||
+			isPortTaken(ipfsGwPort+off) {
+			continue
+		}
+
+		// We have a working port set; build the config keys:
+		config := [][]string{
+			{
+				"Addresses.API",
+				fmt.Sprintf("\"/ip4/127.0.0.1/tcp/%d\"", apiPort+off),
+			}, {
+				"Addresses.Gateway",
+				fmt.Sprintf("\"/ip4/127.0.0.1/tcp/%d\"", ipfsGwPort+off),
+			}, {
+				"Addresses.Swarm",
+				fmt.Sprintf(
+					"[\"/ip4/0.0.0.0/tcp/%d\", \"/ip6/::/tcp/%d\"]",
+					swarmPort+off, swarmPort+off,
+				),
+			},
+		}
+
+		// Go and set the config:
+		for _, args := range config {
+			ipfsSetConfigKey(out, ipfsPath, args[0], args[1])
+		}
+
+		break
+	}
+
+	return nil
 }
 
 func getIPFSVersion(apiAddr string) (semver.Version, error) {
@@ -260,18 +330,7 @@ func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool)
 	}
 
 	for _, args := range config {
-		args = append([]string{"config", "--json"}, args...)
-		cmd := exec.Command("ipfs", args...)
-		cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
-		fmt.Fprintf(out, "  -- Executing: IPFS_PATH='%s' ipfs %s\n", ipfsPath, strings.Join(args, " "))
-
-		errBuf := &bytes.Buffer{}
-		cmd.Stderr = errBuf
-
-		if err := cmd.Run(); err != nil {
-			fmt.Fprintf(out, "could not set config: %s\n", strings.TrimSpace(errBuf.String()))
-			fmt.Fprintf(out, "command was: `ipfs %s\n`", strings.Join(args, " "))
-		}
+		ipfsSetConfigKey(out, ipfsPath, args[0], args[1])
 	}
 
 	return nil
@@ -295,13 +354,19 @@ func isCommandAvailable(name string) bool {
 	return path != ""
 }
 
-func waitForRunningIPFS(addr string, maxWaitTime time.Duration) {
+func waitForRunningIPFS(out io.Writer, addr string, maxWaitTime time.Duration) {
 	waitStart := time.Now()
 	for time.Since(waitStart) > maxWaitTime {
 		if isRunning(addr) {
 			break
 		}
+
+		secLeft := float64(maxWaitTime) - float64(time.Since(waitStart))/float64(time.Second)
+		fmt.Fprintf(out, "-- Waiting %.2fs for it to fully boot up...   \r", secLeft)
+		time.Sleep(100 * time.Millisecond)
 	}
+
+	fmt.Fprintf(out, "-- Done waiting.%s\n", strings.Repeat(" ", 30))
 }
 
 func dirExistsAndIsNotEmpty(dir string) bool {
@@ -341,7 +406,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 		}
 
 		fmt.Fprintf(out, "-- Creating new IPFS repository.\n")
-		initIPFS(ipfsPath)
+		initIPFS(out, ipfsPath)
 	}
 
 	apiAddr, err := GetAPIAddrForPath(ipfsPath)
@@ -358,9 +423,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 			return "", err
 		}
 
-		fmt.Fprintf(out, "-- Waiting up to 60s for it to fully boot up...\n")
-
-		waitForRunningIPFS(apiAddr, 60)
+		waitForRunningIPFS(out, apiAddr, 60)
 		fmt.Fprintf(out, "-- Started IPFS as child of this process.\n")
 	} else {
 		fmt.Fprintf(out, "-- IPFS Daemon seems to be running. Let's go!\n")
