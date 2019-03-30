@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
-## [0.4.1 Capricious Clownfish] -- unreleased
+## [0.4.1 Capricious Clownfish] -- 2019-03-31
 
 A smaller release with some bug fixes and a few new features. Also one bigger
 stability and speed improvement. Thanks to everyone that gave feedback!
