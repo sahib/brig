@@ -88,7 +88,7 @@ func isRunning(apiAddr string) bool {
 }
 
 func getLatestStableVersion() string {
-	fallbackStable := "v0.4.19"
+	fallbackStable := "v0.4.20"
 	url := "https://dist.ipfs.io/go-ipfs/versions"
 	resp, err := http.Get(url)
 	if err != nil {
