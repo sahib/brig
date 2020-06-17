@@ -284,7 +284,7 @@ func (rv *resolver) hasConflicts(src, dst n.ModNode) (bool, ChangeType, ChangeTy
 	if len(srcHist) > 0 && len(dstHist) == 0 {
 		// We can "fast forward" our node.
 		// There are only remote changes for this file.
-		return false, 0, 0, nil
+		return false, srcMask, dstMask, nil
 
 	}
 	if len(srcHist) == 0 && len(dstHist) > 0 {
