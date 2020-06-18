@@ -219,6 +219,7 @@ func (rv *resolver) hasConflictFile(dstNd n.ModNode) (bool, error) {
 	}
 
 	for _, child := range children {
+		if child.Type() == n.NodeTypeGhost { continue }
 		if isConflictPath(child.Path()) {
 			// Also check if the conflict file belongs to our node:
 			return strings.HasPrefix(child.Path(), dstNd.Path()), nil
