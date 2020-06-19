@@ -575,7 +575,19 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	if _, ok := d.children[nd.Name()]; ok {
-		return ie.ErrExists
+		twin, err := d.Child(lkr, nd.Name())
+		if err != nil {
+			return ie.ErrExists
+		}
+		if twin.Type() != NodeTypeGhost {
+			return ie.ErrExists
+		}
+		// Twin is a ghost. We delete it to clear space for a new (added) node.
+		err = d.RemoveChild(lkr, twin)
+		if err != nil {
+			// the ghost twin stays and we report it as existing
+			return ie.ErrExists
+		}
 	}
 
 	nodeSize := nd.Size()
