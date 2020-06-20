@@ -377,12 +377,25 @@ func printDiff(diff *client.Diff, printMissing bool) {
 	simpleSection(color.YellowString("Ignored:"), diff.Ignored)
 	simpleSection(color.RedString("Removed:"), diff.Removed)
 
+	// split diff.Merged to changedLocally and changedRemotely arrays
+	var changedLocally, changedRemotely  []client.DiffPair
+	for _, pair := range diff.Merged {
+		srcModTime := pair.Src.ModTime
+		dstModTime := pair.Dst.ModTime
+		if srcModTime.After(dstModTime) {
+			changedRemotely = append(changedRemotely, pair)
+		} else {
+			changedLocally = append(changedLocally, pair)
+		}
+	}
+
 	if printMissing {
 		simpleSection(color.RedString("Missing:"), diff.Missing)
 	}
 
 	pairSection(color.CyanString("Moved:"), "→", diff.Moved)
-	pairSection(color.WhiteString("Resolved Conflicts:"), "⇄", diff.Merged)
+	pairSection(color.WhiteString("Changed Locally:"), "→", changedLocally)
+	pairSection(color.WhiteString("Changed Remotely:"), "←", changedRemotely)
 	pairSection(color.MagentaString("Conflicts:"), "⚡", diff.Conflict)
 }
 
