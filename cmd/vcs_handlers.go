@@ -210,13 +210,13 @@ func printDiffTreeLineFormatter(types map[string]diffEntry, n *treeNode) string 
 		case diffTypeIgnored:
 			return color.YellowString(" * " + suffixIfDir(n))
 		case diffTypeMoved:
-			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
-			srcBase := path.Base(diffEntry.pair.Src.Path)
+			srcPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
+			dstBase := path.Base(diffEntry.pair.Dst.Path)
 			if diffEntry.pair.Src.IsDir {
-				srcBase += "/"
+				dstBase += "/"
 			}
 
-			return color.CyanString(fmt.Sprintf(" %s → %s", srcBase, dstPath))
+			return color.CyanString(fmt.Sprintf(" %s ↔ %s", dstBase, srcPath))
 		case diffTypeMerged:
 			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
 			srcBase := path.Base(diffEntry.pair.Src.Path)
