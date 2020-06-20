@@ -223,8 +223,18 @@ func printDiffTreeLineFormatter(types map[string]diffEntry, n *treeNode) string 
 			if diffEntry.pair.Src.IsDir {
 				srcBase += "/"
 			}
+			// Attempt to figure out which way merge should go
+			// based on modification times.
+			// This information was available at resolver time in the PairDiff
+			// but server returns simplified PairDiff without modification masks.
+			srcModTime := diffEntry.pair.Src.ModTime
+			dstModTime := diffEntry.pair.Dst.ModTime
+			var mergeSymbol string = color.MagentaString("→")
+			if srcModTime.After(dstModTime) {
+				mergeSymbol = color.GreenString("←")
+			}
 
-			return color.WhiteString(fmt.Sprintf(" %s ⇄ %s", dstPath, srcBase))
+			return color.WhiteString(fmt.Sprintf(" %s %s %s ", dstPath, mergeSymbol,  srcBase))
 		case diffTypeConflict:
 			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
 			srcBase := path.Base(diffEntry.pair.Src.Path)
