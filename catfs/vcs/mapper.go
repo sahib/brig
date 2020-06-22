@@ -243,6 +243,11 @@ func (ma *Mapper) mapDirectoryContents(srcCurr *n.Directory, dstPath string) err
 			if err := ma.mapDirectory(srcChildDir, childDstPath, false); err != nil {
 				return err
 			}
+			ma.setSrcHandled(srcChildDir)
+			dstCurrNd, err := ma.lkrDst.LookupModNodeAt(ma.dstHead, childDstPath)
+			if err == nil {
+				ma.setDstHandled(dstCurrNd)
+			}
 		case n.NodeTypeFile:
 			srcChildFile, ok := srcChild.(*n.File)
 			if !ok {
@@ -252,6 +257,7 @@ func (ma *Mapper) mapDirectoryContents(srcCurr *n.Directory, dstPath string) err
 			if err := ma.mapFile(srcChildFile, childDstPath); err != nil {
 				return err
 			}
+			ma.setSrcHandled(srcChildFile)
 		case n.NodeTypeGhost:
 			// remote ghosts are ignored, since they were handled beforehand.
 		default:

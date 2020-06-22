@@ -251,6 +251,26 @@ func mapperSetupSrcMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []Ma
 	}
 }
 
+func mapperSetupSrcFileMoveToExistingEmptyDir(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
+	c.MustMkdir(t, lkrSrc, "/d1")
+	c.MustMkdir(t, lkrSrc, "/d2")
+	srcFileOld, _ := c.MustTouchAndCommit(t, lkrSrc, "/d1/t1", 23)
+	srcFile := c.MustMove(t, lkrSrc, srcFileOld, "/d2/t1")
+	c.MustCommit(t, lkrSrc, "move is done")
+
+	c.MustMkdir(t, lkrDst, "/d1")
+	c.MustMkdir(t, lkrDst, "/d2")
+	dstFile, _ := c.MustTouchAndCommit(t, lkrDst, "/d1/t1", 23)
+
+	return []MapPair{
+		{
+			Src:         srcFile,
+			Dst:         dstFile,
+			SrcWasMoved: true,
+		},
+	}
+}
+
 func mapperSetupDstMoveWithExisting(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	srcDir := c.MustMkdir(t, lkrSrc, "/x")
 	c.MustMkdir(t, lkrSrc, "/y")
@@ -441,6 +461,9 @@ func TestMapper(t *testing.T) {
 		}, {
 			name:  "move-nested-dir",
 			setup: mapperMoveNestedDir,
+		}, {
+			name:  "move-src-file-to-existing-empty-dir",
+			setup: mapperSetupSrcFileMoveToExistingEmptyDir,
 		},
 	}
 
