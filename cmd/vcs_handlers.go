@@ -393,7 +393,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 		simpleSection(color.RedString("Missing:"), diff.Missing)
 	}
 
-	pairSection(color.CyanString("Moved:"), "→", diff.Moved)
+	pairSection(color.CyanString("Moved:"), "↔", diff.Moved)
 	pairSection(color.WhiteString("Changed Locally:"), "→", changedLocally)
 	pairSection(color.WhiteString("Changed Remotely:"), "←", changedRemotely)
 	pairSection(color.MagentaString("Conflicts:"), "⚡", diff.Conflict)
