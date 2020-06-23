@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"time"
 	"testing"
 
 	c "github.com/sahib/brig/catfs/core"
@@ -492,7 +493,7 @@ func setupHistoryMultipleMovesPerCommit(t *testing.T, lkr *c.Linker) *historySet
 	fileY := c.MustMove(t, lkr, fileX, "/y.png")
 	c.MustMove(t, lkr, fileY, "/z.png")
 
-	fileZNew, err := c.Stage(lkr, "/z.png", h.TestDummy(t, 2), h.TestDummy(t, 2), uint64(2), nil)
+	fileZNew, err := c.Stage(lkr, "/z.png", h.TestDummy(t, 2), h.TestDummy(t, 2), uint64(2), nil, time.Now())
 	require.Nil(t, err)
 
 	c2 := c.MustCommit(t, lkr, "Moved around")

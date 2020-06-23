@@ -170,7 +170,7 @@ func TestCat(t *testing.T) {
 		contentHash := h.TestDummy(t, 23)
 
 		// Stage the file manually (without fs.Stage)
-		_, err = c.Stage(fs.lkr, "/x", contentHash, backendHash, uint64(len(raw)), TestKey)
+		_, err = c.Stage(fs.lkr, "/x", contentHash, backendHash, uint64(len(raw)), TestKey, time.Now())
 		require.Nil(t, err)
 
 		// Cat the file again:

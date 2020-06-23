@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 	"testing"
 
 	"github.com/sahib/brig/catfs/db"
@@ -197,7 +198,7 @@ func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 
 // MustTouchAndCommit is a combined MustTouch and MustCommit.
 func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
-	file, err := Stage(lkr, path, h.TestDummy(t, seed), h.TestDummy(t, seed), uint64(seed), nil)
+	file, err := Stage(lkr, path, h.TestDummy(t, seed), h.TestDummy(t, seed), uint64(seed), nil, time.Now())
 	if err != nil {
 		t.Fatalf("Failed to stage %s at %d: %v", path, seed, err)
 	}

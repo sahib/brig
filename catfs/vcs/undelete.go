@@ -92,6 +92,7 @@ func Undelete(lkr *c.Linker, root string) error {
 					file.BackendHash(),
 					file.Size(),
 					file.Key(),
+					file.ModTime(),
 				)
 
 				return err

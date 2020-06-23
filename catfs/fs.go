@@ -1015,7 +1015,7 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	newFile, err := c.Stage(fs.lkr, path, contentHash, backendHash, size, key)
+	newFile, err := c.Stage(fs.lkr, path, contentHash, backendHash, size, key, time.Now())
 	if err != nil {
 		return err
 	}

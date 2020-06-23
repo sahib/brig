@@ -356,11 +356,11 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 
 // StageFromFileNode is a convinience helper that will call Stage() with all necessary params from `f`.
 func StageFromFileNode(lkr *Linker, f *n.File) (*n.File, error) {
-	return Stage(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.Key())
+	return Stage(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.Key(), f.ModTime())
 }
 
 // Stage adds a file to brigs DAG.
-func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte) (file *n.File, err error) {
+func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte, modTime time.Time) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
 		err = lerr
@@ -435,7 +435,7 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 		}
 
 		file.SetSize(size)
-		file.SetModTime(time.Now())
+		file.SetModTime(modTime)
 		file.SetContent(lkr, contentHash)
 		file.SetBackend(lkr, backendHash)
 		file.SetKey(key)

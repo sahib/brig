@@ -4,6 +4,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 	"testing"
 
 	ie "github.com/sahib/brig/catfs/errors"
@@ -488,14 +489,14 @@ func TestStage(t *testing.T) {
 
 		contentHash1 := h.TestDummy(t, 1)
 		backendHash1 := h.TestDummy(t, 1)
-		file, err := Stage(lkr, "/photos/moose.png", contentHash1, backendHash1, 2, key)
+		file, err := Stage(lkr, "/photos/moose.png", contentHash1, backendHash1, 2, key, time.Now())
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
 		contentHash2 := h.TestDummy(t, 2)
 		backendHash2 := h.TestDummy(t, 2)
-		file, err = Stage(lkr, "/photos/moose.png", contentHash2, backendHash2, 3, key)
+		file, err = Stage(lkr, "/photos/moose.png", contentHash2, backendHash2, 3, key, time.Now())
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
