@@ -211,6 +211,10 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 		return nil, err
 	}
 
+	if from== nil {
+		return nil, e.New("The from commit is nil")
+	}
+
 	patch := &Patch{
 		FromIndex: from.Index(),
 		CurrIndex: status.Index(),
