@@ -373,7 +373,15 @@ func printDiff(diff *client.Diff, printMissing bool) {
 		fmt.Println()
 	}
 
-	simpleSection(color.GreenString("Added:"), diff.Added)
+	var addedAtRemote  []client.DiffPair
+	for _, src := range diff.Added {
+		var pair client.DiffPair
+		pair.Dst.Path = "▩"
+		pair.Src = src
+		addedAtRemote = append(addedAtRemote, pair)
+	}
+	pairSection(color.GreenString("Added:"), "←", addedAtRemote)
+
 	simpleSection(color.YellowString("Ignored:"), diff.Ignored)
 	simpleSection(color.RedString("Removed:"), diff.Removed)
 
