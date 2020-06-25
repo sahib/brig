@@ -202,11 +202,11 @@ func printDiffTreeLineFormatter(types map[string]diffEntry, n *treeNode) string 
 	if diffEntry, ok := types[n.entry.Path]; ok {
 		switch diffEntry.typ {
 		case diffTypeAdded:
-			return color.GreenString(" + " + suffixIfDir(n))
+			return color.GreenString(" + " + "▩ ← " + suffixIfDir(n))
 		case diffTypeRemoved:
 			return color.RedString(" - " + suffixIfDir(n))
 		case diffTypeMissing:
-			return color.MagentaString(" _ " + suffixIfDir(n))
+			return color.MagentaString(" _ " + suffixIfDir(n) + " → ▩")
 		case diffTypeIgnored:
 			return color.YellowString(" * " + suffixIfDir(n))
 		case diffTypeMoved:
@@ -390,7 +390,14 @@ func printDiff(diff *client.Diff, printMissing bool) {
 	}
 
 	if printMissing {
-		simpleSection(color.RedString("Missing:"), diff.Missing)
+		var missedAtRemote  []client.DiffPair
+		for _, dst := range diff.Missing {
+			var pair client.DiffPair
+			pair.Dst = dst
+			pair.Src.Path = "▩"
+			missedAtRemote = append(missedAtRemote, pair)
+		}
+		pairSection(color.RedString("Missing:"), "→", missedAtRemote)
 	}
 
 	pairSection(color.CyanString("Moved:"), "↔", diff.Moved)
