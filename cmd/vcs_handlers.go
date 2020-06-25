@@ -234,7 +234,7 @@ func printDiffTreeLineFormatter(types map[string]diffEntry, n *treeNode) string 
 				mergeSymbol = color.GreenString("←")
 			}
 
-			return color.WhiteString(fmt.Sprintf(" %s %s %s ", dstPath, mergeSymbol,  srcBase))
+			return color.WhiteString(fmt.Sprintf(" %s %s %s ", dstPath, mergeSymbol, srcBase))
 		case diffTypeConflict:
 			dstPath := makePathAbbrev(diffEntry.pair.Dst, diffEntry.pair.Src)
 			srcBase := path.Base(diffEntry.pair.Src.Path)
@@ -373,7 +373,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 		fmt.Println()
 	}
 
-	var addedAtRemote  []client.DiffPair
+	var addedAtRemote []client.DiffPair
 	for _, src := range diff.Added {
 		var pair client.DiffPair
 		pair.Dst.Path = "▩"
@@ -384,7 +384,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 
 	simpleSection(color.YellowString("Ignored:"), diff.Ignored)
 
-	var removedAtRemote  []client.DiffPair
+	var removedAtRemote []client.DiffPair
 	for _, dst := range diff.Removed {
 		var pair client.DiffPair
 		pair.Dst = dst
@@ -394,7 +394,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 	pairSection(color.RedString("Removed:"), "←", removedAtRemote)
 
 	// split diff.Merged to changedLocally and changedRemotely arrays
-	var changedLocally, changedRemotely  []client.DiffPair
+	var changedLocally, changedRemotely []client.DiffPair
 	for _, pair := range diff.Merged {
 		srcModTime := pair.Src.ModTime
 		dstModTime := pair.Dst.ModTime
@@ -406,7 +406,7 @@ func printDiff(diff *client.Diff, printMissing bool) {
 	}
 
 	if printMissing {
-		var missedAtRemote  []client.DiffPair
+		var missedAtRemote []client.DiffPair
 		for _, dst := range diff.Missing {
 			var pair client.DiffPair
 			pair.Dst = dst
