@@ -574,7 +574,7 @@ func TestCommitByIndex(t *testing.T) {
 
 		// Not existing:
 		c4, err := lkr.CommitByIndex(3)
-		require.Nil(t, err)
+		require.True(t, ie.IsErrNoSuchCommitIndex(err))
 		require.Nil(t, c4)
 	})
 }
@@ -616,7 +616,7 @@ func TestLookupNodeAt(t *testing.T) {
 		// quick check to see if the next commit is really empty
 		// (tests only the test setup)
 		last, err := lkr.CommitByIndex(12)
-		require.Nil(t, err)
+		require.True(t, ie.IsErrNoSuchCommitIndex(err))
 		require.Nil(t, last)
 	})
 }
