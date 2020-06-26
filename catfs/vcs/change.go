@@ -130,6 +130,10 @@ func replayAddWithUnpacking(lkr *c.Linker, ch *Change) error {
 
 	// If the types are conflicting we have to remove the existing node.
 	if oldNd != nil && oldNd.Type() != currNd.Type() {
+		if oldNd.Type() == n.NodeTypeGhost {
+			// the oldNd node is already deleted, no need to do anything special
+			return replayAdd(lkr, currNd)
+		}
 		_, _, err := c.Remove(lkr, oldNd, true, true)
 		if err != nil {
 			return e.Wrapf(err, "replay: type-conflict-remove")
