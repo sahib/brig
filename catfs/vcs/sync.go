@@ -152,6 +152,9 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 		}
 
 		return sy.lkrDst.StageNode(newDstNode)
+	case n.NodeTypeGhost:
+		// skipping addition of a ghost
+		return nil
 	default:
 		return fmt.Errorf("Unexpected node type in handleAdd")
 	}
