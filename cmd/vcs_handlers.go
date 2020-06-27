@@ -122,13 +122,14 @@ func handleHistory(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s\t%s\t%s\t\n",
+			"%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			changeDesc,
 			color.CyanString(commitName(entry.Next)),
 			color.GreenString(commitName(entry.Head)),
 			what,
 			when,
 			pinStateToSymbol(entry.IsPinned, entry.IsExplicit),
+			entry.Head.Msg,
 		)
 	}
 
