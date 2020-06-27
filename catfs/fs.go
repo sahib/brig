@@ -1837,7 +1837,7 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 			return nil, err
 		}
 
-		msg := fmt.Sprintf("»%s« merged with you", remoteName)
+		msg := fmt.Sprintf("auto commit on metadata request from »%s«", remoteName)
 		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
 			return nil, err
 		}
