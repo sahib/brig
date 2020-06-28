@@ -1288,6 +1288,7 @@ EXAMPLES:
 	},
 	"gateway.user.add": {
 		Usage: "Add a new gateway user.",
+		ArgsUsage: "<user> [<password> <permitted folders list>]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{
 				Name:  "role-admin,a",
