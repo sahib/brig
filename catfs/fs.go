@@ -1861,6 +1861,57 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 	return msg.Marshal()
 }
 
+// Makes patch between `fromRev` and the next one. Used to consequent patches from remote
+func (fs *FS) MakePatchToNext(fromRev string, folders []string, remoteName string) ([]byte, error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	haveStagedChanges, err := fs.lkr.HaveStagedChanges()
+	if err != nil {
+		return nil, err
+	}
+
+	// Commit changes if there are any.
+	// This is a little unfortunate implication on how the current
+	// way of sending getting patches work. Creating a patch itself
+	// works with a staging commit, but the versioning does not work
+	// anymore then, since the same version might have a different
+	// set of changes.
+	if haveStagedChanges {
+		owner, err := fs.lkr.Owner()
+		if err != nil {
+			return nil, err
+		}
+
+		msg := fmt.Sprintf("auto commit on metadata request from »%s«", remoteName)
+		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
+			return nil, err
+		}
+	}
+
+	from, err := parseRev(fs.lkr, fromRev)
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := fs.lkr.CommitByIndex(from.Index()+1)
+	if err != nil {
+		return nil, err
+	}
+
+	patch, err := vcs.MakePatchFromTo(fs.lkr, from, to, folders)
+	if err != nil {
+		return nil, err
+	}
+
+	msg, err := patch.ToCapnp()
+	if err != nil {
+		return nil, err
+	}
+
+	return msg.Marshal()
+}
+
 // ApplyPatch reads the binary patch coming from MakePatch and tries to apply it.
 func (fs *FS) ApplyPatch(data []byte) error {
 	fs.mu.Lock()

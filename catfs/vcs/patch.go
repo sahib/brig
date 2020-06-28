@@ -212,7 +212,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 
 // Creates a patch between two commits `from` (older one)  and `to` (newer one)
 func MakePatchFromTo(lkr *c.Linker, from, to *n.Commit, prefixes []string) (*Patch, error) {
-	root, err := lkr.Root()
+	root, err := to.Child(lkr, "does not matter") // child actually means Root for commits
 	if err != nil {
 		return nil, err
 	}
