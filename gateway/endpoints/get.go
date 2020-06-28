@@ -166,6 +166,10 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// All good. Proceed with the content.
 	} else {
+		if !gh.validatePath(nodePath, w, r) {
+			http.Error(w, "insufficient rights", http.StatusUnauthorized)
+			return
+		}
 		if !gh.checkDownloadRight(w, r) {
 			http.Error(w, "insufficient rights for anon", http.StatusUnauthorized)
 			return
