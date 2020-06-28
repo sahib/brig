@@ -142,7 +142,7 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !gh.cfg.Bool("auth.anon_allowed") {
+	if gh.cfg.Bool("auth.anon_allowed") {
 		// validatePath will check if the user is actually logged in
 		// and may access the path in question. The login could come
 		// from a previous login to the UI (the /get endpoint could be used separately)
