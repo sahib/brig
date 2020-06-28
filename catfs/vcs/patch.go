@@ -198,31 +198,41 @@ func filterInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixT
 	return true, nil
 }
 
-// MakePatch creates a patch with all changes starting from `from`. It will only
-// include nodes that are located under one of the prefixes in `prefixes`.
+// MakePatch creates a patch with all changes starting from `from`. 
+// Patch will be created betweed `from` and `status` (current state)
+// It will only include nodes that are located under one of the prefixes in `prefixes`.
 func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error) {
+	to, err := lkr.Status()
+	if err != nil {
+		return nil, err
+	}
+
+	return MakePatchFromTo(lkr, from, to, prefixes)
+}
+
+// Creates a patch between two commits `from` (older one)  and `to` (newer one)
+func MakePatchFromTo(lkr *c.Linker, from, to *n.Commit, prefixes []string) (*Patch, error) {
 	root, err := lkr.Root()
 	if err != nil {
 		return nil, err
 	}
 
-	status, err := lkr.Status()
-	if err != nil {
-		return nil, err
+	if from == nil {
+		return nil, e.New("The `from` commit is nil")
 	}
 
-	if from == nil {
-		return nil, e.New("The from commit is nil")
+	if to == nil {
+		return nil, e.New("The `to` commit is nil")
 	}
 
 	patch := &Patch{
 		FromIndex: from.Index(),
-		CurrIndex: status.Index(),
+		CurrIndex: to.Index(),
 	}
 
 	// Shortcut: The patch CURR..CURR would be empty.
 	// No need for further computations.
-	if from.TreeHash().Equal(status.TreeHash()) {
+	if from.TreeHash().Equal(to.TreeHash()) {
 		return patch, nil
 	}
 
@@ -240,13 +250,13 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 			return nil
 		}
 
-		// Get all changes between status and `from`.
+		// Get all changes between `to` and `from`.
 		childModNode, ok := child.(n.ModNode)
 		if !ok {
 			return e.Wrapf(ie.ErrBadNode, "make-patch: walk")
 		}
 
-		changes, err := History(lkr, childModNode, status, from)
+		changes, err := History(lkr, childModNode, to, from)
 		if err != nil {
 			return err
 		}
