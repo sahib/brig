@@ -1,5 +1,7 @@
 module github.com/sahib/brig
 
+go 1.14
+
 require (
 	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
 	github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7 // indirect
