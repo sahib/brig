@@ -1,29 +1,44 @@
 # bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
+## explicit
 bazil.org/fuse
 bazil.org/fuse/fs
 bazil.org/fuse/fuseutil
 # github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7
+## explicit
 github.com/AndreasBriese/bbloom
 # github.com/NYTimes/gziphandler v1.1.0
+## explicit
 github.com/NYTimes/gziphandler
 # github.com/VividCortex/ewma v1.1.1
+## explicit
 github.com/VividCortex/ewma
 # github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
+## explicit
 github.com/alokmenghrajani/gpgeez
 # github.com/bkaradzic/go-lz4 v1.0.0
+## explicit
 github.com/bkaradzic/go-lz4
 # github.com/blang/semver v3.5.1+incompatible
+## explicit
 github.com/blang/semver
 # github.com/blang/vfs v1.0.0
-github.com/blang/vfs/memfs
+## explicit
 github.com/blang/vfs
+github.com/blang/vfs/memfs
+# github.com/chzyer/logex v1.1.10
+## explicit
 # github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
+## explicit
 github.com/chzyer/readline
+# github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1
+## explicit
 # github.com/daaku/go.zipexe v0.0.0-20150329023125-a5fe2436ffcb
+## explicit
 github.com/daaku/go.zipexe
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgraph-io/badger v1.5.4
+## explicit
 github.com/dgraph-io/badger
 github.com/dgraph-io/badger/options
 github.com/dgraph-io/badger/protos
@@ -31,26 +46,36 @@ github.com/dgraph-io/badger/skl
 github.com/dgraph-io/badger/table
 github.com/dgraph-io/badger/y
 # github.com/dgryski/go-farm v0.0.0-20190104051053-3adb47b1fb0f
+## explicit
 github.com/dgryski/go-farm
 # github.com/dustin/go-humanize v1.0.0
+## explicit
 github.com/dustin/go-humanize
 # github.com/fatih/color v1.7.0
+## explicit
 github.com/fatih/color
 # github.com/golang/protobuf v1.3.0
+## explicit
 github.com/golang/protobuf/proto
 # github.com/golang/snappy v0.0.1
+## explicit
 github.com/golang/snappy
 # github.com/gorilla/context v1.1.1
 github.com/gorilla/context
 # github.com/gorilla/csrf v1.5.1
+## explicit
 github.com/gorilla/csrf
 # github.com/gorilla/mux v1.7.0
+## explicit
 github.com/gorilla/mux
 # github.com/gorilla/securecookie v1.1.1
+## explicit
 github.com/gorilla/securecookie
 # github.com/gorilla/sessions v1.1.3
+## explicit
 github.com/gorilla/sessions
 # github.com/gorilla/websocket v1.4.0
+## explicit
 github.com/gorilla/websocket
 # github.com/gxed/hashland/keccakpg v0.0.1
 github.com/gxed/hashland/keccakpg
@@ -59,135 +84,180 @@ github.com/gxed/hashland/murmur3
 # github.com/ipfs/go-ipfs-files v0.0.0-20190211184658-b9ab59872849
 github.com/ipfs/go-ipfs-files
 # github.com/ipfs/go-ipfs-util v0.0.1
+## explicit
 github.com/ipfs/go-ipfs-util
 # github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1
+## explicit
 github.com/kardianos/osext
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
+## explicit
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/kr/pretty v0.1.0
+## explicit
 # github.com/magefile/mage v1.8.0
+## explicit
+github.com/magefile/mage/internal
 github.com/magefile/mage/mage
 github.com/magefile/mage/mg
+github.com/magefile/mage/parse
 github.com/magefile/mage/sh
 github.com/magefile/mage/target
-github.com/magefile/mage/internal
-github.com/magefile/mage/parse
 # github.com/mattn/go-colorable v0.1.0
+## explicit
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.4
+## explicit
 github.com/mattn/go-isatty
 # github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 github.com/minio/blake2b-simd
 # github.com/minio/sha256-simd v0.0.0-20190131020904-2d45a736cd16
 github.com/minio/sha256-simd
 # github.com/mitchellh/go-homedir v1.1.0
+## explicit
 github.com/mitchellh/go-homedir
 # github.com/mr-tron/base58 v1.1.0
 github.com/mr-tron/base58/base58
 # github.com/multiformats/go-multiaddr v0.0.2
+## explicit
 github.com/multiformats/go-multiaddr
 # github.com/multiformats/go-multiaddr-dns v0.0.2
+## explicit
 github.com/multiformats/go-multiaddr-dns
 # github.com/multiformats/go-multiaddr-net v0.0.1
+## explicit
 github.com/multiformats/go-multiaddr-net
 # github.com/multiformats/go-multihash v0.0.1
+## explicit
 github.com/multiformats/go-multihash
 # github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
+## explicit
 github.com/nbutton23/zxcvbn-go
+github.com/nbutton23/zxcvbn-go/adjacency
+github.com/nbutton23/zxcvbn-go/data
+github.com/nbutton23/zxcvbn-go/entropy
+github.com/nbutton23/zxcvbn-go/frequency
 github.com/nbutton23/zxcvbn-go/match
 github.com/nbutton23/zxcvbn-go/matching
 github.com/nbutton23/zxcvbn-go/scoring
 github.com/nbutton23/zxcvbn-go/utils/math
-github.com/nbutton23/zxcvbn-go/adjacency
-github.com/nbutton23/zxcvbn-go/entropy
-github.com/nbutton23/zxcvbn-go/frequency
-github.com/nbutton23/zxcvbn-go/data
+# github.com/onsi/ginkgo v1.8.0
+## explicit
+# github.com/onsi/gomega v1.4.3
+## explicit
+# github.com/philhofer/fwd v1.0.0
+## explicit
 # github.com/phogolabs/parcello v0.8.1
+## explicit
 github.com/phogolabs/parcello
 # github.com/pkg/errors v0.8.1
+## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
+## explicit
 github.com/posener/wstest
 # github.com/sahib/config v0.2.0
+## explicit
 github.com/sahib/config
 # github.com/sahib/go-ipfs-api v1.4.1
+## explicit
 github.com/sahib/go-ipfs-api
 github.com/sahib/go-ipfs-api/options
 # github.com/sdemontfort/go-mimemagic v0.0.0-20150708072242-d026a5785116
+## explicit
 github.com/sdemontfort/go-mimemagic
 # github.com/sirupsen/logrus v1.3.0
+## explicit
 github.com/sirupsen/logrus
 # github.com/stretchr/testify v1.3.0
-github.com/stretchr/testify/require
+## explicit
 github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
+# github.com/tinylib/msgp v1.1.0
+## explicit
 # github.com/toqueteos/webbrowser v1.1.0
+## explicit
 github.com/toqueteos/webbrowser
 # github.com/ulule/limiter v2.2.2+incompatible
+## explicit
 github.com/ulule/limiter
 github.com/ulule/limiter/drivers/middleware/stdlib
-github.com/ulule/limiter/drivers/store/memory
 github.com/ulule/limiter/drivers/store/common
+github.com/ulule/limiter/drivers/store/memory
 # github.com/urfave/cli v1.20.0
+## explicit
 github.com/urfave/cli
 # github.com/vbauerster/mpb v3.3.4+incompatible
+## explicit
 github.com/vbauerster/mpb
-github.com/vbauerster/mpb/decor
 github.com/vbauerster/mpb/cwriter
+github.com/vbauerster/mpb/decor
 github.com/vbauerster/mpb/internal
 # github.com/wayneashleyberry/terminal-dimensions v1.0.0
+## explicit
 github.com/wayneashleyberry/terminal-dimensions
 # github.com/whyrusleeping/tar-utils v0.0.0-20180509141711-8c6c8ba81d5c
 github.com/whyrusleeping/tar-utils
 # github.com/xrash/smetrics v0.0.0-20170218160415-a3153f7040e9
+## explicit
 github.com/xrash/smetrics
 # golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-golang.org/x/crypto/chacha20poly1305
-golang.org/x/crypto/sha3
+## explicit
+golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
-golang.org/x/crypto/openpgp
 golang.org/x/crypto/argon2
+golang.org/x/crypto/blake2b
 golang.org/x/crypto/blake2s
-golang.org/x/crypto/ssh/terminal
+golang.org/x/crypto/cast5
+golang.org/x/crypto/chacha20poly1305
 golang.org/x/crypto/internal/chacha20
 golang.org/x/crypto/internal/subtle
-golang.org/x/crypto/poly1305
-golang.org/x/crypto/acme
+golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
+golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-golang.org/x/crypto/blake2b
-golang.org/x/crypto/scrypt
-golang.org/x/crypto/cast5
-golang.org/x/crypto/openpgp/elgamal
-golang.org/x/crypto/pbkdf2
+golang.org/x/crypto/poly1305
+golang.org/x/crypto/sha3
+golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95
+## explicit
 golang.org/x/net/context
-golang.org/x/net/trace
 golang.org/x/net/internal/timeseries
+golang.org/x/net/trace
+# golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
+## explicit
 # golang.org/x/sys v0.0.0-20190309122539-980fc434d28e
-golang.org/x/sys/unix
+## explicit
 golang.org/x/sys/cpu
+golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
-golang.org/x/text/unicode/norm
+## explicit
 golang.org/x/text/transform
+golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
+## explicit
 golang.org/x/time/rate
+# gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
+## explicit
 # gopkg.in/yaml.v2 v2.2.2
+## explicit
 gopkg.in/yaml.v2
 # zombiezen.com/go/capnproto2 v2.17.0+incompatible
+## explicit
 zombiezen.com/go/capnproto2
 zombiezen.com/go/capnproto2/encoding/text
-zombiezen.com/go/capnproto2/schemas
-zombiezen.com/go/capnproto2/rpc
-zombiezen.com/go/capnproto2/server
-zombiezen.com/go/capnproto2/internal/packed
-zombiezen.com/go/capnproto2/internal/strquote
-zombiezen.com/go/capnproto2/internal/nodemap
-zombiezen.com/go/capnproto2/internal/schema
 zombiezen.com/go/capnproto2/internal/fulfiller
+zombiezen.com/go/capnproto2/internal/nodemap
+zombiezen.com/go/capnproto2/internal/packed
 zombiezen.com/go/capnproto2/internal/queue
+zombiezen.com/go/capnproto2/internal/schema
+zombiezen.com/go/capnproto2/internal/strquote
+zombiezen.com/go/capnproto2/rpc
 zombiezen.com/go/capnproto2/rpc/internal/refcount
+zombiezen.com/go/capnproto2/schemas
+zombiezen.com/go/capnproto2/server
 zombiezen.com/go/capnproto2/std/capnp/rpc
