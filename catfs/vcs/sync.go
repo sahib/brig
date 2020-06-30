@@ -147,6 +147,12 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 			newDstFile.SetKey(srcFile.Key())
 		}
 
+		if sy.cfg.OnAdd != nil {
+			if !sy.cfg.OnAdd(newDstFile) {
+				return nil
+			}
+		}
+
 		if err := parentDir.Add(sy.lkrDst, newDstFile); err != nil {
 			return err
 		}
@@ -187,12 +193,6 @@ func (sy *syncer) handleAdd(src n.ModNode) error {
 	}
 
 	log.Debugf("handling add: %s", src.Path())
-	if sy.cfg.OnAdd != nil {
-		if !sy.cfg.OnAdd(src) {
-			return nil
-		}
-	}
-
 	return sy.add(src, path.Dir(src.Path()), src.Name())
 }
 
