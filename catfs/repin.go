@@ -217,6 +217,7 @@ func (fs *FS) repin(root string) error {
 	}
 
 	totalStorage := uint64(0)
+	addedToStorage := uint64(0)
 	savedStorage := uint64(0)
 	parts := []*partition{}
 
@@ -248,7 +249,8 @@ func (fs *FS) repin(root string) error {
 		}
 
 		totalStorage += part.PinSize
-		savedStorage += (-pinBytes + unpinBytes)
+		addedToStorage += pinBytes
+		savedStorage += unpinBytes
 
 		parts = append(parts, part)
 		return nil
@@ -264,7 +266,13 @@ func (fs *FS) repin(root string) error {
 	}
 
 	savedStorage += quotaUnpins
-	log.Infof("repin finished; unpinned %s", humanize.Bytes(savedStorage))
+	totalStorage -= quotaUnpins
+
+	if savedStorage >= addedToStorage{
+		log.Infof("repin finished; freed %s, total storage is %s", humanize.Bytes(savedStorage-addedToStorage), humanize.Bytes(totalStorage))
+	} else {
+		log.Infof("repin finished; used extra %s, total storage is %s", humanize.Bytes(addedToStorage-savedStorage), humanize.Bytes(totalStorage))
+	}
 	return nil
 }
 
