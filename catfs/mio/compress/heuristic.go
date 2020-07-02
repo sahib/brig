@@ -62,6 +62,11 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	}
 
 	mime := guessMime(path, header)
+	if mime == "" {
+		// the guesses below work only when mime is known
+		return AlgoSnappy, nil
+	}
+
 	compressible := isCompressible(mime)
 
 	if !compressible {
