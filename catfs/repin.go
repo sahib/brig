@@ -46,6 +46,11 @@ func (fs *FS) partitionNodeHashes(nd n.ModNode, minDepth, maxDepth int64) (*part
 		state := walker.State()
 		curr := state.Curr
 
+		if curr.Type() == n.NodeTypeGhost {
+			// ghosts nodes are always unpinned
+			continue
+		}
+
 		if seen[curr.BackendHash().B58String()] {
 			// We only want to have the first $n distinct versions.
 			// Sometimes the versions is duplicated though (removed, readded, moved)
@@ -96,6 +101,10 @@ func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 		}
 
 		if !isPinned {
+			if nd.Type() == n.NodeTypeGhost {
+				// ghosts cannot be pinned
+				return 0, nil
+			}
 			if err := fs.pinner.PinNode(nd, false); err != nil {
 				return 0, err
 			}
