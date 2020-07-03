@@ -9,15 +9,16 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     path        @0  :Text;
     treeHash    @1  :Data;
     size        @2  :UInt64;
-    inode       @3  :UInt64;
-    isDir       @4  :Bool;
-    depth       @5  :Int32;
-    modTime     @6  :Text;
-    isPinned    @7  :Bool;
-    isExplicit  @8  :Bool;
-    contentHash @9  :Data;
-    user        @10 :Text;
-    backendHash @11 :Data;
+    cachedSize  @3  :UInt64;
+    inode       @4  :UInt64;
+    isDir       @5  :Bool;
+    depth       @6  :Int32;
+    modTime     @7  :Text;
+    isPinned    @8  :Bool;
+    isExplicit  @9  :Bool;
+    contentHash @10 :Data;
+    user        @11 :Text;
+    backendHash @12 :Data;
 }
 
 struct Commit $Go.doc("Single log entry") {
