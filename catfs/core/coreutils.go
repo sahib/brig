@@ -356,11 +356,21 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 
 // StageFromFileNode is a convinience helper that will call Stage() with all necessary params from `f`.
 func StageFromFileNode(lkr *Linker, f *n.File) (*n.File, error) {
-	return Stage(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.Key(), f.ModTime())
+	return StageWithFullInfo(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.CachedSize(), f.Key(), f.ModTime())
+}
+
+// Stage adds a file to brigs DAG this is lesser version since it does not use cachedSize
+// Do not use it if you can, use StageWithFullInfo couple lines below!
+// TODO rename Stage calls everywhere (especially in tests) and then
+// rename Stage -> StageWithoutCacheSize, and StageWithFullInfo -> Stage
+func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte, modTime time.Time) (file *n.File, err error) {
+	// MaxUint64 indicates that cachedSize is unknown
+	MaxUint64 := uint64(1<<64 - 1)
+	return StageWithFullInfo(lkr, repoPath, contentHash, backendHash, size, MaxUint64, key, modTime)
 }
 
 // Stage adds a file to brigs DAG.
-func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte, modTime time.Time) (file *n.File, err error) {
+func StageWithFullInfo(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size, cachedSize uint64, key []byte, modTime time.Time) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
 		err = lerr
@@ -435,6 +445,7 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 		}
 
 		file.SetSize(size)
+		file.SetCachedSize(cachedSize)
 		file.SetModTime(modTime)
 		file.SetContent(lkr, contentHash)
 		file.SetBackend(lkr, backendHash)

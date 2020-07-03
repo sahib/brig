@@ -15,9 +15,10 @@ import (
 type File struct {
 	Base
 
-	size   uint64
-	parent string
-	key    []byte
+	size       uint64
+	cachedSize uint64 // MaxUint64 indicates that it is unkown
+	parent     string
+	key        []byte
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
@@ -124,6 +125,8 @@ func (f *File) readFileAttrs(capFile capnp_model.File) error {
 // Size returns the number of bytes in the file's content.
 func (f *File) Size() uint64 { return f.size }
 
+// Size returns the number of bytes in the file's backend storage.
+func (f *File) CachedSize() uint64 { return f.cachedSize }
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
 // SetModTime udates the mod time of the file (i.e. "touch"es it)
@@ -143,6 +146,13 @@ func (f *File) SetSize(s uint64) {
 	f.SetModTime(time.Now())
 }
 
+// SetSize will update the size of the file and update it's mod time.
+func (f *File) SetCachedSize(s uint64) {
+	f.cachedSize = s
+	f.SetModTime(time.Now())
+}
+
+
 // Copy copies the contents of the file, except `inode`.
 func (f *File) Copy(inode uint64) ModNode {
 	if f == nil {
@@ -158,6 +168,7 @@ func (f *File) Copy(inode uint64) ModNode {
 	return &File{
 		Base:   f.Base.copyBase(inode),
 		size:   f.size,
+		cachedSize:   f.cachedSize,
 		parent: f.parent,
 		key:    copyKey,
 	}
