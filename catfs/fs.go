@@ -1447,7 +1447,10 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 		IgnoreDeletes:    fs.cfg.Bool("sync.ignore_removed"),
 		IgnoreMoves:      fs.cfg.Bool("sync.ignore_moved"),
 		OnAdd: func(newNd n.ModNode) bool {
-			doPinOrUnpin(true, false, newNd)
+			if fs.cfg.Bool("sync.pin_added") {
+				// do pinning and more importantly caching
+				doPinOrUnpin(true, false, newNd)
+			}
 			return true
 		},
 		OnRemove: func(oldNd n.ModNode) bool {

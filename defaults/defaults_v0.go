@@ -146,6 +146,11 @@ var DefaultsV0 = config.DefaultMapping{
 				NeedsRestart: false,
 				Docs:         "Do not move what the remote moved",
 			},
+			"pin_added": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: false,
+				Docs:         "Do not pin files which were added at the remote",
+			},
 			"conflict_strategy": config.DefaultEntry{
 				Default:      "marker",
 				NeedsRestart: false,
