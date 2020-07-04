@@ -97,7 +97,7 @@ func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 	for _, nd := range entries {
 		isPinned, _, err := fs.pinner.IsNodePinned(nd)
 		if err != nil {
-			return 0, err
+			return newlyPinned, err
 		}
 		if nd.Type() == n.NodeTypeFile {
 			// let's make sure that this file node is pinned at backend as well
@@ -117,10 +117,10 @@ func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 		if !isPinned {
 			if nd.Type() == n.NodeTypeGhost {
 				// ghosts cannot be pinned
-				return 0, nil
+				continue
 			}
 			if err := fs.pinner.PinNode(nd, false); err != nil {
-				return 0, err
+				return newlyPinned, err
 			}
 
 			newlyPinned += nd.Size()
