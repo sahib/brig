@@ -54,6 +54,7 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 	}
 
 	capInfo.SetSize(info.Size)
+	capInfo.SetCachedSize(info.CachedSize)
 	capInfo.SetInode(info.Inode)
 	capInfo.SetIsDir(info.IsDir)
 	capInfo.SetDepth(int32(info.Depth))

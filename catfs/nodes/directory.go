@@ -259,6 +259,10 @@ func (d *Directory) Size() uint64 {
 	return d.size
 }
 
+// CachedSize is similar to Size() above but for accumulated backends storage
+func (d *Directory) CachedSize() uint64 { return 0 } // FIXME do real calculation
+
+
 // Path returns the full path of this node.
 func (d *Directory) Path() string {
 	return prefixSlash(path.Join(d.parentName, d.Base.name))

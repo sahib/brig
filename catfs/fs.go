@@ -101,6 +101,8 @@ type StatInfo struct {
 	User string
 	// Size in bytes
 	Size uint64
+	// Cached Size in bytes, i.e. size at backend
+	CachedSize uint64
 	// Inode is a unique number specific to this node
 	Inode uint64
 	// Depth is the hierarchy level inside of this node (root has 0)
@@ -227,6 +229,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		IsDir:       isDir,
 		Inode:       nd.Inode(),
 		Size:        nd.Size(),
+		CachedSize:  nd.CachedSize(),
 		Depth:       n.Depth(nd),
 		IsPinned:    isPinned,
 		IsExplicit:  isExplicit,

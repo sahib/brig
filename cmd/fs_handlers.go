@@ -509,6 +509,7 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("User", info.User)
 	printPair("Type", nodeType)
 	printPair("Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.Size), info.Size))
+	printPair("Backend Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.CachedSize), info.CachedSize))
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)

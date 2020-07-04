@@ -18,6 +18,7 @@ type StatInfo struct {
 	Path        string
 	User        string
 	Size        uint64
+	CachedSize  uint64
 	Inode       uint64
 	IsDir       bool
 	Depth       int
@@ -77,6 +78,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.Path = path
 	info.User = user
 	info.Size = capInfo.Size()
+	info.CachedSize = capInfo.CachedSize()
 	info.Inode = capInfo.Inode()
 	info.IsDir = capInfo.IsDir()
 	info.IsPinned = capInfo.IsPinned()

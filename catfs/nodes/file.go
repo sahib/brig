@@ -79,6 +79,7 @@ func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
 	}
 
 	capFile.SetSize(f.size)
+	capFile.SetCachedSize(f.cachedSize)
 	return &capFile, nil
 }
 
@@ -116,6 +117,7 @@ func (f *File) readFileAttrs(capFile capnp_model.File) error {
 
 	f.nodeType = NodeTypeFile
 	f.size = capFile.Size()
+	f.cachedSize = capFile.CachedSize()
 	f.key, err = capFile.Key()
 	return err
 }
@@ -127,6 +129,7 @@ func (f *File) Size() uint64 { return f.size }
 
 // Size returns the number of bytes in the file's backend storage.
 func (f *File) CachedSize() uint64 { return f.cachedSize }
+
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
 // SetModTime udates the mod time of the file (i.e. "touch"es it)

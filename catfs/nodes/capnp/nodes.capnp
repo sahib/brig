@@ -33,9 +33,10 @@ struct Directory $Go.doc("Directory contains one or more directories or files") 
 }
 
 struct File $Go.doc("A leaf node in the MDAG") {
-    size     @0 :UInt64;
-    parent   @1 :Text;
-    key      @2 :Data;
+    size       @0 :UInt64;
+    cachedSize @1 :UInt64;
+    parent     @2 :Text;
+    key        @3 :Data;
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {
