@@ -54,7 +54,11 @@ func (nd *Node) Pin(hash h.Hash) error {
 
 // Unpin will unpin `hash`.
 func (nd *Node) Unpin(hash h.Hash) error {
-	return nd.sh.Unpin(hash.B58String())
+	err := nd.sh.Unpin(hash.B58String())
+	if err == nil || err.Error() == "pin/rm: not pinned or pinned indirectly" {
+		return nil
+	}
+	return err
 }
 
 func (nd *Node) IsCached(hash h.Hash) (bool, error) {
