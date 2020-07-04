@@ -360,7 +360,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			"%s\t%s\t%s\t%s%s\t%s\t\n",
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
 			colorForSize(entry.Size)(humanize.Bytes(entry.CachedSize)),
-			entry.ModTime.Format(time.UnixDate),
+			entry.ModTime.Format("2006-01-02 15:04:05 MST"),
 			userEntry,
 			coloredPath,
 			pinState,
