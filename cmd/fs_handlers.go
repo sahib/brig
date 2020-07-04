@@ -337,7 +337,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			userColumn = "USER\t"
 		}
 
-		fmt.Fprintf(tabW, "SIZE\tBKEND\tMODTIME\t%sPATH\tPIN\t\n", userColumn)
+		fmt.Fprintf(tabW, "SIZE\tBKEND\tMODTIME\t%sPATH\tPIN\tCACHED\n", userColumn)
 	}
 
 	for _, entry := range entries {
@@ -355,15 +355,22 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			userEntry = color.GreenString(userMap[entry.User]) + "\t"
 		}
 
+		isCached, err := ctl.IsCached(entry.Path)
+		if err != nil {
+			return err
+		}
+		cachedState := "  " + pinStateToSymbol(isCached, false)
+
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s%s\t%s\t\n",
+			"%s\t%s\t%s\t%s%s\t%s\t%s\n",
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
 			colorForSize(entry.Size)(humanize.Bytes(entry.CachedSize)),
 			entry.ModTime.Format("2006-01-02 15:04:05 MST"),
 			userEntry,
 			coloredPath,
 			pinState,
+			cachedState,
 		)
 	}
 
