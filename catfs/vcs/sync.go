@@ -144,6 +144,7 @@ func (sy *syncer) add(src n.ModNode, srcParent, srcName string) error {
 			newDstFile.SetContent(sy.lkrDst, srcFile.ContentHash())
 			newDstFile.SetBackend(sy.lkrDst, srcFile.BackendHash())
 			newDstFile.SetSize(srcFile.Size())
+			newDstFile.SetCachedSize(srcFile.CachedSize())
 			newDstFile.SetKey(srcFile.Key())
 		}
 
