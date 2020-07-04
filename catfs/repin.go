@@ -99,6 +99,20 @@ func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 		if err != nil {
 			return 0, err
 		}
+		if nd.Type() == n.NodeTypeFile {
+			// let's make sure that this file node is pinned at backend as well
+			isCached, err := fs.bk.IsCached(nd.BackendHash())
+			if err != nil {
+				return newlyPinned, err
+			}
+			if !isCached {
+				log.Warningf("The %+v should be cached, but it is not. Recaching", nd)
+				err := fs.bk.Pin(nd.BackendHash())
+				if err != nil {
+					return newlyPinned, err
+				}
+			}
+		}
 
 		if !isPinned {
 			if nd.Type() == n.NodeTypeGhost {
