@@ -96,3 +96,15 @@ func (tb *TmpFsBackend) IsPinned(hash h.Hash) (bool, error) {
 func (tb *TmpFsBackend) IsCached(hash h.Hash) (bool, error) {
 	return true, nil
 }
+
+// CachedSize implements FsBackend.CachedSize by returning file size
+func (tb *TmpFsBackend) CachedSize(hash h.Hash) (uint64, error) {
+	path := filepath.Join(tb.root, hash.B58String())
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		return uint64(1<<64 - 1), err // MaxUint64 indicates unknown
+	}
+	return uint64(fi.Size()), nil
+}
+
