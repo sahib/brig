@@ -365,6 +365,7 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 	dstFile.SetContent(sy.lkrDst, srcFile.ContentHash())
 	dstFile.SetBackend(sy.lkrDst, srcFile.BackendHash())
 	dstFile.SetSize(srcFile.Size())
+	dstFile.SetCachedSize(srcFile.CachedSize())
 	dstFile.SetKey(srcFile.Key())
 
 	if err := dstParent.Add(sy.lkrDst, dstFile); err != nil {
