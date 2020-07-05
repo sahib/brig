@@ -30,6 +30,7 @@ func TestDirectoryBasics(t *testing.T) {
 
 	// Fake size here.
 	repoDir.size = 3
+	repoDir.cachedSize = 3
 
 	msg, err := repoDir.ToCapnp()
 	if err != nil {

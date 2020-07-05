@@ -20,6 +20,7 @@ type Directory struct {
 	Base
 
 	size       uint64
+	cachedSize uint64 // MaxUint64 indicates that it is unkown
 	parentName string
 	children   map[string]h.Hash
 	contents   map[string]h.Hash
@@ -162,6 +163,7 @@ func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Director
 	}
 
 	capDir.SetSize(d.size)
+	capDir.SetCachedSize(d.size)
 	return &capDir, nil
 }
 
@@ -193,6 +195,7 @@ func (d *Directory) readDirectoryAttr(capDir capnp_model.Directory) error {
 	var err error
 
 	d.size = capDir.Size()
+	d.cachedSize = capDir.CachedSize()
 	d.parentName, err = capDir.Parent()
 	if err != nil {
 		return err
@@ -260,7 +263,9 @@ func (d *Directory) Size() uint64 {
 }
 
 // CachedSize is similar to Size() above but for accumulated backends storage
-func (d *Directory) CachedSize() uint64 { return 0 } // FIXME do real calculation
+func (d *Directory) CachedSize() uint64 {
+	return d.cachedSize 
+}
 
 
 // Path returns the full path of this node.
@@ -512,6 +517,8 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 // SetSize sets the size of this directory.
 func (d *Directory) SetSize(size uint64) { d.size = size }
 
+func (d *Directory) SetCachedSize(cachedSize uint64) { d.cachedSize = cachedSize }
+
 // SetName will set the name of this directory.
 func (d *Directory) SetName(name string) {
 	d.name = name
@@ -595,6 +602,7 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 	}
 
 	nodeSize := nd.Size()
+	nodeCachedSize := nd.CachedSize()
 	nodeHash := nd.TreeHash()
 	nodeContent := nd.ContentHash()
 
@@ -614,6 +622,7 @@ func (d *Directory) Add(lkr Linker, nd Node) error {
 			// They do not really count as size.
 			// Same goes for the node content.
 			parent.size += nodeSize
+			parent.cachedSize += nodeCachedSize
 
 		}
 
@@ -664,9 +673,11 @@ func (d *Directory) RemoveChild(lkr Linker, nd Node) error {
 
 	var lastNd Node
 	nodeSize := nd.Size()
+	nodeCachedSize := nd.CachedSize()
 	return d.Up(lkr, func(parent *Directory) error {
 		if nd.Type() != NodeTypeGhost {
 			parent.size -= nodeSize
+			parent.cachedSize -= nodeCachedSize
 		}
 
 		if lastNd != nil {
