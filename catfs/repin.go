@@ -93,6 +93,7 @@ func (fs *FS) partitionNodeHashes(nd n.ModNode, minDepth, maxDepth int64) (*part
 
 func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 	newlyPinned := uint64(0)
+	isPinUnpinned := fs.cfg.Bool("repin.pin_unpinned")
 
 	for _, nd := range entries {
 		isPinned, _, err := fs.pinner.IsNodePinned(nd)
@@ -114,7 +115,7 @@ func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 			}
 		}
 
-		if !isPinned {
+		if !isPinned && isPinUnpinned {
 			if nd.Type() == n.NodeTypeGhost {
 				// ghosts cannot be pinned
 				continue

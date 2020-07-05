@@ -213,6 +213,19 @@ var DefaultsV0 = config.DefaultMapping{
 				NeedsRestart: false,
 				Docs:         `Keep at max »n« versions of a pinned file and remove it even if it does not exceed quota.`,
 			},
+			"pin_unpinned": config.DefaultEntry{
+				Default:      false,
+				NeedsRestart: false,
+				Docs:         `Pin unpinned files:
+				
+  * 'true'  if you want maximum permitted mirroring
+  * 'false' if you want to save traffic
+  
+  If a file version »n« is such that (min_depth <= »n« < max_depth),
+  then the repinner will pin such version if pin_unpinned is set to true.
+  Otherwise, it will keep the file unpinned, i.e. not cached at the backend.
+`,
+			},
 		},
 		"autocommit": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
