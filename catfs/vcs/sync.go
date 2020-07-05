@@ -348,7 +348,7 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 		return err
 	}
 
-	if err := dstParent.RemoveChild(sy.lkrSrc, dst); err != nil {
+	if err := dstParent.RemoveChild(sy.lkrDst, dst); err != nil {
 		return err
 	}
 
