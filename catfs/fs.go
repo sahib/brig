@@ -1457,22 +1457,39 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 			doPinOrUnpin(false, true, oldNd)
 			return true
 		},
-		OnMerge: func(newNd, oldNd n.ModNode) bool {
-			_, isExplicit, err := fs.pinner.IsNodePinned(oldNd)
-			if err != nil {
-				log.Warnf(
-					"failed to check pin status of old node `%s` (%v)",
-					oldNd.Path(),
-					oldNd.BackendHash(),
-				)
+		// OnMerge: func(newNd, oldNd n.ModNode) bool {
+		OnMerge: func(nd n.ModNode, isGet bool, ndPinStats *vcs.PinStats ) bool {
+			// During merge we are acting on the same node
+			// but we are modifying its hashes thus we would not be
+			// able to get node pins by reusing node itself.
+			// Our main goal is either get pin info from nd node
+			// or to set it according to the previously obtained info.
+			if isGet {
+				isPinned, isExplicit, err := fs.pinner.IsNodePinned(nd)
+				if err != nil {
+					log.Warnf(
+						"failed to check pin status of old node `%s` (%v)",
+						nd.Path(),
+						nd.BackendHash(),
+					)
 
-				// better don't change something.
+					// better don't change something.
+					return false
+				}
+				ndPinStats.Pinned = isPinned
+				ndPinStats.Explicit = isExplicit
+
 				return true
-			}
-
+		        }
+			// If are not getting then we are setting
 			// Pin new node with old pin state:
-			doPinOrUnpin(true, isExplicit, newNd)
-			doPinOrUnpin(false, true, oldNd)
+			if ndPinStats.Pinned {
+				// Preserving the state
+				doPinOrUnpin(ndPinStats.Pinned, ndPinStats.Explicit, nd)
+			} else {
+				// if it was unpinned we are forcing it to be unppinned
+				doPinOrUnpin(false, true, nd)
+			}
 			return true
 		},
 		OnConflict: func(src, dst n.ModNode) bool {
