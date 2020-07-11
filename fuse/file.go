@@ -7,8 +7,10 @@ import (
 	"os"
 	"path"
 	"time"
+	"io"
 
 	"context"
+	"github.com/sahib/brig/catfs"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -23,6 +25,7 @@ var (
 type File struct {
 	path string
 	m    *Mount
+	hd   *Handle
 }
 
 // Attr is called to get the stat(2) attributes of a file.
@@ -56,9 +59,29 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	return nil
 }
 
+func loadData(fd *catfs.Handle) ([]byte, error) {
+	var bufSize int = 128*1024
+	buf := make([]byte, bufSize)
+	var data []byte
+	for {
+		n, err := fd.Read(buf)
+		isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
+		if err != nil && !isEOF {
+			return nil, errorize("file-open-data-load", err)
+		}
+		data = append(data, buf[:n]...)
+		if isEOF {
+			break
+		}
+	}
+	return data, nil
+
+}
+
 // Open is called to get an opened handle of a file, suitable for reading and writing.
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	defer logPanic("file: open")
+	log.Warning("file: open", fi.path )
 
 	// Check if the file is actually available locally.
 	if fi.m.options.Offline {
@@ -78,7 +101,22 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		return nil, errorize("file-open", err)
 	}
 
-	return &Handle{fd: fd, m: fi.m}, nil
+	hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false}
+	fi.hd = &hd
+	if req.Flags.IsReadOnly() {
+		// we don't need to track read-only handles
+		// and no need to set handle `data`
+		return &hd, nil
+	}
+
+	// for writers we need to copy file data to the handle `data`
+	hd.writers++
+	hd.data, err = loadData( hd.fd )
+	if err != nil {
+		return nil, errorize("file-open", err)
+	}
+
+	return &hd, nil
 }
 
 // Setattr is called once an attribute of a file changes.
@@ -93,7 +131,7 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 	debugLog("exec file setattr")
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
-		if err := fi.m.fs.Truncate(fi.path, req.Size); err != nil {
+		if err := fi.hd.truncate(req.Size); err != nil {
 			return errorize("file-setattr-size", err)
 		}
 	case req.Valid&fuse.SetattrMtime != 0:
