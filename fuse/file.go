@@ -64,8 +64,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 // Open is called to get an opened handle of a file, suitable for reading and writing.
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	defer logPanic("file: open")
-	log.Warning("file: open", fi.path )
-	log.Errorf("file: open %#v with request flags %v", fi, req.Flags )
+	debugLog("fuse-open: %s", fi.path)
 
 	// Check if the file is actually available locally.
 	if fi.m.options.Offline {
@@ -79,7 +78,6 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		}
 	}
 
-	debugLog("fuse-open: %s", fi.path)
 	fd, err := fi.m.fs.Open(fi.path)
 	if err != nil {
 		return nil, errorize("file-open", err)
