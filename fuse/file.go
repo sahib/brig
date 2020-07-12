@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"context"
-	"github.com/sahib/brig/catfs"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -39,7 +38,11 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	debugLog("exec file attr: %v", fi.path)
 
 	attr.Mode = 0755
-	attr.Size = info.Size
+	if fi.hd != nil && fi.hd.writers > 0 {
+		attr.Size = uint64(len(fi.hd.data))
+	} else {
+		attr.Size = info.Size
+	}
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
 
@@ -59,7 +62,11 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	return nil
 }
 
-func loadData(fd *catfs.Handle) ([]byte, error) {
+func (hd *Handle) loadData(path string) ([]byte, error) {
+	fd, err := hd.m.fs.Open(path)
+	if err != nil {
+		return nil, errorize("file-loadData", err)
+	}
 	var bufSize int = 128*1024
 	buf := make([]byte, bufSize)
 	var data []byte
@@ -82,6 +89,7 @@ func loadData(fd *catfs.Handle) ([]byte, error) {
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	defer logPanic("file: open")
 	log.Warning("file: open", fi.path )
+	log.Errorf("file: open %#v with request flags %v", fi, req.Flags )
 
 	// Check if the file is actually available locally.
 	if fi.m.options.Offline {
@@ -101,22 +109,27 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		return nil, errorize("file-open", err)
 	}
 
-	hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false}
-	fi.hd = &hd
+	if fi.hd == nil {
+		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false}
+		fi.hd = &hd
+	}
+	fi.hd.fd=fd
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		// and no need to set handle `data`
-		return &hd, nil
+		return fi.hd, nil
 	}
 
 	// for writers we need to copy file data to the handle `data`
-	hd.writers++
-	hd.data, err = loadData( hd.fd )
-	if err != nil {
-		return nil, errorize("file-open", err)
+	if fi.hd.writers == 0 {
+		fi.hd.data, err = fi.hd.loadData( fi.path )
+		if err != nil {
+			return nil, errorize("file-open-loadData", err)
+		}
+		fi.hd.wasModified = false
 	}
-
-	return &hd, nil
+	fi.hd.writers++
+	return fi.hd, nil
 }
 
 // Setattr is called once an attribute of a file changes.
