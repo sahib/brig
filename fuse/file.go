@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"time"
-	"io"
 
 	"context"
 
@@ -59,31 +58,6 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 		attr.Blocks++
 	}
 
-	return nil
-}
-
-func (hd *Handle) loadData(path string) (error) {
-	hd.data = nil
-	hd.wasModified = false
-	fd, err := hd.m.fs.Open(path)
-	if err != nil {
-		return errorize("file-loadData", err)
-	}
-	var bufSize int = 128*1024
-	buf := make([]byte, bufSize)
-	var data []byte
-	for {
-		n, err := fd.Read(buf)
-		isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
-		if err != nil && !isEOF {
-			return errorize("file-loadData", err)
-		}
-		data = append(data, buf[:n]...)
-		if isEOF {
-			break
-		}
-	}
-	hd.data = data
 	return nil
 }
 
