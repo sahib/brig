@@ -69,6 +69,13 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 		"size":   req.Size,
 	}).Debugf("fuse: handle: read")
 
+	// if we have writers we need to suply response from the data buffer
+	if hd.writers != 0 {
+		fuseutil.HandleRead(req, resp, hd.data)
+		return nil
+	}
+
+	// otherwise we will read from the brig filesystem directly
 	newOff, err := hd.fd.Seek(req.Offset, io.SeekStart)
 	if err != nil {
 		return errorize("handle-read-seek", err)
@@ -145,6 +152,9 @@ func (hd *Handle) flush() error {
 
 // Release is called to close this handle.
 func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	defer logPanic("handle: release")
+	log.Debugf("fuse-release: %v", hd.fd.Path())
+
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		return nil
@@ -153,8 +163,6 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
 
-	log.Debugf("fuse-release: %v", hd.fd.Path())
-	defer logPanic("handle: release")
 	hd.writers--
 	if hd.writers == 0 {
 		hd.data = nil
