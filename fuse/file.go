@@ -62,10 +62,12 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	return nil
 }
 
-func (hd *Handle) loadData(path string) ([]byte, error) {
+func (hd *Handle) loadData(path string) (error) {
+	hd.data = nil
+	hd.wasModified = false
 	fd, err := hd.m.fs.Open(path)
 	if err != nil {
-		return nil, errorize("file-loadData", err)
+		return errorize("file-loadData", err)
 	}
 	var bufSize int = 128*1024
 	buf := make([]byte, bufSize)
@@ -74,15 +76,15 @@ func (hd *Handle) loadData(path string) ([]byte, error) {
 		n, err := fd.Read(buf)
 		isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
 		if err != nil && !isEOF {
-			return nil, errorize("file-open-data-load", err)
+			return errorize("file-loadData", err)
 		}
 		data = append(data, buf[:n]...)
 		if isEOF {
 			break
 		}
 	}
-	return data, nil
-
+	hd.data = data
+	return nil
 }
 
 // Open is called to get an opened handle of a file, suitable for reading and writing.
@@ -122,11 +124,10 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 
 	// for writers we need to copy file data to the handle `data`
 	if fi.hd.writers == 0 {
-		fi.hd.data, err = fi.hd.loadData( fi.path )
+		err = fi.hd.loadData( fi.path )
 		if err != nil {
 			return nil, errorize("file-open-loadData", err)
 		}
-		fi.hd.wasModified = false
 	}
 	fi.hd.writers++
 	return fi.hd, nil
