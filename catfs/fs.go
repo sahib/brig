@@ -807,20 +807,21 @@ func (fs *FS) Touch(path string) error {
 	if nd != nil {
 		modNd, ok := nd.(n.ModNode)
 		if !ok {
-			// Probably a ghost node.
+			// What could it be if lookup returns not a node?
 			fs.mu.Unlock()
 			return nil
 		}
-
-		modNd.SetModTime(time.Now())
-		fs.mu.Unlock()
-		return nil
+		if modNd.Type() != n.NodeTypeGhost {
+			modNd.SetModTime(time.Now())
+			fs.mu.Unlock()
+			return nil
+		}
 	}
 
 	// We may not call Stage() with a lock.
 	fs.mu.Unlock()
 
-	// Notthing there, stage an empty file.
+	// Notthing or a ghost there, stage an empty file.
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
 }
 
