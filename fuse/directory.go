@@ -219,3 +219,33 @@ func (dir *Directory) Listxattr(ctx context.Context, req *fuse.ListxattrRequest,
 	resp.Xattr = listXattr(req.Size)
 	return nil
 }
+
+// Rename or move files or directories
+// TODO: fix info availability,
+//       somehow the info about moved item is not visible for a little while after move
+//       It usually available after a second or two.
+//       How to reproduce
+//       mv file1 file2
+//       ls -l file2
+//       You will see that username, permission, size, date, and so on all in question marks
+//       For what I can see. ls cannot access this particular file, even though
+//       It will appear as an entry in the call to ReadDirAll done by `ls on_dir`
+//       Seems to be cache related issue
+func (dir *Directory) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
+	defer logPanic("dir: rename")
+
+	debugLog("exec dir rename")
+	newParent, ok := newDir.(*Directory)
+	if !ok {
+		return fuse.EIO
+	}
+	oldPath := path.Join(dir.path, req.OldName)
+	newPath := path.Join(newParent.path, req.NewName)
+	if err := dir.m.fs.Move(oldPath, newPath); err != nil {
+		log.Warningf("fuse: dir: mv: %v", err)
+		return err
+	}
+
+	notifyChange(dir.m, 100*time.Millisecond)
+	return nil
+}
