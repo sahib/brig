@@ -4,6 +4,84 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
+## [0.5.0] -- 2020-07-13
+
+This version is mostly bug fixes of unreleased version 0.4.2 by Chris Pahl,
+who is the original author and maintainer of the »brig«. Output of the diff and 
+sync command is now different from the behaviour outlined in the old manual.
+There are also fixes to make fuse mounts to work properly.
+So, I think it justifies the bump in the minor version.
+
+TODO: documentation does not reflect all the changes.
+
+### Fixed
+
+- Fix the behaviour of fast forward changes (i.e. when the file changed only at 
+  one location).
+- Fix the merge over deleted (ghost) file
+- Fix handling of the resurrected at remote entries.
+- Fix gateway 'get' for authorized user
+- Fix gateway to block download/view files outside of permitted folders
+- Fix bug with pinning at sync. The program used source node info to pin 
+  instead of destination. So a random node at destination was pinned.
+- Fix bug in repinner size calculator, which could end up with negative numbers
+  in unsigned integer and thus report a crazy high values.
+- Fix in capnp template to be compatible with more modern version of capnp
+- Fix handling the pin state border case, when our data report a pin but ipfs 
+  is not. We ask to repin at ipfs backend.
+- Fix the destination pin status preservation during merge.
+- Multiple fixes in the file system frontend (fuse).
+  - Correct file sizes which propagate to the directory size
+  - Make sure attributes of a file are not stale
+  - Redone writing and staging handling. No if we open file for writing
+    we store the modified content in memory. When we flush to the backend
+    we compare content change with this memory stored content. Old way did not
+    catch such changes.
+  - Touch can do create new file over the ghost nodes.
+  - We can move/rename things within fuse mount via brig backend.
+    TODO: there is small time (several seconds), when file info is not picked 
+    by fuse after rename. It might be a bug in fuse library itself. It is not
+    too critical right now.
+
+### Changed
+
+- Repinner can unpin explicitly pinned files, if they scheduled for deletion 
+  (i.e. beyond min-max version requirement). Otherwise, we will have stale old
+  versions which will take storage space forever.
+- Diff and Sync show the direction of the merge. Diff takes precedence 
+  according to the modification time. TODO: I need to add new conflict
+  resolution strategy: chronological/time and use it only if required.
+  I felt chronological strategy is more natural way for syncing different 
+  repos, so I program time resolution as default.
+- Changes are specific to files not directories. If you create a directory
+  in one repo and do the same on the other, it is not a conflict unless, there
+  are files with different content. Otherwise, it can be easily merged.
+- Preserve source modification time when merging.
+- Better display of missing or removed entries.
+- When syncing create patches for every commit, before the patch was done 
+  between old known commit and the current state. That was breaking possibly
+  non conflicting merges, since the common parent was lost during the commit 
+  skip. Sync is a bit longer now, but I think it worse it.
+- Modules are compatible with go v1.14
+- Shorten time format for »brig ls«
+
+### Added
+
+- New option: fs.repin.pin_unpinned. When set to 'false' it saves traffic and 
+  does not pin what is already pinned. When 'true' pins files within pinning 
+  requirements (the old behavior); this essentially pre-caches files at the 
+  backend but uses traffic and disk space.
+- New option: fs.sync.pin_added. If false the sync does not pin/cache at sync
+  new/added at remote files. This is handy if we want only sync the metadata 
+  but not the content itself. I.e. bandwidth saving mode. Opposite (the old 
+  behavior) is also possible if we want to sync the content and are not concerned
+  about bandwidth.
+- Help for »brig gateway add«.
+- Added cached size information to listings, show,  and internal file or 
+  directory info. Technically, it is the same as size of backend, since the 
+  cached size could be zero at a given time (TODO rename accordingly).
+- The cached size is transmitted via capnp.
+
 ## [0.4.1 Capricious Clownfish] -- 2019-03-31
 
 A smaller release with some bug fixes and a few new features. Also one bigger
