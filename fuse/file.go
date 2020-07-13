@@ -5,14 +5,11 @@ package fuse
 import (
 	"errors"
 	"os"
-	"path"
-	"time"
 
 	"context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -158,26 +155,6 @@ func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 
 	debugLog("exec file listxattr")
 	resp.Xattr = listXattr(req.Size)
-	return nil
-}
-
-// Rename is called when the node changed its path.
-func (fi *File) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
-	defer logPanic("file: rename")
-
-	debugLog("exec file rename")
-	newParent, ok := newDir.(*Directory)
-	if !ok {
-		return fuse.EIO
-	}
-
-	newPath := path.Join(newParent.path, req.NewName)
-	if err := fi.m.fs.Move(fi.path, newPath); err != nil {
-		log.Warningf("fuse: file: mv: %v", err)
-		return err
-	}
-
-	notifyChange(fi.m, 100*time.Millisecond)
 	return nil
 }
 
