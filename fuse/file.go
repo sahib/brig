@@ -81,7 +81,7 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 	}
 
 	if fi.hd == nil {
-		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false}
+		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1 }
 		fi.hd = &hd
 	}
 	fi.hd.fd=fd
