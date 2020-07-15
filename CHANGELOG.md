@@ -4,12 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
+## [0.5.1] -- 2020-07-15
+
+Improvements and bug fixes in the fuse layer. The fuse layer consequent read is
+factor of 20 faster now.
+
+### Fixed
+
+- Fix reading larger than 64 kB files. The read was from limitedStream with
+  64 kB size. It was spitting EOF when end of the buffer was hit, which is
+  not the same as true end of file.
+
+### Changed
+
+- Fuse file handle keeps track of the seek position. So, in consequent
+  reads it does not have to reseek the stream which costs a lot of time.
+  On my machine the speed went up from about 200 kB/s to 5 MB/s. It is
+  still much slower than direct read from disk (30 MB/s) but probably
+  expected due to ipfs, compression, and encryption layers.
+
 ## [0.5.0] -- 2020-07-13
 
 This version is mostly bug fixes of unreleased version 0.4.2 by Chris Pahl,
 who is the original author and maintainer of the »brig«. Output of the diff and 
 sync command is now different from the behaviour outlined in the old manual.
-There are also fixes to make fuse mounts to work properly.
+There are also fixes to make fuse mounts to work properly. Compatibility wise,
+metadata exchange expects to see the cachedSize field for proper handling,
+older versions do not provide it.
 So, I think it justifies the bump in the minor version.
 
 TODO: documentation does not reflect all the changes.
