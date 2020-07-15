@@ -32,23 +32,34 @@ type Handle struct {
 }
 
 func (hd *Handle) loadData(path string) (error) {
+	// Reads the whole file into the memory buffer
+	log.Error("fuse: loadData for ", path)
 	hd.data = nil
 	hd.wasModified = false
-	fd, err := hd.m.fs.Open(path)
+	// rewind to start
+	newOff, err := hd.fd.Seek(0, io.SeekStart)
 	if err != nil {
-		return errorize("file-loadData", err)
+		return errorize("handle-loadData-seek", err)
 	}
-	var bufSize int = 128*1024
+	if newOff != 0 {
+		log.Warningf("seek offset differs (want %d, got %d)", 0, newOff)
+		return errorize("handle-loadData-seek", err)
+	}
+	// TODO make large buffer, right now there is a problem
+	// with the underlying Read(buf) which  seems to be
+	// limitedStream with the default size of 64kB.
+	// so there is no way to read file faster than in 64kB chunks
+	var bufSize int = 64*1024
 	buf := make([]byte, bufSize)
 	var data []byte
 	for {
-		n, err := fd.Read(buf)
+		n, err := hd.fd.Read(buf)
 		isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
 		if err != nil && !isEOF {
 			return errorize("file-loadData", err)
 		}
 		data = append(data, buf[:n]...)
-		if isEOF {
+		if isEOF && n == 0 {
 			break
 		}
 	}
