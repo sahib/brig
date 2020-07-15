@@ -69,13 +69,13 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 		"size":   req.Size,
 	}).Debugf("fuse: handle: read")
 
-	// if we have writers we need to suply response from the data buffer
+	// if we have writers we need to supply response from the data buffer
 	if hd.writers != 0 {
 		fuseutil.HandleRead(req, resp, hd.data)
 		return nil
 	}
 
-	// otherwise we will read from the brig filesystem directly
+	// otherwise we will read from the brig file system directly
 	newOff, err := hd.fd.Seek(req.Offset, io.SeekStart)
 	if err != nil {
 		return errorize("handle-read-seek", err)
