@@ -28,6 +28,7 @@ type Handle struct {
 	// only valid if writers > 0, data used as a buffer for write operations
 	data []byte
 	wasModified bool
+	currentFileReadOffset int64
 
 }
 
@@ -80,16 +81,20 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 		"size":   req.Size,
 	}).Debugf("fuse: handle: read")
 
-	// if we have writers we need to supply response from the data buffer
+	// if we have writers we can supply response from the write data buffer
 	if hd.writers != 0 {
 		fuseutil.HandleRead(req, resp, hd.data)
 		return nil
 	}
 
 	// otherwise we will read from the brig file system directly
-	newOff, err := hd.fd.Seek(req.Offset, io.SeekStart)
-	if err != nil {
-		return errorize("handle-read-seek", err)
+	newOff := hd.currentFileReadOffset
+	if req.Offset != hd.currentFileReadOffset {
+		var err error
+		newOff, err = hd.fd.Seek(req.Offset, io.SeekStart)
+		if err != nil {
+			return errorize("handle-read-seek", err)
+		}
 	}
 
 	if newOff != req.Offset {
@@ -100,6 +105,7 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 	if err != nil && err != io.EOF {
 		return errorize("handle-read-io", err)
 	}
+	hd.currentFileReadOffset = newOff + int64(n)
 
 	resp.Data = resp.Data[:n]
 	return nil
