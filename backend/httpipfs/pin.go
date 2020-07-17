@@ -62,6 +62,8 @@ func (nd *Node) Unpin(hash h.Hash) error {
 }
 
 func (nd *Node) IsCached(hash h.Hash) (bool, error) {
+	// Check if hash and all its children are cached
+
 	// This feature is only supported for ipfs >= 0.4.19.
 	// Check this and issue a warning if that's not the case.
 	if nd.version.LT(semver.MustParse("0.4.19")) {
@@ -83,6 +85,48 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 	}
 
 	io.Copy(ioutil.Discard, resp.Output)
+
+	// By know we know that parent object/block is cached by what about linked ones?
+	// lets get the list of linked (children) objects
+	req = nd.sh.Request("object/links", hash.B58String())
+	req.Option("offline", "true")
+	resp, err = req.Send(ctx)
+	if err != nil {
+		return false, err
+	}
+	if resp.Error != nil {
+		return false, nil
+	}
+
+	type link  struct {
+		Name string
+		Hash string
+		Size uint64
+	}
+	type objectLinksResp struct {
+		Hash string
+		Links []link
+	}
+	linksResp := objectLinksResp{}
+	if err := json.NewDecoder(resp.Output).Decode(&linksResp); err != nil {
+		return false, err
+	}
+	for _, l := range(linksResp.Links) {
+		childHash, err := h.FromB58String(l.Hash)
+		if err != nil {
+			return false, err
+		}
+		isChildCached, err := nd.IsCached(childHash)
+		if err != nil {
+			return false, err
+		}
+		if !isChildCached {
+			// If even one child/link is uncached, we call everything uncached
+			// TODO: we can report how much of content is pre-cached
+			return false, nil
+		}
+	}
+	// if we are here, the parent hash and all its children links/hashes are cached
 	return true, nil
 }
 
