@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
-## [0.5.2] -- unreleased
+## [0.5.2] -- 2020-07-16
 
 Bug fix release.
 
@@ -17,6 +17,11 @@ Bug fix release.
   for the backend size), but its children are not unless we pin or read file 
   content.
 
+### Changed
+
+- `brig ls /file.name` will return listing for a single file. Before it worked 
+  only with directories. Now it behaves similar to the standard file system 
+  listing (ls) command.
 
 ## [0.5.1] -- 2020-07-15
 
