@@ -653,6 +653,12 @@ func (fs *FS) List(root string, maxDepth int) ([]*StatInfo, error) {
 	}
 
 	result := []*StatInfo{}
+	if rootNd.Type() == n.NodeTypeFile {
+		// There is no point to Walk through file, it has no children
+		// but we need to report on itself
+		result = append(result, fs.nodeToStat(rootNd))
+		return result, nil
+	}
 	err = n.Walk(fs.lkr, rootNd, false, func(child n.Node) error {
 		if maxDepth < 0 || n.Depth(child) <= maxDepth {
 			if maxDepth >= 0 && child.Path() == root {
