@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
+## [0.5.2] -- unreleased
+
+Bug fix release.
+
+### Fixed
+
+- Report correct cache status for a hash with multiple children links.
+  The IsCached reported as yes for a large files (>256 kB with ipfs backend)
+  since such files are split into multiple blocks. Strangely, the parent
+  node is somehow precached without asking (maybe it happens when brig checks
+  for the backend size), but its children are not unless we pin or read file 
+  content.
+
+
 ## [0.5.1] -- 2020-07-15
 
 Improvements and bug fixes in the fuse layer. The fuse layer consequent read is
