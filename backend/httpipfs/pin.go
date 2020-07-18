@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
+	"errors"
 
 	"github.com/blang/semver"
 	h "github.com/sahib/brig/util/hashlib"
@@ -61,36 +61,93 @@ func (nd *Node) Unpin(hash h.Hash) error {
 	return err
 }
 
-func (nd *Node) IsCached(hash h.Hash) (bool, error) {
-	// Check if hash and all its children are cached
+type objectRef struct {
+	Ref string // hash of the ref
+	Err string
+}
 
-	// This feature is only supported for ipfs >= 0.4.19.
+type ipfsStateCache struct {
+	LocalRefs map[string]bool
+}
+
+func NewIpfsStateCache() *ipfsStateCache {
+	cache := ipfsStateCache{}
+	cache.LocalRefs = map[string]bool{}
+	return &cache
+}
+
+// Gets all locally available ipfs refs (hashes)
+func (nd *Node) FillLocalRefs(cache *ipfsStateCache) (error) {
+	ctx := context.Background()
+
+	if cache == nil {
+		return errors.New("Need non nil reference to fill the cache")
+	}
+	req := nd.sh.Request("refs/local")
+	resp, err := req.Send(ctx)
+	if err != nil {
+		return err
+	}
+	defer resp.Close()
+
+	ref := objectRef{}
+	jsonDecoder := json.NewDecoder(resp.Output)
+
+	for {
+		if err := jsonDecoder.Decode(&ref); err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+		cache.LocalRefs[ref.Ref] = true // reference with given reference hash is checked
+	}
+
+	return nil
+}
+
+// Checks if hash is cached. Does not check status of hash children
+func (nd *Node) isCached(hash h.Hash, cache *ipfsStateCache) (bool, error) {
+	if cache == nil {
+		return nd.IsCached(hash)
+	}
+	if _, ok := cache.LocalRefs[hash.B58String()]; !ok {
+		// this hash is not locally available and thus not cached
+		return false, nil
+	}
+	return true, nil
+	
+}
+
+// Checks if hash and all its children are cached
+func (nd *Node) IsCached(hash h.Hash) (bool, error) {
+
+	ctx := context.Background()
+	// Let's get all locally available ipfs refs or hashes
+	cache := NewIpfsStateCache()
+	err := nd.FillLocalRefs(cache) // backend status cache
+	if err != nil {
+		return false, err
+	}
+
+	// The "Option: offline" feature is only supported for ipfs >= 0.4.19.
 	// Check this and issue a warning if that's not the case.
 	if nd.version.LT(semver.MustParse("0.4.19")) {
 		return false, fmt.Errorf("cache queries are not supported in ipfs < 0.4.19")
 	}
 
-	ctx := context.Background()
-	req := nd.sh.Request("block/stat", hash.B58String())
-	req.Option("offline", "true")
-	resp, err := req.Send(ctx)
-	if err != nil {
+
+	// Now, we are ready to check if the hash under the question is cached
+	yes, err := nd.isCached(hash, cache)
+	if !yes {
+		fmt.Println("not cached")
 		return false, err
 	}
 
-	defer resp.Close()
-
-	if resp.Error != nil {
-		return false, nil
-	}
-
-	io.Copy(ioutil.Discard, resp.Output)
-
-	// By know we know that parent object/block is cached by what about linked ones?
-	// lets get the list of linked (children) objects
-	req = nd.sh.Request("object/links", hash.B58String())
+	// By now we know that parent object/block is cached by what about linked ones?
+	// Lets get the list of linked (children) objects
+	req := nd.sh.Request("object/links", hash.B58String())
 	req.Option("offline", "true")
-	resp, err = req.Send(ctx)
+	resp, err := req.Send(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -109,14 +166,18 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 	}
 	linksResp := objectLinksResp{}
 	if err := json.NewDecoder(resp.Output).Decode(&linksResp); err != nil {
+		resp.Close()
 		return false, err
 	}
+	resp.Close()
+
 	for _, l := range(linksResp.Links) {
 		childHash, err := h.FromB58String(l.Hash)
 		if err != nil {
 			return false, err
 		}
-		isChildCached, err := nd.IsCached(childHash)
+		// WARNING: isCached does not check if hash has children!
+		isChildCached, err := nd.isCached(childHash, cache)
 		if err != nil {
 			return false, err
 		}
