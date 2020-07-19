@@ -2072,7 +2072,7 @@ func (fs *FS) IsCached(path string) (bool, error) {
 			cachedCount++
 		} else {
 			// Return a special error here to stop Walk() iterating.
-			// One file is enough to stop IsPinned() from being true.
+			// One file is enough to stop IsCached() from being true.
 			return errNotCachedSentinel
 		}
 
