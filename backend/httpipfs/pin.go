@@ -206,7 +206,16 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		isChildCached, err := nd.IsCached(childHash)
+		var isChildCached bool = false
+		if l.Size <= 262158 { // 256kB + 14B
+			// Heuristic: at least up to the IPFS version v0.6.0
+			// the child with size 262158 bytes is not going to have children.
+			// Than we do not need to run the full recursive check
+			isChildCached, err = nd.isThisHashOnlyCached(childHash)
+		} else {
+			// Size is large, we need to run the recursive check
+			isChildCached, err = nd.IsCached(childHash)
+		}
 		if err != nil {
 			return false, err
 		}
