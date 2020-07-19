@@ -7,9 +7,11 @@ import (
 	"io"
 	"strings"
 	"errors"
+	// "time"
 
 	"github.com/blang/semver"
 	h "github.com/sahib/brig/util/hashlib"
+	"github.com/patrickmn/go-cache"
 )
 
 // IsPinned returns true when `hash` is pinned in some way.
@@ -66,22 +68,12 @@ type objectRef struct {
 	Err string
 }
 
-type ipfsStateCache struct {
-	LocalRefs map[string]bool
-}
-
-func NewIpfsStateCache() *ipfsStateCache {
-	cache := ipfsStateCache{}
-	cache.LocalRefs = map[string]bool{}
-	return &cache
-}
-
 // Gets all locally available ipfs refs (hashes)
-func (nd *Node) FillLocalRefs(cache *ipfsStateCache) (error) {
+func (nd *Node) FillLocalRefs(m map[string]bool) (error) {
 	ctx := context.Background()
 
-	if cache == nil {
-		return errors.New("Need non nil reference to fill the cache")
+	if m == nil {
+		return errors.New("Need non nil reference to fill the map")
 	}
 	req := nd.sh.Request("refs/local")
 	resp, err := req.Send(ctx)
@@ -102,7 +94,7 @@ func (nd *Node) FillLocalRefs(cache *ipfsStateCache) (error) {
 		} else if err != nil {
 			return err
 		}
-		cache.LocalRefs[ref.Ref] = true // reference with given reference hash is checked
+		m[ref.Ref] = true // reference with given reference hash is checked
 	}
 
 	return nil
@@ -120,6 +112,16 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 	// Nil means we were not able to check for links
 	// i.e. parent hash is not available or there were an error.
 	// Empty means that everything worked but there are no children/links
+
+	locCache := nd.cache.refsLinks
+	links, found := locCache.Get(hash.B58String())
+	if found && links != nil {
+		fmt.Printf("Found links for %s\n", hash.B58String())
+		fmt.Printf("links are %+v\n", links)
+		return links.([]link), nil
+	}
+	fmt.Printf("Need to ask ipfs for links of %s\n", hash.B58String())
+
 
 	// The "Option: offline" feature is only supported for ipfs >= 0.4.19.
 	// Check this and issue a warning if that's not the case.
@@ -153,15 +155,26 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 		linksResp.Links = []link{}
 	}
 
+	locCache.Set(hash.B58String(), linksResp.Links, cache.DefaultExpiration)
 	return linksResp.Links, nil // returns empty array
 }
 
 // Checks if hash is cached. Does not check status of hash children
-func (nd *Node) isCached(hash h.Hash, cache *ipfsStateCache) (bool, error) {
-	if cache == nil {
-		return nd.IsCached(hash)
+func (nd *Node) isThisHashOnlyCached(hash h.Hash) (bool, error) {
+	locCache := nd.cache.localRefs
+	localRefsMap, found := locCache.Get("all")
+	if !found {
+		fmt.Println("Did not find localRefsMap")
+		// we need to get all the local refs
+		var m = map[string]bool{}
+		if err := nd.FillLocalRefs(m); err != nil {
+			return false, err
+		}
+		localRefsMap = m
+		locCache.Set("all", m, cache.DefaultExpiration)
 	}
-	if _, ok := cache.LocalRefs[hash.B58String()]; !ok {
+	var m = localRefsMap.(map[string]bool)
+	if _, found := m[hash.B58String()]; !found {
 		// this hash is not locally available and thus not cached
 		return false, nil
 	}
@@ -171,16 +184,21 @@ func (nd *Node) isCached(hash h.Hash, cache *ipfsStateCache) (bool, error) {
 
 // Checks if hash and all its children are cached
 func (nd *Node) IsCached(hash h.Hash) (bool, error) {
-	// Let's get all locally available ipfs refs or hashes
-	cache := NewIpfsStateCache()
-	err := nd.FillLocalRefs(cache) // backend status cache
-	if err != nil {
-		return false, err
+	locallyCached := nd.cache.locallyCached;
+	stat, found := locallyCached.Get(hash.B58String())
+	if found {
+		fmt.Printf("Found status of %s as %v\n", hash.B58String(), stat)
+		return stat.(bool), nil
 	}
+	// Nothing in the cache, we have to figure it out
 
 	// Now, we are ready to check if the hash under the question is cached
-	yes, err := nd.isCached(hash, cache)
+	yes, err := nd.isThisHashOnlyCached(hash)
 	if !yes {
+		// no need to check for children if the parent is not cached
+		if err == nil {
+			locallyCached.Set(hash.B58String(), false, cache.DefaultExpiration)
+		}
 		return false, err
 	}
 
@@ -195,18 +213,19 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		// WARNING: isCached does not check if hash has children!
-		isChildCached, err := nd.isCached(childHash, cache)
+		isChildCached, err := nd.IsCached(childHash)
 		if err != nil {
 			return false, err
 		}
 		if !isChildCached {
 			// If even one child/link is uncached, we call everything uncached
 			// TODO: we can report how much of content is pre-cached
+			locallyCached.Set(hash.B58String(), false, cache.DefaultExpiration)
 			return false, nil
 		}
 	}
 	// if we are here, the parent hash and all its children links/hashes are cached
+	locallyCached.Set(hash.B58String(), true, cache.DefaultExpiration)
 	return true, nil
 }
 

@@ -144,6 +144,9 @@ github.com/nbutton23/zxcvbn-go/utils/math
 ## explicit
 # github.com/onsi/gomega v1.4.3
 ## explicit
+# github.com/patrickmn/go-cache v2.1.0+incompatible
+## explicit
+github.com/patrickmn/go-cache
 # github.com/philhofer/fwd v1.0.0
 ## explicit
 # github.com/phogolabs/parcello v0.8.1
