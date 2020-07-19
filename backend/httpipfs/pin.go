@@ -89,6 +89,9 @@ func (nd *Node) FillLocalRefs(cache *ipfsStateCache) (error) {
 		return err
 	}
 	defer resp.Close()
+	if resp.Error != nil {
+		return resp.Error
+	}
 
 	ref := objectRef{}
 	jsonDecoder := json.NewDecoder(resp.Output)
@@ -103,6 +106,54 @@ func (nd *Node) FillLocalRefs(cache *ipfsStateCache) (error) {
 	}
 
 	return nil
+}
+
+type link  struct {
+	Name string
+	Hash string
+	Size uint64
+}
+
+// Get children (links in the ipfs lingo) of the hash
+func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
+	// Empty return array is not the same as nil!
+	// Nil means we were not able to check for links
+	// i.e. parent hash is not available or there were an error.
+	// Empty means that everything worked but there are no children/links
+
+	// The "Option: offline" feature is only supported for ipfs >= 0.4.19.
+	// Check this and issue a warning if that's not the case.
+	if nd.version.LT(semver.MustParse("0.4.19")) {
+		return nil, fmt.Errorf("offline cache queries are not supported in ipfs < 0.4.19")
+	}
+
+	ctx := context.Background()
+	req := nd.sh.Request("object/links", hash.B58String())
+	req.Option("offline", "true")
+	resp, err := req.Send(ctx)
+	if err != nil {
+		return nil, err // nil indicates unknown statur
+	}
+	defer resp.Close()
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	type objectLinksResp struct {
+		Hash string
+		Links []link
+	}
+	linksResp := objectLinksResp{}
+	if err := json.NewDecoder(resp.Output).Decode(&linksResp); err != nil {
+		return nil, err
+	}
+	if linksResp.Links == nil {
+		// If we are here everything work, and no children case is communicated
+		// with an empty return array.
+		linksResp.Links = []link{}
+	}
+
+	return linksResp.Links, nil // returns empty array
 }
 
 // Checks if hash is cached. Does not check status of hash children
@@ -120,8 +171,6 @@ func (nd *Node) isCached(hash h.Hash, cache *ipfsStateCache) (bool, error) {
 
 // Checks if hash and all its children are cached
 func (nd *Node) IsCached(hash h.Hash) (bool, error) {
-
-	ctx := context.Background()
 	// Let's get all locally available ipfs refs or hashes
 	cache := NewIpfsStateCache()
 	err := nd.FillLocalRefs(cache) // backend status cache
@@ -129,49 +178,19 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 		return false, err
 	}
 
-	// The "Option: offline" feature is only supported for ipfs >= 0.4.19.
-	// Check this and issue a warning if that's not the case.
-	if nd.version.LT(semver.MustParse("0.4.19")) {
-		return false, fmt.Errorf("cache queries are not supported in ipfs < 0.4.19")
-	}
-
-
 	// Now, we are ready to check if the hash under the question is cached
 	yes, err := nd.isCached(hash, cache)
 	if !yes {
-		fmt.Println("not cached")
 		return false, err
 	}
 
 	// By now we know that parent object/block is cached by what about linked ones?
 	// Lets get the list of linked (children) objects
-	req := nd.sh.Request("object/links", hash.B58String())
-	req.Option("offline", "true")
-	resp, err := req.Send(ctx)
+	links, err := nd.GetLinks(hash)
 	if err != nil {
 		return false, err
 	}
-	if resp.Error != nil {
-		return false, nil
-	}
-
-	type link  struct {
-		Name string
-		Hash string
-		Size uint64
-	}
-	type objectLinksResp struct {
-		Hash string
-		Links []link
-	}
-	linksResp := objectLinksResp{}
-	if err := json.NewDecoder(resp.Output).Decode(&linksResp); err != nil {
-		resp.Close()
-		return false, err
-	}
-	resp.Close()
-
-	for _, l := range(linksResp.Links) {
+	for _, l := range(links) {
 		childHash, err := h.FromB58String(l.Hash)
 		if err != nil {
 			return false, err
