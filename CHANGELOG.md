@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format follows [keepachangelog.com]. Please stick to it.
 
+## [0.5.3] -- 2020-07-19
+
+Drastic speed up of listing and show operation.
+
+In previous  version simple IsCached  operation on  500 MB file  was taking
+more than 30 seconds.  The reason is splitting a file in  chunks of no more
+than 256 kB in ipfs. It took time to establish connection to ipfs and check
+status of every  chunk. The caching of intermediate results  helps to avoid
+unnecessary connection.  The initial  check is  still several  second long,
+since we need to check for children  for every block, but it is much faster
+than it  was. Also,  recursive check  does not rerun  full check  on probed
+files now, so this is done much faster.
+
+The down side: the  caching result are stale and can  be misreported for up
+to 5 minutes (with current cache expiration settings).
+
+### Changed
+
+Added caching mechanism for ipfs interaction.
+
 ## [0.5.2] -- 2020-07-16
 
 Bug fix release.
