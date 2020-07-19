@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 	"errors"
-	// "time"
 
 	"github.com/blang/semver"
 	h "github.com/sahib/brig/util/hashlib"
@@ -116,12 +115,8 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 	locCache := nd.cache.refsLinks
 	links, found := locCache.Get(hash.B58String())
 	if found && links != nil {
-		fmt.Printf("Found links for %s\n", hash.B58String())
-		fmt.Printf("links are %+v\n", links)
 		return links.([]link), nil
 	}
-	fmt.Printf("Need to ask ipfs for links of %s\n", hash.B58String())
-
 
 	// The "Option: offline" feature is only supported for ipfs >= 0.4.19.
 	// Check this and issue a warning if that's not the case.
@@ -134,7 +129,7 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 	req.Option("offline", "true")
 	resp, err := req.Send(ctx)
 	if err != nil {
-		return nil, err // nil indicates unknown statur
+		return nil, err // nil indicates unknown status
 	}
 	defer resp.Close()
 	if resp.Error != nil {
@@ -164,7 +159,6 @@ func (nd *Node) isThisHashOnlyCached(hash h.Hash) (bool, error) {
 	locCache := nd.cache.localRefs
 	localRefsMap, found := locCache.Get("all")
 	if !found {
-		fmt.Println("Did not find localRefsMap")
 		// we need to get all the local refs
 		var m = map[string]bool{}
 		if err := nd.FillLocalRefs(m); err != nil {
@@ -187,7 +181,6 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 	locallyCached := nd.cache.locallyCached;
 	stat, found := locallyCached.Get(hash.B58String())
 	if found {
-		fmt.Printf("Found status of %s as %v\n", hash.B58String(), stat)
 		return stat.(bool), nil
 	}
 	// Nothing in the cache, we have to figure it out
