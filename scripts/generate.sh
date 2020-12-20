@@ -12,11 +12,16 @@ capnp_paths+=("catfs/capnp/pinner.capnp")
 capnp_paths+=("events/capnp/events_api.capnp")
 capnp_paths+=("gateway/db/capnp/user.capnp")
 
+go mod download
+go list -f '{{ .Dir }}' zombiezen.com/go/capnproto2
+
+INCLUDE_PATH="$(go list -f '{{ .Dir }}' zombiezen.com/go/capnproto2)"
+
 for capnp_path in "${capnp_paths[@]}"
 do
     echo "-- Generating ${capnp_path}"
     capnp compile \
-        -I"${GOPATH:-${HOME:-~}/go}/src/zombiezen.com/go/capnproto2/std" \
+        -I"${INCLUDE_PATH}/std" \
         -ogo "${capnp_path}"
 done
 
