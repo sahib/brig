@@ -128,4 +128,3 @@ func (mb *MemFsBackend) CachedSize(hash h.Hash) (uint64, error) {
 	}
 	return uint64(len(data)), nil
 }
-

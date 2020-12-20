@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sync"
 	"time"
-	"regexp"
 
 	"zombiezen.com/go/capnproto2/rpc"
 
@@ -22,11 +22,11 @@ import (
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
 	fserrs "github.com/sahib/brig/catfs/errors"
+	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/gateway"
 	p2pnet "github.com/sahib/brig/net"
-	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/net/peer"
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server/capnp"
@@ -489,7 +489,7 @@ func (b *base) doFetch(who string) error {
 				patch, err := ctl.FetchPatch(fromIndex)
 				if err != nil {
 					var rpcErrPattern = regexp.MustCompile(`\s*net/capnp/api.capnp:Sync.fetchPatch: rpc exception:\s*`)
-					simpleErrMsg :=  rpcErrPattern.ReplaceAllString(err.Error(), "")
+					simpleErrMsg := rpcErrPattern.ReplaceAllString(err.Error(), "")
 					if simpleErrMsg == ie.NoSuchCommitIndex(fromIndex+1).Error() {
 						break
 					} else {

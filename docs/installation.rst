@@ -6,7 +6,6 @@ as a single binary that includes everything you need. See here for the release l
 
    https://github.com/sahib/brig/releases
 
-
 Just download the binary for you platform, unpack it and put in somewhere in your
 ``$PATH`` (for example ``/usr/local/bin``).
 

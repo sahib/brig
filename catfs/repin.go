@@ -294,7 +294,7 @@ func (fs *FS) repin(root string) error {
 	savedStorage += quotaUnpins
 	totalStorage -= quotaUnpins
 
-	if savedStorage >= addedToStorage{
+	if savedStorage >= addedToStorage {
 		log.Infof("repin finished; freed %s, total storage is %s", humanize.Bytes(savedStorage-addedToStorage), humanize.Bytes(totalStorage))
 	} else {
 		log.Infof("repin finished; used extra %s, total storage is %s", humanize.Bytes(addedToStorage-savedStorage), humanize.Bytes(totalStorage))

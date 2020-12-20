@@ -216,7 +216,7 @@ var DefaultsV0 = config.DefaultMapping{
 			"pin_unpinned": config.DefaultEntry{
 				Default:      false,
 				NeedsRestart: false,
-				Docs:         `Pin unpinned files:
+				Docs: `Pin unpinned files:
 				
   * 'true'  if you want maximum permitted mirroring
   * 'false' if you want to save traffic

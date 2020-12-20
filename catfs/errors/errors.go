@@ -49,11 +49,12 @@ func (e ErrNoSuchCommitIndex) Error() string {
 	return fmt.Sprintf("No commit with index `%d` found", e.index)
 }
 
+// NoSuchCommitIndex returns an error for a missing index at `ind`
 func NoSuchCommitIndex(ind int64) error {
-	return &ErrNoSuchCommitIndex{ind} 
+	return &ErrNoSuchCommitIndex{ind}
 }
 
-// IsErrNoSuchRef checks if `err` is a no such ref error.
+// IsErrNoSuchCommitIndex checks if `err` is a no such ref error.
 func IsErrNoSuchCommitIndex(err error) bool {
 	_, ok := err.(*ErrNoSuchCommitIndex)
 	return ok

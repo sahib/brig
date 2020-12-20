@@ -3,14 +3,14 @@ package httpipfs
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"errors"
 
 	"github.com/blang/semver"
-	h "github.com/sahib/brig/util/hashlib"
 	"github.com/patrickmn/go-cache"
+	h "github.com/sahib/brig/util/hashlib"
 )
 
 // IsPinned returns true when `hash` is pinned in some way.
@@ -67,8 +67,8 @@ type objectRef struct {
 	Err string
 }
 
-// Gets all locally available ipfs refs (hashes)
-func (nd *Node) FillLocalRefs(m map[string]bool) (error) {
+// FillLocalRefs gets all locally available ipfs refs (hashes)
+func (nd *Node) FillLocalRefs(m map[string]bool) error {
 	ctx := context.Background()
 
 	if m == nil {
@@ -99,14 +99,16 @@ func (nd *Node) FillLocalRefs(m map[string]bool) (error) {
 	return nil
 }
 
-type link  struct {
+// Link is a child of a hash.
+// Used by IPFS when files get bigger.
+type Link struct {
 	Name string
 	Hash string
 	Size uint64
 }
 
-// Get children (links in the ipfs lingo) of the hash
-func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
+// GetLinks gets all children (links in the ipfs lingo) of the hash
+func (nd *Node) GetLinks(hash h.Hash) ([]Link, error) {
 	// Empty return array is not the same as nil!
 	// Nil means we were not able to check for links
 	// i.e. parent hash is not available or there were an error.
@@ -115,7 +117,7 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 	locCache := nd.cache.refsLinks
 	links, found := locCache.Get(hash.B58String())
 	if found && links != nil {
-		return links.([]link), nil
+		return links.([]Link), nil
 	}
 
 	// The "Option: offline" feature is only supported for ipfs >= 0.4.19.
@@ -137,8 +139,8 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 	}
 
 	type objectLinksResp struct {
-		Hash string
-		Links []link
+		Hash  string
+		Links []Link
 	}
 	linksResp := objectLinksResp{}
 	if err := json.NewDecoder(resp.Output).Decode(&linksResp); err != nil {
@@ -147,7 +149,7 @@ func (nd *Node) GetLinks(hash h.Hash) ([]link, error) {
 	if linksResp.Links == nil {
 		// If we are here everything work, and no children case is communicated
 		// with an empty return array.
-		linksResp.Links = []link{}
+		linksResp.Links = []Link{}
 	}
 
 	locCache.Set(hash.B58String(), linksResp.Links, cache.DefaultExpiration)
@@ -173,12 +175,12 @@ func (nd *Node) isThisHashOnlyCached(hash h.Hash) (bool, error) {
 		return false, nil
 	}
 	return true, nil
-	
+
 }
 
-// Checks if hash and all its children are cached
+// IsCached checks if hash and all its children are cached
 func (nd *Node) IsCached(hash h.Hash) (bool, error) {
-	locallyCached := nd.cache.locallyCached;
+	locallyCached := nd.cache.locallyCached
 	stat, found := locallyCached.Get(hash.B58String())
 	if found {
 		return stat.(bool), nil
@@ -201,7 +203,7 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	for _, l := range(links) {
+	for _, l := range links {
 		childHash, err := h.FromB58String(l.Hash)
 		if err != nil {
 			return false, err
@@ -231,6 +233,7 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 	return true, nil
 }
 
+// CachedSize returns the cached size of the node.
 func (nd *Node) CachedSize(hash h.Hash) (uint64, error) {
 	// MaxUint64 indicates that cachedSize is unknown
 	MaxUint64 := uint64(1<<64 - 1)
@@ -251,7 +254,7 @@ func (nd *Node) CachedSize(hash h.Hash) (uint64, error) {
 
 	raw := struct {
 		CumulativeSize uint64
-		Key string
+		Key            string
 	}{}
 
 	if err := json.NewDecoder(resp.Output).Decode(&raw); err != nil {

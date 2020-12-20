@@ -3,11 +3,11 @@
 package fuse
 
 import (
+	"bytes"
 	"io"
 	"sync"
-	"time"
 	"syscall"
-	"bytes"
+	"time"
 
 	"context"
 
@@ -26,13 +26,12 @@ type Handle struct {
 	// number of write-capable handles currently open
 	writers uint
 	// only valid if writers > 0, data used as a buffer for write operations
-	data []byte
-	wasModified bool
+	data                  []byte
+	wasModified           bool
 	currentFileReadOffset int64
-
 }
 
-func (hd *Handle) loadData(path string) (error) {
+func (hd *Handle) loadData(path string) error {
 	// Reads the whole file into the memory buffer
 	log.Error("fuse: loadData for ", path)
 	hd.data = nil
@@ -50,7 +49,7 @@ func (hd *Handle) loadData(path string) (error) {
 	// with the underlying Read(buf) which  seems to be
 	// limitedStream with the default size of 64kB.
 	// so there is no way to read file faster than in 64kB chunks
-	var bufSize int = 64*1024
+	var bufSize int = 64 * 1024
 	buf := make([]byte, bufSize)
 	var data []byte
 	for {
@@ -68,7 +67,6 @@ func (hd *Handle) loadData(path string) (error) {
 	return nil
 }
 
-
 // Read is called to read a block of data at a certain offset.
 func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	hd.mu.Lock()
@@ -76,9 +74,9 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 	defer logPanic("handle: read")
 
 	// log.WithFields(log.Fields{
-		// "path":   hd.fd.Path(),
-		// "offset": req.Offset,
-		// "size":   req.Size,
+	// "path":   hd.fd.Path(),
+	// "offset": req.Offset,
+	// "size":   req.Size,
 	// }).Debugf("fuse: handle: read")
 
 	// if we have writers we can supply response from the write data buffer
@@ -186,7 +184,6 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	}
 	return nil
 }
-
 
 // Truncates (or extends) data to the desired size
 func (hd *Handle) truncate(size uint64) error {

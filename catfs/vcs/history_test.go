@@ -1,8 +1,8 @@
 package vcs
 
 import (
-	"time"
 	"testing"
+	"time"
 
 	c "github.com/sahib/brig/catfs/core"
 	"github.com/sahib/brig/catfs/db"

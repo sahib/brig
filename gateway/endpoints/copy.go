@@ -22,9 +22,9 @@ func NewCopyHandler(s *State) *CopyHandler {
 // CopyRequest is the request that can be send to this endpoint.
 type CopyRequest struct {
 	// Source is the path to the old node.
-	Source string `json="source"`
+	Source string `json:"source"`
 	// Destination is the path of the new node.
-	Destination string `json="destination"`
+	Destination string `json:"destination"`
 }
 
 func (ch *CopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -1287,7 +1287,7 @@ EXAMPLES:
 		Usage: "Control the user account that can access the HTTP gateway.",
 	},
 	"gateway.user.add": {
-		Usage: "Add a new gateway user.",
+		Usage:     "Add a new gateway user.",
 		ArgsUsage: "<user> [<password> <permitted folders list>]",
 		Flags: []cli.Flag{
 			cli.BoolFlag{

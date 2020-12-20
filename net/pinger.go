@@ -200,6 +200,7 @@ func (pm *PingMap) For(addr string) (backend.Pinger, error) {
 	return pinger, nil
 }
 
+// IsAuthenticated checks if `addr` is authenticated.
 func (pm *PingMap) IsAuthenticated(addr string) bool {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
@@ -213,7 +214,7 @@ func (pm *PingMap) IsAuthenticated(addr string) bool {
 }
 
 // This is called by all network related code that establish a connection
-// to a client. If so, it gives the ping map a hint that a remote was succesfully
+// to a client. If so, it gives the ping map a hint that a remote was successfully
 // reached and/or authenticated (or not).
 func (pm *PingMap) hintNetAttempt(addr string, isAuthenticated bool) {
 	if pm == nil {

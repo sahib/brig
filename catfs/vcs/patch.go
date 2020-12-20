@@ -198,7 +198,7 @@ func filterInvalidMoveGhost(lkr *c.Linker, child n.Node, combCh *Change, prefixT
 	return true, nil
 }
 
-// MakePatch creates a patch with all changes starting from `from`. 
+// MakePatch creates a patch with all changes starting from `from`.
 // Patch will be created betweed `from` and `status` (current state)
 // It will only include nodes that are located under one of the prefixes in `prefixes`.
 func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error) {
@@ -210,7 +210,7 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	return MakePatchFromTo(lkr, from, to, prefixes)
 }
 
-// Creates a patch between two commits `from` (older one)  and `to` (newer one)
+// MakePatchFromTo makes a patch between two commits `from` (older one)  and `to` (newer one)
 func MakePatchFromTo(lkr *c.Linker, from, to *n.Commit, prefixes []string) (*Patch, error) {
 	root, err := to.Child(lkr, "does not matter") // child actually means Root for commits
 	if err != nil {

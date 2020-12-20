@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"time"
 	"testing"
+	"time"
 
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"

@@ -19,7 +19,13 @@ func TestRemoteListEndpoint(t *testing.T) {
 			Name:              "charlie",
 			Fingerprint:       "yyy",
 			AcceptAutoUpdates: true,
-			Folders:           []remotesapi.Folder{{"/public", false, ""}},
+			Folders: []remotesapi.Folder{
+				{
+					Folder:           "/public",
+					ReadOnly:         false,
+					ConflictStrategy: "",
+				},
+			},
 		}))
 
 		resp := s.mustRun(

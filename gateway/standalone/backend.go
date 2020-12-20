@@ -107,4 +107,3 @@ func (tb *TmpFsBackend) CachedSize(hash h.Hash) (uint64, error) {
 	}
 	return uint64(fi.Size()), nil
 }
-

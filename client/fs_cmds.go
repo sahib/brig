@@ -360,6 +360,7 @@ func (cl *Client) DeletedNodes(root string) ([]StatInfo, error) {
 	return results, err
 }
 
+// IsCached checks if file or directory at `path` is cached.
 func (cl *Client) IsCached(path string) (bool, error) {
 	call := cl.api.IsCached(cl.ctx, func(p capnp.FS_isCached_Params) error {
 		return p.SetPath(path)

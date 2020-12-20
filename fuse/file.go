@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	// ErrNotCached is returned in offline mode when we don't have a file
 	ErrNotCached = errors.New("content is not cached and may not download")
 )
 
@@ -81,10 +82,10 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 	}
 
 	if fi.hd == nil {
-		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1 }
+		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1}
 		fi.hd = &hd
 	}
-	fi.hd.fd=fd
+	fi.hd.fd = fd
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		// and no need to set handle `data`
@@ -93,7 +94,7 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 
 	// for writers we need to copy file data to the handle `data`
 	if fi.hd.writers == 0 {
-		err = fi.hd.loadData( fi.path )
+		err = fi.hd.loadData(fi.path)
 		if err != nil {
 			return nil, errorize("file-open-loadData", err)
 		}

@@ -57,7 +57,7 @@ func ConflictStrategyFromString(spec string) ConflictStrategy {
 	}
 }
 
-// Handy structure to use during handleMerge to store the node info in which we merge
+// PinStats Handy structure to use during handleMerge to store the node info in which we merge
 type PinStats struct {
 	Pinned, Explicit bool
 }
@@ -367,10 +367,10 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 		return ie.ErrBadNode
 	}
 
-	oldDstPinStats := PinStats {false, false}
+	oldDstPinStats := PinStats{false, false}
 	isGet := true
 	if sy.cfg.OnMerge != nil {
-		sy.cfg.OnMerge(dst, isGet, &oldDstPinStats) 
+		sy.cfg.OnMerge(dst, isGet, &oldDstPinStats)
 	}
 
 	dstFile.SetContent(sy.lkrDst, srcFile.ContentHash())

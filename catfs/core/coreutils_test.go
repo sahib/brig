@@ -4,8 +4,8 @@ import (
 	"path"
 	"sort"
 	"strings"
-	"time"
 	"testing"
+	"time"
 
 	ie "github.com/sahib/brig/catfs/errors"
 	n "github.com/sahib/brig/catfs/nodes"

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/patrickmn/go-cache"
 	"github.com/sahib/brig/repo/setup"
 	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
-	"github.com/patrickmn/go-cache"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 	ErrOffline = errors.New("backend is in offline mode")
 )
 
-// Contains varios backend related caches
+// IpfsStateCache contains various backend related caches
 type IpfsStateCache struct {
 	localRefs     *cache.Cache // which refs we have in local ipfs storage/cache
 	locallyCached *cache.Cache // shows if the hash and its children is locally cached by ipfs
@@ -105,14 +105,14 @@ func NewNode(ipfsPath, fingerprint string) (*Node, error) {
 		allowNetOps: true,
 		fingerprint: fingerprint,
 		version:     &version,
-		cache:       &IpfsStateCache{
+		cache: &IpfsStateCache{
 			localRefs:     cache.New(1*time.Minute, 10*time.Minute),
 			locallyCached: cache.New(5*time.Minute, 10*time.Minute),
 			// Technically links of a ref never change once obtained
 			// This is guaranteed by ipfs content to hash scheme.
 			// But we might not need a parent ref, so it is ok
 			// to clear its links from time to time.
-			refsLinks:     cache.New(7*24*time.Hour, 24*time.Hour),
+			refsLinks: cache.New(7*24*time.Hour, 24*time.Hour),
 		},
 	}, nil
 }

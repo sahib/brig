@@ -369,7 +369,7 @@ func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size u
 	return StageWithFullInfo(lkr, repoPath, contentHash, backendHash, size, MaxUint64, key, modTime)
 }
 
-// Stage adds a file to brigs DAG.
+// StageWithFullInfo adds a file to brigs DAG.
 func StageWithFullInfo(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size, cachedSize uint64, key []byte, modTime time.Time) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {

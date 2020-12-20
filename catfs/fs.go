@@ -1465,7 +1465,7 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 			return true
 		},
 		// OnMerge: func(newNd, oldNd n.ModNode) bool {
-		OnMerge: func(nd n.ModNode, isGet bool, ndPinStats *vcs.PinStats ) bool {
+		OnMerge: func(nd n.ModNode, isGet bool, ndPinStats *vcs.PinStats) bool {
 			// During merge we are acting on the same node
 			// but we are modifying its hashes thus we would not be
 			// able to get node pins by reusing node itself.
@@ -1487,7 +1487,7 @@ func (fs *FS) buildSyncCfg() (*vcs.SyncOptions, error) {
 				ndPinStats.Explicit = isExplicit
 
 				return true
-		        }
+			}
 			// If are not getting then we are setting
 			// Pin new node with old pin state:
 			if ndPinStats.Pinned {
@@ -1895,7 +1895,7 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 	return msg.Marshal()
 }
 
-// Makes patch between `fromRev` and the next one. Used to consequent patches from remote
+// MakePatchToNext makes a patch between `fromRev` and the next one. Used for consequent patches from remote
 func (fs *FS) MakePatchToNext(fromRev string, folders []string, remoteName string) ([]byte, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1928,7 +1928,7 @@ func (fs *FS) MakePatchToNext(fromRev string, folders []string, remoteName strin
 		return nil, err
 	}
 
-	to, err := fs.lkr.CommitByIndex(from.Index()+1)
+	to, err := fs.lkr.CommitByIndex(from.Index() + 1)
 	if err != nil {
 		return nil, err
 	}
