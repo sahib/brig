@@ -5,3 +5,6 @@ _vendor*
 TODO
 .idea
 mage
+ipfs
+repo/setup/ipfs
+.task

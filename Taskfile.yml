@@ -1,0 +1,63 @@
+# This file controls how brig is build.
+# It is a nicer to use alternative to Makefiles.
+# Please read the documentation over at:
+#
+# https://taskfile.dev
+#
+# The actual commands that do the work are written in bash.
+# See the scripts/ folder for them.
+#
+# When changing the structure of the repository, please remember
+# to update the "sources" list in this file if dependencies
+# of a build target were added, removed or changed.
+version: '3'
+
+tasks:
+  default:
+    deps: [build]
+
+  elm:
+    desc: "Compile elm sources to Javascript"
+    cmds:
+      - cd gateway/elm && elm make src/Main.elm --output ../static/js/app.js
+    sources:
+      - ./gateway/elm/**/*.elm
+    generates:
+      - ./gateway/static/js/app.js
+    method: checksum
+    summary: |
+        Build the elm frontend.
+
+  generate:
+    desc: "Generate build dependencies"
+    cmds:
+      - scripts/generate.sh
+    sources:
+      - scripts/generate.sh
+      - ./**/*.capnp
+      - ./gateway/static/**/**/**/**
+
+  build:
+    deps: [generate]
+    desc: "Build the brig binary"
+    cmds:
+      - ./scripts/build.sh
+    sources:
+      - ./scripts/build.sh
+      - ./*.go
+      - ./**/*.go
+
+  test:
+    desc: "Run integration & unit tests"
+    cmds:
+      - bash scripts/run-tests.sh
+
+  lint:
+    desc: "Run static linters on the code"
+    cmds:
+      - bash scripts/run-linter.sh
+
+  sloc:
+    desc: "Count the lines of code"
+    cmds:
+      - bash scripts/count-lines-of-code.sh

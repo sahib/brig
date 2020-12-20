@@ -1,5 +1,5 @@
 using Go = import "/go.capnp";
-using User = import "/gateway/db/capnp/user.capnp";
+using User = import "../../gateway/db/capnp/user.capnp";
 
 @0xea883e7d5248d81b;
 $Go.package("capnp");

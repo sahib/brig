@@ -1,9 +1,10 @@
 language: go
 sudo: required
 go:
-    - "1.10"
-    - "1.11"
     - "1.12"
+    - "1.13"
+    - "1.14"
+    - "1.15"
 notifications:
     email:
       - sahib@online.de
@@ -16,11 +17,12 @@ install:
     - go get -u github.com/rakyll/gotest
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
-    - wget https://dist.ipfs.io/go-ipfs/v0.4.19/go-ipfs_v0.4.19_linux-amd64.tar.gz -O /tmp/ipfs.tgz
+    - wget https://dist.ipfs.io/go-ipfs/v0.7.0/go-ipfs_v0.7.0_linux-amd64.tar.gz -O /tmp/ipfs.tgz
     - tar -C /tmp -xvf /tmp/ipfs.tgz
     - cp /tmp/go-ipfs/ipfs $GOBIN
-    - go run mage.go
+    - ./scripts/install-task.sh
+    - ./bin/task
 
 script:
     - export PATH="${GOPATH}/bin:${PATH}"
-    - gotest -v ./...
+    - bash scripts/run-tests.sh
