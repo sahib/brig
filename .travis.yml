@@ -1,7 +1,6 @@
 language: go
 sudo: required
 go:
-    - "1.12"
     - "1.13"
     - "1.14"
     - "1.15"
@@ -9,7 +8,7 @@ notifications:
     email:
       - sahib@online.de
 install:
-    - sudo apt-get install fuse
+    - sudo apt-get install fuse capnproto
     - mkdir -p ${GOPATH}/bin
     - export GOBIN=${GOPATH}/bin
     - export PATH="${GOPATH}/bin:${PATH}"
