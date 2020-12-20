@@ -1,6 +1,6 @@
 module github.com/sahib/brig
 
-go 1.14
+go 1.15
 
 require (
 	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
@@ -41,6 +41,7 @@ require (
 	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/phogolabs/parcello v0.8.1
 	github.com/pkg/errors v0.8.1
@@ -66,5 +67,4 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	zombiezen.com/go/capnproto2 v2.17.0+incompatible
-	github.com/patrickmn/go-cache v2.1.0+incompatible
 )
