@@ -13,6 +13,7 @@ install:
     - mkdir -p ${GOPATH}/bin
     - export GOBIN=${GOPATH}/bin
     - export PATH="${GOPATH}/bin:${PATH}"
+    - export GO111MODULE=on
     - go get -u github.com/rakyll/gotest
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
