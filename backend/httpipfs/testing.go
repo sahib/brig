@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 
@@ -37,7 +36,8 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, ipfsPath string))
 		cmd := exec.Command(line[0], line[1:]...)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("IPFS_PATH=%s", ipfsPath))
 		err := cmd.Run()
-		require.Nil(t, err, strings.Join(line, " "))
+		fmt.Println(line)
+		require.NoError(t, err)
 	}
 
 	daemonCmd := exec.Command("ipfs", "daemon", "--enable-pubsub-experiment")
@@ -69,7 +69,7 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, ipfsPath string))
 func WithDoubleIpfs(t *testing.T, portOff int, fn func(t *testing.T, ipfsPathA, ipfsPathB string)) {
 	chPathA := make(chan string)
 	chPathB := make(chan string)
-	stop := make(chan bool)
+	stop := make(chan bool, 2)
 
 	go WithIpfs(t, portOff, func(t *testing.T, ipfsPathA string) {
 		chPathA <- ipfsPathA

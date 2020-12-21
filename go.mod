@@ -28,6 +28,7 @@ require (
 	github.com/gorilla/websocket v1.4.0
 	github.com/ipfs/go-ipfs-util v0.0.1
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
+	github.com/klauspost/compress v1.11.4 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.0 // indirect
