@@ -42,14 +42,22 @@ func withBasicGateway(t *testing.T, fn func(gw *Gateway, fs *catfs.FS)) {
 
 	cfg.SetBool("gateway.enabled", true)
 	cfg.SetInt("gateway.port", 9999)
+	cfg.SetBool("gateway.auth.anon_allowed", true)
 
 	rapi := remotesapi.NewMock("ali", "alisfingerprint")
 	gw, err := NewGateway(
-		fs, rapi, cfg.Section("gateway"), nil, filepath.Join(tmpDir, "users"),
+		fs,
+		rapi,
+		cfg.Section("gateway"),
+		nil,
+		filepath.Join(tmpDir, "users"),
 	)
 	require.Nil(t, err)
 
-	require.Nil(t, gw.UserDatabase().Add("ali", "ila", []string{"/"}, nil))
+	require.Nil(
+		t,
+		gw.UserDatabase().Add("ali", "ila", []string{"/"}, nil),
+	)
 
 	gw.Start()
 
