@@ -30,10 +30,8 @@ require (
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/magefile/mage v1.8.0
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
-	github.com/mattn/go-zglob v0.0.3 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.0.2 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.0.2 // indirect
@@ -60,7 +58,7 @@ require (
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0
 	github.com/xrash/smetrics v0.0.0-20170218160415-a3153f7040e9
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95
+	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95 // indirect
 	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6 // indirect
 	golang.org/x/sys v0.0.0-20190309122539-980fc434d28e // indirect
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
