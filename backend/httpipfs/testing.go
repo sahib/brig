@@ -36,7 +36,6 @@ func WithIpfs(t *testing.T, portOff int, fn func(t *testing.T, ipfsPath string))
 		cmd := exec.Command(line[0], line[1:]...)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("IPFS_PATH=%s", ipfsPath))
 		err := cmd.Run()
-		fmt.Println(line)
 		require.NoError(t, err)
 	}
 

@@ -21,7 +21,6 @@ type Algorithm interface {
 type noneAlgo struct{}
 type snappyAlgo struct{}
 type lz4Algo struct{}
-type zstdAlgo struct{}
 
 var (
 	// AlgoMap is a map of available algorithms.
@@ -69,15 +68,6 @@ func (a lz4Algo) Encode(src []byte) ([]byte, error) {
 }
 
 func (a lz4Algo) Decode(src []byte) ([]byte, error) {
-	return lz4.Decode(nil, src)
-}
-
-// AlgoZstd
-func (a zstdAlgo) Encode(src []byte) ([]byte, error) {
-	return lz4.Encode(nil, src)
-}
-
-func (a zstdAlgo) Decode(src []byte) ([]byte, error) {
 	return lz4.Decode(nil, src)
 }
 

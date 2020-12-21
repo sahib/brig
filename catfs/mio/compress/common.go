@@ -46,10 +46,6 @@ const (
 	//AlgoLZ4 represents the lz4 compression algorithm:
 	// https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
 	AlgoLZ4
-
-	// AlgoZstd represents the zstd compression algorithm:
-	// https://en.wikipedia.org/wiki/Zstandard
-	AlgoZstd
 )
 
 // AlgorithmType user defined type to store the algorithm type.
@@ -58,7 +54,7 @@ type AlgorithmType byte
 // IsValid returns true if `at` is a valid algorithm type.
 func (at AlgorithmType) IsValid() bool {
 	switch at {
-	case AlgoNone, AlgoSnappy, AlgoLZ4, AlgoZstd:
+	case AlgoNone, AlgoSnappy, AlgoLZ4:
 		return true
 	}
 
