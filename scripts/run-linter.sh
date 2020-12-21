@@ -16,6 +16,7 @@ go_files="$(
 
 # Format and fix common issues:
 echo '-- Formatting & auto-fixing things...'
+go mod tidy
 gofmt -s -w ${go_files}
 go fix ./...
 
