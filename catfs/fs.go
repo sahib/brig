@@ -1963,7 +1963,7 @@ func (fs *FS) ApplyPatches(data []byte) error {
 		return err
 	}
 
-	return fs.applyPatches(patches)
+	return fs.applyPatches(*patches)
 }
 
 func (fs *FS) applyPatches(patches vcs.Patches) error {
