@@ -10,6 +10,9 @@ interface Sync {
     isCompleteFetchAllowed @2 () -> (isAllowed :Bool);
     isPushAllowed          @3 () -> (isAllowed :Bool);
     push                   @4 ();
+
+    # like fetchPatch but fetches a list of individual patches:
+    fetchPatches           @5 (fromIndex :Int64) -> (data :Data);
 }
 
 interface Meta {
