@@ -194,6 +194,22 @@ func (cl *Client) FetchPatch(fromIndex int64) ([]byte, error) {
 	return result.Data()
 }
 
+// FetchPatches tries to get a set of changes since `fromIndex`, packages as
+// individual changes.  The serialized patch is returned as byte slice.
+func (cl *Client) FetchPatches(fromIndex int64) ([]byte, error) {
+	call := cl.api.FetchPatches(cl.ctx, func(p capnp.Sync_fetchPatches_Params) error {
+		p.SetFromIndex(fromIndex)
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Data()
+}
+
 // IsCompleteFetchAllowed asks the remote if we can use FetchStore.
 func (cl *Client) IsCompleteFetchAllowed() (bool, error) {
 	call := cl.api.IsCompleteFetchAllowed(cl.ctx, func(p capnp.Sync_isCompleteFetchAllowed_Params) error {

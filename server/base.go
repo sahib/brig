@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sync"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 	"github.com/sahib/brig/backend"
 	"github.com/sahib/brig/catfs"
 	fserrs "github.com/sahib/brig/catfs/errors"
-	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/events"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/gateway"
@@ -483,27 +481,13 @@ func (b *base) doFetch(who string) error {
 			}
 
 			// Get the missing changes since then:
-			log.Debugf("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
-			var errApplyPatch error
-			for {
-				patch, err := ctl.FetchPatch(fromIndex)
-				if err != nil {
-					var rpcErrPattern = regexp.MustCompile(`\s*net/capnp/api.capnp:Sync.fetchPatch: rpc exception:\s*`)
-					simpleErrMsg := rpcErrPattern.ReplaceAllString(err.Error(), "")
-					if simpleErrMsg == ie.NoSuchCommitIndex(fromIndex+1).Error() {
-						break
-					} else {
-						return err
-					}
-				}
-				errApplyPatch = remoteFs.ApplyPatch(patch)
-				if err != nil {
-					return err
-				}
-				fromIndex++
+			log.Infof("fetch: doing partial fetch for %s starting at %d", who, fromIndex)
+			patches, err := ctl.FetchPatches(fromIndex)
+			if err != nil {
+				return err
 			}
 
-			return errApplyPatch
+			return remoteFs.ApplyPatches(patches)
 		})
 	})
 }

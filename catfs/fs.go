@@ -1841,6 +1841,32 @@ func (fs *FS) writeLastPatchIndex(index int64) error {
 	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
 }
 
+func (fs *FS) autoCommitStagedChanges(remoteName string) error {
+	haveStagedChanges, err := fs.lkr.HaveStagedChanges()
+	if err != nil {
+		return err
+	}
+
+	// Commit changes if there are any.
+	// This is a little unfortunate implication on how the current
+	// way of sending getting patches work. Creating a patch itself
+	// works with a staging commit, but the versioning does not work
+	// anymore then, since the same version might have a different
+	// set of changes.
+	if !haveStagedChanges {
+		return nil
+	}
+
+	owner, err := fs.lkr.Owner()
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf("auto commit on metadata request from »%s«", remoteName)
+	return fs.lkr.MakeCommit(owner, msg)
+
+}
+
 // MakePatch creates a binary patch with all file changes starting with
 // `fromRev`. Note that commit information is not exported, only individual
 // file and directory changes.
@@ -1854,27 +1880,8 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	haveStagedChanges, err := fs.lkr.HaveStagedChanges()
-	if err != nil {
+	if err := fs.autoCommitStagedChanges(remoteName); err != nil {
 		return nil, err
-	}
-
-	// Commit changes if there are any.
-	// This is a little unfortunate implication on how the current
-	// way of sending getting patches work. Creating a patch itself
-	// works with a staging commit, but the versioning does not work
-	// anymore then, since the same version might have a different
-	// set of changes.
-	if haveStagedChanges {
-		owner, err := fs.lkr.Owner()
-		if err != nil {
-			return nil, err
-		}
-
-		msg := fmt.Sprintf("auto commit on metadata request from »%s«", remoteName)
-		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
-			return nil, err
-		}
 	}
 
 	from, err := parseRev(fs.lkr, fromRev)
@@ -1895,32 +1902,14 @@ func (fs *FS) MakePatch(fromRev string, folders []string, remoteName string) ([]
 	return msg.Marshal()
 }
 
-// MakePatchToNext makes a patch between `fromRev` and the next one. Used for consequent patches from remote
-func (fs *FS) MakePatchToNext(fromRev string, folders []string, remoteName string) ([]byte, error) {
+// MakePatches works like MakePatch but produces individual patches for commit.
+// This allows to persist the history to some extent.
+func (fs *FS) MakePatches(fromRev string, folders []string, remoteName string) ([]byte, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	haveStagedChanges, err := fs.lkr.HaveStagedChanges()
-	if err != nil {
+	if err := fs.autoCommitStagedChanges(remoteName); err != nil {
 		return nil, err
-	}
-
-	// Commit changes if there are any.
-	// This is a little unfortunate implication on how the current
-	// way of sending getting patches work. Creating a patch itself
-	// works with a staging commit, but the versioning does not work
-	// anymore then, since the same version might have a different
-	// set of changes.
-	if haveStagedChanges {
-		owner, err := fs.lkr.Owner()
-		if err != nil {
-			return nil, err
-		}
-
-		msg := fmt.Sprintf("auto commit on metadata request from »%s«", remoteName)
-		if err := fs.lkr.MakeCommit(owner, msg); err != nil {
-			return nil, err
-		}
 	}
 
 	from, err := parseRev(fs.lkr, fromRev)
@@ -1928,17 +1917,12 @@ func (fs *FS) MakePatchToNext(fromRev string, folders []string, remoteName strin
 		return nil, err
 	}
 
-	to, err := fs.lkr.CommitByIndex(from.Index() + 1)
+	patches, err := vcs.MakePatches(fs.lkr, from, folders)
 	if err != nil {
 		return nil, err
 	}
 
-	patch, err := vcs.MakePatchFromTo(fs.lkr, from, to, folders)
-	if err != nil {
-		return nil, err
-	}
-
-	msg, err := patch.ToCapnp()
+	msg, err := patches.ToCapnp()
 	if err != nil {
 		return nil, err
 	}
@@ -1961,34 +1945,59 @@ func (fs *FS) ApplyPatch(data []byte) error {
 		return err
 	}
 
-	if err := vcs.ApplyPatch(fs.lkr, patch); err != nil {
+	return fs.applyPatches(vcs.Patches{patch})
+}
+
+// ApplyPatches reads the binary patch coming from MakePatches and tries to apply them.
+func (fs *FS) ApplyPatches(data []byte) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	msg, err := capnp.Unmarshal(data)
+	if err != nil {
 		return err
 	}
 
-	// Remember what patch index we merged last.
-	// This info can be read via LastPatchIndex() to determine
-	// the next version to get from the remote.
-	fromIndexData := []byte(strconv.FormatInt(patch.CurrIndex, 10))
-	if err := fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData); err != nil {
+	patches := &vcs.Patches{}
+	if err := patches.FromCapnp(msg); err != nil {
 		return err
 	}
 
+	return fs.applyPatches(patches)
+}
+
+func (fs *FS) applyPatches(patches vcs.Patches) error {
 	owner, err := fs.lkr.Owner()
 	if err != nil {
 		return err
 	}
 
-	cmtMsg := fmt.Sprintf("apply patch with %d changes", len(patch.Changes))
-	if err := fs.lkr.MakeCommit(owner, cmtMsg); err != nil {
-		// An empty patch is perfectly valid (though unusual):
-		if err == ie.ErrNoChange {
-			return nil
+	highestIndex := int64(-1)
+	for _, patch := range patches {
+		if err := vcs.ApplyPatch(fs.lkr, patch); err != nil {
+			return err
 		}
 
-		return err
+		if idx := patch.CurrIndex; highestIndex < idx {
+			highestIndex = idx
+		}
+
+		cmtMsg := fmt.Sprintf("apply patch with %d changes", len(patch.Changes))
+		if err := fs.lkr.MakeCommit(owner, cmtMsg); err != nil {
+			if err == ie.ErrNoChange {
+				// Empty commits are totally possible.
+				continue
+			}
+
+			return err
+		}
 	}
 
-	return nil
+	// Remember what patch index we merged last.
+	// This info can be read via LastPatchIndex() to determine
+	// the next version to get from the remote.
+	fromIndexData := []byte(strconv.FormatInt(highestIndex, 10))
+	return fs.lkr.MetadataPut("fs.last-merge-index", fromIndexData)
 }
 
 // LastPatchIndex will return the current version of this filesystem
