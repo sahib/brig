@@ -191,12 +191,7 @@ func (cl *Client) FetchPatch(fromIndex int64) ([]byte, error) {
 		return nil, err
 	}
 
-	data, err := result.Data()
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return result.Data()
 }
 
 // IsCompleteFetchAllowed asks the remote if we can use FetchStore.

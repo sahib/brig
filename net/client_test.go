@@ -3,6 +3,7 @@ package net
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -155,21 +156,21 @@ func TestClientFetchStore(t *testing.T) {
 			t.Fatalf("failed to read store: %v", err)
 		}
 
-		aliceFs, err := b.rp.FS("alice", b.bk)
+		aliceFsAtBob, err := b.rp.FS("alice", b.bk)
 		if err != nil {
 			t.Fatalf("Failed to get empty bob fs: %v", err)
 		}
 
-		_, err = aliceFs.Stat(filePath)
+		_, err = aliceFsAtBob.Stat(filePath)
 		if !ie.IsNoSuchFileError(err) {
 			t.Fatalf("File has existed in bob's empty store (wtf?): %v", err)
 		}
 
-		if err := aliceFs.Import(data); err != nil {
+		if err := aliceFsAtBob.Import(data); err != nil {
 			t.Fatalf("Failed to import data: %v", err)
 		}
 
-		info, err := aliceFs.Stat(filePath)
+		info, err := aliceFsAtBob.Stat(filePath)
 		if err != nil {
 			t.Fatalf("Failed to read file exported from alice: %v", err)
 		}
@@ -189,49 +190,54 @@ func TestClientFetchPatch(t *testing.T) {
 
 		// Get a patch from alice:
 		patchData, err := b.ctl.FetchPatch(0)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, patchData)
 
 		// Create a new empty FS for alice.
-		aliceFs, err := b.rp.FS("alice", b.bk)
+		aliceFsAtBob, err := b.rp.FS("alice", b.bk)
 		if err != nil {
 			t.Fatalf("Failed to get empty bob fs: %v", err)
 		}
 
 		// It should have the initial patch version of 0.
-		lastPatchIdx, err := aliceFs.LastPatchIndex()
-		require.Nil(t, err)
+		lastPatchIdx, err := aliceFsAtBob.LastPatchIndex()
+		require.NoError(t, err)
 		require.Equal(t, int64(0), lastPatchIdx)
 
 		// After applying the patch, we should have bob's data.
-		require.Nil(t, aliceFs.ApplyPatch(patchData))
-		newFileInfo, err := aliceFs.Stat("/new_file")
-		require.Nil(t, err)
+		require.NoError(t, aliceFsAtBob.ApplyPatch(patchData))
+		newFileInfo, err := aliceFsAtBob.Stat("/new_file")
+		require.NoError(t, err)
 		require.Equal(t, "/new_file", newFileInfo.Path)
 		require.Equal(t, uint64(3), newFileInfo.Size)
 
 		// Check that the new patch version is 2 (i.e. bob has two commits)
-		lastPatchIdx, err = aliceFs.LastPatchIndex()
-		require.Nil(t, err)
+		aliceFsAtBob.Log("HEAD", func(c *catfs.Commit) error {
+			fmt.Println(c)
+			return nil
+		})
+
+		lastPatchIdx, err = aliceFsAtBob.LastPatchIndex()
+		require.NoError(t, err)
 		require.Equal(t, int64(2), lastPatchIdx)
 
 		// If we fetch the same patch again, it will be empty.
 		// (data will be not len=0, but no real contents)
 		patchData, err = b.ctl.FetchPatch(2)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, patchData)
-		require.Nil(t, aliceFs.ApplyPatch(patchData))
+		require.NoError(t, aliceFsAtBob.ApplyPatch(patchData))
 
 		// Last patch was empty, so should not bump the version.
-		lastPatchIdx, err = aliceFs.LastPatchIndex()
-		require.Nil(t, err)
+		lastPatchIdx, err = aliceFsAtBob.LastPatchIndex()
+		require.NoError(t, err)
 		require.Equal(t, int64(2), lastPatchIdx)
 
 		// Bob's patch index should not have changed.
 		// For bob, the patch index does not make really sense,
 		// since he's the owner of the fs and always has the latest version.
 		lastBobPatchIdx, err := b.fs.LastPatchIndex()
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, int64(0), lastBobPatchIdx)
 	})
 }
