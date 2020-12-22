@@ -100,11 +100,11 @@ func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 	select {
 	case serverSide := <-conCh:
 		// This is needed to write big messages in one go:
-		// clientSide.(*net.TCPConn).SetWriteBuffer(1024 * 1024)
-		clientSide.(*net.TCPConn).SetReadBuffer(1024 * 1024)
-		// serverSide.(*net.TCPConn).SetWriteBuffer(1024 * 1024)
-		serverSide.(*net.TCPConn).SetReadBuffer(1024 * 1024)
-
+		const bufSize = 128 * 1024
+		clientSide.(*net.TCPConn).SetWriteBuffer(bufSize)
+		clientSide.(*net.TCPConn).SetReadBuffer(bufSize)
+		serverSide.(*net.TCPConn).SetWriteBuffer(bufSize)
+		serverSide.(*net.TCPConn).SetReadBuffer(bufSize)
 		f(clientSide, serverSide)
 	case <-time.After(5 * time.Second):
 		t.Fatalf("test took too long")
@@ -145,7 +145,7 @@ func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob 
 
 		require.Equal(t, len(expect), n)
 
-		n, err = a.Read(answer)
+		n, err = b.Read(answer)
 		if err != nil && (err != io.EOF && size == 0) {
 			t.Errorf("Normal read failed: %v", err)
 			return
