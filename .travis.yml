@@ -24,4 +24,4 @@ install:
 
 script:
     - export PATH="${GOPATH}/bin:${PATH}"
-    - bash scripts/run-tests.sh
+    - travis_wait 30 bash scripts/run-tests.sh
