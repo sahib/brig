@@ -1,7 +1,6 @@
 language: go
 sudo: required
 go:
-    - "1.14"
     - "1.15"
 notifications:
     email:
