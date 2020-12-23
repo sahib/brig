@@ -317,7 +317,6 @@ func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool)
 	if setExtraConfig {
 		// Optional: Helps save us resources.
 		config = append(config, [][]string{
-			{"Experimental.QUIC", "true"},
 			{"Reprovider.Interval", "\"1h\""},
 			{"Swarm.ConnMgr.GracePeriod", "\"60s\""},
 		}...)

@@ -82,7 +82,37 @@ func (hdl *requestHandler) FetchPatch(call capnp.Sync_fetchPatch) error {
 	fromRev := fmt.Sprintf("commit[%d]", fromIndex)
 
 	log.Debugf("Bundling up all changes starting from: %s", fromRev)
-	patchData, err := fs.MakePatchToNext(fromRev, prefixes, currRemote.Name)
+	patchData, err := fs.MakePatch(fromRev, prefixes, currRemote.Name)
+	if err != nil {
+		return err
+	}
+
+	call.Results.SetData(patchData)
+	return nil
+}
+
+func (hdl *requestHandler) FetchPatches(call capnp.Sync_fetchPatches) error {
+	currRemote, err := hdl.rp.Remotes.Remote(hdl.currRemoteName)
+	if err != nil {
+		return err
+	}
+
+	fs, err := hdl.rp.FS(hdl.rp.Owner, hdl.bk)
+	if err != nil {
+		return err
+	}
+
+	// Apply the respective folder filter for this remote.
+	prefixes := []string{}
+	for _, folder := range currRemote.Folders {
+		prefixes = append(prefixes, folder.Folder)
+	}
+
+	fromIndex := call.Params.FromIndex()
+	fromRev := fmt.Sprintf("commit[%d]", fromIndex)
+
+	log.Debugf("Bundling up all changes individually starting from: %s", fromRev)
+	patchData, err := fs.MakePatches(fromRev, prefixes, currRemote.Name)
 	if err != nil {
 		return err
 	}

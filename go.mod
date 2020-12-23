@@ -30,10 +30,8 @@ require (
 	github.com/kardianos/osext v0.0.0-20170510131534-ae77be60afb1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/magefile/mage v1.8.0
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4
-	github.com/mattn/go-zglob v0.0.3 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.0.2 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.0.2 // indirect
@@ -43,7 +41,6 @@ require (
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.4.3 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/phogolabs/parcello v0.8.1
 	github.com/pkg/errors v0.8.1
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
@@ -52,20 +49,18 @@ require (
 	github.com/sdemontfort/go-mimemagic v0.0.0-20150708072242-d026a5785116
 	github.com/sirupsen/logrus v1.3.0
 	github.com/stretchr/testify v1.3.0
-	github.com/tinylib/msgp v1.1.0 // indirect
+	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/toqueteos/webbrowser v1.1.0
 	github.com/ulule/limiter v2.2.2+incompatible
 	github.com/urfave/cli v1.20.0
 	github.com/vbauerster/mpb v3.3.4+incompatible
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0
 	github.com/xrash/smetrics v0.0.0-20170218160415-a3153f7040e9
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95
-	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6 // indirect
-	golang.org/x/sys v0.0.0-20190309122539-980fc434d28e // indirect
-	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/net v0.0.0-20201216054612-986b41b23924
+	golang.org/x/text v0.3.3
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2
-	zombiezen.com/go/capnproto2 v2.17.0+incompatible
+	zombiezen.com/go/capnproto2 v2.18.0+incompatible
 )

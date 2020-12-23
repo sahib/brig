@@ -18,10 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	dummyAddr = "127.0.0.1:7782" // Just a random high port
-)
-
 // create a new gpg key pair with self-signed subkeys
 func createKeyPair(t *testing.T, bits int) ([]byte, []byte) {
 	cfg := gpgeez.Config{Expiry: 0 * time.Second}
@@ -60,15 +56,16 @@ func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 
 	setup := make(chan bool)
 	conCh := make(chan net.Conn)
+	waitForTestCase := make(chan bool)
+
+	ls, err := testutil.RandomLocalListener()
+	if err != nil {
+		t.Errorf("Listening on dummy port failed: %v", err)
+		setup <- false
+		return
+	}
 
 	go func() {
-		ls, err := net.Listen("tcp", dummyAddr)
-		if err != nil {
-			t.Errorf("Listening on dummy port failed: %v", err)
-			setup <- false
-			return
-		}
-
 		setup <- true
 		defer func() {
 			if err := ls.Close(); err != nil {
@@ -84,20 +81,36 @@ func withLoopbackConnection(t *testing.T, f func(a, b net.Conn)) {
 		}
 
 		conCh <- conn
+
+		// We should wait until we quit this function.
+		// Otherwise the defer above will be executed.
+		<-waitForTestCase
 	}()
 
 	if <-setup == false {
 		return
 	}
 
-	clientSide, err := net.Dial("tcp", dummyAddr)
+	clientSide, err := net.Dial("tcp", ls.Addr().String())
 	if err != nil {
 		t.Errorf("Dialing self failed: %v", err)
 		return
 	}
 
-	serverSide := <-conCh
-	f(clientSide, serverSide)
+	select {
+	case serverSide := <-conCh:
+		// This is needed to write big messages in one go:
+		const bufSize = 128 * 1024
+		clientSide.(*net.TCPConn).SetWriteBuffer(bufSize)
+		clientSide.(*net.TCPConn).SetReadBuffer(bufSize)
+		serverSide.(*net.TCPConn).SetWriteBuffer(bufSize)
+		serverSide.(*net.TCPConn).SetReadBuffer(bufSize)
+		f(clientSide, serverSide)
+	case <-time.After(5 * time.Second):
+		t.Fatalf("test took too long")
+	}
+
+	waitForTestCase <- true
 }
 
 func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob []byte) {
@@ -124,18 +137,24 @@ func testAuthProcess(t *testing.T, size int64, privAli, privBob, pubAli, pubBob 
 
 		// Sort out connection based troubles quickly:
 		// Just send a normal message over the conn.
-		if _, err := a.Write(expect); err != nil {
+		n, err := a.Write(expect)
+		if err != nil {
 			t.Errorf("Normal write failed: %v", err)
 			return
 		}
 
-		if _, err := b.Read(answer); err != nil && (err != io.EOF && size == 0) {
+		require.Equal(t, len(expect), n)
+
+		n, err = b.Read(answer)
+		if err != nil && (err != io.EOF && size == 0) {
 			t.Errorf("Normal read failed: %v", err)
 			return
 		}
 
+		require.Equal(t, len(answer), n)
+
 		if !bytes.Equal(expect, answer) {
-			t.Errorf("Normal transmission failed; want `%s`, got `%s`", expect, answer)
+			t.Errorf("Normal transmission failed; want `%v`, got `%v`", len(expect), len(answer))
 			return
 		}
 
@@ -174,6 +193,8 @@ func TestAuthProcess(t *testing.T) {
 	t.Parallel()
 
 	sizes := []int64{0, 255}
+	// TODO: This breaks for size 131072 - let's find out why.
+
 	for i := uint(0); i < 18; i++ {
 		sizes = append(sizes, int64(1<<i))
 	}

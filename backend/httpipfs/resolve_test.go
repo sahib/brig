@@ -10,7 +10,7 @@ import (
 )
 
 func TestPublishResolve(t *testing.T) {
-	t.Skip("needs work")
+	t.Skipf("will be replaced by bash based e2e tests")
 
 	// Only use one ipfs instance, for test performance.
 	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {

@@ -33,6 +33,8 @@ func testClientSide(t *testing.T, ipfsPathB string, addr string) {
 }
 
 func TestDialAndListen(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
 		nd, err := NewNode(ipfsPathA, "")
 		require.Nil(t, err)
@@ -59,18 +61,20 @@ func TestDialAndListen(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
 		ndA, err := NewNode(ipfsPathA, "")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		idA, err := ndA.Identity()
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		pinger, err := ndA.Ping(idA.Addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		defer func() {
-			require.Nil(t, pinger.Close())
+			require.NoError(t, pinger.Close())
 		}()
 
 		for idx := 0; idx < 60; idx++ {
@@ -88,6 +92,8 @@ func TestPing(t *testing.T) {
 }
 
 func TestDialAndListenOnSingleNode(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
 		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
@@ -114,6 +120,8 @@ func TestDialAndListenOnSingleNode(t *testing.T) {
 }
 
 func TestPingSelf(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
 		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)

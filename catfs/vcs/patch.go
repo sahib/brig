@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"errors"
 	"path"
 	"sort"
 
@@ -21,6 +22,9 @@ type Patch struct {
 	CurrIndex int64
 	Changes   []*Change
 }
+
+// Patches is just a list of patches
+type Patches []*Patch
 
 // Len returns the number of changes in the patch.
 func (p *Patch) Len() int {
@@ -68,6 +72,37 @@ func (p *Patch) Less(i, j int) bool {
 	return na.ModTime().Before(nb.ModTime())
 }
 
+func (p *Patch) toCapnpPatch(seg *capnp.Segment, capPatch capnp_patch.Patch) error {
+	capPatch.SetFromIndex(p.FromIndex)
+	capPatch.SetCurrIndex(p.CurrIndex)
+
+	capChangeLst, err := capnp_patch.NewChange_List(seg, int32(len(p.Changes)))
+	if err != nil {
+		return err
+	}
+
+	if err := capPatch.SetChanges(capChangeLst); err != nil {
+		return err
+	}
+
+	for idx, change := range p.Changes {
+		capCh, err := capnp_patch.NewChange(seg)
+		if err != nil {
+			return err
+		}
+
+		if err := change.toCapnpChange(seg, &capCh); err != nil {
+			return err
+		}
+
+		if err := capChangeLst.Set(idx, capCh); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // ToCapnp serializes a patch to capnproto message.
 func (p *Patch) ToCapnp() (*capnp.Message, error) {
 	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
@@ -80,29 +115,41 @@ func (p *Patch) ToCapnp() (*capnp.Message, error) {
 		return nil, err
 	}
 
-	capPatch.SetFromIndex(p.FromIndex)
-	capPatch.SetCurrIndex(p.CurrIndex)
+	return msg, p.toCapnpPatch(seg, capPatch)
+}
 
-	capChangeLst, err := capnp_patch.NewChange_List(seg, int32(len(p.Changes)))
+// ToCapnp seriales patches to a capnproto message.
+func (ps Patches) ToCapnp() (*capnp.Message, error) {
+	msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
 	if err != nil {
 		return nil, err
 	}
 
-	if err := capPatch.SetChanges(capChangeLst); err != nil {
+	capPatches, err := capnp_patch.NewRootPatches(seg)
+	if err != nil {
 		return nil, err
 	}
 
-	for idx, change := range p.Changes {
-		capCh, err := capnp_patch.NewChange(seg)
+	capPatchLst, err := capnp_patch.NewPatch_List(seg, int32(len(ps)))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capPatches.SetPatches(capPatchLst); err != nil {
+		return nil, err
+	}
+
+	for idx, p := range ps {
+		capPatch, err := capnp_patch.NewPatch(seg)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := change.toCapnpChange(seg, &capCh); err != nil {
+		if err := p.toCapnpPatch(seg, capPatch); err != nil {
 			return nil, err
 		}
 
-		if err := capChangeLst.Set(idx, capCh); err != nil {
+		if err := capPatchLst.Set(idx, capPatch); err != nil {
 			return nil, err
 		}
 	}
@@ -110,13 +157,7 @@ func (p *Patch) ToCapnp() (*capnp.Message, error) {
 	return msg, nil
 }
 
-// FromCapnp deserializes `msg` into `p`.
-func (p *Patch) FromCapnp(msg *capnp.Message) error {
-	capPatch, err := capnp_patch.ReadRootPatch(msg)
-	if err != nil {
-		return err
-	}
-
+func (p *Patch) fromCapnpPatch(capPatch capnp_patch.Patch) error {
 	p.FromIndex = capPatch.FromIndex()
 	p.CurrIndex = capPatch.CurrIndex()
 
@@ -134,6 +175,42 @@ func (p *Patch) FromCapnp(msg *capnp.Message) error {
 		p.Changes = append(p.Changes, ch)
 	}
 
+	return nil
+}
+
+// FromCapnp deserializes `msg` into `p`.
+func (p *Patch) FromCapnp(msg *capnp.Message) error {
+	capPatch, err := capnp_patch.ReadRootPatch(msg)
+	if err != nil {
+		return err
+	}
+
+	return p.fromCapnpPatch(capPatch)
+}
+
+// FromCapnp deserializes `msg` into `ps`
+func (ps *Patches) FromCapnp(msg *capnp.Message) error {
+	capPatches, err := capnp_patch.ReadRootPatches(msg)
+	if err != nil {
+		return err
+	}
+
+	capPatchesLst, err := capPatches.Patches()
+	if err != nil {
+		return err
+	}
+
+	newPatches := Patches{}
+	for idx := 0; idx < capPatchesLst.Len(); idx++ {
+		p := &Patch{}
+		if err := p.fromCapnpPatch(capPatchesLst.At(idx)); err != nil {
+			return e.Wrapf(err, "patches: from-capnp: patch")
+		}
+
+		newPatches = append(newPatches, p)
+	}
+
+	*ps = newPatches
 	return nil
 }
 
@@ -208,6 +285,49 @@ func MakePatch(lkr *c.Linker, from *n.Commit, prefixes []string) (*Patch, error)
 	}
 
 	return MakePatchFromTo(lkr, from, to, prefixes)
+}
+
+// MakePatches is like MakePatch but produces several patches, not a compressed one.
+func MakePatches(lkr *c.Linker, from *n.Commit, prefixes []string) (Patches, error) {
+	to, err := lkr.Status()
+	if err != nil {
+		return nil, err
+	}
+
+	patches := []*Patch{}
+
+	var errSkip = errors.New("stop log")
+	var prevCmt = to
+
+	// TODO: Log API should offer something like errSkip itself.
+	err = c.Log(lkr, to, func(cmt *n.Commit) error {
+		if prevCmt.Index() == to.Index() {
+			// First iteration.
+			prevCmt = cmt
+			return nil
+		}
+
+		patch, err := MakePatchFromTo(lkr, cmt, prevCmt, prefixes)
+		if err != nil {
+			return err
+		}
+
+		patches = append(patches, patch)
+		prevCmt = cmt
+
+		if cmt.Index() == from.Index() {
+			// We've gone deep enough.
+			return errSkip
+		}
+
+		return nil
+	})
+
+	if err != nil && err != errSkip {
+		return nil, err
+	}
+
+	return patches, nil
 }
 
 // MakePatchFromTo makes a patch between two commits `from` (older one)  and `to` (newer one)

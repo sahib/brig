@@ -9,6 +9,8 @@ import (
 )
 
 func TestPubSub(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	// Only use one ipfs instance, for test performance.
 	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
 		nd, err := NewNode(ipfsPath, "")

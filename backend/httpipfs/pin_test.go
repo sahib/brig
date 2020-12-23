@@ -10,6 +10,8 @@ import (
 )
 
 func TestPinUnpin(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
 		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
@@ -37,6 +39,8 @@ func TestPinUnpin(t *testing.T) {
 }
 
 func TestIsCached(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
 		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)

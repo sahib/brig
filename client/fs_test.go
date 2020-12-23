@@ -158,25 +158,25 @@ func TestMkdir(t *testing.T) {
 func TestSyncBasic(t *testing.T) {
 	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
 		err := aliCtl.StageFromReader("/ali_file", bytes.NewReader([]byte{42}))
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		err = bobCtl.StageFromReader("/bob_file", bytes.NewReader([]byte{23}))
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		_, err = aliCtl.Sync("bob", true)
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		_, err = bobCtl.Sync("ali", true)
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		// We cannot query the file contents, since the mock backend
 		// does not yet store the file content anywhere.
 		bobFileStat, err := aliCtl.Stat("/bob_file")
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 		require.Equal(t, "/bob_file", bobFileStat.Path)
 
 		aliFileStat, err := bobCtl.Stat("/ali_file")
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 		require.Equal(t, "/ali_file", aliFileStat.Path)
 	})
 }
@@ -385,24 +385,61 @@ func TestSyncPartial(t *testing.T) {
 
 func TestSyncMovedFile(t *testing.T) {
 	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
-		require.Nil(t, aliCtl.StageFromReader("/ali-file", bytes.NewReader([]byte{1, 2, 3})))
-		require.Nil(t, bobCtl.StageFromReader("/bob-file", bytes.NewReader([]byte{4, 5, 6})))
+		require.NoError(t, aliCtl.StageFromReader("/ali-file", bytes.NewReader([]byte{1, 2, 3})))
+		require.NoError(t, bobCtl.StageFromReader("/bob-file", bytes.NewReader([]byte{4, 5, 6})))
 
 		aliDiff, err := aliCtl.Sync("bob", true)
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		bobDiff, err := bobCtl.Sync("ali", true)
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		require.Equal(t, aliDiff.Added[0].Path, "/bob-file")
 		require.Equal(t, bobDiff.Added[0].Path, "/ali-file")
 
-		require.Nil(t, aliCtl.Move("/ali-file", "/bali-file"))
+		require.NoError(t, aliCtl.Move("/ali-file", "/bali-file"))
+
 		bobDiffAfter, err := bobCtl.Sync("ali", true)
-		require.Nil(t, err, stringify(err))
+		require.NoError(t, err)
 
 		require.Len(t, bobDiffAfter.Added, 0)
 		require.Len(t, bobDiffAfter.Removed, 0)
 		require.Len(t, bobDiffAfter.Moved, 1)
+	})
+}
+
+// Regression test for:
+// https://github.com/sahib/brig/issues/56
+func TestSyncRemovedFile(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+		require.NoError(t, aliCtl.StageFromReader("/testfile", bytes.NewReader([]byte{1, 2, 3})))
+
+		// Bob should get the /testfile now.
+		bobDiff, err := bobCtl.Sync("ali", true)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(bobDiff.Added))
+		require.Equal(t, bobDiff.Added[0].Path, "/testfile")
+
+		require.NoError(t, bobCtl.StageFromReader("/testfile", bytes.NewReader([]byte{3, 2, 1})))
+		require.NoError(t, bobCtl.MakeCommit("bob changed testfile"))
+
+		// Remove the file at ali:
+		require.NoError(t, aliCtl.Remove("/testfile"))
+		require.NoError(t, aliCtl.MakeCommit("removed testfile"))
+
+		// Sync and hope that we don't get the file back from bob:
+		aliDiff, err := aliCtl.Sync("bob", true)
+		require.NoError(t, err)
+
+		// Check if something was added.
+		require.Equal(t, 0, len(aliDiff.Added))
+
+		// ...but also checked it's not marked as removed:
+		require.Equal(t, 0, len(aliDiff.Removed))
+
+		_, err = aliCtl.Stat("/testfile")
+		require.Error(t, err)
 	})
 }

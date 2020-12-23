@@ -154,6 +154,9 @@ func (ma *Mapper) reportByType(src, dst n.ModNode) error {
 	}
 
 	isTypeMismatch := src.Type() != dst.Type()
+	if isTypeMismatch {
+		return ma.report(src, dst, isTypeMismatch, false, false)
+	}
 
 	if src.ContentHash().Equal(dst.ContentHash()) {
 		// If the files are equal, but the location changed,
@@ -213,10 +216,20 @@ func (ma *Mapper) mapFile(srcCurr *n.File, dstFilePath string) error {
 
 		return ma.reportByType(srcCurr, dstFile)
 	case n.NodeTypeGhost:
-		// It's still possible that the file was moved on our side.
+		// It's still possible that the file was moved or removed on our side.
 		aliveDstCurr, err := ma.ghostToAlive(ma.lkrDst, ma.dstHead, dstCurr)
 		if err != nil {
 			return err
+		}
+
+		if aliveDstCurr == nil {
+			dstGhost, ok := dstCurr.(*n.Ghost)
+			if !ok {
+				return ie.ErrBadNode
+			}
+
+			// File was removed by us.
+			return ma.reportByType(srcCurr, dstGhost)
 		}
 
 		return ma.reportByType(srcCurr, aliveDstCurr)
@@ -732,7 +745,7 @@ func (ma *Mapper) extractLeftovers(lkr *c.Linker, root *n.Directory, srcToDst bo
 // algorithm (that is the base of Mapper) needs to do a depth first search
 // and thus needs to remember already visited nodes.
 //
-// Since moved nodes also takes priorty we need to iterate over all ghosts first,
+// Since moved nodes also takes priority we need to iterate over all ghosts first,
 // and mark their respective counterparts or report that they were removed on
 // the remote side (i.e. no counterpart exists.). Only after that we cycle
 // through all other nodes and assume that files living at the same path
@@ -795,6 +808,7 @@ func (ma *Mapper) Map(fn func(pair MapPair) error) error {
 
 		return ma.mapFile(file, file.Path())
 	case n.NodeTypeGhost:
+		// Not sure how this would happen.
 		return nil
 	default:
 		return e.Wrapf(ie.ErrBadNode, "Unexpected type in route(): %v", ma.srcRoot)

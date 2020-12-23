@@ -1,9 +1,11 @@
 package testutil
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"testing"
 )
@@ -115,4 +117,21 @@ func DumbCopy(dst io.Writer, src io.Reader, useReadFrom, useWriteTo bool) (writt
 		}
 	}
 	return written, err
+}
+
+// RandomLocalListener returns a net.Listener that is listening on
+// a random free port. You should close it when done.
+func RandomLocalListener() (net.Listener, error) {
+	// Asking for a port and then trying to bind it is slightly racy.
+	// Protect against that by retrying a bit.
+	for retries := 0; retries < 10; retries++ {
+		lst, err := net.Listen("tcp", ":0")
+		if err != nil {
+			continue
+		}
+
+		return lst, nil
+	}
+
+	return nil, fmt.Errorf("too many retries")
 }

@@ -363,12 +363,16 @@ func mapperSetupDstRemove(t *testing.T, lkrSrc, lkrDst *c.Linker) []MapPair {
 	c.MustCommit(t, lkrDst, "src: Touched /x.png")
 	c.MustRemove(t, lkrDst, dstFile)
 	c.MustCommit(t, lkrDst, "src: Removed /x.png")
+	dstGhost, err := lkrDst.LookupGhost("/x.png")
+	require.NoError(t, err)
 
+	// We should be notified remote removed the file
+	// (and that we possibly should remove it as well)
 	return []MapPair{
 		{
 			Src:          srcFile,
-			Dst:          nil,
-			TypeMismatch: false,
+			Dst:          dstGhost,
+			TypeMismatch: true,
 		},
 	}
 }

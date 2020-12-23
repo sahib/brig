@@ -20,3 +20,7 @@ struct Patch $Go.doc("Patch contains a single change") {
     currIndex @1 :Int64;
     changes   @2 :List(Change);
 }
+
+struct Patches $Go.doc("Patches contains several patches") {
+    patches @0 :List(Patch);
+}

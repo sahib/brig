@@ -9,6 +9,8 @@ import (
 )
 
 func TestIpfsStartup(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithIpfs(t, 1, func(t *testing.T, ipfsPath string) {
 		nd, err := NewNode(ipfsPath, "")
 		require.Nil(t, err)
@@ -20,6 +22,8 @@ func TestIpfsStartup(t *testing.T) {
 }
 
 func TestDoubleIpfsStartup(t *testing.T) {
+	t.Skipf("will be replaced by bash based e2e tests")
+
 	WithDoubleIpfs(t, 1, func(t *testing.T, ipfsPathA, ipfsPathB string) {
 		ndA, err := NewNode(ipfsPathA, "")
 		require.Nil(t, err)
