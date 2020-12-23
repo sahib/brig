@@ -328,10 +328,6 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 		return nil
 	}
 
-	if isReadOnly(sy.cfg.ReadOnlyFolders, src.Path(), dst.Path()) {
-		return nil
-	}
-
 	if src.Path() != dst.Path() {
 		// Only move the file if it was only moved on the remote side.
 		if srcMask&ChangeTypeMove != 0 && dstMask&ChangeTypeMove == 0 {
@@ -339,6 +335,13 @@ func (sy *syncer) handleMerge(src, dst n.ModNode, srcMask, dstMask ChangeType) e
 				return err
 			}
 		}
+	}
+
+	if dst.Type() == n.NodeTypeGhost {
+		// Nothing to do. We removed the file on our side,
+		// but it's still on the remote side. Good for them,
+		// but keep it deleted here.
+		return nil
 	}
 
 	// If src did not change, there's no need to sync the content.

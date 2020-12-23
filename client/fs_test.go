@@ -407,3 +407,39 @@ func TestSyncMovedFile(t *testing.T) {
 		require.Len(t, bobDiffAfter.Moved, 1)
 	})
 }
+
+// Regression test for:
+// https://github.com/sahib/brig/issues/56
+func TestSyncRemovedFile(t *testing.T) {
+	log.SetLevel(log.DebugLevel)
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+		require.NoError(t, aliCtl.StageFromReader("/testfile", bytes.NewReader([]byte{1, 2, 3})))
+
+		// Bob should get the /testfile now.
+		bobDiff, err := bobCtl.Sync("ali", true)
+		require.NoError(t, err)
+
+		require.Equal(t, 1, len(bobDiff.Added))
+		require.Equal(t, bobDiff.Added[0].Path, "/testfile")
+
+		require.NoError(t, bobCtl.StageFromReader("/testfile", bytes.NewReader([]byte{3, 2, 1})))
+		require.NoError(t, bobCtl.MakeCommit("bob changed testfile"))
+
+		// Remove the file at ali:
+		require.NoError(t, aliCtl.Remove("/testfile"))
+		require.NoError(t, aliCtl.MakeCommit("removed testfile"))
+
+		// Sync and hope that we don't get the file back from bob:
+		aliDiff, err := aliCtl.Sync("bob", true)
+		require.NoError(t, err)
+
+		// Check if something was added.
+		require.Equal(t, 0, len(aliDiff.Added))
+
+		// ...but also checked it's not marked as removed:
+		require.Equal(t, 0, len(aliDiff.Removed))
+
+		_, err = aliCtl.Stat("/testfile")
+		require.Error(t, err)
+	})
+}
