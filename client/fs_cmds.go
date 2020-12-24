@@ -146,6 +146,11 @@ func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
 	defer os.Remove(fd.Name())
 
 	if _, err := io.Copy(fd, r); err != nil {
+		fd.Close()
+		return err
+	}
+
+	if err := fd.Close(); err != nil {
 		return err
 	}
 

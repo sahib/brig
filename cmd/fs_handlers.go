@@ -37,22 +37,8 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if readFromStdin {
-		tmpFd, err := ioutil.TempFile("", "-brig.stdin.buffer")
-		if err != nil {
-			return err
-		}
-
-		if _, err := io.Copy(tmpFd, os.Stdin); err != nil {
-			tmpFd.Close()
-			return err
-		}
-
-		if err := tmpFd.Close(); err != nil {
-			return err
-		}
-
 		repoPath = ctx.Args().Get(0)
-		localPath = tmpFd.Name()
+		return ctl.StageFromReader(repoPath, os.Stdin) 
 	}
 
 	absLocalPath, err := filepath.Abs(localPath)
