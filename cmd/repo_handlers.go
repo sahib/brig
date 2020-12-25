@@ -427,7 +427,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 
 	logToStdout := ctx.Bool("log-to-stdout")
 	if !logToStdout {
-		log.Infof("all further logs will be piped to the syslog daemon.")
+		log.Infof("all further logs will be also piped to the syslog daemon.")
 	}
 
 	server, err := server.BootServer(brigPath, passwordFn, bindHost, port, logToStdout)

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log/syslog"
 	"net"
@@ -74,7 +75,13 @@ func switchToSyslog() {
 		// Colors will be stripped from syslog anyways:
 		UseColors: false,
 	})
-	log.SetOutput(formatter.NewSyslogWrapper(wSyslog))
+
+	log.SetOutput(
+		io.MultiWriter(
+			formatter.NewSyslogWrapper(wSyslog),
+			os.Stdout,
+		),
+	)
 }
 
 func applyFstabInitially(base *base) error {
@@ -128,7 +135,7 @@ func BootServer(
 	log.Infof("password is valid")
 
 	if err := increaseMaxOpenFds(); err != nil {
-		log.Warningf("failed to incrase number of open fds")
+		log.Warningf("failed to increase number of open fds")
 	}
 
 	ctx := context.Background()
