@@ -94,6 +94,8 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 	}
 
 	// for writers we need to copy file data to the handle `data`
+	fi.hd.mu.Lock()
+	defer fi.hd.mu.Unlock()
 	if fi.hd.writers == 0 {
 		err = fi.hd.loadData(fi.path)
 		if err != nil {
