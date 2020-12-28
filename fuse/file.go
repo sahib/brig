@@ -15,6 +15,7 @@ import (
 var (
 	// ErrNotCached is returned in offline mode when we don't have a file
 	ErrNotCached = errors.New("content is not cached and may not download")
+	ErrTooManyWriters = errors.New("too many writers for the file")
 )
 
 // File is a file inside a directory.
@@ -98,6 +99,9 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		if err != nil {
 			return nil, errorize("file-open-loadData", err)
 		}
+	}
+	if fi.hd.writers == (^uint(0)) { // checks against writers overflow
+		return nil, errorize(fi.path, ErrTooManyWriters)
 	}
 	fi.hd.writers++
 	return fi.hd, nil
