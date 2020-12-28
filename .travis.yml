@@ -19,7 +19,8 @@ install:
     - wget https://dist.ipfs.io/go-ipfs/v0.7.0/go-ipfs_v0.7.0_linux-amd64.tar.gz -O /tmp/ipfs.tgz
     - tar -C /tmp -xvf /tmp/ipfs.tgz
     - cp /tmp/go-ipfs/ipfs $GOBIN
-    - ./bin/task
+    - export PATH="${GOPATH}/bin:${PATH}"
+    - task
 
 script:
     - export PATH="${GOPATH}/bin:${PATH}"
