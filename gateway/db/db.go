@@ -67,15 +67,15 @@ type UserDatabase struct {
 // NewUserDatabase creates a new UserDatabase at `path` or loads
 // an existing one.
 func NewUserDatabase(path string) (*UserDatabase, error) {
-	opts := badger.DefaultOptions
-	opts.Dir = path
-	opts.ValueDir = path
-	opts.TableLoadingMode, opts.ValueLogLoadingMode = options.FileIO, options.FileIO
-	opts.MaxTableSize = 1 << 20
-	opts.NumMemtables = 1
-	opts.NumLevelZeroTables = 1
-	opts.NumLevelZeroTablesStall = 2
-	opts.SyncWrites = false
+	opts := badger.DefaultOptions(path).
+		WithValueDir(path).
+		WithTableLoadingMode(options.FileIO).
+		WithValueLogLoadingMode(options.FileIO).
+		WithMaxTableSize(1 << 20).
+		WithNumMemtables(1).
+		WithNumLevelZeroTables(1).
+		WithNumLevelZeroTablesStall(2).
+		WithSyncWrites(false)
 
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -353,18 +353,15 @@ func (ub *UserDatabase) Get(name string) (User, error) {
 			return err
 		}
 
-		data, err := item.Value()
-		if err != nil {
-			return err
-		}
+		return item.Value(func(data []byte) error {
+			decUser, err := unmarshalUser(data)
+			if err != nil {
+				return err
+			}
 
-		decUser, err := unmarshalUser(data)
-		if err != nil {
-			return err
-		}
-
-		user = *decUser
-		return nil
+			user = *decUser
+			return nil
+		})
 	})
 }
 
@@ -394,17 +391,19 @@ func (ub *UserDatabase) List() ([]User, error) {
 		defer iter.Close()
 
 		for iter.Rewind(); iter.Valid(); iter.Next() {
-			data, err := iter.Item().Value()
+			err := iter.Item().Value(func(data []byte) error {
+				user, err := unmarshalUser(data)
+				if err != nil {
+					return err
+				}
+
+				users = append(users, *user)
+				return nil
+			})
+
 			if err != nil {
 				return err
 			}
-
-			user, err := unmarshalUser(data)
-			if err != nil {
-				return err
-			}
-
-			users = append(users, *user)
 		}
 
 		return nil
