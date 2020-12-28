@@ -52,5 +52,6 @@ func (mh *MkdirHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !mh.commitChange(msg, w, r) {
 		return
 	}
+
 	jsonifySuccess(w)
 }

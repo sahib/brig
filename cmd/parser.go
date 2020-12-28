@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"strings"
 
@@ -98,6 +99,8 @@ func RunCmdline(args []string) int {
 	profFd := startCPUProfile()
 	defer stopCPUProfile(profFd)
 	defer memProfile()
+
+	debug.SetTraceback("all")
 
 	app := cli.NewApp()
 	app.Name = "brig"
