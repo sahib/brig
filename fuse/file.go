@@ -5,7 +5,7 @@ package fuse
 import (
 	"errors"
 	"os"
-
+	"sync"
 	"context"
 
 	"bazil.org/fuse"
@@ -20,6 +20,7 @@ var (
 
 // File is a file inside a directory.
 type File struct {
+	mu   sync.Mutex // used during handle creation
 	path string
 	m    *Mount
 	hd   *Handle
@@ -82,11 +83,13 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		return nil, errorize("file-open", err)
 	}
 
+	fi.mu.Lock()
 	if fi.hd == nil {
 		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1}
 		fi.hd = &hd
 	}
 	fi.hd.fd = fd
+	fi.mu.Unlock()
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		// and no need to set handle `data`
