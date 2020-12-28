@@ -33,6 +33,10 @@ func TestEvents(t *testing.T) {
 		}
 
 		go func() {
+			// give it a little time so ServeHTTP() of the events handler
+			// can reach the "please notify me now" stage.
+			time.Sleep(100 * time.Millisecond)
+
 			// trigger an event:
 			resp := s.mustRun(
 				t,

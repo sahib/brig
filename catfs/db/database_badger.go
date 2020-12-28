@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dgraph-io/badger"
@@ -15,6 +16,7 @@ import (
 // BadgerDatabase is a database implementation based on BadgerDB
 type BadgerDatabase struct {
 	mu         sync.Mutex
+	isStopped  int64
 	db         *badger.DB
 	txn        *badger.Txn
 	refCount   int
@@ -40,20 +42,27 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	}
 
 	gcTicker := time.NewTicker(5 * time.Minute)
+
+	bdb := &BadgerDatabase{
+		db:       db,
+		gcTicker: gcTicker,
+	}
+
 	go func() {
 		for range gcTicker.C {
-		again:
-			err := db.RunValueLogGC(0.5)
-			if err == nil {
-				goto again
+			if atomic.LoadInt64(&bdb.isStopped) > 0 {
+				return
+			}
+
+			if err := db.RunValueLogGC(0.5); err != nil {
+				if err != badger.ErrNoRewrite {
+					log.WithError(err).Warnf("badger gc failed")
+				}
 			}
 		}
 	}()
 
-	return &BadgerDatabase{
-		db:       db,
-		gcTicker: gcTicker,
-	}, nil
+	return bdb, nil
 }
 
 func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
@@ -350,6 +359,7 @@ func (db *BadgerDatabase) Close() error {
 	defer db.mu.Unlock()
 
 	db.gcTicker.Stop()
+	atomic.StoreInt64(&db.isStopped, 1)
 
 	// With an open transaction it would deadlock:
 	if db.txn != nil {

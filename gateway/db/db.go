@@ -6,12 +6,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
 	capnp "github.com/sahib/brig/gateway/db/capnp"
 	"github.com/sahib/brig/util"
+	log "github.com/sirupsen/logrus"
 	capnp_lib "zombiezen.com/go/capnproto2"
 )
 
@@ -56,9 +58,10 @@ var (
 // UserDatabase is a badger db that stores user information,
 // using the user name as unique key.
 type UserDatabase struct {
-	mu       sync.Mutex
-	db       *badger.DB
-	gcTicker *time.Ticker
+	isStopped int64
+	mu        sync.Mutex
+	db        *badger.DB
+	gcTicker  *time.Ticker
 }
 
 // NewUserDatabase creates a new UserDatabase at `path` or loads
@@ -80,17 +83,24 @@ func NewUserDatabase(path string) (*UserDatabase, error) {
 	}
 
 	gcTicker := time.NewTicker(5 * time.Minute)
+
+	udb := &UserDatabase{db: db, gcTicker: gcTicker}
+
 	go func() {
 		for range gcTicker.C {
-		again:
-			err := db.RunValueLogGC(0.5)
-			if err == nil {
-				goto again
+			if atomic.LoadInt64(&udb.isStopped) > 0 {
+				return
 			}
+			if err := db.RunValueLogGC(0.5); err != nil {
+				if err != badger.ErrNoRewrite {
+					log.WithError(err).Warnf("badger gc failed")
+				}
+			}
+
 		}
 	}()
 
-	return &UserDatabase{db: db, gcTicker: gcTicker}, nil
+	return udb, nil
 }
 
 // Close cleans up all the resources used by a badger db.
@@ -99,6 +109,7 @@ func (ub *UserDatabase) Close() error {
 	defer ub.mu.Unlock()
 
 	ub.gcTicker.Stop()
+	atomic.StoreInt64(&ub.isStopped, 1)
 
 	if err := ub.db.Close(); err != nil {
 		return err
