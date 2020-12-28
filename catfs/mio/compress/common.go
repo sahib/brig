@@ -37,7 +37,7 @@ const (
 
 const (
 	// AlgoNone represents a ,,uncompressed'' algorithm.
-	AlgoNone = iota
+	AlgoNone = AlgorithmType(iota)
 
 	// AlgoSnappy represents the snappy compression algorithm:
 	// https://en.wikipedia.org/wiki/Snappy_(software)

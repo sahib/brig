@@ -97,7 +97,7 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 	if resp.Error != nil {
 		return false, resp.Error
 	}
-	
+
 	ref := objectRef{}
 	jsonDecoder := json.NewDecoder(resp.Output)
 	for {

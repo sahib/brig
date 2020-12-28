@@ -3,7 +3,7 @@ package catfs
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/binary"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -827,7 +827,7 @@ func (fs *FS) Touch(path string) error {
 	// We may not call Stage() with a lock.
 	fs.mu.Unlock()
 
-	// Notthing or a ghost there, stage an empty file.
+	// Nothing or a ghost there, stage an empty file.
 	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
 }
 
@@ -859,55 +859,6 @@ func (fs *FS) Truncate(path string, size uint64) error {
 	return fs.lkr.StageNode(nd)
 }
 
-func (fs *FS) computePreconditions(path string, rs io.ReadSeeker) (h.Hash, uint64, compress.AlgorithmType, error) {
-	// Save a little header of the things we read,
-	// but avoid reading it twice.
-	headerBuf, pr, err := util.PeekHeader(rs, 4*1024)
-	if err != nil {
-		return nil, 0, compress.AlgoNone, err
-	}
-
-	hashWriter := h.NewHashWriter()
-	hashReader := io.TeeReader(pr, hashWriter)
-
-	sizeAcc := &util.SizeAccumulator{}
-	sizeReader := io.TeeReader(hashReader, sizeAcc)
-
-	if _, err := io.Copy(ioutil.Discard, sizeReader); err != nil {
-		return nil, 0, compress.AlgoNone, err
-	}
-
-	// Go back to the beginning of the file:
-	if _, err := rs.Seek(0, io.SeekStart); err != nil {
-		return nil, 0, compress.AlgoNone, err
-	}
-
-	algo, err := compress.GuessAlgorithm(path, headerBuf)
-	if err != nil {
-		// Use the default algorithm set in the config:
-		algo, err = compress.AlgoFromString(fs.cfg.String("compress.default_algo"))
-		if err != nil {
-			return nil, 0, compress.AlgoNone, err
-		}
-
-		log.Warningf("failed to guess suitable zip algo for %s: %v", path, err)
-	}
-
-	if algo != compress.AlgoNone {
-		log.Debugf("Using '%s' compression for file %s", algo, path)
-	}
-
-	contentHash := hashWriter.Finalize()
-	size := sizeAcc.Size()
-	return contentHash, size, algo, nil
-}
-
-func deriveKeyFromContent(content h.Hash, size uint64) []byte {
-	salt := make([]byte, 8)
-	binary.LittleEndian.PutUint64(salt, size)
-	return util.DeriveKey(content, salt, 32)
-}
-
 func (fs *FS) renewPins(oldFile, newFile *n.File) error {
 	pinExplicit := false
 
@@ -937,32 +888,27 @@ func (fs *FS) renewPins(oldFile, newFile *n.File) error {
 	return fs.pinner.PinNode(newFile, pinExplicit)
 }
 
-// Stage reads all data from `r` and stores as content of the node at `path`.
-// If `path` already exists, it will be updated.
-func (fs *FS) Stage(path string, r io.ReadSeeker) error {
+func (fs *FS) preStageKeyGen(path string) ([]byte, error) {
 	fs.mu.Lock()
+	defer fs.mu.Unlock()
 
 	if fs.readOnly {
-		fs.mu.Unlock()
-		return ErrReadOnly
+		return nil, ErrReadOnly
 	}
-
-	path = prefixSlash(path)
 
 	// See if we already have such a file.
 	// If not we gonna need to generate new key for it
 	// based on the content hash.
-	var oldFile *n.File
 	oldNode, err := fs.lkr.LookupNode(path)
 
 	// Check that we're handling the right kind of node.
-	// We should be able to add on-top of ghosts, but directorie
+	// We should be able to add on-top of ghosts, but directories
 	// are pointless as input.
+	var oldFile *n.File
 	if err == nil {
 		switch oldNode.Type() {
 		case n.NodeTypeDirectory:
-			fs.mu.Unlock()
-			return fmt.Errorf("Cannot stage over directory: %v", path)
+			return nil, fmt.Errorf("Cannot stage over directory: %v", path)
 		case n.NodeTypeGhost:
 			// Act like there was no such node:
 			err = ie.NoSuchFile(path)
@@ -970,48 +916,66 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 			var ok bool
 			oldFile, ok = oldNode.(*n.File)
 			if !ok {
-				fs.mu.Unlock()
-				return ie.ErrBadNode
+				return nil, ie.ErrBadNode
 			}
 		}
 	}
 
 	if err != nil && !ie.IsNoSuchFileError(err) {
-		fs.mu.Unlock()
-		return err
+		return nil, err
 	}
 
-	// Copy self, so we do not need to fear race conditions below.
-	var oldFileCopy *n.File
 	if oldFile != nil {
-		oldFileCopy = oldFile.Copy(oldFile.Inode()).(*n.File)
+		return oldFile.Key(), nil
 	}
 
-	// Unlock the fs lock while adding the stream to the backend.
-	// This is not required for the data integrity of the fs.
-	fs.mu.Unlock()
+	// only create a new key for new files.
+	// The key depends on the content hash and the size.
+	key := make([]byte, 32)
+	if _, err := rand.Read(key); err != nil {
+		return nil, e.Wrapf(err, "failed to generate random key")
+	}
 
-	contentHash, size, compressAlgo, err := fs.computePreconditions(path, r)
+	return key, nil
+}
+
+// Stage reads all data from `r` and stores as content of the node at `path`.
+// If `path` already exists, it will be updated.
+func (fs *FS) Stage(path string, r io.Reader) error {
+	path = prefixSlash(path)
+	key, err := fs.preStageKeyGen(path)
 	if err != nil {
-		return err
+		return ErrReadOnly
 	}
 
-	var key []byte
-	if oldFileCopy == nil {
-		// only create a new key for new files.
-		// The key depends on the content hash and the size.
-		key = deriveKeyFromContent(contentHash, size)
-	} else {
-		if contentHash.Equal(oldFileCopy.ContentHash()) {
-			log.Infof("content of %s did not change; not modifying", path)
-			return nil
-		}
+	// NOTE: fs.mu is not locked here since I/O can be done in parallel.
+	//       If you need locking, you can do it at the bottom of this method.
 
-		// Next generations of the same file get the same key.
-		key = oldFileCopy.Key()
+	compressAlgo, err := compress.AlgoFromString(
+		fs.cfg.String("compress.default_algo"),
+	)
+
+	if err != nil {
+		log.WithError(err).Warnf("failed to read default compression, using default")
+		compressAlgo = compress.AlgoNone
 	}
 
-	stream, err := mio.NewInStream(r, key, compressAlgo)
+	// Keep the header of the file in memory, so we can do some guessing
+	// of e.g. the compression algorithm we should use.
+	headerReader := util.NewHeaderReader(r, 4*1024)
+
+	// Branch off a part of the stream and pipe it through
+	// a hash writer to compute the hash while reading the stream:
+	hashWriter := h.NewHashWriter()
+	hashReader := io.TeeReader(headerReader, hashWriter)
+
+	// Do the same with the size.
+	// This actually measures the size of the stream and is
+	// therefore guaranteed to find out the actual stream size.
+	sizeAcc := &util.SizeAccumulator{}
+	sizeReader := io.TeeReader(hashReader, sizeAcc)
+
+	stream, err := mio.NewInStream(sizeReader, key, compressAlgo)
 	if err != nil {
 		return err
 	}
@@ -1021,6 +985,16 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 		return err
 	}
 
+	// The stream was consumed, we now know those attrs:
+	size := sizeAcc.Size()
+	contentHash := hashWriter.Finalize()
+	compressAlgo, err = compress.GuessAlgorithm(path, headerReader.Header())
+	if err != nil {
+		log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
+	}
+
+	log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
+
 	// Lock it again for the metadata staging:
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
@@ -1029,7 +1003,18 @@ func (fs *FS) Stage(path string, r io.ReadSeeker) error {
 	if err != nil {
 		return err
 	}
-	newFile, err := c.StageWithFullInfo(fs.lkr, path, contentHash, backendHash, size, cachedSize, key, time.Now())
+
+	newFile, err := c.StageWithFullInfo(
+		fs.lkr,
+		path,
+		contentHash,
+		backendHash,
+		size,
+		cachedSize,
+		key,
+		time.Now(),
+	)
+
 	if err != nil {
 		return err
 	}

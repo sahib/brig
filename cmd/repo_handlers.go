@@ -428,6 +428,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	logToStdout := ctx.Bool("log-to-stdout")
 	if !logToStdout {
 		log.Infof("all further logs will be also piped to the syslog daemon.")
+		log.Infof("Use »journalctl -fet brig« to view logs.")
 	}
 
 	server, err := server.BootServer(brigPath, passwordFn, bindHost, port, logToStdout)

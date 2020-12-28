@@ -494,6 +494,43 @@ func PeekHeader(r io.ReadSeeker, size int64) ([]byte, io.ReadSeeker, error) {
 	return headerBuf, &prefixReader{data: headerBuf, r: r}, nil
 }
 
+// HeaderReader is an alternative to PeekHeader().
+// It requires no seeking and buffers the header while reading the stream.
+// The header will not be available when there was no Read().
+type HeaderReader struct {
+	r    io.Reader
+	size uint64
+	buf  []byte
+}
+
+// NewHeaderReader returns a new header reader.
+func NewHeaderReader(r io.Reader, size uint64) *HeaderReader {
+	return &HeaderReader{
+		r:    r,
+		size: size,
+		buf:  make([]byte, 0, size),
+	}
+}
+
+// Header returns the current header buffer.
+// It's size will be smaller or equal the size you passed to NewHeaderReader.
+func (hr *HeaderReader) Header() []byte {
+	return hr.buf
+}
+
+func (hr *HeaderReader) Read(buf []byte) (int, error) {
+	n, err := hr.r.Read(buf)
+	if diff := hr.size - uint64(len(hr.buf)); n > 0 && diff > 0 {
+		if uint64(n) < diff {
+			diff = uint64(n)
+		}
+
+		hr.buf = append(hr.buf, buf[:diff]...)
+	}
+
+	return n, err
+}
+
 // CopyFile simply copies the file at `src` to `dst`.
 // If `dst` already contains a file, it will be overwritten.
 func CopyFile(src, dst string) error {
