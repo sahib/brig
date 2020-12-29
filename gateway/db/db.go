@@ -75,7 +75,9 @@ func NewUserDatabase(path string) (*UserDatabase, error) {
 		WithNumMemtables(1).
 		WithNumLevelZeroTables(1).
 		WithNumLevelZeroTablesStall(2).
-		WithSyncWrites(false)
+		WithSyncWrites(false).
+		WithEventLogging(false).
+		WithLogger(nil)
 
 	db, err := badger.Open(opts)
 	if err != nil {
