@@ -520,9 +520,9 @@ func (hr *HeaderReader) Header() []byte {
 
 func (hr *HeaderReader) Read(buf []byte) (int, error) {
 	n, err := hr.r.Read(buf)
-	if diff := hr.size - uint64(len(hr.buf)); n > 0 && diff > 0 {
-		if uint64(n) < diff {
-			diff = uint64(n)
+	if diff := int64(hr.size) - int64(len(hr.buf)); n > 0 && diff > 0 {
+		if int64(n) < diff {
+			diff = int64(n)
 		}
 
 		hr.buf = append(hr.buf, buf[:diff]...)
