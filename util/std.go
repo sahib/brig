@@ -508,14 +508,47 @@ func NewHeaderReader(r io.Reader, size uint64) *HeaderReader {
 	return &HeaderReader{
 		r:    r,
 		size: size,
-		buf:  make([]byte, 0, size),
+		buf:  []byte{},
 	}
 }
 
-// Header returns the current header buffer.
-// It's size will be smaller or equal the size you passed to NewHeaderReader.
+// Header returns the current header buffer. It's empty if no data was read
+// from the stream yet. It's size will be smaller or equal the size you passed
+// to NewHeaderReader.
 func (hr *HeaderReader) Header() []byte {
 	return hr.buf
+}
+
+// Peek reads the header of the stream and returns it.
+// It does not alter the position of the stream, Read() will still
+// return the header read by Peek().
+//
+// This will only work if no I/O was done on stream yet.
+// In this case an error is returned. You can Peek() successfully at
+// most once.
+func (hr *HeaderReader) Peek() ([]byte, error) {
+	if len(hr.buf) > 0 {
+		// The stream was already read.
+		return nil, errors.New("cannot peek, stream was read already")
+	}
+
+	buf := make([]byte, hr.size)
+	n, err := io.ReadFull(hr.r, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return nil, err
+	}
+
+	// Do not read the header anymore in Read():
+	hr.size = 0
+	hr.buf = buf[:n]
+
+	// Concatenate the memory buffer to the stream:
+	hr.r = io.MultiReader(
+		bytes.NewReader(hr.buf),
+		hr.r,
+	)
+
+	return hr.buf, nil
 }
 
 func (hr *HeaderReader) Read(buf []byte) (int, error) {
@@ -523,6 +556,11 @@ func (hr *HeaderReader) Read(buf []byte) (int, error) {
 	if diff := int64(hr.size) - int64(len(hr.buf)); n > 0 && diff > 0 {
 		if int64(n) < diff {
 			diff = int64(n)
+		}
+
+		if len(hr.buf) == 0 {
+			// only allocate header buffer when required:
+			hr.buf = make([]byte, 0, hr.size)
 		}
 
 		hr.buf = append(hr.buf, buf[:diff]...)

@@ -319,29 +319,42 @@ func TestHeaderReader(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			testHeaderReader(
-				t,
-				test.readBufSize,
-				test.testBufSize,
-				test.headBufSize,
-			)
-		})
+		for idx, suffix := range []string{"no-peek", "peek"} {
+			t.Run(test.name+"/"+suffix, func(t *testing.T) {
+				testHeaderReader(
+					t,
+					idx == 1,
+					test.readBufSize,
+					test.testBufSize,
+					test.headBufSize,
+				)
+			})
+		}
 	}
 }
 
-func testHeaderReader(t *testing.T, readBufSize, testBufSize, headBufSize int64) {
+func testHeaderReader(t *testing.T, usePeek bool, readBufSize, testBufSize, headBufSize int64) {
 	dummy := testutil.CreateDummyBuf(testBufSize)
 	hr := NewHeaderReader(bytes.NewReader(dummy), uint64(headBufSize))
 
+	var peekedHdr []byte
+	if usePeek {
+		var err error
+		peekedHdr, err = hr.Peek()
+		require.NoError(t, err)
+	}
+
 	// Now read until io.EOF:
 	bytesLeft := testBufSize
+	dummyIter := dummy
 	buf := make([]byte, readBufSize)
 	for {
 		n, err := hr.Read(buf)
 		if err == io.EOF {
 			break
 		}
+
+		require.NoError(t, err)
 
 		expectedSize := readBufSize
 		if testBufSize < readBufSize {
@@ -355,8 +368,11 @@ func testHeaderReader(t *testing.T, readBufSize, testBufSize, headBufSize int64)
 
 		bytesLeft -= int64(n)
 
-		require.Equal(t, int(expectedSize), n, "unexpected read buffer return")
-		require.NoError(t, err)
+		// NOTE: io.Reader does not guarantee that n == expectedSize,
+		// we might read less which is fine, then we should just repeat Read()-ing.
+		require.GreaterOrEqual(t, int(expectedSize), n, "unexpected read buffer return")
+		require.Equal(t, dummyIter[:n], buf[:n])
+		dummyIter = dummyIter[n:]
 	}
 
 	// Check that the header is really the part at the start
@@ -369,4 +385,8 @@ func testHeaderReader(t *testing.T, readBufSize, testBufSize, headBufSize int64)
 	hdr := hr.Header()
 	require.Len(t, hdr, int(expectedSize))
 	require.Equal(t, hdr, dummy[:expectedSize])
+
+	if usePeek {
+		require.Equal(t, hdr, peekedHdr, "Peek() differs from Head()")
+	}
 }

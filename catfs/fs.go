@@ -963,6 +963,22 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	// Keep the header of the file in memory, so we can do some guessing
 	// of e.g. the compression algorithm we should use.
 	headerReader := util.NewHeaderReader(r, 4*1024)
+	headerBuf, err := headerReader.Peek()
+	if err != nil {
+		log.WithError(err).Warnf("failed to peek stream header")
+	} else {
+		compressAlgo, err = compress.GuessAlgorithm(
+			path,
+			headerBuf,
+		)
+
+		if err != nil {
+			log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
+		}
+	}
+
+	// Also log this for the default case:
+	log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
 
 	// Branch off a part of the stream and pipe it through
 	// a hash writer to compute the hash while reading the stream:
@@ -988,12 +1004,6 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	// The stream was consumed, we now know those attrs:
 	size := sizeAcc.Size()
 	contentHash := hashWriter.Finalize()
-	compressAlgo, err = compress.GuessAlgorithm(path, headerReader.Header())
-	if err != nil {
-		log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
-	}
-
-	log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
 
 	// Lock it again for the metadata staging:
 	fs.mu.Lock()
