@@ -40,7 +40,6 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	var filePerm os.FileMode = 0640
 	attr.Mode = filePerm 
 	if fi.m.options.Offline {
-		fmt.Printf("info %v\n", info)
 		isCached, err := fi.m.fs.IsCached(fi.path)
 		if err != nil || !isCached {
 			// uncached file will be shown as symlink
