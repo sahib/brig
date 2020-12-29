@@ -8,6 +8,7 @@ import (
 	"sync"
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -42,8 +43,11 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	if fi.m.options.Offline {
 		isCached, err := fi.m.fs.IsCached(fi.path)
 		if err != nil || !isCached {
-			// uncached file will be shown as symlink
-			// we cannot read them in Offline mode,
+			if err != nil {
+				log.Errorf("IsCached failed for %s with error : %v", fi.path, err)
+			}
+			// Uncached file will be shown as symlink
+			// We cannot read them in Offline mode,
 			// but we can delete such link and overwrite its content
 			attr.Mode = os.ModeSymlink | filePerm
 		}
