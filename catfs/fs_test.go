@@ -185,7 +185,7 @@ func TestCat(t *testing.T) {
 	})
 }
 
-func TestStage(t *testing.T) {
+func TestStageBasic(t *testing.T) {
 	t.Parallel()
 
 	tcs := [][]byte{
@@ -207,7 +207,8 @@ func TestStage(t *testing.T) {
 				data, err := ioutil.ReadAll(stream)
 				require.Nil(t, err)
 
-				require.Equal(t, data, tc)
+				require.Equal(t, len(tc), len(data))
+				require.Equal(t, tc, data)
 				require.Nil(t, stream.Close())
 
 				file, err := fs.lkr.LookupFile("/x")

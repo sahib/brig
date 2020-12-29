@@ -187,6 +187,16 @@ func TestLimitWriterSimple(t *testing.T) {
 	}
 }
 
+func makePrefixReader(data []byte, rs io.ReadSeeker) *seekablePrefixReader {
+	return &seekablePrefixReader{
+		prefixReader: prefixReader{
+			data: data,
+			r:    rs,
+		},
+		s: rs,
+	}
+}
+
 func TestPrefixReader(t *testing.T) {
 	a := []byte{1, 2, 3}
 	b := []byte{4, 5, 6}

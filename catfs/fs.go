@@ -361,7 +361,7 @@ func (fs *FS) gcLoop() {
 				fs.doGcRun()
 			} else {
 				// Quit the gc loop:
-				log.Debugf("Quitting the GC loop")
+				log.Debugf("quitting the GC loop")
 				return
 			}
 		case <-gcTicker.C:
@@ -962,7 +962,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 
 	// Keep the header of the file in memory, so we can do some guessing
 	// of e.g. the compression algorithm we should use.
-	headerReader := util.NewHeaderReader(r, 4*1024)
+	headerReader := util.NewHeaderReader(r, 4096)
 	headerBuf, err := headerReader.Peek()
 	if err != nil {
 		log.WithError(err).Warnf("failed to peek stream header")
