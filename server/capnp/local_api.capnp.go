@@ -3,8 +3,8 @@
 package capnp
 
 import (
-	context "context"
 	capnp2 "github.com/sahib/brig/gateway/db/capnp"
+	context "golang.org/x/net/context"
 	math "math"
 	capnp "zombiezen.com/go/capnproto2"
 	text "zombiezen.com/go/capnproto2/encoding/text"

@@ -283,7 +283,7 @@ func TestReadFuseLike(t *testing.T) {
 				}
 
 				// check that n returns something that makes sense:
-				require.Equal(t, n, util.Min(bufSize, len(data)-int(offset)))
+				require.Equal(t, util.Min(bufSize, len(data)-int(offset)), n)
 				require.Equal(t, data[offset:offset+int64(n)], buf[:n])
 
 				offset += int64(n)

@@ -151,7 +151,7 @@ func readHeader(bheader []byte) (*header, error) {
 }
 
 // Pack compresses `data` with `algo` and returns the resulting data.
-// This is a convinience method meant to be used for small data packages.
+// This is a convenience method meant to be used for small data packages.
 func Pack(data []byte, algo AlgorithmType) ([]byte, error) {
 	zipBuf := &bytes.Buffer{}
 	zipW, err := NewWriter(zipBuf, algo)

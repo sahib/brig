@@ -142,15 +142,15 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 	}
 
 	for {
-		nread, rerr := r.Read(buf)
-		if rerr != nil && rerr != io.EOF {
+		nread, rerr := io.ReadFull(r, buf)
+		if rerr != nil && rerr != io.EOF && rerr != io.ErrUnexpectedEOF {
 			return n, rerr
 		}
 
 		n += int64(nread)
 
 		// Sanity check: check if previous block was properly aligned:
-		if nprev >= 0 && int64(nprev) != w.maxBlockSize && rerr != io.EOF {
+		if nprev >= 0 && int64(nprev) != w.maxBlockSize && rerr != io.EOF && rerr != io.ErrUnexpectedEOF {
 			return n, ErrBadBlockSize
 		}
 
@@ -165,7 +165,7 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 
 		nprev = nread
 
-		if rerr == io.EOF {
+		if rerr == io.EOF || rerr == io.ErrUnexpectedEOF {
 			break
 		}
 	}

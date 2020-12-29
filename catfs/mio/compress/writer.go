@@ -2,6 +2,7 @@ package compress
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/sahib/brig/util"
@@ -60,9 +61,7 @@ func (w *Writer) flushBuffer(data []byte) error {
 		return err
 	}
 
-	// Update offset for the current chunk. The compressed data
-	// offset is updated in background using a SizeAccumulator
-	// in combination with a MultiWriter.
+	// Update offset for the current chunk.
 	w.rawOff += int64(len(data))
 	w.zipOff += int64(n)
 	return nil
@@ -84,17 +83,21 @@ func (w *Writer) writeHeaderIfNeeded() error {
 
 // ReadFrom implements io.ReaderFrom
 func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
+	fmt.Println("READ ME")
 	read := 0
-	buf := [maxChunkSize]byte{}
+
+	buf := make([]byte, maxChunkSize)
 
 	if err := w.writeHeaderIfNeeded(); err != nil {
 		return 0, err
 	}
 
 	for {
-		n, rerr := r.Read(buf[:])
+		// Only last block may be < maxChunkSize.
+		// So we need to make sure to fill the buffer as best we can.
+		n, rerr := io.ReadFull(r, buf)
 		read += n
-		if rerr != nil && rerr != io.EOF {
+		if rerr != nil && rerr != io.ErrUnexpectedEOF && rerr != io.EOF {
 			return int64(read), rerr
 		}
 
@@ -102,7 +105,8 @@ func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 		if werr != nil && werr != io.EOF {
 			return int64(read), werr
 		}
-		if werr == io.EOF || rerr == io.EOF {
+
+		if werr == io.EOF || rerr == io.EOF || rerr == io.ErrUnexpectedEOF {
 			return int64(read), nil
 		}
 	}
