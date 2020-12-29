@@ -3,10 +3,10 @@
 package fuse
 
 import (
+	"context"
 	"errors"
 	"os"
 	"sync"
-	"context"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -15,6 +15,8 @@ import (
 var (
 	// ErrNotCached is returned in offline mode when we don't have a file
 	ErrNotCached = errors.New("content is not cached and may not download")
+
+	// ErrTooManyWriters is returned when there are too many writers open
 	ErrTooManyWriters = errors.New("too many writers for the file")
 )
 
