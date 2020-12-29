@@ -16,8 +16,6 @@ require (
 	github.com/dgraph-io/badger v1.6.2
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/dvyukov/go-fuzz v0.0.0-20200318091601-be3528f3a813 // indirect
-	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/fatih/color v1.10.0
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.2
@@ -45,11 +43,9 @@ require (
 	github.com/sahib/go-ipfs-api v1.4.1
 	github.com/sdemontfort/go-mimemagic v0.0.0-20150708072242-d026a5785116
 	github.com/sirupsen/logrus v1.7.0
-	github.com/stephens2424/writerset v1.0.2 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/tinylib/msgp v1.1.5 // indirect
 	github.com/toqueteos/webbrowser v1.2.0
-	github.com/tv42/httpunix v0.0.0-20191220191345-2ba4b9c3382c // indirect
 	github.com/ulule/limiter v2.2.2+incompatible
 	github.com/urfave/cli v1.22.5
 	github.com/vbauerster/mpb v3.4.0+incompatible
