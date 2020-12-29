@@ -5,7 +5,7 @@ package fuse
 import (
 	"errors"
 	"os"
-
+	"sync"
 	"context"
 
 	"bazil.org/fuse"
@@ -15,10 +15,12 @@ import (
 var (
 	// ErrNotCached is returned in offline mode when we don't have a file
 	ErrNotCached = errors.New("content is not cached and may not download")
+	ErrTooManyWriters = errors.New("too many writers for the file")
 )
 
 // File is a file inside a directory.
 type File struct {
+	mu   sync.Mutex // used during handle creation
 	path string
 	m    *Mount
 	hd   *Handle
@@ -81,11 +83,13 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		return nil, errorize("file-open", err)
 	}
 
+	fi.mu.Lock()
 	if fi.hd == nil {
 		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1}
 		fi.hd = &hd
 	}
 	fi.hd.fd = fd
+	fi.mu.Unlock()
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		// and no need to set handle `data`
@@ -93,11 +97,16 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 	}
 
 	// for writers we need to copy file data to the handle `data`
+	fi.hd.mu.Lock()
+	defer fi.hd.mu.Unlock()
 	if fi.hd.writers == 0 {
 		err = fi.hd.loadData(fi.path)
 		if err != nil {
 			return nil, errorize("file-open-loadData", err)
 		}
+	}
+	if fi.hd.writers == (^uint(0)) { // checks against writers overflow
+		return nil, errorize(fi.path, ErrTooManyWriters)
 	}
 	fi.hd.writers++
 	return fi.hd, nil
