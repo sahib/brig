@@ -188,16 +188,20 @@ func TestCat(t *testing.T) {
 func TestStageBasic(t *testing.T) {
 	t.Parallel()
 
-	tcs := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		testutil.CreateDummyBuf(8 * 1024),
+	log.SetLevel(log.DebugLevel)
+	tcs := []int64{
+		0,
+		1,
+		3,
+		8 * 1024,
+		64*1024 + 1,
+		4 * 1024 * 1024,
 	}
 
-	for idx, tc := range tcs {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+	for _, size := range tcs {
+		t.Run(fmt.Sprintf("size-%d", size), func(t *testing.T) {
 			withDummyFS(t, func(fs *FS) {
+				tc := testutil.CreateDummyBuf(size)
 				buf := chunkbuf.NewChunkBuffer(tc)
 				require.Nil(t, fs.Stage("/x", buf))
 

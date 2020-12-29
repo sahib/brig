@@ -2,7 +2,6 @@ package compress
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/sahib/brig/util"
@@ -83,9 +82,7 @@ func (w *Writer) writeHeaderIfNeeded() error {
 
 // ReadFrom implements io.ReaderFrom
 func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
-	fmt.Println("READ ME")
 	read := 0
-
 	buf := make([]byte, maxChunkSize)
 
 	if err := w.writeHeaderIfNeeded(); err != nil {

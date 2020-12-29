@@ -174,6 +174,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 		if prevRecord.zipOff >= currRecord.zipOff {
 			return ErrBadIndex
 		}
+
 		r.index = append(r.index, currRecord)
 		indexBuf = indexBuf[indexChunkSize:]
 	}
@@ -231,7 +232,11 @@ func (r *Reader) Read(p []byte) (int, error) {
 	for {
 		if r.chunkBuf.Len() != 0 {
 			n, err := r.chunkBuf.Read(p)
-			if err != nil {
+
+			// NOTE: Read() might return io.EOF to indicate that the
+			//       chunk is exhausted. We should look at the next chunk
+			//       (readZipChunk will figure out if there are any)
+			if err != nil && err != io.EOF {
 				return n, err
 			}
 

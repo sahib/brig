@@ -955,35 +955,36 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		fs.cfg.String("compress.default_algo"),
 	)
 
+	// We might not be able to read the header for some reason.
+	// It's not critical currently, so fall back to the normal reader.
+	baseReader := r
+
 	if err != nil {
 		log.WithError(err).Warnf("failed to read default compression, using default")
 		compressAlgo = compress.AlgoNone
-	}
-
-	// Keep the header of the file in memory, so we can do some guessing
-	// of e.g. the compression algorithm we should use.
-	headerReader := util.NewHeaderReader(r, 4096)
-	headerBuf, err := headerReader.Peek()
-	if err != nil {
-		log.WithError(err).Warnf("failed to peek stream header")
 	} else {
-		compressAlgo, err = compress.GuessAlgorithm(
-			path,
-			headerBuf,
-		)
-
+		// Keep the header of the file in memory, so we can do some guessing
+		// of e.g. the compression algorithm we should use.
+		headerReader := util.NewHeaderReader(r, 2048)
+		headerBuf, err := headerReader.Peek()
 		if err != nil {
-			log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
-		}
-	}
+			log.WithError(err).Warnf("failed to peek stream header")
+		} else {
+			compressAlgo, err = compress.GuessAlgorithm(path, headerBuf)
+			if err != nil {
+				log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
+			}
 
-	// Also log this for the default case:
-	log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
+			baseReader = headerReader
+		}
+
+		log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
+	}
 
 	// Branch off a part of the stream and pipe it through
 	// a hash writer to compute the hash while reading the stream:
 	hashWriter := h.NewHashWriter()
-	hashReader := io.TeeReader(headerReader, hashWriter)
+	hashReader := io.TeeReader(baseReader, hashWriter)
 
 	// Do the same with the size.
 	// This actually measures the size of the stream and is
