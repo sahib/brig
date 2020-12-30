@@ -14,9 +14,8 @@ import (
 
 var (
 	// ErrNotCached is returned in offline mode when we don't have a file
-	ErrNotCached = errors.New("content is not cached and may not download")
-
-	// ErrTooManyWriters is returned when there are too many writers open
+	ErrNotCached = errors.New("content is not cached and need to be downloaded")
+  
 	ErrTooManyWriters = errors.New("too many writers for the file")
 )
 
@@ -38,7 +37,20 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	}
 	debugLog("exec file attr: %v", fi.path)
 
-	attr.Mode = 0755
+	var filePerm os.FileMode = 0640
+	attr.Mode = filePerm 
+	if fi.m.options.Offline {
+		isCached, err := fi.m.fs.IsCached(fi.path)
+		if err != nil || !isCached {
+			if err != nil {
+				log.Errorf("IsCached failed for %s with error : %v", fi.path, err)
+			}
+			// Uncached file will be shown as symlink
+			// We cannot read them in Offline mode,
+			// but we can delete such link and overwrite its content
+			attr.Mode = os.ModeSymlink | filePerm
+		}
+	}
 	if fi.hd != nil && fi.hd.writers > 0 {
 		attr.Size = uint64(len(fi.hd.data))
 	} else {
@@ -170,6 +182,16 @@ func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 	return nil
 }
 
+// Readlink reads a symbolic link.
+// This call is triggered when OS tries to see where symlink points
+func (fi *File) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
+	info, err := fi.m.fs.Stat(fi.path)
+	if err != nil {
+		return "/brig/backend/ipfs/", err
+	}
+	return fmt.Sprintf("/brig/backend/ipfs/%s", info.BackendHash), nil
+}
+
 // Compile time checks to see which interfaces we implement:
 // Please update this list when modifying code here.
 var _ = fs.Node(&File{})
@@ -178,6 +200,7 @@ var _ = fs.NodeGetxattrer(&File{})
 var _ = fs.NodeListxattrer(&File{})
 var _ = fs.NodeOpener(&File{})
 var _ = fs.NodeSetattrer(&File{})
+var _ = fs.NodeReadlinker(&File{})
 
 // Other interfaces are available, but currently not needed or make sense:
 // var _ = fs.NodeRenamer(&File{})
