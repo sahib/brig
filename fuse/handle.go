@@ -175,6 +175,11 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 		return nil
 	}
 
+	err := hd.flush()
+	if err != nil {
+		return errorize("handle-release", err)
+	}
+
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
 
