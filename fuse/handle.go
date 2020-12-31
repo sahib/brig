@@ -175,6 +175,11 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 		return nil
 	}
 
+	err := hd.flush()
+	if err != nil {
+		return errorize("handle-release", err)
+	}
+
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
 
@@ -205,8 +210,43 @@ func (hd *Handle) truncate(size uint64) error {
 	return nil
 }
 
+// Checks is the handle ready for I/O or not
+func (hd *Handle) Poll(ctx context.Context, req *fuse.PollRequest, resp *fuse.PollResponse) error {
+	// Comment taken verbatim from fs/serve.go of bazil.org/fuse:
+	// Poll checks whether the handle is currently ready for I/O, and
+	// may request a wakeup when it is.
+	//
+	// Poll should always return quickly. Clients waiting for
+	// readiness can be woken up by passing the return value of
+	// PollRequest.Wakeup to fs.Server.NotifyPollWakeup or
+	// fuse.Conn.NotifyPollWakeup.
+	//
+	// To allow supporting poll for only some of your Nodes/Handles,
+	// the default behavior is to report immediate readiness. If your
+	// FS does not support polling and you want to minimize needless
+	// requests and log noise, implement NodePoller and return
+	// syscall.ENOSYS.
+	//
+	// The Go runtime uses epoll-based I/O whenever possible, even for
+	// regular files.
+
+	// Here we implement a dummy response which reports "I am ready".
+	// The access separation is handled by mutex, so go-rutines
+	// will have to be blocked but its ok. We do not expect many
+	// processes working with the same file
+
+	// default always ready mask
+	resp.REvents = fuse.DefaultPollMask
+
+	// We also return ENOSYS error, which sort of invalidate our response,
+	// the ENOSYS indicates that this call is not supported
+	return syscall.ENOSYS
+}
+
+
 // Compiler checks to see if we got all the interfaces right:
 var _ = fs.HandleFlusher(&Handle{})
 var _ = fs.HandleReader(&Handle{})
 var _ = fs.HandleReleaser(&Handle{})
 var _ = fs.HandleWriter(&Handle{})
+var _ = fs.HandlePoller(&Handle{})
