@@ -970,13 +970,13 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		if err != nil {
 			log.WithError(err).Warnf("failed to peek stream header")
 			return err
-		} else {
-			compressAlgo, err = compress.GuessAlgorithm(path, headerBuf)
-			if err != nil {
-				log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
-			}
+		}
 
-			baseReader = headerReader
+		baseReader = headerReader
+
+		compressAlgo, err = compress.GuessAlgorithm(path, headerBuf)
+		if err != nil {
+			log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
 		}
 
 		log.Debugf("Using '%s' compression for file %s", compressAlgo, path)

@@ -6,11 +6,11 @@ import (
 	"context"
 	"encoding/json"
 
+	shell "github.com/ipfs/go-ipfs-api"
 	ipfsutil "github.com/ipfs/go-ipfs-util"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sahib/brig/net/peer"
 	h "github.com/sahib/brig/util/hashlib"
-	shell "github.com/ipfs/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -5,17 +5,20 @@ package fuse
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
 	// ErrNotCached is returned in offline mode when we don't have a file
 	ErrNotCached = errors.New("content is not cached and need to be downloaded")
-  
+
+	// ErrTooManyWriters will happen when too many writers are used
 	ErrTooManyWriters = errors.New("too many writers for the file")
 )
 
@@ -38,7 +41,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	debugLog("exec file attr: %v", fi.path)
 
 	var filePerm os.FileMode = 0640
-	attr.Mode = filePerm 
+	attr.Mode = filePerm
 	if fi.m.options.Offline {
 		isCached, err := fi.m.fs.IsCached(fi.path)
 		if err != nil || !isCached {
