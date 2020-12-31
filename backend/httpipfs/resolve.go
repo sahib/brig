@@ -10,7 +10,7 @@ import (
 	mh "github.com/multiformats/go-multihash"
 	"github.com/sahib/brig/net/peer"
 	h "github.com/sahib/brig/util/hashlib"
-	shell "github.com/sahib/go-ipfs-api"
+	shell "github.com/ipfs/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 

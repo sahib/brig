@@ -948,16 +948,16 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return ErrReadOnly
 	}
 
+	// We might not be able to read the header for some reason.
+	// It's not critical currently, so fall back to the normal reader.
+	baseReader := r
+
 	// NOTE: fs.mu is not locked here since I/O can be done in parallel.
 	//       If you need locking, you can do it at the bottom of this method.
 
 	compressAlgo, err := compress.AlgoFromString(
 		fs.cfg.String("compress.default_algo"),
 	)
-
-	// We might not be able to read the header for some reason.
-	// It's not critical currently, so fall back to the normal reader.
-	baseReader := r
 
 	if err != nil {
 		log.WithError(err).Warnf("failed to read default compression, using default")
@@ -969,6 +969,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		headerBuf, err := headerReader.Peek()
 		if err != nil {
 			log.WithError(err).Warnf("failed to peek stream header")
+			return err
 		} else {
 			compressAlgo, err = compress.GuessAlgorithm(path, headerBuf)
 			if err != nil {
@@ -993,6 +994,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	sizeReader := io.TeeReader(hashReader, sizeAcc)
 
 	stream, err := mio.NewInStream(sizeReader, key, compressAlgo)
+
 	if err != nil {
 		return err
 	}

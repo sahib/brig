@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"sort"
 
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
@@ -177,6 +178,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 
 		r.index = append(r.index, currRecord)
 		indexBuf = indexBuf[indexChunkSize:]
+		log.Printf("RECORD: %v", currRecord)
 	}
 
 	// Set Reader to beginning of file

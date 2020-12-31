@@ -22,7 +22,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/util"
-	shell "github.com/sahib/go-ipfs-api"
+	shell "github.com/ipfs/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 

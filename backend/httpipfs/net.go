@@ -15,7 +15,7 @@ import (
 
 	netBackend "github.com/sahib/brig/net/backend"
 	"github.com/sahib/brig/util"
-	shell "github.com/sahib/go-ipfs-api"
+	shell "github.com/ipfs/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 

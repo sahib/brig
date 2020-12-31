@@ -513,6 +513,18 @@ func RunCmdline(args []string) int {
 					Name:    "pprof-port",
 					Aliases: []string{"p"},
 					Action:  withDaemon(handleDebugPprofPort, true),
+				}, {
+					Name:    "decode-stream",
+					Aliases: []string{"ds"},
+					Action:  handleDebugDecodeStream,
+				}, {
+					Name:    "encode-stream",
+					Aliases: []string{"es"},
+					Action:  handleDebugEncodeStream,
+				}, {
+					Name:    "ipfs-stream-bug",
+					Aliases: []string{"isb"},
+					Action:  handleDebugIpfsStream,
 				},
 			},
 		}, {

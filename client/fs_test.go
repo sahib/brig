@@ -13,6 +13,7 @@ import (
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
 	colorLog "github.com/sahib/brig/util/log"
+	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -101,8 +102,9 @@ func TestStageAndCat(t *testing.T) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
+		expected := testutil.CreateDummyBuf(2 * 1024 * 1024)
 		require.Nil(t, err, stringify(err))
-		_, err = fd.Write([]byte("hello"))
+		_, err = fd.Write(expected)
 		require.Nil(t, err, stringify(err))
 		require.Nil(t, fd.Close())
 
@@ -113,7 +115,7 @@ func TestStageAndCat(t *testing.T) {
 		data, err := ioutil.ReadAll(rw)
 		require.Nil(t, err, stringify(err))
 
-		require.Equal(t, []byte("hello"), data)
+		require.Equal(t, expected, data)
 		require.Nil(t, rw.Close())
 	})
 }
