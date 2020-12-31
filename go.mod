@@ -3,7 +3,7 @@ module github.com/sahib/brig
 go 1.15
 
 require (
-	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
+	bazil.org/fuse v0.0.0-20200524192727-fb710f7dfd05
 	github.com/AndreasBriese/bbloom v0.0.0-20180913140656-343706a395b7 // indirect
 	github.com/NYTimes/gziphandler v1.1.0
 	github.com/VividCortex/ewma v1.1.1 // indirect
