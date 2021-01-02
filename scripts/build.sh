@@ -18,8 +18,6 @@ PATCH=3
 BINARY_PATH="${BRIG_BINARY_PATH:-${GOBIN:-${GOPATH:-${HOME:-.}/go}/bin}}"
 mkdir -p "${BINARY_PATH}"
 
-echo ".brig. is here: ${BINARY_PATH}"
-
 go build \
   -ldflags " \
     -X ${VERSION_PACKAGE}.Major=${MAJOR} \

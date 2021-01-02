@@ -8,6 +8,7 @@ import (
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 	h "github.com/sahib/brig/util/hashlib"
+	"github.com/sahib/brig/util/testutil"
 )
 
 // ErrNoSuchHash should be returned whenever the backend is unable
@@ -73,7 +74,20 @@ func (mb *MemFsBackend) Cat(hash h.Hash) (mio.Stream, error) {
 		return nil, ErrNoSuchHash{hash}
 	}
 
-	return chunkbuf.NewChunkBuffer(data), nil
+	chunkBuf := chunkbuf.NewChunkBuffer(data)
+	randRead := testutil.RandomizeReads(chunkBuf, 512, true)
+
+	return struct {
+		io.Reader
+		io.Seeker
+		io.Closer
+		io.WriterTo
+	}{
+		Reader:   randRead,
+		Seeker:   chunkBuf,
+		WriterTo: chunkBuf,
+		Closer:   ioutil.NopCloser(chunkBuf),
+	}, nil
 }
 
 // Add implements FsBackend.Add by storing the data in memory.

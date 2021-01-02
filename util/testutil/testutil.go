@@ -177,3 +177,40 @@ func (tw *TenWriter) Write(buf []byte) (int, error) {
 
 	return len(buf), nil
 }
+
+////////////////
+
+type rr struct {
+	r          io.Reader
+	maxBufSize int
+	randomize  bool
+	rng        *rand.Rand
+}
+
+func (rr *rr) Read(buf []byte) (int, error) {
+	if len(buf) > rr.maxBufSize {
+		buf = buf[:rr.maxBufSize]
+	}
+
+	if rr.randomize {
+		randomLen := rr.rng.Int() % (rr.maxBufSize + 1)
+		if len(buf) > randomLen {
+			buf = buf[:randomLen]
+		}
+	}
+
+	return rr.r.Read(buf)
+}
+
+// RandomizeReads returns `r` modified, so that calls to Read()
+// will return at most maxBufSize, no matter how big the buffer is.
+// If `randomize` is true, the max bytes read are varied additional
+// in the range [0, maxBufSize]
+func RandomizeReads(r io.Reader, maxBufSize int, randomize bool) io.Reader {
+	return &rr{
+		r:          r,
+		maxBufSize: maxBufSize,
+		randomize:  randomize,
+		rng:        rand.New(rand.NewSource(0xdeadbeef)),
+	}
+}
