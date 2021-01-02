@@ -16,7 +16,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mr-tron/base58"
 	e "github.com/pkg/errors"
-	"github.com/sahib/brig/backend/httpipfs"
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/client"
@@ -26,7 +25,6 @@ import (
 	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
-	"github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/version"
 	log "github.com/sirupsen/logrus"
@@ -1156,37 +1154,5 @@ func handleDebugEncodeStream(ctx *cli.Context) error {
 	}
 
 	_, err = io.Copy(os.Stdout, r)
-	return err
-}
-
-func handleDebugIpfsStream(ctx *cli.Context) error {
-	key, err := readDebugKey(ctx)
-	if err != nil {
-		return err
-	}
-
-	h, err := hashlib.FromB58String(ctx.String("hash"))
-	if err != nil {
-		return err
-	}
-
-	nd, err := httpipfs.NewNode("/tmp/ali-ipfs", "")
-	if err != nil {
-		return err
-	}
-
-	defer nd.Close()
-
-	ipfsStream, err := nd.Cat(h)
-	if err != nil {
-		return err
-	}
-
-	stream, err := mio.NewOutStream(ipfsStream, key)
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(os.Stdout, stream)
 	return err
 }

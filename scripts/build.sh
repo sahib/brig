@@ -15,8 +15,10 @@ MINOR=5
 PATCH=3
 
 # Find out where to put the binary.
-BINARY_PATH="${GOBIN:-${GOPATH:-${HOME:-.}/go}/bin}"
+BINARY_PATH="${BRIG_BINARY_PATH:-${GOBIN:-${GOPATH:-${HOME:-.}/go}/bin}}"
 mkdir -p "${BINARY_PATH}"
+
+echo ".brig. is here: ${BINARY_PATH}"
 
 go build \
   -ldflags " \

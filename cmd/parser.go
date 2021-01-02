@@ -521,10 +521,6 @@ func RunCmdline(args []string) int {
 					Name:    "encode-stream",
 					Aliases: []string{"es"},
 					Action:  handleDebugEncodeStream,
-				}, {
-					Name:    "ipfs-stream-bug",
-					Aliases: []string{"isb"},
-					Action:  handleDebugIpfsStream,
 				},
 			},
 		}, {

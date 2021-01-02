@@ -135,3 +135,45 @@ func RandomLocalListener() (net.Listener, error) {
 
 	return nil, fmt.Errorf("too many retries")
 }
+
+// TenReader is an io.Reader that produces the sequence [0-9] over and over.
+type TenReader struct {
+	idx int64
+}
+
+func (tr *TenReader) Read(buf []byte) (int, error) {
+	for bufIdx := range buf {
+		buf[bufIdx] = byte(tr.idx%10) + '0'
+		tr.idx++
+	}
+
+	return len(buf), nil
+}
+
+////////////////
+
+// TenWriter is similar to ioutil.Discard,
+// but checks that the incoming is the repeating sequence [0-9]
+//
+// Meant to be used as assert in conjunction with TenReader.
+type TenWriter struct {
+	idx int64
+}
+
+func (tw *TenWriter) Write(buf []byte) (int, error) {
+	for bufIdx := range buf {
+		expected := byte(tw.idx%10) + '0'
+		if got := buf[bufIdx]; got != expected {
+			return bufIdx, fmt.Errorf(
+				"ten-writer error at index %d: want '%c', got: '%c'",
+				tw.idx,
+				expected,
+				got,
+			)
+		}
+
+		tw.idx++
+	}
+
+	return len(buf), nil
+}

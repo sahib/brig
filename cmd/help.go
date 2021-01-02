@@ -1364,23 +1364,6 @@ EXAMPLES:
 			},
 		},
 	},
-	"debug.ipfs-stream-bug": {
-		Usage: "...",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "key",
-				Usage:    "What key to use for encryption (base58 encoded)",
-				Value:    "",
-				Required: true,
-			},
-			cli.StringFlag{
-				Name:     "hash",
-				Usage:    "",
-				Value:    "",
-				Required: true,
-			},
-		},
-	},
 	"debug.encode-stream": {
 		Usage: "Encode a brig stream",
 		Flags: []cli.Flag{

@@ -13,7 +13,6 @@ capnp_paths+=("events/capnp/events_api.capnp")
 capnp_paths+=("gateway/db/capnp/user.capnp")
 
 go mod download
-go list -f '{{ .Dir }}' zombiezen.com/go/capnproto2
 
 INCLUDE_PATH="$(go list -f '{{ .Dir }}' zombiezen.com/go/capnproto2)"
 
