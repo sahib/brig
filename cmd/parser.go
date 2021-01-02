@@ -521,6 +521,14 @@ func RunCmdline(args []string) int {
 					Name:    "encode-stream",
 					Aliases: []string{"es"},
 					Action:  handleDebugEncodeStream,
+				}, {
+					Name:    "ten-source",
+					Aliases: []string{"tso"},
+					Action:  handleDebugTenSource,
+				}, {
+					Name:    "ten-sink",
+					Aliases: []string{"tsi"},
+					Action:  handleDebugTenSink,
 				},
 			},
 		}, {

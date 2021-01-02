@@ -1374,6 +1374,26 @@ EXAMPLES:
 			},
 		},
 	},
+	"debug.ten-source": {
+		Usage: "Produce a stream of the numbers 0 to 9, repeating always",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "size,s",
+				Usage: "How big the stream should be (can be given like to dd)",
+				Value: "256M",
+			},
+		},
+	},
+	"debug.ten-sink": {
+		Usage: "Check if the stream received over stdin is what ten-source produced",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "size,s",
+				Usage: "How big the stream is supposed to be (can be given like to dd)",
+				Value: "256M",
+			},
+		},
+	},
 	"debug.pprof-port": {
 		Usage: "Print the pprof port of the daemon.",
 		Description: `
