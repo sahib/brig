@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"sort"
 
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
@@ -117,7 +116,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 
 	// Attempt to read the front header:
 	headerBuf := [headerSize]byte{}
-	if _, err := r.rawR.Read(headerBuf[:]); err != nil {
+	if _, err := io.ReadFull(r.rawR, headerBuf[:]); err != nil {
 		return err
 	}
 
@@ -132,7 +131,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 	}
 
 	buf := [trailerSize]byte{}
-	n, err := r.rawR.Read(buf[:])
+	n, err := io.ReadFull(r.rawR, buf[:])
 	if err != nil {
 		return err
 	}
@@ -157,7 +156,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 	}
 
 	indexBuf := make([]byte, r.trailer.indexSize)
-	if _, err := r.rawR.Read(indexBuf); err != nil {
+	if _, err := io.ReadFull(r.rawR, indexBuf); err != nil {
 		return err
 	}
 
@@ -178,11 +177,11 @@ func (r *Reader) parseTrailerIfNeeded() error {
 
 		r.index = append(r.index, currRecord)
 		indexBuf = indexBuf[indexChunkSize:]
-		log.Printf("RECORD: %v", currRecord)
 	}
 
 	// Set Reader to beginning of file
 	if _, err := r.rawR.Seek(headerSize, io.SeekStart); err != nil {
+
 		return err
 	}
 
