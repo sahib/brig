@@ -3,7 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -103,8 +103,9 @@ func TestStageAndCat(t *testing.T) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
+		expected := testutil.CreateDummyBuf(2 * 1024 * 1024)
 		require.Nil(t, err, stringify(err))
-		_, err = fd.Write([]byte("hello"))
+		_, err = fd.Write(expected)
 		require.Nil(t, err, stringify(err))
 		require.Nil(t, fd.Close())
 
@@ -115,16 +116,26 @@ func TestStageAndCat(t *testing.T) {
 		data, err := ioutil.ReadAll(rw)
 		require.Nil(t, err, stringify(err))
 
-		require.Equal(t, []byte("hello"), data)
+		require.Equal(t, expected, data)
 		require.Nil(t, rw.Close())
 	})
 }
 
 func TestStageAndCatStream(t *testing.T) {
 	withDaemon(t, "ali", func(ctl *Client) {
-		r := bytes.NewReader(testutil.CreateDummyBuf(4 * 1024 * 1024))
-		// r := io.LimitReader(testutil.TenReader{}, 4 * 1024 * 1024)
-		fmt.Println(ctl.StageFromReader("/blah", r))
+		const fileSize = 128 * 1024 * 1024
+		r := io.LimitReader(&testutil.TenReader{}, fileSize)
+		err := ctl.StageFromReader("/hello", r)
+		require.NoError(t, err)
+
+		// time.Sleep(time.Second)
+		rw, err := ctl.Cat("/hello", false)
+		require.NoError(t, err)
+
+		n, err := io.Copy(&testutil.TenWriter{}, rw)
+		require.NoError(t, err)
+		require.Equal(t, int64(fileSize), n)
+		require.NoError(t, rw.Close())
 	})
 }
 

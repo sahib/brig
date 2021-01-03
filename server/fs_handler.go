@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
@@ -138,39 +139,64 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	})
 }
 
+///////////////
+
 type streamServer struct {
-	err error
-	pw  *io.PipeWriter
+	err     *error
+	errCond *sync.Cond
+	pr      *io.PipeReader
+	pw      *io.PipeWriter
+}
+
+func (ss *streamServer) doStage(base *base, repoPath string) {
+	err := base.withFsFromPath(repoPath, func(url *URL, fs *catfs.FS) error {
+		if err := fs.Stage(url.Path, ss.pr); err != nil {
+			return err
+		}
+
+		base.notifyFsChangeEvent()
+		return nil
+	})
+
+	ss.errCond.L.Lock()
+	defer ss.errCond.L.Unlock()
+
+	ss.err = &err
+
+	// Wake up any calls waiting in Done()
+	ss.errCond.Broadcast()
 }
 
 func newStreamServer(base *base, repoPath string) *streamServer {
 	pr, pw := io.Pipe()
 	ss := &streamServer{
-		pw: pw,
+		pr:      pr,
+		pw:      pw,
+		errCond: sync.NewCond(&sync.Mutex{}),
 	}
 
-	go func() {
-		ss.err = base.withFsFromPath(repoPath, func(url *URL, fs *catfs.FS) error {
-			fmt.Println("stage begin")
-			if err := fs.Stage(url.Path, pr); err != nil {
-				fmt.Println("stage err", err)
-				return err
-			}
-
-			base.notifyFsChangeEvent()
-			fmt.Println("stage done")
-			return nil
-		})
-	}()
-
+	// already start staging, but fill reader only
+	// chunk by chunk as they arrive:
+	go ss.doStage(base, repoPath)
 	return ss
 }
 
-func (ss *streamServer) SendChunk(call capnp.FS_StageStreamCallback_sendChunk) error {
-	// TODO: Check err, if any and return that.
-	// TODO: ss.err is probably racy.
+func (ss *streamServer) hasFinished() (bool, error) {
+	ss.errCond.L.Lock()
+	defer ss.errCond.L.Unlock()
 	if ss.err != nil {
-		return ss.err
+		return true, *ss.err
+	}
+
+	return false, nil
+}
+
+// SendChunk is called when the client sends one block of data.
+func (ss *streamServer) SendChunk(call capnp.FS_StageStream_sendChunk) error {
+	if finished, err := ss.hasFinished(); finished {
+		// return the last error if already done, err might be nil here.
+		// This is here to protect against more SendChunk() calls after Done()
+		return err
 	}
 
 	data, err := call.Params.Chunk()
@@ -178,23 +204,28 @@ func (ss *streamServer) SendChunk(call capnp.FS_StageStreamCallback_sendChunk) e
 		return err
 	}
 
-	// NOTE: This will block until pr.Read() was called.
-	fmt.Println("server: send chunk ", len(data))
-	n, err := ss.pw.Write(data)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("add", len(data), "bytes to", n)
-	return nil
+	// Send the data over the pipe to the stage reader:
+	// No actual copying done, here. This waits until the data was read.
+	_, err = ss.pw.Write(data)
+	return err
 }
 
-func (ss *streamServer) Done(call capnp.FS_StageStreamCallback_done) error {
+func (ss *streamServer) Done(call capnp.FS_StageStream_done) error {
+	// Closing the pipe writer will trigger a io.EOF in the reader part.
+	// This will make Stage() return after some post processing.
 	if err := ss.pw.Close(); err != nil {
 		return err
 	}
 
-	return ss.err
+	ss.errCond.L.Lock()
+	defer ss.errCond.L.Unlock()
+
+	// Wait until Stage() actually returned:
+	for ss.err == nil {
+		ss.errCond.Wait()
+	}
+
+	return *ss.err
 }
 
 func (fh *fsHandler) StageFromStream(call capnp.FS_stageFromStream) error {
@@ -205,13 +236,16 @@ func (fh *fsHandler) StageFromStream(call capnp.FS_stageFromStream) error {
 		return err
 	}
 
-	fmt.Println("server: stage", repoPath)
-	cb := capnp.FS_StageStreamCallback_ServerToClient(
-		newStreamServer(fh.base, repoPath),
+	// Immediately return, but tell Cap'n Proto which code
+	// to call once we receive a chunk.
+	return call.Results.SetStream(
+		capnp.FS_StageStream_ServerToClient(
+			newStreamServer(fh.base, repoPath),
+		),
 	)
-
-	return call.Results.SetCallback(cb)
 }
+
+///////////////
 
 func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	server.Ack(call.Options)

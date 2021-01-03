@@ -19,10 +19,10 @@ import (
 
 	"github.com/blang/semver"
 	humanize "github.com/dustin/go-humanize"
+	shell "github.com/ipfs/go-ipfs-api"
 	homedir "github.com/mitchellh/go-homedir"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/util"
-	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 

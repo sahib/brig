@@ -9,7 +9,7 @@ if command -v gotest > /dev/null; then
 fi
 
 if [ "$#" == 0 ]; then
-    $GOTEST -v -parallel 20 ./...
+    $GOTEST -v -parallel 20 ./... 2>&1 | tee log
 else
-    $GOTEST -v -parallel 20 "$@"
+    $GOTEST -v -parallel 20 "$@"  2>&1 | tee log
 fi

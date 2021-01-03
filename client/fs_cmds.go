@@ -142,34 +142,51 @@ func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
 
 	// NOTE: Promise pipelining happens here,
 	// cb might not have been returned yet by the server.
-	cb := call.Callback()
+	// We can still use it, since Cap'n Proto returns a promise here.
+	// First network call happens only at the first Struct() call.
+	stream := call.Stream()
 
-	buf := make([]byte, 1*1024*1024)
+	// relative large buffer to minimize Cap'n Proto overhead even further.
+	buf := make([]byte, 1024*1024)
+	chunkIdx := 0
+
 	for {
+		isEOF := false
 		n, err := io.ReadFull(r, buf)
-		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
-			return err
+		if err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				isEOF = true
+			} else {
+				return err
+			}
 		}
 
 		if n > 0 {
-			promise := cb.SendChunk(cl.ctx, func(params capnp.FS_StageStreamCallback_sendChunk_Params) error {
+			promise := stream.SendChunk(cl.ctx, func(params capnp.FS_StageStream_sendChunk_Params) error {
 				return params.SetChunk(buf[:n])
 			})
 
-			fmt.Println("client: struct", n, promise)
-			// fmt.Println(promise.Struct())
-			fmt.Println("client: struct done")
+			// Only check every few blocks if there was an error.
+			// We might be sending a bit too much, but each Struct() call
+			// causes one network round trip.
+			if chunkIdx%10 == 0 {
+				if _, err := promise.Struct(); err != nil {
+					return err
+				}
+			}
+
+			chunkIdx++
 		}
 
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			// end of buffer.
+		if isEOF {
 			break
 		}
 	}
 
-	fmt.Println("client: wait")
-	time.Sleep(5 * time.Second)
-	return nil
+	// Tell the server side that we're done sending chunks and that the data
+	// should be already staged.
+	_, err := stream.Done(cl.ctx, nil).Struct()
+	return err
 }
 
 // Cat outputs the contents of the node at `path`.

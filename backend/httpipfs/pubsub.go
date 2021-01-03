@@ -3,8 +3,8 @@ package httpipfs
 import (
 	"context"
 
+	shell "github.com/ipfs/go-ipfs-api"
 	eventsBackend "github.com/sahib/brig/events/backend"
-	shell "github.com/sahib/go-ipfs-api"
 )
 
 type subWrapper struct {
@@ -20,7 +20,7 @@ func (msg *msgWrapper) Data() []byte {
 }
 
 func (msg *msgWrapper) Source() string {
-	return msg.msg.From
+	return string(msg.msg.From)
 }
 
 func (s *subWrapper) Next(ctx context.Context) (eventsBackend.Message, error) {

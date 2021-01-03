@@ -72,7 +72,6 @@ func switchToSyslog() {
 
 	log.SetLevel(log.DebugLevel)
 	log.SetFormatter(&formatter.FancyLogFormatter{
-		// Colors will be stripped from syslog anyways:
 		UseColors: false,
 	})
 

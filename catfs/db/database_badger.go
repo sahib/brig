@@ -4,6 +4,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dgraph-io/badger"
@@ -15,6 +16,7 @@ import (
 // BadgerDatabase is a database implementation based on BadgerDB
 type BadgerDatabase struct {
 	mu         sync.Mutex
+	isStopped  int64
 	db         *badger.DB
 	txn        *badger.Txn
 	refCount   int
@@ -24,15 +26,17 @@ type BadgerDatabase struct {
 
 // NewBadgerDatabase creates a new badger database.
 func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
-	opts := badger.DefaultOptions
-	opts.Dir = path
-	opts.ValueDir = path
-	opts.TableLoadingMode, opts.ValueLogLoadingMode = options.FileIO, options.FileIO
-	opts.MaxTableSize = 1 << 20
-	opts.NumMemtables = 1
-	opts.NumLevelZeroTables = 1
-	opts.NumLevelZeroTablesStall = 2
-	opts.SyncWrites = false
+	opts := badger.DefaultOptions(path).
+		WithValueDir(path).
+		WithTableLoadingMode(options.FileIO).
+		WithValueLogLoadingMode(options.FileIO).
+		WithMaxTableSize(1 << 20).
+		WithNumMemtables(1).
+		WithNumLevelZeroTables(1).
+		WithNumLevelZeroTablesStall(2).
+		WithSyncWrites(false).
+		WithEventLogging(false).
+		WithLogger(nil)
 
 	db, err := badger.Open(opts)
 	if err != nil {
@@ -40,20 +44,27 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	}
 
 	gcTicker := time.NewTicker(5 * time.Minute)
+
+	bdb := &BadgerDatabase{
+		db:       db,
+		gcTicker: gcTicker,
+	}
+
 	go func() {
 		for range gcTicker.C {
-		again:
-			err := db.RunValueLogGC(0.5)
-			if err == nil {
-				goto again
+			if atomic.LoadInt64(&bdb.isStopped) > 0 {
+				return
+			}
+
+			if err := db.RunValueLogGC(0.5); err != nil {
+				if err != badger.ErrNoRewrite {
+					log.WithError(err).Warnf("badger gc failed")
+				}
 			}
 		}
 	}()
 
-	return &BadgerDatabase{
-		db:       db,
-		gcTicker: gcTicker,
-	}, nil
+	return bdb, nil
 }
 
 func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
@@ -145,7 +156,7 @@ func (db *BadgerDatabase) Import(r io.Reader) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	return db.db.Load(r)
+	return db.db.Load(r, 1)
 }
 
 // Glob is the badger implementation of Database.Glob
@@ -221,7 +232,7 @@ func (db *BadgerDatabase) withRetry(fn func() error) error {
 	}
 
 	// Commit previous (almost too big) transaction:
-	if err := db.txn.Commit(nil); err != nil {
+	if err := db.txn.Commit(); err != nil {
 		// Something seems pretty wrong.
 		return err
 	}
@@ -306,7 +317,7 @@ func (db *BadgerDatabase) Flush() error {
 	}
 
 	defer db.txn.Discard()
-	if err := db.txn.Commit(nil); err != nil {
+	if err := db.txn.Commit(); err != nil {
 		return err
 	}
 
@@ -350,6 +361,7 @@ func (db *BadgerDatabase) Close() error {
 	defer db.mu.Unlock()
 
 	db.gcTicker.Stop()
+	atomic.StoreInt64(&db.isStopped, 1)
 
 	// With an open transaction it would deadlock:
 	if db.txn != nil {

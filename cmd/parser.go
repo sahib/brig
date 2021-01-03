@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"strings"
 
@@ -98,6 +99,8 @@ func RunCmdline(args []string) int {
 	profFd := startCPUProfile()
 	defer stopCPUProfile(profFd)
 	defer memProfile()
+
+	debug.SetTraceback("all")
 
 	app := cli.NewApp()
 	app.Name = "brig"
@@ -510,6 +513,22 @@ func RunCmdline(args []string) int {
 					Name:    "pprof-port",
 					Aliases: []string{"p"},
 					Action:  withDaemon(handleDebugPprofPort, true),
+				}, {
+					Name:    "decode-stream",
+					Aliases: []string{"ds"},
+					Action:  handleDebugDecodeStream,
+				}, {
+					Name:    "encode-stream",
+					Aliases: []string{"es"},
+					Action:  handleDebugEncodeStream,
+				}, {
+					Name:    "ten-source",
+					Aliases: []string{"tso"},
+					Action:  handleDebugTenSource,
+				}, {
+					Name:    "ten-sink",
+					Aliases: []string{"tsi"},
+					Action:  handleDebugTenSink,
 				},
 			},
 		}, {

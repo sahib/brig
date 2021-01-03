@@ -1354,6 +1354,46 @@ EXAMPLES:
 	"debug": {
 		Usage: "Various debbugging utilities. Use with care.",
 	},
+	"debug.decode-stream": {
+		Usage: "Decode a brig stream",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "key",
+				Usage: "What key to use for encryption (base58 encoded)",
+				Value: "4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9krzUw",
+			},
+		},
+	},
+	"debug.encode-stream": {
+		Usage: "Encode a brig stream",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "key",
+				Usage: "What key to use for encryption (base58 encoded)",
+				Value: "4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9krzUw",
+			},
+		},
+	},
+	"debug.ten-source": {
+		Usage: "Produce a stream of the numbers 0 to 9, repeating always",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "size,s",
+				Usage: "How big the stream should be (can be given like to dd)",
+				Value: "256M",
+			},
+		},
+	},
+	"debug.ten-sink": {
+		Usage: "Check if the stream received over stdin is what ten-source produced",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "size,s",
+				Usage: "How big the stream is supposed to be (can be given like to dd)",
+				Value: "256M",
+			},
+		},
+	},
 	"debug.pprof-port": {
 		Usage: "Print the pprof port of the daemon.",
 		Description: `

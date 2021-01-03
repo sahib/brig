@@ -187,6 +187,16 @@ func TestLimitWriterSimple(t *testing.T) {
 	}
 }
 
+func makePrefixReader(data []byte, rs io.ReadSeeker) *seekablePrefixReader {
+	return &seekablePrefixReader{
+		prefixReader: prefixReader{
+			data: data,
+			r:    rs,
+		},
+		s: rs,
+	}
+}
+
 func TestPrefixReader(t *testing.T) {
 	a := []byte{1, 2, 3}
 	b := []byte{4, 5, 6}
@@ -264,4 +274,129 @@ func TestPrefixReaderSeekSize(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, int64(6), n)
 	require.Equal(t, []byte{1, 2, 3, 4, 5, 6}, buf.Bytes())
+}
+
+func TestHeaderReader(t *testing.T) {
+	tests := []struct {
+		// name of the test
+		name string
+
+		// size of the buffer passed to Read()
+		readBufSize int64
+
+		// size of the dummy data (i.e. file size)
+		testBufSize int64
+
+		// max size of the header
+		headBufSize int64
+	}{
+		{
+			name:        "happy-path",
+			readBufSize: 256,
+			testBufSize: 2048,
+			headBufSize: 1024,
+		}, {
+			name:        "large-read-buffer",
+			readBufSize: 4096,
+			testBufSize: 2048,
+			headBufSize: 1024,
+		}, {
+			name:        "large-head-buffer",
+			readBufSize: 512,
+			testBufSize: 2048,
+			headBufSize: 4096,
+		}, {
+			name:        "zero-head-buffer",
+			readBufSize: 512,
+			testBufSize: 2048,
+			headBufSize: 0,
+		}, {
+			name:        "odd-read-buffer",
+			readBufSize: 123,
+			testBufSize: 2048,
+			headBufSize: 1024,
+		}, {
+			name:        "odd-test-buffer",
+			readBufSize: 256,
+			testBufSize: 1234,
+			headBufSize: 1024,
+		}, {
+			name:        "odd-head-buffer",
+			readBufSize: 123,
+			testBufSize: 2048,
+			headBufSize: 1234,
+		},
+	}
+
+	for _, test := range tests {
+		for idx, suffix := range []string{"no-peek", "peek"} {
+			t.Run(test.name+"/"+suffix, func(t *testing.T) {
+				testHeaderReader(
+					t,
+					idx == 1,
+					test.readBufSize,
+					test.testBufSize,
+					test.headBufSize,
+				)
+			})
+		}
+	}
+}
+
+func testHeaderReader(t *testing.T, usePeek bool, readBufSize, testBufSize, headBufSize int64) {
+	dummy := testutil.CreateDummyBuf(testBufSize)
+	hr := NewHeaderReader(bytes.NewReader(dummy), uint64(headBufSize))
+
+	var peekedHdr []byte
+	if usePeek {
+		var err error
+		peekedHdr, err = hr.Peek()
+		require.NoError(t, err)
+	}
+
+	// Now read until io.EOF:
+	bytesLeft := testBufSize
+	dummyIter := dummy
+	buf := make([]byte, readBufSize)
+	for {
+		n, err := hr.Read(buf)
+		if err == io.EOF {
+			break
+		}
+
+		require.NoError(t, err)
+
+		expectedSize := readBufSize
+		if testBufSize < readBufSize {
+			expectedSize = testBufSize
+		}
+
+		// on odd buf numbers there might be a odd sized last read:
+		if bytesLeft < expectedSize {
+			expectedSize = bytesLeft
+		}
+
+		bytesLeft -= int64(n)
+
+		// NOTE: io.Reader does not guarantee that n == expectedSize,
+		// we might read less which is fine, then we should just repeat Read()-ing.
+		require.GreaterOrEqual(t, int(expectedSize), n, "unexpected read buffer return")
+		require.Equal(t, dummyIter[:n], buf[:n])
+		dummyIter = dummyIter[n:]
+	}
+
+	// Check that the header is really the part at the start
+	// and that it has the expected length.
+	expectedSize := headBufSize
+	if testBufSize < headBufSize {
+		expectedSize = testBufSize
+	}
+
+	hdr := hr.Header()
+	require.Len(t, hdr, int(expectedSize))
+	require.Equal(t, hdr, dummy[:expectedSize])
+
+	if usePeek {
+		require.Equal(t, hdr, peekedHdr, "Peek() differs from Head()")
+	}
 }

@@ -2,6 +2,7 @@ package encrypt
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
@@ -120,7 +121,10 @@ func TestSimpleEncDec(t *testing.T) {
 		if ExtraDebug {
 			t.Logf("Testing SimpleEncDec for size %d", size)
 		}
-		testSimpleEncDec(t, size)
+
+		t.Run(fmt.Sprintf("size-%d", size), func(t *testing.T) {
+			testSimpleEncDec(t, size)
+		})
 	}
 }
 

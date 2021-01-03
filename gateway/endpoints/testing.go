@@ -55,7 +55,12 @@ func withState(t *testing.T, fn func(state *testState)) {
 	require.Nil(t, err)
 
 	state, err := NewState(
-		fs, rapi, cfg.Section("gateway"), NewEventsHandler(rapi, nil), nil, userDb,
+		fs,
+		rapi,
+		cfg.Section("gateway"),
+		NewEventsHandler(rapi, nil),
+		nil,
+		userDb,
 	)
 
 	require.Nil(t, err)
@@ -63,8 +68,9 @@ func withState(t *testing.T, fn func(state *testState)) {
 	state.UserDatabase().Add("ali", "ila", nil, nil)
 	fn(&testState{state})
 
-	require.Nil(t, state.Close())
-	require.Nil(t, state.fs.Close())
+	require.NoError(t, state.Close())
+	require.NoError(t, state.fs.Close())
+	require.NoError(t, userDb.Close())
 }
 
 func mustEncodeBody(t *testing.T, v interface{}) io.Reader {

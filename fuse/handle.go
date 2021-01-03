@@ -210,7 +210,7 @@ func (hd *Handle) truncate(size uint64) error {
 	return nil
 }
 
-// Checks is the handle ready for I/O or not
+// Poll checks that the handle is ready for I/O or not
 func (hd *Handle) Poll(ctx context.Context, req *fuse.PollRequest, resp *fuse.PollResponse) error {
 	// Comment taken verbatim from fs/serve.go of bazil.org/fuse:
 	// Poll checks whether the handle is currently ready for I/O, and
@@ -242,7 +242,6 @@ func (hd *Handle) Poll(ctx context.Context, req *fuse.PollRequest, resp *fuse.Po
 	// the ENOSYS indicates that this call is not supported
 	return syscall.ENOSYS
 }
-
 
 // Compiler checks to see if we got all the interfaces right:
 var _ = fs.HandleFlusher(&Handle{})

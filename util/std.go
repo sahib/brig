@@ -409,7 +409,7 @@ func (lw *limitWriter) Write(buf []byte) (int, error) {
 type prefixReader struct {
 	data []byte
 	curs int64
-	r    io.ReadSeeker
+	r    io.Reader
 }
 
 func (pr *prefixReader) Read(buf []byte) (n int, err error) {
@@ -436,7 +436,12 @@ func (pr *prefixReader) Read(buf []byte) (n int, err error) {
 	return nread, err
 }
 
-func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
+type seekablePrefixReader struct {
+	prefixReader
+	s io.Seeker
+}
+
+func (pr *seekablePrefixReader) Seek(offset int64, whence int) (int64, error) {
 	// NOTE: pr.r shares the same offset space as pr does.
 	//       All this Seek() does is preventing it from jumping it into the prefix space.
 	//       It does this by calculating an absolute offset and limits the jump offset
@@ -444,7 +449,7 @@ func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
 		newOff := Max64(int64(len(pr.data)), offset)
-		if _, err := pr.r.Seek(newOff, whence); err != nil {
+		if _, err := pr.s.Seek(newOff, whence); err != nil {
 			return -1, err
 		}
 
@@ -452,20 +457,20 @@ func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
 		return pr.curs, nil
 	case io.SeekCurrent:
 		newOff := Max64(int64(len(pr.data)), pr.curs+offset)
-		if _, err := pr.r.Seek(newOff, io.SeekStart); err != nil {
+		if _, err := pr.s.Seek(newOff, io.SeekStart); err != nil {
 			return -1, err
 		}
 
 		pr.curs += offset
 		return pr.curs, nil
 	case io.SeekEnd:
-		size, err := pr.r.Seek(0, io.SeekEnd)
+		size, err := pr.s.Seek(0, io.SeekEnd)
 		if err != nil {
 			return -1, err
 		}
 
 		newOff := Max64(int64(len(pr.data)), size+offset)
-		if _, err := pr.r.Seek(newOff, io.SeekStart); err != nil {
+		if _, err := pr.s.Seek(newOff, io.SeekStart); err != nil {
 			return -1, err
 		}
 
@@ -476,22 +481,95 @@ func (pr *prefixReader) Seek(offset int64, whence int) (int64, error) {
 	}
 }
 
-func makePrefixReader(data []byte, r io.ReadSeeker) *prefixReader {
-	return &prefixReader{r: r, data: data}
-}
-
 // PeekHeader returns a new reader that will yield the very same data as `r`.
 // It reads `size` bytes from `r` and returns it. The underlying implementation
 // uses PrefixReader to prefix the stream with the header again.
-func PeekHeader(r io.ReadSeeker, size int64) ([]byte, io.ReadSeeker, error) {
+func PeekHeader(rs io.ReadSeeker, size int64) ([]byte, io.ReadSeeker, error) {
 	headerBuf := make([]byte, size)
-	n, err := r.Read(headerBuf)
+	n, err := rs.Read(headerBuf)
 	if err != nil && err != io.EOF {
 		return nil, nil, err
 	}
 
 	headerBuf = headerBuf[:n]
-	return headerBuf, &prefixReader{data: headerBuf, r: r}, nil
+	return headerBuf, &seekablePrefixReader{
+		prefixReader: prefixReader{
+			data: headerBuf,
+			r:    rs,
+		},
+		s: rs,
+	}, nil
+}
+
+// HeaderReader is an alternative to PeekHeader().
+// It requires no seeking and buffers the header while reading the stream.
+// The header will not be available when there was no Read().
+type HeaderReader struct {
+	r    io.Reader
+	size uint64
+	buf  []byte
+}
+
+// NewHeaderReader returns a new header reader.
+func NewHeaderReader(r io.Reader, size uint64) *HeaderReader {
+	return &HeaderReader{
+		r:    r,
+		size: size,
+		buf:  []byte{},
+	}
+}
+
+// Header returns the current header buffer. It's empty if no data was read
+// from the stream yet. It's size will be smaller or equal the size you passed
+// to NewHeaderReader.
+func (hr *HeaderReader) Header() []byte {
+	return hr.buf
+}
+
+// Peek reads the header of the stream and returns it.
+// It does not alter the position of the stream, Read() will still
+// return the header read by Peek().
+//
+// This will only work if no I/O was done on stream yet.
+// In this case an error is returned. You can Peek() successfully at
+// most once.
+func (hr *HeaderReader) Peek() ([]byte, error) {
+	if len(hr.buf) > 0 {
+		// The stream was already read.
+		return nil, errors.New("cannot peek, stream was read already")
+	}
+
+	buf := make([]byte, hr.size)
+	n, err := io.ReadFull(hr.r, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return nil, err
+	}
+
+	// Do not read the header anymore in Read():
+	hr.size = 0
+	hr.buf = buf[:n]
+
+	// Concatenate the memory buffer to the stream:
+	hr.r = &prefixReader{data: hr.buf, r: hr.r}
+	return hr.buf, nil
+}
+
+func (hr *HeaderReader) Read(buf []byte) (int, error) {
+	n, err := hr.r.Read(buf)
+	if diff := int64(hr.size) - int64(len(hr.buf)); n > 0 && diff > 0 {
+		if int64(n) < diff {
+			diff = int64(n)
+		}
+
+		if len(hr.buf) == 0 {
+			// only allocate header buffer when required:
+			hr.buf = make([]byte, 0, hr.size)
+		}
+
+		hr.buf = append(hr.buf, buf[:diff]...)
+	}
+
+	return n, err
 }
 
 // CopyFile simply copies the file at `src` to `dst`.

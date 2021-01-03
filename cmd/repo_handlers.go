@@ -428,6 +428,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	logToStdout := ctx.Bool("log-to-stdout")
 	if !logToStdout {
 		log.Infof("all further logs will be also piped to the syslog daemon.")
+		log.Infof("Use »journalctl -fet brig« to view logs.")
 	}
 
 	server, err := server.BootServer(brigPath, passwordFn, bindHost, port, logToStdout)
@@ -1075,20 +1076,4 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return tabW.Flush()
-}
-
-func handleDebugPprofPort(ctx *cli.Context, ctl *client.Client) error {
-	port, err := ctl.DebugProfilePort()
-	if err != nil {
-		return err
-	}
-
-	if port > 0 {
-		fmt.Println(port)
-	} else {
-		fmt.Println("Profiling is not enabled.")
-		fmt.Println("Enable daemon.enable_pprof and restart.")
-	}
-
-	return nil
 }

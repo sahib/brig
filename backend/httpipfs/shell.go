@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/patrickmn/go-cache"
 	"github.com/sahib/brig/repo/setup"
-	shell "github.com/sahib/go-ipfs-api"
 	log "github.com/sirupsen/logrus"
 )
 
