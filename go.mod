@@ -3,7 +3,7 @@ module github.com/sahib/brig
 go 1.15
 
 require (
-	bazil.org/fuse v0.0.0-20180421153158-65cc252bf669
+	bazil.org/fuse v0.0.0-20200524192727-fb710f7dfd05
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
@@ -55,7 +55,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.4

@@ -9,16 +9,17 @@ import (
 	"os"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
+
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
 	// ErrNotCached is returned in offline mode when we don't have a file
 	ErrNotCached = errors.New("content is not cached and need to be downloaded")
 
-	// ErrTooManyWriters will happen when too many writers are used
+	// ErrTooManyWriters is returned when writers counter is about to be overfilled
 	ErrTooManyWriters = errors.New("too many writers for the file")
 )
 
