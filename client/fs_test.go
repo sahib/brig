@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -13,6 +14,7 @@ import (
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
 	colorLog "github.com/sahib/brig/util/log"
+	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -115,6 +117,14 @@ func TestStageAndCat(t *testing.T) {
 
 		require.Equal(t, []byte("hello"), data)
 		require.Nil(t, rw.Close())
+	})
+}
+
+func TestStageAndCatStream(t *testing.T) {
+	withDaemon(t, "ali", func(ctl *Client) {
+		r := bytes.NewReader(testutil.CreateDummyBuf(4 * 1024 * 1024))
+		// r := io.LimitReader(testutil.TenReader{}, 4 * 1024 * 1024)
+		fmt.Println(ctl.StageFromReader("/blah", r))
 	})
 }
 

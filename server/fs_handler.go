@@ -138,6 +138,81 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	})
 }
 
+type streamServer struct {
+	err error
+	pw  *io.PipeWriter
+}
+
+func newStreamServer(base *base, repoPath string) *streamServer {
+	pr, pw := io.Pipe()
+	ss := &streamServer{
+		pw: pw,
+	}
+
+	go func() {
+		ss.err = base.withFsFromPath(repoPath, func(url *URL, fs *catfs.FS) error {
+			fmt.Println("stage begin")
+			if err := fs.Stage(url.Path, pr); err != nil {
+				fmt.Println("stage err", err)
+				return err
+			}
+
+			base.notifyFsChangeEvent()
+			fmt.Println("stage done")
+			return nil
+		})
+	}()
+
+	return ss
+}
+
+func (ss *streamServer) SendChunk(call capnp.FS_StageStreamCallback_sendChunk) error {
+	// TODO: Check err, if any and return that.
+	// TODO: ss.err is probably racy.
+	if ss.err != nil {
+		return ss.err
+	}
+
+	data, err := call.Params.Chunk()
+	if err != nil {
+		return err
+	}
+
+	// NOTE: This will block until pr.Read() was called.
+	fmt.Println("server: send chunk ", len(data))
+	n, err := ss.pw.Write(data)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("add", len(data), "bytes to", n)
+	return nil
+}
+
+func (ss *streamServer) Done(call capnp.FS_StageStreamCallback_done) error {
+	if err := ss.pw.Close(); err != nil {
+		return err
+	}
+
+	return ss.err
+}
+
+func (fh *fsHandler) StageFromStream(call capnp.FS_stageFromStream) error {
+	server.Ack(call.Options)
+
+	repoPath, err := call.Params.RepoPath()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("server: stage", repoPath)
+	cb := capnp.FS_StageStreamCallback_ServerToClient(
+		newStreamServer(fh.base, repoPath),
+	)
+
+	return call.Results.SetCallback(cb)
+}
+
 func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	server.Ack(call.Options)
 

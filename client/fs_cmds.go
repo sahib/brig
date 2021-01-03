@@ -3,9 +3,7 @@ package client
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
-	"os"
 	"time"
 
 	"github.com/sahib/brig/server/capnp"
@@ -138,23 +136,40 @@ func (cl *Client) Stage(localPath, repoPath string) error {
 
 // StageFromReader will create a new node at `repoPath` from the contents of `r`.
 func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
-	fd, err := ioutil.TempFile("", "brig-stage-temp")
-	if err != nil {
-		return err
+	call := cl.api.StageFromStream(cl.ctx, func(p capnp.FS_stageFromStream_Params) error {
+		return p.SetRepoPath(repoPath)
+	})
+
+	// NOTE: Promise pipelining happens here,
+	// cb might not have been returned yet by the server.
+	cb := call.Callback()
+
+	buf := make([]byte, 1*1024*1024)
+	for {
+		n, err := io.ReadFull(r, buf)
+		if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+			return err
+		}
+
+		if n > 0 {
+			promise := cb.SendChunk(cl.ctx, func(params capnp.FS_StageStreamCallback_sendChunk_Params) error {
+				return params.SetChunk(buf[:n])
+			})
+
+			fmt.Println("client: struct", n, promise)
+			// fmt.Println(promise.Struct())
+			fmt.Println("client: struct done")
+		}
+
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			// end of buffer.
+			break
+		}
 	}
 
-	defer os.Remove(fd.Name())
-
-	if _, err := io.Copy(fd, r); err != nil {
-		fd.Close()
-		return err
-	}
-
-	if err := fd.Close(); err != nil {
-		return err
-	}
-
-	return cl.Stage(fd.Name(), repoPath)
+	fmt.Println("client: wait")
+	time.Sleep(5 * time.Second)
+	return nil
 }
 
 // Cat outputs the contents of the node at `path`.

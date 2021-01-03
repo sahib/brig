@@ -153,6 +153,12 @@ interface FS {
     undelete          @15  (path :Text);
     repin             @16  (path :Text);
     isCached          @17  (path :Text) -> (isCached :Bool);
+    stageFromStream   @18  (repoPath :Text) -> (callback :StageStreamCallback);
+
+    interface StageStreamCallback {
+        sendChunk @0 (chunk :Data) -> ();
+        done @1 ();
+    }
 }
 
 interface VCS {
