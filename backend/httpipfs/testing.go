@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	shell "github.com/sahib/go-ipfs-api"
+	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/stretchr/testify/require"
 )
 

@@ -116,7 +116,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 
 	// Attempt to read the front header:
 	headerBuf := [headerSize]byte{}
-	if _, err := r.rawR.Read(headerBuf[:]); err != nil {
+	if _, err := io.ReadFull(r.rawR, headerBuf[:]); err != nil {
 		return err
 	}
 
@@ -131,7 +131,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 	}
 
 	buf := [trailerSize]byte{}
-	n, err := r.rawR.Read(buf[:])
+	n, err := io.ReadFull(r.rawR, buf[:])
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 	}
 
 	indexBuf := make([]byte, r.trailer.indexSize)
-	if _, err := r.rawR.Read(indexBuf); err != nil {
+	if _, err := io.ReadFull(r.rawR, indexBuf); err != nil {
 		return err
 	}
 
@@ -174,12 +174,14 @@ func (r *Reader) parseTrailerIfNeeded() error {
 		if prevRecord.zipOff >= currRecord.zipOff {
 			return ErrBadIndex
 		}
+
 		r.index = append(r.index, currRecord)
 		indexBuf = indexBuf[indexChunkSize:]
 	}
 
 	// Set Reader to beginning of file
 	if _, err := r.rawR.Seek(headerSize, io.SeekStart); err != nil {
+
 		return err
 	}
 
@@ -231,7 +233,11 @@ func (r *Reader) Read(p []byte) (int, error) {
 	for {
 		if r.chunkBuf.Len() != 0 {
 			n, err := r.chunkBuf.Read(p)
-			if err != nil {
+
+			// NOTE: Read() might return io.EOF to indicate that the
+			//       chunk is exhausted. We should look at the next chunk
+			//       (readZipChunk will figure out if there are any)
+			if err != nil && err != io.EOF {
 				return n, err
 			}
 

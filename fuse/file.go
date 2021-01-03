@@ -6,9 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"

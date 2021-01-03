@@ -44,6 +44,7 @@ tasks:
       - ./scripts/build.sh
     sources:
       - ./scripts/build.sh
+      - go.mod
       - ./*.go
       - ./**/*.go
 

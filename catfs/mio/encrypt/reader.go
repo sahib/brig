@@ -51,7 +51,7 @@ func (r *Reader) readHeaderIfNotDone() error {
 	r.parsedHeader = true
 
 	header := make([]byte, headerSize)
-	n, err := r.Reader.Read(header)
+	n, err := io.ReadFull(r.Reader, header)
 	if err != nil {
 		return err
 	}
@@ -123,11 +123,15 @@ func (r *Reader) readBlock() (int, error) {
 	}
 
 	// Read nonce:
-	if n, err := r.Reader.Read(r.nonce); err != nil {
+	if n, err := io.ReadFull(r.Reader, r.nonce); err != nil {
 		return 0, err
 	} else if n != r.aead.NonceSize() {
-		return 0, fmt.Errorf("nonce size mismatch; should: %d - have: %d",
-			r.aead.NonceSize(), n)
+		return 0, fmt.Errorf(
+			"nonce size mismatch; should: %d - have: %d (err: %v)",
+			r.aead.NonceSize(),
+			n,
+			err,
+		)
 	}
 
 	// Convert to block number:

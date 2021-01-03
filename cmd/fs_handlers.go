@@ -38,7 +38,7 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 
 	if readFromStdin {
 		repoPath = ctx.Args().Get(0)
-		return ctl.StageFromReader(repoPath, os.Stdin) 
+		return ctl.StageFromReader(repoPath, os.Stdin)
 	}
 
 	absLocalPath, err := filepath.Abs(localPath)

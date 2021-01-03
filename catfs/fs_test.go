@@ -185,19 +185,23 @@ func TestCat(t *testing.T) {
 	})
 }
 
-func TestStage(t *testing.T) {
+func TestStageBasic(t *testing.T) {
 	t.Parallel()
 
-	tcs := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		testutil.CreateDummyBuf(8 * 1024),
+	log.SetLevel(log.DebugLevel)
+	tcs := []int64{
+		0,
+		1,
+		3,
+		8 * 1024,
+		64*1024 + 1,
+		4 * 1024 * 1024,
 	}
 
-	for idx, tc := range tcs {
-		t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
+	for _, size := range tcs {
+		t.Run(fmt.Sprintf("size-%d", size), func(t *testing.T) {
 			withDummyFS(t, func(fs *FS) {
+				tc := testutil.CreateDummyBuf(size)
 				buf := chunkbuf.NewChunkBuffer(tc)
 				require.Nil(t, fs.Stage("/x", buf))
 
@@ -207,7 +211,8 @@ func TestStage(t *testing.T) {
 				data, err := ioutil.ReadAll(stream)
 				require.Nil(t, err)
 
-				require.Equal(t, data, tc)
+				require.Equal(t, len(tc), len(data))
+				require.Equal(t, tc, data)
 				require.Nil(t, stream.Close())
 
 				file, err := fs.lkr.LookupFile("/x")

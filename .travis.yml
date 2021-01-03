@@ -15,11 +15,12 @@ install:
     - go get -u github.com/phogolabs/parcello
     - go get -u github.com/phogolabs/parcello/cmd/parcello
     - go get -u zombiezen.com/go/capnproto2/...
+    - go get -u github.com/go-task/task/v3/cmd/task
     - wget https://dist.ipfs.io/go-ipfs/v0.7.0/go-ipfs_v0.7.0_linux-amd64.tar.gz -O /tmp/ipfs.tgz
     - tar -C /tmp -xvf /tmp/ipfs.tgz
     - cp /tmp/go-ipfs/ipfs $GOBIN
-    - ./scripts/install-task.sh
-    - ./bin/task
+    - export PATH="${GOPATH}/bin:${PATH}"
+    - task
 
 script:
     - export PATH="${GOPATH}/bin:${PATH}"

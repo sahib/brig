@@ -135,3 +135,82 @@ func RandomLocalListener() (net.Listener, error) {
 
 	return nil, fmt.Errorf("too many retries")
 }
+
+// TenReader is an io.Reader that produces the sequence [0-9] over and over.
+type TenReader struct {
+	idx int64
+}
+
+func (tr *TenReader) Read(buf []byte) (int, error) {
+	for bufIdx := range buf {
+		buf[bufIdx] = byte(tr.idx%10) + '0'
+		tr.idx++
+	}
+
+	return len(buf), nil
+}
+
+////////////////
+
+// TenWriter is similar to ioutil.Discard,
+// but checks that the incoming is the repeating sequence [0-9]
+//
+// Meant to be used as assert in conjunction with TenReader.
+type TenWriter struct {
+	idx int64
+}
+
+func (tw *TenWriter) Write(buf []byte) (int, error) {
+	for bufIdx := range buf {
+		expected := byte(tw.idx%10) + '0'
+		if got := buf[bufIdx]; got != expected {
+			return bufIdx, fmt.Errorf(
+				"ten-writer error at index %d: want '%c', got: '%c'",
+				tw.idx,
+				expected,
+				got,
+			)
+		}
+
+		tw.idx++
+	}
+
+	return len(buf), nil
+}
+
+////////////////
+
+type rr struct {
+	r          io.Reader
+	maxBufSize int
+	randomize  bool
+	rng        *rand.Rand
+}
+
+func (rr *rr) Read(buf []byte) (int, error) {
+	if len(buf) > rr.maxBufSize {
+		buf = buf[:rr.maxBufSize]
+	}
+
+	if rr.randomize {
+		randomLen := rr.rng.Int() % (rr.maxBufSize + 1)
+		if len(buf) > randomLen {
+			buf = buf[:randomLen]
+		}
+	}
+
+	return rr.r.Read(buf)
+}
+
+// RandomizeReads returns `r` modified, so that calls to Read()
+// will return at most maxBufSize, no matter how big the buffer is.
+// If `randomize` is true, the max bytes read are varied additional
+// in the range [0, maxBufSize]
+func RandomizeReads(r io.Reader, maxBufSize int, randomize bool) io.Reader {
+	return &rr{
+		r:          r,
+		maxBufSize: maxBufSize,
+		randomize:  randomize,
+		rng:        rand.New(rand.NewSource(0xdeadbeef)),
+	}
+}

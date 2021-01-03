@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"sync"
 
+	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/sahib/brig/catfs/mio"
 	h "github.com/sahib/brig/util/hashlib"
-	shell "github.com/sahib/go-ipfs-api"
 )
 
 func cat(s *shell.Shell, path string, offset int64) (io.ReadCloser, error) {
@@ -27,6 +29,8 @@ func cat(s *shell.Shell, path string, offset int64) (io.ReadCloser, error) {
 }
 
 type streamWrapper struct {
+	mu sync.Mutex
+
 	io.ReadCloser
 	nd   *Node
 	hash h.Hash
@@ -35,6 +39,9 @@ type streamWrapper struct {
 }
 
 func (sw *streamWrapper) Read(buf []byte) (int, error) {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+
 	n, err := sw.ReadCloser.Read(buf)
 	if err != nil {
 		return n, err
@@ -45,6 +52,9 @@ func (sw *streamWrapper) Read(buf []byte) (int, error) {
 }
 
 func (sw *streamWrapper) WriteTo(w io.Writer) (int64, error) {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+
 	return io.Copy(w, sw)
 }
 
@@ -97,7 +107,12 @@ func (sw *streamWrapper) getAbsOffset(offset int64, whence int) (int64, error) {
 	}
 }
 
+// TODO: Seek is currently freaking expensive.
+// Does IPFS maybe offer a better way to do this?
 func (sw *streamWrapper) Seek(offset int64, whence int) (int64, error) {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+
 	absOffset, err := sw.getAbsOffset(offset, whence)
 	if err != nil {
 		return -1, err
@@ -109,7 +124,13 @@ func (sw *streamWrapper) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	if sw.ReadCloser != nil {
-		sw.ReadCloser.Close()
+		// Not sure if that is even needed...
+		// TODO: measure memory consumption and see if we can do
+		//       without discarding left over bytes.
+		go func(rc io.ReadCloser) {
+			io.Copy(ioutil.Discard, rc)
+			rc.Close()
+		}(sw.ReadCloser)
 	}
 
 	sw.off = absOffset
