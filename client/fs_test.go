@@ -123,7 +123,7 @@ func TestStageAndCat(t *testing.T) {
 
 func TestStageAndCatStream(t *testing.T) {
 	withDaemon(t, "ali", func(ctl *Client) {
-		const fileSize = 128 * 1024 * 1024
+		const fileSize = 4 * 1024 * 1024
 		r := io.LimitReader(&testutil.TenReader{}, fileSize)
 		err := ctl.StageFromReader("/hello", r)
 		require.NoError(t, err)
