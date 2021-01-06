@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,10 +18,12 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/go-homedir"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/util"
+	"github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
@@ -71,80 +73,106 @@ func checkmarkify(val bool) string {
 	return ""
 }
 
-// guessRepoFolder tries to find the repository path
-// by using a number of sources.
-// This helper may call exit when it fails to get the path.
-func guessRepoFolder(ctx *cli.Context) string {
-	if argPath := ctx.GlobalString("repo"); argPath != "" {
-		return mustAbsPath(argPath)
+// guessRepoFolder tries to find the repository path by using a number of
+// sources. This helper may call exit when it fails to get the path.
+func guessRepoFolder(ctx *cli.Context) (string, error) {
+	if ctx.GlobalIsSet("repo") {
+		// No guessing needed, follow user wish.
+		return ctx.GlobalString("repo"), nil
 	}
 
-	dir, err := homedir.Expand("~/.brig")
-	if err != nil {
-		fmt.Printf("failed to expand home dir: %v; aborting.", err)
-		os.Exit(1)
+	guessLocations := []string{
+		".",
 	}
 
-	return mustAbsPath(dir)
-}
-
-func guessNextFreePort(ctx *cli.Context) (int, error) {
-	// This can be overwritten by specifying -p $SOME_PORT.
-	// Use this if we want
-	if ctx.GlobalIsSet("port") {
-		return ctx.GlobalInt("port"), nil
+	home, err := homedir.Dir()
+	if err == nil {
+		guessLocations = append(guessLocations, []string{
+			// TODO: figure out good default locations.
+			filepath.Join(home, ".brig"),
+			filepath.Join(home, ".cache/brig"),
+		}...)
 	}
 
-	// Use the default as a start:
-	maxPort := ctx.GlobalInt("port")
-
-	maxAttempts := 1000
-	for off := 0; off <= maxAttempts; off++ {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", maxPort+off))
-		if err != nil {
-			return maxPort + off, nil
+	var lastError error
+	for _, guessLocation := range guessLocations {
+		repoFolder := mustAbsPath(guessLocation)
+		if _, err := os.Stat(filepath.Join(repoFolder, "OWNER")); err != nil {
+			lastError = err
+			continue
 		}
 
-		conn.Close()
+		return repoFolder, nil
 	}
 
-	return 0, fmt.Errorf(
-		"failed to find next free port after %d attempts",
-		maxAttempts,
-	)
+	return "", lastError
 }
 
-func openConfigOneshot(folder string) (*config.Config, error) {
+func openConfig(folder string) (*config.Config, error) {
 	configPath := filepath.Join(folder, "config.yml")
 	cfg, err := defaults.OpenMigratedConfig(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not read config to see which port I need to connect to.\n")
-		fmt.Fprintf(os.Stderr, "Please specify either --repo <path> or set BRIG_PATH so we know\n")
-		fmt.Fprintf(os.Stderr, "where the repository is to find out the right port number.\n")
-		fmt.Fprintf(os.Stderr, "I will continue by assuming the default port: 6666\n\n")
-		fmt.Fprintf(os.Stderr, "--------------------------------------------------\n\n")
 		return nil, fmt.Errorf("could not find config: %v", err)
 	}
 
 	return cfg, nil
 }
 
-func guessPort(ctx *cli.Context, readConfig bool) int {
-	if ctx.GlobalIsSet("port") {
-		return ctx.GlobalInt("port")
+func guessDaemonURL(ctx *cli.Context) (string, error) {
+	if ctx.GlobalIsSet("url") {
+		// No guessing needed, follow user wish.
+		return ctx.GlobalString("url"), nil
 	}
 
-	if !readConfig {
-		return 6666
+	folder, err := guessRepoFolder(ctx)
+	if err != nil {
+		log.Warnf("note: I don't know where the repository is or cannot read it.")
+		log.Warnf("      I will continue with default values, cross fingers.")
+		log.Warnf("      We recommend to set BRIG_PATH or pass --repo always.")
+		log.Warnf("      Alternatively you can cd to your repository.")
+		return ctx.GlobalString("url"), err
 	}
 
-	cfg, err := openConfigOneshot(guessRepoFolder(ctx))
+	cfg, err := openConfig(folder)
 	if err != nil {
 		// Assume default:
-		return 6666
+		return ctx.GlobalString("url"), nil
 	}
 
-	return int(cfg.Int("daemon.port"))
+	return cfg.String("daemon.url"), nil
+}
+
+func guessFreeDaemonURL(ctx *cli.Context, owner string) (string, error) {
+	if ctx.GlobalIsSet("url") {
+		// No guessing needed, follow user wish.
+		return ctx.GlobalString("url"), nil
+	}
+
+	defaultURL := defaults.DaemonDefaultURL()
+	u, err := url.Parse(defaultURL)
+	if err != nil {
+		// this is a programming error
+		panic("invalid hardcoded default daemon url")
+	}
+
+	switch u.Scheme {
+	case "unix":
+		// TODO: Use the owner in clear text.
+		// TODO: Remove socket if it's still lying around.
+		return fmt.Sprintf(
+			"%s.%s",
+			defaultURL,
+			hashlib.Sum([]byte(owner)).B58String(),
+		), nil
+	case "tcp":
+		// Do a best effort by searching for a free port
+		// and use that for the brig repository.
+		// This might be racy, but at least try it.
+		port := util.FindFreePort()
+		return fmt.Sprintf("tcp://127.0.0.1:%d", port), nil
+	default:
+		return "", fmt.Errorf("default url has unknown ")
+	}
 }
 
 func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
@@ -222,7 +250,7 @@ func getExecutablePath() (string, error) {
 	return filepath.Clean(exePath), nil
 }
 
-func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, error) {
+func startDaemon(ctx *cli.Context, repoPath, daemonURL string) (*client.Client, error) {
 	stat, err := os.Stat(repoPath)
 	if err != nil {
 		return nil, err
@@ -241,7 +269,10 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 
 	// If a password helper is configured, we should not ask the password right here.
 	askPassword := true
-	cfg, err := defaults.OpenMigratedConfig(filepath.Join(repoPath, "config.yml"))
+	cfg, err := defaults.OpenMigratedConfig(
+		filepath.Join(repoPath, "config.yml"),
+	)
+
 	if err != nil {
 		logVerbose(ctx, "failed to open config for guessing password method: %v", err)
 	} else {
@@ -250,20 +281,16 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 		}
 	}
 
-	bindHost := ctx.GlobalString("bind")
-
 	logVerbose(
 		ctx,
-		"No Daemon running at %s:%d. Starting daemon from binary: %s",
-		bindHost,
-		port,
+		"No Daemon running at %s. Starting daemon from binary: %s",
+		daemonURL,
 		exePath,
 	)
 
 	daemonArgs := []string{
 		"--repo", repoPath,
-		"--port", strconv.FormatInt(int64(port), 10),
-		"--bind", bindHost,
+		"--url", daemonURL,
 		"daemon", "launch",
 	}
 
@@ -296,7 +323,7 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 
 	warningPrinted := false
 	for i := 0; i < 500; i++ {
-		ctl, err := client.Dial(context.Background(), port)
+		ctl, err := client.Dial(context.Background(), daemonURL)
 		if err != nil {
 			// Only print this warning once...
 			if !warningPrinted && i >= 100 {
@@ -313,46 +340,18 @@ func startDaemon(ctx *cli.Context, repoPath string, port int) (*client.Client, e
 	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
 }
 
-func guessNextRepoFolder(ctx *cli.Context) string {
-	absify := func(path string) string {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			// Better stop, before we do something stupid:
-			log.Errorf("failed to get absolute path: %s", path)
-			os.Exit(1)
-		}
-
-		return absPath
-	}
-
-	if folder := ctx.Args().Get(1); len(folder) > 0 {
-		return absify(folder)
-	}
-
-	if folder := ctx.GlobalString("repo"); len(folder) > 0 {
-		return absify(folder)
-	}
-
-	folder, err := os.Getwd()
-	if err != nil {
-		log.Warningf("failed to get current working dir: %s", folder)
-		return "."
-	}
-
-	return folder
-}
-
 func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
-		port := guessPort(ctx, true)
+		daemonURL, _ := guessDaemonURL(ctx)
+
 		if startNew {
-			logVerbose(ctx, "using port %d to check for running daemon.", port)
+			logVerbose(ctx, "using url %s to check for running daemon.", daemonURL)
 		} else {
-			logVerbose(ctx, "using port %d to connect to old daemon.", port)
+			logVerbose(ctx, "using url %s to connect to existing daemon.", daemonURL)
 		}
 
 		// Check if the daemon is running already:
-		ctl, err := client.Dial(context.Background(), port)
+		ctl, err := client.Dial(context.Background(), daemonURL)
 		if err == nil {
 			defer ctl.Close()
 			return handler(ctx, ctl)
@@ -364,10 +363,17 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		}
 
 		// Start the server & pass the password:
-		folder := guessRepoFolder(ctx)
+		folder, err := guessRepoFolder(ctx)
+		if err != nil {
+			return ExitCode{
+				BadArgs,
+				fmt.Sprintf("could not guess folder: %v", err),
+			}
+		}
+
 		logVerbose(ctx, "starting new daemon in background, on folder '%s'", folder)
 
-		ctl, err = startDaemon(ctx, folder, port)
+		ctl, err = startDaemon(ctx, folder, daemonURL)
 		if err != nil {
 			return ExitCode{
 				DaemonNotResponding,

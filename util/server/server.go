@@ -125,7 +125,7 @@ func (sv *Server) Serve() error {
 			doServe = false
 		default:
 			// No free connection available.
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 

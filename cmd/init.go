@@ -15,14 +15,9 @@ import (
 
 // Init creates a new brig repository at `basePath` with `owner`.
 // `password` is used to encrypt it and `backendName` tells `brig` what backend
-// to initialize. The port is the port of the brig daemon.
-func Init(ctx *cli.Context, basePath, owner, password, backendName, ipfsPath string, port int) error {
-	if !backend.IsValidName(backendName) {
-		return fmt.Errorf("invalid backend name: %v", backendName)
-	}
-
-	err := repo.Init(basePath, owner, password, backendName, int64(port))
-	if err != nil {
+// to initialize.
+func Init(ctx *cli.Context, ipfsPath string, opts repo.InitOptions) error {
+	if err := repo.Init(opts); err != nil {
 		return e.Wrapf(err, "repo-init")
 	}
 
@@ -49,13 +44,20 @@ func Init(ctx *cli.Context, basePath, owner, password, backendName, ipfsPath str
 		)
 	}
 
-	err = repo.OverwriteConfigKey(basePath, "daemon.ipfs_path", ipfsPath)
-	if err != nil {
+	if err := repo.OverwriteConfigKey(
+		opts.BaseFolder,
+		"daemon.ipfs_path",
+		ipfsPath,
+	); err != nil {
 		return err
 	}
 
-	backendPath := filepath.Join(basePath, "data", backendName)
-	if err := backend.InitByName(backendName, backendPath, ipfsPort); err != nil {
+	backendPath := filepath.Join(opts.BaseFolder, "data", opts.BackendName)
+	if err := backend.InitByName(
+		opts.BackendName,
+		backendPath,
+		ipfsPort,
+	); err != nil {
 		return e.Wrapf(err, "backend-init")
 	}
 

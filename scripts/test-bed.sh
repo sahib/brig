@@ -1,7 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
-set -x
 
 USE_SINGLE=false
 
@@ -20,29 +19,32 @@ done
 # Kill previous test-bed
 pkill -9 brig || true
 rm -rf /tmp/{ali,bob}
+rm -rf /tmp/brig.socket*
 
 # Have some color in the logs even when piping it somewhere else.
 export BRIG_COLOR=always
-alias brig-ali='brig --port 6666 --repo /tmp/ali'
+brig_ali() {
+    brig --repo /tmp/ali "$@"
+}
 
-if [ "$USE_SINGLE" = false ]; then
-    alias brig-bob='brig --port 6667 --repo /tmp/bob'
-else
-    # Fake the invocation of bob's brig.
-    alias brig-bob='/bin/true'
-fi
+brig_bob() {
+    if [ "$USE_SINGLE" = false ]; then
+        brig --repo /tmp/bob "$@"
+    fi
+}
 
-# Give the daemon to start up a bit.
-brig-ali init ali -x -P /tmp/ali-ipfs
-brig-bob init bob -x -P /tmp/bob-ipfs
+brig_ali init ali --no-password --ipfs-path /tmp/ali-ipfs
+brig_bob init bob --no-password --ipfs-path /tmp/bob-ipfs
 
 # Add them as remotes each
 if [ "$USE_SINGLE" = false ]; then
-    brig-ali remote add bob $(brig-bob whoami -f)
-    brig-bob remote add ali $(brig-ali whoami -f)
+    # shellcheck disable=SC2046
+    brig_ali remote add bob $(brig_bob whoami -f)
+    # shellcheck disable=SC2046
+    brig_bob remote add ali $(brig_ali whoami -f)
 fi
 
-brig-ali -V stage TODO ali-file
-brig-ali commit -m 'added ali-file'
-brig-bob stage LICENSE bob-file
-brig-bob commit -m 'added bob-file'
+brig_ali -V stage TODO ali-file
+brig_ali commit -m 'added ali-file'
+brig_bob stage LICENSE bob-file
+brig_bob commit -m 'added bob-file'

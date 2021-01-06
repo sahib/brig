@@ -3,7 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log/syslog"
 	"net/url"
 	"os"
 	"os/exec"
@@ -18,9 +20,11 @@ import (
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/cmd/tabwriter"
 	"github.com/sahib/brig/gateway"
+	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
+	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/version"
 	log "github.com/sirupsen/logrus"
@@ -104,7 +108,7 @@ Have a nice day.
 
 func handleInit(ctx *cli.Context) error {
 	if len(ctx.Args()) == 0 {
-		return fmt.Errorf("init needs to be passed the name of the repository")
+		return fmt.Errorf("Please specify a name for the owner of this repository")
 	}
 
 	owner := ctx.Args().First()
@@ -123,7 +127,12 @@ func handleInit(ctx *cli.Context) error {
 	}
 
 	if folder == "" {
-		folder = guessRepoFolder(ctx)
+		var err error
+		folder, err = guessRepoFolder(ctx)
+		if err != nil {
+			return err
+		}
+
 		fmt.Printf("-- Guessed folder for init: %s\n", folder)
 	}
 
@@ -165,24 +174,33 @@ func handleInit(ctx *cli.Context) error {
 		pwdBytes, err := pwd.PromptNewPassword(20)
 		if err != nil {
 			msg := fmt.Sprintf("Failed to read password: %v", err)
-			fmt.Println(msg)
 			return ExitCode{UnknownError, msg}
 		}
 
 		password = string(pwdBytes)
 	}
 
-	port, err := guessNextFreePort(ctx)
+	daemonURL, err := guessFreeDaemonURL(ctx, owner)
 	if err != nil {
-		return err
+		log.WithError(err).Warnf("failed to figure out a free daemon url")
 	}
 
-	if err := Init(ctx, folder, owner, password, backend, ipfsPath, port); err != nil {
+	if err := Init(
+		ctx,
+		ipfsPath,
+		repo.InitOptions{
+			BaseFolder:  folder,
+			Owner:       owner,
+			Password:    password,
+			BackendName: backend,
+			DaemonURL:   daemonURL,
+		},
+	); err != nil {
 		return ExitCode{UnknownError, fmt.Sprintf("init failed: %v", err)}
 	}
 
 	// Start the daemon on the freshly initialized repo:
-	ctl, err := startDaemon(ctx, folder, port)
+	ctl, err := startDaemon(ctx, folder, daemonURL)
 	if err != nil {
 		return ExitCode{
 			DaemonNotResponding,
@@ -349,6 +367,34 @@ func handleDaemonQuit(ctx *cli.Context, ctl *client.Client) error {
 	return nil
 }
 
+func switchToSyslog() {
+	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
+	if err != nil {
+		log.Warningf("failed to open connection to syslog for brig: %v", err)
+		logFd, err := ioutil.TempFile("", "brig-*.log")
+		if err != nil {
+			log.Warningf("")
+		} else {
+			log.Warningf("Will log to %s from now on.", logFd.Name())
+			log.SetOutput(logFd)
+		}
+
+		return
+	}
+
+	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&formatter.FancyLogFormatter{
+		UseColors: false,
+	})
+
+	log.SetOutput(
+		io.MultiWriter(
+			formatter.NewSyslogWrapper(wSyslog),
+			os.Stdout,
+		),
+	)
+}
+
 func handleDaemonLaunch(ctx *cli.Context) error {
 	// Enable tracing (for profiling) if required.
 	if ctx.Bool("trace") {
@@ -373,17 +419,25 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	// will already ask for one. If we recognize the repo
 	// wrongly as uninitialized, then it won't unlock without
 	// a password though.
-	brigPath := guessRepoFolder(ctx)
-	isInitialized, err := repoIsInitialized(brigPath)
+	repoPath, err := guessRepoFolder(ctx)
 	if err != nil {
 		return err
 	}
 
-	port := guessPort(ctx, true)
-	bindHost := ctx.GlobalString("bind")
+	isInitialized, err := repoIsInitialized(repoPath)
+	if err != nil {
+		return err
+	}
 
+	daemonURL, err := guessDaemonURL(ctx)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Why is this not in the config? Encryption?
+	// TODO: Write a short README.md in the repo like restic does.
 	startIPFSdaemon := true
-	backendPath := filepath.Join(brigPath, "BACKEND")
+	backendPath := filepath.Join(repoPath, "BACKEND")
 	backendData, err := ioutil.ReadFile(backendPath)
 	if err != nil {
 		log.Warningf("failed to read %v: %v", backendPath, err)
@@ -395,9 +449,9 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		// Make sure IPFS is running. Also set required options,
 		// but don't bother to set optimizations.
 		ipfsPath := ""
-		cfg, err := openConfigOneshot(brigPath)
+		cfg, err := openConfig(repoPath)
 		if err != nil {
-			log.Warningf("failed to read config at %v: %v", brigPath, err)
+			log.Warningf("failed to read config at %v: %v", repoPath, err)
 		} else {
 			ipfsPath = cfg.String("daemon.ipfs_path")
 		}
@@ -414,7 +468,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 			return "", nil
 		}
 
-		password, err = readPassword(ctx, brigPath)
+		password, err = readPassword(ctx, repoPath)
 		if err != nil {
 			return "", ExitCode{
 				UnknownError,
@@ -429,9 +483,18 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	if !logToStdout {
 		log.Infof("all further logs will be also piped to the syslog daemon.")
 		log.Infof("Use »journalctl -fet brig« to view logs.")
+		switchToSyslog()
+	} else {
+		log.SetOutput(os.Stdout)
 	}
 
-	server, err := server.BootServer(brigPath, passwordFn, bindHost, port, logToStdout)
+	server, err := server.BootServer(
+		repoPath,
+		daemonURL,
+		passwordFn,
+		logToStdout,
+	)
+
 	if err != nil {
 		return ExitCode{
 			UnknownError,
@@ -893,8 +956,12 @@ func handleGatewayCert(ctx *cli.Context) error {
 
 	fmt.Println("A certificate was downloaded successfully.")
 
-	port := guessPort(ctx, true)
-	ctl, err := client.Dial(context.Background(), port)
+	daemonURL, err := guessDaemonURL(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctl, err := client.Dial(context.Background(), daemonURL)
 	if err != nil {
 		fmt.Println("There does not seem a daemon running currently.")
 		fmt.Println("Please execute the following commands when it is running:")

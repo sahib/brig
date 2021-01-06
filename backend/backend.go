@@ -81,16 +81,6 @@ func FromName(name, path, fingerprint string) (Backend, error) {
 	return nil, ErrNoSuchBackend
 }
 
-// IsValidName tells you if `name` is a valid backend name.
-func IsValidName(name string) bool {
-	switch name {
-	case "mock", "httpipfs":
-		return true
-	default:
-		return false
-	}
-}
-
 // Version returns version info for the backend `name`.
 func Version(name, path string) VersionInfo {
 	switch name {

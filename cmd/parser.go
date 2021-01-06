@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/color"
 	isatty "github.com/mattn/go-isatty"
+	"github.com/sahib/brig/defaults"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
 	log "github.com/sirupsen/logrus"
@@ -137,27 +138,21 @@ func RunCmdline(args []string) int {
 	}
 
 	app.Flags = []cli.Flag{
-		cli.IntFlag{
-			Name:   "port,p",
-			Usage:  "Port of the daemon to connect to. Normally guessed via --repo.",
-			EnvVar: "BRIG_PORT",
-			Value:  6666,
+		cli.StringFlag{
+			Name:   "url,u",
+			Usage:  "URL on where to reach the brig daemon. Leave empty to allow guessing.",
+			EnvVar: "BRIG_URL",
+			Value:  defaults.DaemonDefaultURL(),
 		},
 		cli.StringFlag{
 			Name:   "repo",
 			Usage:  "Path to the repository. Only has effect for new daemons.",
-			Value:  "",
+			Value:  ".",
 			EnvVar: "BRIG_PATH",
 		},
 		cli.BoolFlag{
 			Name:  "verbose,V",
 			Usage: "Show certain messages during client startup (helpful for debugging)",
-		},
-		cli.StringFlag{
-			Name:   "bind",
-			Usage:  "To what host to bind to. Do not expose to the outside. Seriously.",
-			Value:  "localhost",
-			EnvVar: "BRIG_BIND",
 		},
 		cli.StringFlag{
 			Name:   "password",

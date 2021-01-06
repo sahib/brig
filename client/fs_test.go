@@ -6,20 +6,18 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server"
-	"github.com/sahib/brig/util"
 	colorLog "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
-
-var CurrBackendPort = 10000
 
 func init() {
 	log.SetLevel(log.WarnLevel)
@@ -37,20 +35,31 @@ func stringify(err error) string {
 }
 
 func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
-	port := util.FindFreePort()
 	repoPath, err := ioutil.TempDir("", "brig-client-repo")
 	require.Nil(t, err)
 
 	defer os.RemoveAll(repoPath)
 
-	err = repo.Init(repoPath, name, "no-pass", "mock", int64(port))
+	daemonURL := "unix:" + filepath.Join(repoPath, "brig.socket")
+	err = repo.Init(repo.InitOptions{
+		BaseFolder:  repoPath,
+		Owner:       name,
+		Password:    "no-pass",
+		BackendName: "mock",
+		DaemonURL:   daemonURL,
+	})
 	require.Nil(t, err, stringify(err))
 
 	passwordFn := func() (string, error) {
 		return "no-pass", nil
 	}
 
-	srv, err := server.BootServer(repoPath, passwordFn, "127.0.0.1", port, true)
+	srv, err := server.BootServer(
+		repoPath,
+		daemonURL,
+		passwordFn,
+		true,
+	)
 	require.Nil(t, err, stringify(err))
 
 	go func() {
@@ -59,7 +68,7 @@ func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	ctl, err := Dial(context.Background(), port)
+	ctl, err := Dial(context.Background(), daemonURL)
 	require.Nil(t, err)
 
 	defer func() {

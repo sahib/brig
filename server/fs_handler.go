@@ -6,11 +6,14 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
+	"github.com/djherbis/buffer"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/djherbis/nio.v2"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
@@ -144,8 +147,9 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 type streamServer struct {
 	err     *error
 	errCond *sync.Cond
-	pr      *io.PipeReader
-	pw      *io.PipeWriter
+	pr      *nio.PipeReader
+	pw      *nio.PipeWriter
+	buf     buffer.Buffer
 }
 
 func (ss *streamServer) doStage(base *base, repoPath string) {
@@ -167,11 +171,25 @@ func (ss *streamServer) doStage(base *base, repoPath string) {
 	ss.errCond.Broadcast()
 }
 
+const (
+	memBufferSize = 1 * 1024 * 1024
+)
+
+var (
+	bufferPool = sync.Pool{
+		New: func() interface{} {
+			return buffer.New(memBufferSize)
+		},
+	}
+)
+
 func newStreamServer(base *base, repoPath string) *streamServer {
-	pr, pw := io.Pipe()
+	buf := bufferPool.Get().(buffer.Buffer)
+	pr, pw := nio.Pipe(buf)
 	ss := &streamServer{
 		pr:      pr,
 		pw:      pw,
+		buf:     buf,
 		errCond: sync.NewCond(&sync.Mutex{}),
 	}
 
@@ -191,8 +209,26 @@ func (ss *streamServer) hasFinished() (bool, error) {
 	return false, nil
 }
 
+var (
+	count = time.Duration(0)
+	sum   = time.Duration(0)
+)
+
 // SendChunk is called when the client sends one block of data.
 func (ss *streamServer) SendChunk(call capnp.FS_StageStream_sendChunk) error {
+	y := time.Now()
+	defer func() {
+		sum += time.Since(y)
+		count++
+		if count%50 == 0 {
+			log.Printf(
+				"send chunk took %v (buffered %.0f%%)",
+				sum/count,
+				100*float64(ss.buf.Len())/memBufferSize,
+			)
+		}
+	}()
+
 	if finished, err := ss.hasFinished(); finished {
 		// return the last error if already done, err might be nil here.
 		// This is here to protect against more SendChunk() calls after Done()
@@ -225,6 +261,8 @@ func (ss *streamServer) Done(call capnp.FS_StageStream_done) error {
 		ss.errCond.Wait()
 	}
 
+	ss.buf.Reset()
+	bufferPool.Put(ss.buf)
 	return *ss.err
 }
 
@@ -272,7 +310,9 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			return err
 		}
 
-		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
+		// TODO: Get rid of this, also stream over Capn'Proto and
+		// dont add another stream.
+		port, err := bootTransferServer(fs, "127.0.0.1", func(conn net.Conn) {
 			defer stream.Close()
 			localAddr := conn.LocalAddr().String()
 
@@ -320,7 +360,7 @@ func (fh *fsHandler) Tar(call capnp.FS_tar) error {
 			return err
 		}
 
-		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
+		port, err := bootTransferServer(fs, "127.0.0.1", func(conn net.Conn) {
 			localAddr := conn.LocalAddr().String()
 			if err := fs.Tar(path, conn, nil); err != nil {
 				log.Warningf("tar failed for path %s on %s: %v", path, localAddr, err)

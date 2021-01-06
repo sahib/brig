@@ -1,17 +1,43 @@
 package defaults
 
 import (
+	"errors"
+	"net/url"
+	"runtime"
+
 	"github.com/sahib/config"
 )
+
+// DaemonDefaultURL returns the default URL for the current OS.
+func DaemonDefaultURL() string {
+	// If the platform supports unix sockets,
+	// we should make use of it.
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		return "unix:/tmp/brig.socket"
+	default:
+		return "tcp://127.0.0.1:6666"
+	}
+}
+
+func urlValidator(val interface{}) error {
+	s, ok := val.(string)
+	if !ok {
+		return errors.New("url is not an string")
+	}
+
+	_, err := url.Parse(s)
+	return err
+}
 
 // DefaultsV0 is the default config validation for brig
 var DefaultsV0 = config.DefaultMapping{
 	"daemon": config.DefaultMapping{
-		"port": config.DefaultEntry{
-			Default:      6666,
+		"url": config.DefaultEntry{
+			Default:      DaemonDefaultURL(),
 			NeedsRestart: true,
-			Docs:         "Port of the daemon process.",
-			Validator:    config.IntRangeValidator(1, 655356),
+			Docs:         "URL of the daemon process.",
+			Validator:    urlValidator,
 		},
 		"ipfs_path": config.DefaultEntry{
 			Default:      "",
@@ -217,10 +243,10 @@ var DefaultsV0 = config.DefaultMapping{
 				Default:      false,
 				NeedsRestart: false,
 				Docs: `Pin unpinned files:
-				
+
   * 'true'  if you want maximum permitted mirroring
   * 'false' if you want to save traffic
-  
+
   If a file version »n« is such that (min_depth <= »n« < max_depth),
   then the repinner will pin such version if pin_unpinned is set to true.
   Otherwise, it will keep the file unpinned, i.e. not cached at the backend.

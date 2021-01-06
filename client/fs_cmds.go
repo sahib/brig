@@ -147,8 +147,8 @@ func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
 	stream := call.Stream()
 
 	// relative large buffer to minimize Cap'n Proto overhead even further.
-	buf := make([]byte, 1024*1024)
-	chunkIdx := 0
+	buf := make([]byte, 128*1024)
+	chunkIdx, blockCheck := 0, 1
 
 	for {
 		isEOF := false
@@ -166,12 +166,15 @@ func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
 				return params.SetChunk(buf[:n])
 			})
 
-			// Only check every few blocks if there was an error.
-			// We might be sending a bit too much, but each Struct() call
-			// causes one network round trip.
-			if chunkIdx%10 == 0 {
+			// Assumption here: If transfer fails it will fail in the first few blocks.
+			// For the rest of the block we can skip error checks on most blocks.
+			if chunkIdx%blockCheck == 0 {
 				if _, err := promise.Struct(); err != nil {
 					return err
+				}
+
+				if blockCheck < 128 {
+					blockCheck *= 2
 				}
 			}
 
