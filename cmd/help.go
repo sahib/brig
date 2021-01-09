@@ -1379,11 +1379,11 @@ EXAMPLES:
 		},
 	},
 	"debug.ten-source": {
-		Usage: "Produce a stream of the numbers 0 to 9, repeating always",
+		Usage: "Produce a repeating stream of 0 to 9 numbers of a given size",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "size,s",
-				Usage: "How big the stream should be (can be given like to dd)",
+				Usage: "Size of the stream in bytes (can be followed by a multipler K, M, or G)",
 				Value: "256M",
 			},
 		},
@@ -1393,7 +1393,7 @@ EXAMPLES:
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "size,s",
-				Usage: "How big the stream is supposed to be (can be given like to dd)",
+				Usage: "Expected size of the stream in bytes (can be followed by a multipler K, M, or G)",
 				Value: "256M",
 			},
 		},
