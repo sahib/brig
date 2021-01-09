@@ -114,7 +114,7 @@ func (fch *fuseCatFSHelp) makeCatfsAndFuseMount(ctx context.Context, req mountin
 	var err error
 	cfInfo, err = makeDummyCatFS(req.DbPath)
 	if err != nil {
-		log.Errorf("cannot comake catfs file system in %v", cfInfo.dbPath)
+		log.Errorf("cannot make catFS in %v", cfInfo.dbPath)
 		return &nothing{}, err
 	}
 
