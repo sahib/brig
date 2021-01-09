@@ -2,15 +2,14 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net"
-	"net/url"
 	"path/filepath"
 	"runtime/debug"
 
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/util/server"
 	log "github.com/sirupsen/logrus"
@@ -52,20 +51,12 @@ func readPasswordFromHelper(basePath string, passwordFn func() (string, error)) 
 }
 
 func listenerFromServerURL(s string) (net.Listener, error) {
-	u, err := url.Parse(s)
+	scheme, addr, err := util.URLToSchemeAndAddr(s)
 	if err != nil {
 		return nil, err
 	}
 
-	// NOTE: slightly confusing quirk: for unix sockets the
-	switch u.Scheme {
-	case "tcp":
-		return net.Listen(u.Scheme, u.Host)
-	case "unix":
-		return net.Listen(u.Scheme, u.Path)
-	default:
-		return nil, fmt.Errorf("unsupported protocol: %v", u.Scheme)
-	}
+	return net.Listen(scheme, addr)
 }
 
 func applyFstabInitially(base *base) error {

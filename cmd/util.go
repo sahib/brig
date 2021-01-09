@@ -23,7 +23,6 @@ import (
 	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util"
-	"github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
@@ -152,18 +151,17 @@ func guessFreeDaemonURL(ctx *cli.Context, owner string) (string, error) {
 	u, err := url.Parse(defaultURL)
 	if err != nil {
 		// this is a programming error
-		panic("invalid hardcoded default daemon url")
+		panic("invalid hard-coded default daemon url")
 	}
 
 	switch u.Scheme {
 	case "unix":
-		// TODO: Use the owner in clear text.
-		// TODO: Remove socket if it's still lying around.
-		return fmt.Sprintf(
-			"%s.%s",
-			defaultURL,
-			hashlib.Sum([]byte(owner)).B58String(),
-		), nil
+		// Distinguish the path, so that we can have
+		// several daemon on a single system.
+		v := u.Query()
+		v.Add("id", strings.ReplaceAll(owner, "/", "_"))
+		u.RawQuery = v.Encode()
+		return u.String(), nil
 	case "tcp":
 		// Do a best effort by searching for a free port
 		// and use that for the brig repository.
@@ -345,9 +343,9 @@ func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 		daemonURL, _ := guessDaemonURL(ctx)
 
 		if startNew {
-			logVerbose(ctx, "using url %s to check for running daemon.", daemonURL)
+			logVerbose(ctx, "Using url %s to check for running daemon.", daemonURL)
 		} else {
-			logVerbose(ctx, "using url %s to connect to existing daemon.", daemonURL)
+			logVerbose(ctx, "Using url %s to connect to existing daemon.", daemonURL)
 		}
 
 		// Check if the daemon is running already:

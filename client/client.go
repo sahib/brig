@@ -2,11 +2,10 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net"
-	"net/url"
 
 	"github.com/sahib/brig/server/capnp"
+	"github.com/sahib/brig/util"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
@@ -21,19 +20,12 @@ type Client struct {
 }
 
 func connFromURL(s string) (net.Conn, error) {
-	u, err := url.Parse(s)
+	scheme, addr, err := util.URLToSchemeAndAddr(s)
 	if err != nil {
 		return nil, err
 	}
 
-	switch u.Scheme {
-	case "tcp":
-		return net.Dial(u.Scheme, u.Host)
-	case "unix":
-		return net.Dial(u.Scheme, u.Path)
-	default:
-		return nil, fmt.Errorf("unsupported protocol: %v", u.Scheme)
-	}
+	return net.Dial(scheme, addr)
 }
 
 // Dial will attempt to connect to brigd under the specified port

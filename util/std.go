@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -602,4 +603,41 @@ func FindFreePort() int {
 
 	defer listener.Close()
 	return listener.Addr().(*net.TCPAddr).Port
+}
+
+// URLToSchemeAndAddr is a helper that converts different URLS to
+// a scheme and addr argument that can be passed to either net.Listen()
+// or to net.Dial(). Some extras are supported.
+func URLToSchemeAndAddr(s string) (string, string, error) {
+	u, err := url.Parse(s)
+	if err != nil {
+		return "", "", err
+	}
+
+	switch u.Scheme {
+	case "tcp":
+		return u.Scheme, u.Host, nil
+	case "unix":
+		v := u.Query()
+		if v.Get("abstract") == "true" {
+			// See "man 7 unix", if the first byte is a 0 byte then the socket
+			// is considered as abstract, i.e. no file in the filesystem.
+			// The path just acts as unique identifier for the socket.
+			// This makes cleaning up the path easier in case of crashes.
+			b := []byte(u.Path)
+			b[0] = 0
+			u.Path = string(b)
+		}
+
+		// We can optionally specify an ID. That can be useful to
+		// distinguish between different brig daemon on the same system.
+		// (needed for the test-bed script for example)
+		if id := v.Get("id"); id != "" {
+			u.Path += id
+		}
+
+		return u.Scheme, u.Path, nil
+	default:
+		return "", "", fmt.Errorf("unsupported protocol: %v", u.Scheme)
+	}
 }

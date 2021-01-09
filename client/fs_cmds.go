@@ -228,6 +228,8 @@ func (sr *streamReceiver) SendChunk(call capnp.FS_ClientStream_sendChunk) error 
 	return err
 }
 
+// CatStream is like Cat() but the stream goes over the Cap'n Proto connection.
+// It does not utilize an additional connection.
 func (cl *Client) CatStream(path string, offline bool, w io.Writer) error {
 	call := cl.api.CatStream(cl.ctx, func(p capnp.FS_catStream_Params) error {
 		if err := p.SetStream(

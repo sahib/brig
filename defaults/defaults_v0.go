@@ -14,7 +14,10 @@ func DaemonDefaultURL() string {
 	// we should make use of it.
 	switch runtime.GOOS {
 	case "linux", "darwin":
-		return "unix:/tmp/brig.socket"
+		// See "man 7 unix" - we use an abstract unix domain socket.
+		// This means there is no socket file on the file system.
+		// (other tools use unix:@/path, but Go does not support that notation)
+		return "unix:/tmp/brig.socket?abstract=true"
 	default:
 		return "tcp://127.0.0.1:6666"
 	}
