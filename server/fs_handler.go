@@ -5,15 +5,11 @@ import (
 	"io"
 	"net"
 	"os"
-	"sync"
-	"time"
 
-	"github.com/djherbis/buffer"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/djherbis/nio.v2"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
 )
@@ -144,128 +140,6 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 
 ///////////////
 
-type streamServer struct {
-	err     *error
-	errCond *sync.Cond
-	pr      *nio.PipeReader
-	pw      *nio.PipeWriter
-	buf     buffer.Buffer
-}
-
-func (ss *streamServer) doStage(base *base, repoPath string) {
-	err := base.withFsFromPath(repoPath, func(url *URL, fs *catfs.FS) error {
-		if err := fs.Stage(url.Path, ss.pr); err != nil {
-			return err
-		}
-
-		base.notifyFsChangeEvent()
-		return nil
-	})
-
-	ss.errCond.L.Lock()
-	defer ss.errCond.L.Unlock()
-
-	ss.err = &err
-
-	// Wake up any calls waiting in Done()
-	ss.errCond.Broadcast()
-}
-
-const (
-	memBufferSize = 1 * 1024 * 1024
-)
-
-var (
-	bufferPool = sync.Pool{
-		New: func() interface{} {
-			return buffer.New(memBufferSize)
-		},
-	}
-)
-
-func newStreamServer(base *base, repoPath string) *streamServer {
-	buf := bufferPool.Get().(buffer.Buffer)
-	pr, pw := nio.Pipe(buf)
-	ss := &streamServer{
-		pr:      pr,
-		pw:      pw,
-		buf:     buf,
-		errCond: sync.NewCond(&sync.Mutex{}),
-	}
-
-	// already start staging, but fill reader only
-	// chunk by chunk as they arrive:
-	go ss.doStage(base, repoPath)
-	return ss
-}
-
-func (ss *streamServer) hasFinished() (bool, error) {
-	ss.errCond.L.Lock()
-	defer ss.errCond.L.Unlock()
-	if ss.err != nil {
-		return true, *ss.err
-	}
-
-	return false, nil
-}
-
-var (
-	count = time.Duration(0)
-	sum   = time.Duration(0)
-)
-
-// SendChunk is called when the client sends one block of data.
-func (ss *streamServer) SendChunk(call capnp.FS_StageStream_sendChunk) error {
-	y := time.Now()
-	defer func() {
-		sum += time.Since(y)
-		count++
-		if count%50 == 0 {
-			log.Printf(
-				"send chunk took %v (buffered %.0f%%)",
-				sum/count,
-				100*float64(ss.buf.Len())/memBufferSize,
-			)
-		}
-	}()
-
-	if finished, err := ss.hasFinished(); finished {
-		// return the last error if already done, err might be nil here.
-		// This is here to protect against more SendChunk() calls after Done()
-		return err
-	}
-
-	data, err := call.Params.Chunk()
-	if err != nil {
-		return err
-	}
-
-	// Send the data over the pipe to the stage reader:
-	// No actual copying done, here. This waits until the data was read.
-	_, err = ss.pw.Write(data)
-	return err
-}
-
-func (ss *streamServer) Done(call capnp.FS_StageStream_done) error {
-	// Closing the pipe writer will trigger a io.EOF in the reader part.
-	// This will make Stage() return after some post processing.
-	if err := ss.pw.Close(); err != nil {
-		return err
-	}
-
-	ss.errCond.L.Lock()
-	defer ss.errCond.L.Unlock()
-
-	// Wait until Stage() actually returned:
-	for ss.err == nil {
-		ss.errCond.Wait()
-	}
-
-	ss.buf.Reset()
-	bufferPool.Put(ss.buf)
-	return *ss.err
-}
-
 func (fh *fsHandler) StageFromStream(call capnp.FS_stageFromStream) error {
 	server.Ack(call.Options)
 
@@ -310,8 +184,8 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			return err
 		}
 
-		// TODO: Get rid of this, also stream over Capn'Proto and
-		// dont add another stream.
+		// TODO: Get rid of this, also stream over Capn'Proto.
+		// Before doing this, we need to get the performance on-par though.
 		port, err := bootTransferServer(fs, "127.0.0.1", func(conn net.Conn) {
 			defer stream.Close()
 			localAddr := conn.LocalAddr().String()
@@ -334,6 +208,38 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		call.Results.SetPort(int32(port))
 		return nil
 	})
+}
+
+func (fh *fsHandler) CatStream(call capnp.FS_catStream) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	capnpStream := call.Params.Stream()
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		if call.Params.Offline() {
+			isCached, err := fs.IsCached(url.Path)
+			if err != nil {
+				return err
+			}
+
+			if !isCached {
+				return fmt.Errorf("file is not in local cache")
+			}
+		}
+
+		fsStream, err := fs.Cat(url.Path)
+		if err != nil {
+			return err
+		}
+
+		return serverToClientStream(fsStream, capnpStream)
+	})
+
+	return nil
 }
 
 func (fh *fsHandler) Tar(call capnp.FS_tar) error {

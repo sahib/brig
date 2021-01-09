@@ -214,6 +214,40 @@ func (cl *Client) Cat(path string, offline bool) (io.ReadCloser, error) {
 	return conn, nil
 }
 
+type streamReceiver struct {
+	w io.Writer
+}
+
+func (sr *streamReceiver) SendChunk(call capnp.FS_ClientStream_sendChunk) error {
+	data, err := call.Params.Chunk()
+	if err != nil {
+		return err
+	}
+
+	_, err = sr.w.Write(data)
+	return err
+}
+
+func (cl *Client) CatStream(path string, offline bool, w io.Writer) error {
+	call := cl.api.CatStream(cl.ctx, func(p capnp.FS_catStream_Params) error {
+		if err := p.SetStream(
+			capnp.FS_ClientStream_ServerToClient(
+				&streamReceiver{
+					w: w,
+				},
+			),
+		); err != nil {
+			return err
+		}
+
+		p.SetOffline(offline)
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
 // Tar outputs a tar archive with the contents of `path`.
 // `path` can be either a file or directory.
 func (cl *Client) Tar(path string, offline bool) (io.ReadCloser, error) {

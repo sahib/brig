@@ -154,10 +154,15 @@ interface FS {
     repin             @16  (path :Text);
     isCached          @17  (path :Text) -> (isCached :Bool);
     stageFromStream   @18  (repoPath :Text) -> (stream :StageStream);
+    catStream         @19  (path :Text, offline :Bool, stream :ClientStream) -> ();
 
     interface StageStream {
         sendChunk @0 (chunk :Data) -> ();
         done @1 ();
+    }
+
+    interface ClientStream {
+        sendChunk @0 (chunk :Data) -> ();
     }
 }
 
