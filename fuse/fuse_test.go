@@ -307,6 +307,7 @@ var (
 	DataSizes = []int64{
 		0, 1, 2, 4, 8, 16, 32, 64, 1024,
 		2048, 4095, 4096, 4097, 147611,
+		2*1024*1024+123, // in case if we have buffer size interference
 	}
 )
 
