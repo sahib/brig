@@ -253,7 +253,7 @@ func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, cont
 	}
 }
 
-func checkFuseFileMatcheToBrig(t *testing.T, ctx context.Context, control *spawntest.Control, fusePath string, brigPath string) {
+func checkFuseFileMatchToBrig(t *testing.T, ctx context.Context, control *spawntest.Control, fusePath string, brigPath string) {
 	// checks if OS file content matches brig FS file content
 	fuseData, err := ioutil.ReadFile(fusePath)
 	require.Nil(t, err)
@@ -319,7 +319,7 @@ func TestRead(t *testing.T) {
 				req := brigPayload{Path: brigFilePath, Data: helloData}
 				require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
 				fuseFilePath := filepath.Join(mount.Dir, brigFilePath)
-				checkFuseFileMatcheToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+				checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
 			})
 		}
 	})
@@ -339,7 +339,7 @@ func TestWrite(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Could not write simple file via fuse layer: %v", err)
 				}
-				checkFuseFileMatcheToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+				checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
 			})
 		}
 	})
@@ -363,7 +363,7 @@ func TestTouchWrite(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Could not write simple file via fuse layer: %v", err)
 				}
-				checkFuseFileMatcheToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+				checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
 			})
 		}
 	})
@@ -384,7 +384,7 @@ func TestTouchWriteSubdir(t *testing.T) {
 		expected := []byte{1, 2, 3}
 		require.Nil(t, ioutil.WriteFile(fuseFilePath, expected, 0644))
 
-		checkFuseFileMatcheToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+		checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
 	})
 }
 
@@ -403,7 +403,7 @@ func TestReadOnlyFs(t *testing.T) {
 		data, err := ioutil.ReadFile(xPath)
 		require.Nil(t, err)
 		require.Equal(t, data, xData)
-		checkFuseFileMatcheToBrig(t, ctx, control, xPath, "x.png")
+		checkFuseFileMatchToBrig(t, ctx, control, xPath, "x.png")
 
 		// Try creating a new file:
 		yPath := filepath.Join(mount.Dir, "y.png")
@@ -422,19 +422,19 @@ func TestWithRoot(t *testing.T) {
 		// Populate brig FS with some files in different directories
 		req := brigPayload{Path: "/u.png", Data: []byte{1, 2, 3}}
 		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatcheToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
 		req = brigPayload{Path: "/a/x.png", Data: []byte{2, 3, 4}}
 		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatcheToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
 		req = brigPayload{Path: "/a/b/y.png", Data: []byte{3, 4, 5}}
 		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatcheToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
 		req = brigPayload{Path: "/a/b/c/z.png", Data: []byte{4, 5, 6}}
 		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatcheToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
 		// Now we need to remount fuse with different root directory
 		remntReq := mountingRequest{
@@ -447,12 +447,12 @@ func TestWithRoot(t *testing.T) {
 		// See if fuse indeed provides different root
 		// Read already existing file
 		yPath := filepath.Join(mount.Dir, "y.png")
-		checkFuseFileMatcheToBrig(t, ctx, control, yPath, "/a/b/y.png")
+		checkFuseFileMatchToBrig(t, ctx, control, yPath, "/a/b/y.png")
 
 		// Write to a new file
 		newPath := filepath.Join(mount.Dir, "new.png")
 		require.Nil(t, ioutil.WriteFile(newPath, []byte{5, 6, 7}, 0644))
-		checkFuseFileMatcheToBrig(t, ctx, control, newPath, "/a/b/new.png")
+		checkFuseFileMatchToBrig(t, ctx, control, newPath, "/a/b/new.png")
 
 		// Attempt to read file above mounted root
 		inAccessiblePath := filepath.Join(mount.Dir, "u.png")
