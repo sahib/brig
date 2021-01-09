@@ -49,60 +49,60 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-type brigHelp struct{}
+type fuseCatFSHelp struct{}
 
 // These helpers will be requested from test and executed on the server
-// which is managing brig-fuse connection (started within test)
-func (bmh *brigHelp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// which is managing catfs-fuse connection (started within test)
+func (fch *fuseCatFSHelp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch req.URL.Path {
 	case "/mount":
-		httpjson.ServePOST(bmh.makeBrigAndFuseMount).ServeHTTP(w, req)
+		httpjson.ServePOST(fch.makeCatfsAndFuseMount).ServeHTTP(w, req)
 	case "/unmount":
-		httpjson.ServePOST(bmh.unmountFuseAndcloseDummyBrigFS).ServeHTTP(w, req)
+		httpjson.ServePOST(fch.unmountFuseAndCloseDummyCatFS).ServeHTTP(w, req)
 	case "/fuseReMount":
-		httpjson.ServePOST(bmh.makeFuseReMount).ServeHTTP(w, req)
-	case "/brigStage":
-		httpjson.ServePOST(bmh.brigStage).ServeHTTP(w, req)
-	case "/brigGetData":
-		httpjson.ServePOST(bmh.brigGetData).ServeHTTP(w, req)
+		httpjson.ServePOST(fch.makeFuseReMount).ServeHTTP(w, req)
+	case "/catfsStage":
+		httpjson.ServePOST(fch.catfsStage).ServeHTTP(w, req)
+	case "/catfsGetData":
+		httpjson.ServePOST(fch.catfsGetData).ServeHTTP(w, req)
 	default:
 		http.NotFound(w, req)
 	}
 }
 
-func makeDummyBrigFS(dbPath string) (brigFuseInfo, error) {
+func makeDummyCatFS(dbPath string) (catfsFuseInfo, error) {
 	backend := catfs.NewMemFsBackend()
 	owner := "alice"
 
 	cfg, err := config.Open(nil, defaults.Defaults, config.StrictnessPanic)
 	if err != nil {
-		log.Fatalf("Could not get default brig FS config: %v", err)
-		return brigFuseInfo{}, err
+		log.Fatalf("Could not get default catFS config: %v", err)
+		return catfsFuseInfo{}, err
 	}
 
-	bfs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg.Section("fs"))
+	cfs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg.Section("fs"))
 	if err != nil {
-		log.Fatalf("Failed to create brig filesystem: %v", err)
-		return brigFuseInfo{}, err
+		log.Fatalf("Failed to create catfs filesystem: %v", err)
+		return catfsFuseInfo{}, err
 	}
-	bfInfo := brigFuseInfo{}
-	bfInfo.bfs = bfs
-	bfInfo.dbPath = dbPath
+	cfInfo := catfsFuseInfo{}
+	cfInfo.cfs = cfs
+	cfInfo.dbPath = dbPath
 
-	return bfInfo, err
+	return cfInfo, err
 }
 
 type nothing struct{} // use it to send empty request or responses to server
 
-type brigFuseInfo struct {
-	bfs       *catfs.FS
+type catfsFuseInfo struct {
+	cfs       *catfs.FS
 	dbPath    string
 	fuseMount *Mount
 }
 
-// bfInfo will be in the global space for the server
-// which manage fuse mount connection to the brig FS
-var bfInfo brigFuseInfo
+// cfInfo will be in the global space for the server
+// which manage fuse mount connection to the catFS
+var cfInfo catfsFuseInfo
 
 type mountingRequest struct {
 	DbPath  string
@@ -110,54 +110,54 @@ type mountingRequest struct {
 	Opts    MountOptions
 }
 
-func (bmh *brigHelp) makeBrigAndFuseMount(ctx context.Context, req mountingRequest) (*nothing, error) {
+func (fch *fuseCatFSHelp) makeCatfsAndFuseMount(ctx context.Context, req mountingRequest) (*nothing, error) {
 	var err error
-	bfInfo, err = makeDummyBrigFS(req.DbPath)
+	cfInfo, err = makeDummyCatFS(req.DbPath)
 	if err != nil {
-		log.Errorf("cannot comake brig file system in %v", bfInfo.dbPath)
+		log.Errorf("cannot comake catfs file system in %v", cfInfo.dbPath)
 		return &nothing{}, err
 	}
 
-	fuseMount, err := makeFuseMount(bfInfo.bfs, req.MntPath, req.Opts)
+	fuseMount, err := makeFuseMount(cfInfo.cfs, req.MntPath, req.Opts)
 	if err != nil {
-		log.Errorf("cannot mount brig fuse file system to %v", req.MntPath)
+		log.Errorf("cannot mount catfs fuse file system to %v", req.MntPath)
 		return &nothing{}, err
 	}
-	bfInfo.fuseMount = fuseMount
+	cfInfo.fuseMount = fuseMount
 	return &nothing{}, err
 }
 
-func (bmh *brigHelp) makeFuseReMount(ctx context.Context, req mountingRequest) (*nothing, error) {
-	fuseMount, err := makeFuseMount(bfInfo.bfs, req.MntPath, req.Opts)
+func (fch *fuseCatFSHelp) makeFuseReMount(ctx context.Context, req mountingRequest) (*nothing, error) {
+	fuseMount, err := makeFuseMount(cfInfo.cfs, req.MntPath, req.Opts)
 	if err != nil {
-		log.Errorf("cannot mount brig fuse file system to %v", req.MntPath)
+		log.Errorf("cannot mount catfs fuse file system to %v", req.MntPath)
 		return &nothing{}, err
 	}
-	bfInfo.fuseMount = fuseMount
+	cfInfo.fuseMount = fuseMount
 	return &nothing{}, err
 }
 
-func (bmh *brigHelp) unmountFuseAndcloseDummyBrigFS(ctx context.Context, req nothing) (*nothing, error) {
-	defer os.RemoveAll(bfInfo.fuseMount.Dir)
-	defer os.RemoveAll(bfInfo.dbPath)
+func (fch *fuseCatFSHelp) unmountFuseAndCloseDummyCatFS(ctx context.Context, req nothing) (*nothing, error) {
+	defer os.RemoveAll(cfInfo.fuseMount.Dir)
+	defer os.RemoveAll(cfInfo.dbPath)
 	// first unmount fuse directory
-	if err := lazyUnmount(bfInfo.fuseMount.Dir); err != nil {
-		skipableErr := "exit status 1: fusermount: entry for " + bfInfo.fuseMount.Dir + " not found in /etc/mtab"
+	if err := lazyUnmount(cfInfo.fuseMount.Dir); err != nil {
+		skipableErr := "exit status 1: fusermount: entry for " + cfInfo.fuseMount.Dir + " not found in /etc/mtab"
 		log.Debug(skipableErr)
 		if err.Error() != skipableErr {
 			return &nothing{}, err
 		}
 	}
 
-	// now close brig FS
-	err := bfInfo.bfs.Close()
+	// now close catFS
+	err := cfInfo.cfs.Close()
 	if err != nil {
-		log.Fatalf("Could not close brig filesystem: %v", err)
+		log.Fatalf("Could not close catfs filesystem: %v", err)
 	}
 	return &nothing{}, err
 }
 
-func makeFuseMount(bfs *catfs.FS, mntPath string, opts MountOptions) (*Mount, error) {
+func makeFuseMount(cfs *catfs.FS, mntPath string, opts MountOptions) (*Mount, error) {
 	// Make sure to unmount any mounts that are there.
 	// Possibly there are some leftovers from previous failed runs.
 	if err := lazyUnmount(mntPath); err != nil {
@@ -173,7 +173,7 @@ func makeFuseMount(bfs *catfs.FS, mntPath string, opts MountOptions) (*Mount, er
 		return nil, err
 	}
 
-	mount, err := NewMount(bfs, mntPath, nil, opts)
+	mount, err := NewMount(cfs, mntPath, nil, opts)
 	if err != nil {
 		log.Fatalf("Cannot create mount: %v", err)
 		return nil, err
@@ -181,24 +181,24 @@ func makeFuseMount(bfs *catfs.FS, mntPath string, opts MountOptions) (*Mount, er
 	return mount, err
 }
 
-type brigPayload struct {
+type catfsPayload struct {
 	Path string
 	Data []byte
 }
 
-func (bmh *brigHelp) brigStage(ctx context.Context, req brigPayload) (*nothing, error) {
-	err := bfInfo.bfs.Stage(req.Path, bytes.NewReader(req.Data))
+func (fch *fuseCatFSHelp) catfsStage(ctx context.Context, req catfsPayload) (*nothing, error) {
+	err := cfInfo.cfs.Stage(req.Path, bytes.NewReader(req.Data))
 	return &nothing{}, err
 }
 
-// Get data from a file stored by brig fs
-func (bmh *brigHelp) brigGetData(ctx context.Context, req brigPayload) (*brigPayload, error) {
-	out := brigPayload{}
+// Get data from a file stored by catFS
+func (fch *fuseCatFSHelp) catfsGetData(ctx context.Context, req catfsPayload) (*catfsPayload, error) {
+	out := catfsPayload{}
 	out.Path = req.Path
 
-	stream, err := bfInfo.bfs.Cat(req.Path)
+	stream, err := cfInfo.cfs.Cat(req.Path)
 	if err != nil {
-		log.Fatalf("Could not get stream for a brig file: %v", err)
+		log.Fatalf("Could not get stream for a catfs file: %v", err)
 		return &out, err
 	}
 	result := bytes.NewBuffer(nil)
@@ -213,7 +213,7 @@ func (bmh *brigHelp) brigGetData(ctx context.Context, req brigPayload) (*brigPay
 }
 
 var helpers spawntest.Registry
-var brigHelper = helpers.Register("brigHelp", &brigHelp{})
+var fuseCatFSHelper = helpers.Register("fuseCatFSHelp", &fuseCatFSHelp{})
 
 type mountInfo struct { // fuse related info available to OS layer
 	Dir  string
@@ -227,23 +227,23 @@ func callUnMount(t *testing.T, ctx context.Context, control *spawntest.Control) 
 	}
 }
 
-// Spawns helper, prepare catfs, connects it to fuse layer, and execute function f
+// Spawns helper, prepare catFS, connects it to fuse layer, and execute function f
 func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, control *spawntest.Control, mount *mountInfo)) {
 	// set up mounts
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	control := brigHelper.Spawn(ctx, t)
+	control := fuseCatFSHelper.Spawn(ctx, t)
 	defer control.Close()
 
-	dbPath, err := ioutil.TempDir("", "brig-fs-test")
+	dbPath, err := ioutil.TempDir("", "catfs-db-test")
 	if err != nil {
-		t.Fatalf("Failed to create temp dir for brig file system: %v", err)
+		t.Fatalf("Failed to create temp dir for catFS: %v", err)
 	}
 
 	req := mountingRequest{
 		DbPath:  dbPath,
-		MntPath: filepath.Join(os.TempDir(), "brig-fuse-mountdir"),
+		MntPath: filepath.Join(os.TempDir(), "catfs-fuse-mountdir"),
 		Opts:    opts,
 	}
 
@@ -259,15 +259,15 @@ func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, cont
 	})
 }
 
-func checkFuseFileMatchToBrig(t *testing.T, ctx context.Context, control *spawntest.Control, fusePath string, brigPath string) {
-	// checks if OS file content matches brig FS file content
+func checkFuseFileMatchToCatFS(t *testing.T, ctx context.Context, control *spawntest.Control, fusePath string, catfsPath string) {
+	// checks if OS file content matches catFS file content
 	fuseData, err := ioutil.ReadFile(fusePath)
 	require.Nil(t, err)
 
-	// is brig seeing the same data
-	req := brigPayload{Path: brigPath}
-	out := brigPayload{}
-	require.Nil(t, control.JSON("/brigGetData").Call(ctx, req, &out))
+	// is catFS seeing the same data
+	req := catfsPayload{Path: catfsPath}
+	out := catfsPayload{}
+	require.Nil(t, control.JSON("/catfsGetData").Call(ctx, req, &out))
 	require.Equal(t, len(out.Data), len(fuseData))
 	if out.Data == nil {
 		// this is special for the 0 length data
@@ -280,26 +280,26 @@ func checkFuseFileMatchToBrig(t *testing.T, ctx context.Context, control *spawnt
 
 // Tests for spawntest infrastructure related tests
 
-// Just checks that our brigStage interface to brig FS does not error out
-func TestBrigStage(t *testing.T) {
+// Just checks that our catfsStage interface to catFS does not error out
+func TestCatfsStage(t *testing.T) {
 	withMount(t, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
 		dataIn := []byte{1, 2, 3, 4}
 		filePath := "StagingTest.bin"
-		req := brigPayload{Path: filePath, Data: dataIn}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
+		req := catfsPayload{Path: filePath, Data: dataIn}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
 	})
 }
 
-func TestBrigGetData(t *testing.T) {
+func TestCatfsGetData(t *testing.T) {
 	withMount(t, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
 		dataIn := []byte{1, 2, 3, 4}
 		filePath := "StageAndReadTest.bin"
-		req := brigPayload{Path: filePath, Data: dataIn}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
+		req := catfsPayload{Path: filePath, Data: dataIn}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
 
 		req.Data = []byte{}
-		out := brigPayload{}
-		require.Nil(t, control.JSON("/brigGetData").Call(ctx, req, &out))
+		out := catfsPayload{}
+		require.Nil(t, control.JSON("/catfsGetData").Call(ctx, req, &out))
 		require.Equal(t, out.Data, dataIn)
 	})
 }
@@ -321,11 +321,11 @@ func TestRead(t *testing.T) {
 				helloData := testutil.CreateDummyBuf(size)
 
 				// Add a simple file:
-				brigFilePath := fmt.Sprintf("/hello_from_brig_%d", size)
-				req := brigPayload{Path: brigFilePath, Data: helloData}
-				require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-				fuseFilePath := filepath.Join(mount.Dir, brigFilePath)
-				checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+				catfsFilePath := fmt.Sprintf("/hello_from_catfs_%d", size)
+				req := catfsPayload{Path: catfsFilePath, Data: helloData}
+				require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+				fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
+				checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
 			})
 		}
 	})
@@ -337,15 +337,15 @@ func TestWrite(t *testing.T) {
 			t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
 				helloData := testutil.CreateDummyBuf(size)
 
-				brigFilePath := fmt.Sprintf("/hello_from_fuse%d", size)
-				fuseFilePath := filepath.Join(mount.Dir, brigFilePath)
+				catfsFilePath := fmt.Sprintf("/hello_from_fuse%d", size)
+				fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
 
 				// Write a simple file via the fuse layer:
 				err := ioutil.WriteFile(fuseFilePath, helloData, 0644)
 				if err != nil {
 					t.Fatalf("Could not write simple file via fuse layer: %v", err)
 				}
-				checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+				checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
 			})
 		}
 	})
@@ -357,11 +357,11 @@ func TestTouchWrite(t *testing.T) {
 		for _, size := range DataSizes {
 			t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
 
-				brigFilePath := fmt.Sprintf("/emty_at_creation_by_brig_%d", size)
-				req := brigPayload{Path: brigFilePath, Data: []byte{}}
-				require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
+				catfsFilePath := fmt.Sprintf("/emty_at_creation_by_catfs_%d", size)
+				req := catfsPayload{Path: catfsFilePath, Data: []byte{}}
+				require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
 
-				fuseFilePath := filepath.Join(mount.Dir, brigFilePath)
+				fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
 
 				// Write a simple file via the fuse layer:
 				helloData := testutil.CreateDummyBuf(size)
@@ -369,7 +369,7 @@ func TestTouchWrite(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Could not write simple file via fuse layer: %v", err)
 				}
-				checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+				checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
 			})
 		}
 	})
@@ -380,7 +380,7 @@ func TestTouchWriteSubdir(t *testing.T) {
 	withMount(t, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
 		file := "donald.png"
 		subDirPath := "sub"
-		brigFilePath := filepath.Join(subDirPath, file)
+		catfsFilePath := filepath.Join(subDirPath, file)
 
 		fuseSubDirPath := filepath.Join(mount.Dir, subDirPath)
 		fuseFilePath := filepath.Join(fuseSubDirPath, file)
@@ -390,7 +390,7 @@ func TestTouchWriteSubdir(t *testing.T) {
 		expected := []byte{1, 2, 3}
 		require.Nil(t, ioutil.WriteFile(fuseFilePath, expected, 0644))
 
-		checkFuseFileMatchToBrig(t, ctx, control, fuseFilePath, brigFilePath)
+		checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
 	})
 }
 
@@ -400,8 +400,8 @@ func TestReadOnlyFs(t *testing.T) {
 	}
 	withMount(t, opts, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
 		xData := []byte{1, 2, 3}
-		req := brigPayload{Path: "/x.png", Data: xData}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
+		req := catfsPayload{Path: "/x.png", Data: xData}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
 
 		// Do some allowed io to check if the fs is actually working.
 		// The test does not check on the kind of errors otherwise.
@@ -409,7 +409,7 @@ func TestReadOnlyFs(t *testing.T) {
 		data, err := ioutil.ReadFile(xPath)
 		require.Nil(t, err)
 		require.Equal(t, data, xData)
-		checkFuseFileMatchToBrig(t, ctx, control, xPath, "x.png")
+		checkFuseFileMatchToCatFS(t, ctx, control, xPath, "x.png")
 
 		// Try creating a new file:
 		yPath := filepath.Join(mount.Dir, "y.png")
@@ -425,22 +425,22 @@ func TestReadOnlyFs(t *testing.T) {
 
 func TestWithRoot(t *testing.T) {
 	withMount(t, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
-		// Populate brig FS with some files in different directories
-		req := brigPayload{Path: "/u.png", Data: []byte{1, 2, 3}}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		// Populate catFS with some files in different directories
+		req := catfsPayload{Path: "/u.png", Data: []byte{1, 2, 3}}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
-		req = brigPayload{Path: "/a/x.png", Data: []byte{2, 3, 4}}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		req = catfsPayload{Path: "/a/x.png", Data: []byte{2, 3, 4}}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
-		req = brigPayload{Path: "/a/b/y.png", Data: []byte{3, 4, 5}}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		req = catfsPayload{Path: "/a/b/y.png", Data: []byte{3, 4, 5}}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
-		req = brigPayload{Path: "/a/b/c/z.png", Data: []byte{4, 5, 6}}
-		require.Nil(t, control.JSON("/brigStage").Call(ctx, req, &nothing{}))
-		checkFuseFileMatchToBrig(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
+		req = catfsPayload{Path: "/a/b/c/z.png", Data: []byte{4, 5, 6}}
+		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
 		// Now we need to remount fuse with different root directory
 		remntReq := mountingRequest{
@@ -453,12 +453,12 @@ func TestWithRoot(t *testing.T) {
 		// See if fuse indeed provides different root
 		// Read already existing file
 		yPath := filepath.Join(mount.Dir, "y.png")
-		checkFuseFileMatchToBrig(t, ctx, control, yPath, "/a/b/y.png")
+		checkFuseFileMatchToCatFS(t, ctx, control, yPath, "/a/b/y.png")
 
 		// Write to a new file
 		newPath := filepath.Join(mount.Dir, "new.png")
 		require.Nil(t, ioutil.WriteFile(newPath, []byte{5, 6, 7}, 0644))
-		checkFuseFileMatchToBrig(t, ctx, control, newPath, "/a/b/new.png")
+		checkFuseFileMatchToCatFS(t, ctx, control, newPath, "/a/b/new.png")
 
 		// Attempt to read file above mounted root
 		inAccessiblePath := filepath.Join(mount.Dir, "u.png")
