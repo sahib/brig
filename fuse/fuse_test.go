@@ -328,6 +328,8 @@ func TestRead(t *testing.T) {
 				catfsFilePath := fmt.Sprintf("/hello_from_catfs_%d", size)
 				req := catfsPayload{Path: catfsFilePath, Data: helloData}
 				require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+				checkCatfsFileContent(t, ctx, control, catfsFilePath, helloData)
+
 				fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
 				checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
 			})
@@ -349,7 +351,7 @@ func TestWrite(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Could not write simple file via fuse layer: %v", err)
 				}
-				checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
+				checkCatfsFileContent(t, ctx, control, catfsFilePath, helloData)
 			})
 		}
 	})
@@ -364,6 +366,7 @@ func TestTouchWrite(t *testing.T) {
 				catfsFilePath := fmt.Sprintf("/emty_at_creation_by_catfs_%d", size)
 				req := catfsPayload{Path: catfsFilePath, Data: []byte{}}
 				require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+				checkCatfsFileContent(t, ctx, control, catfsFilePath, req.Data)
 
 				fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
 
@@ -373,7 +376,7 @@ func TestTouchWrite(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Could not write simple file via fuse layer: %v", err)
 				}
-				checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
+				checkCatfsFileContent(t, ctx, control, catfsFilePath, helloData)
 			})
 		}
 	})
@@ -394,7 +397,7 @@ func TestTouchWriteSubdir(t *testing.T) {
 		expected := []byte{1, 2, 3}
 		require.Nil(t, ioutil.WriteFile(fuseFilePath, expected, 0644))
 
-		checkFuseFileMatchToCatFS(t, ctx, control, fuseFilePath, catfsFilePath)
+		checkCatfsFileContent(t, ctx, control, catfsFilePath, expected)
 	})
 }
 
@@ -406,13 +409,11 @@ func TestReadOnlyFs(t *testing.T) {
 		xData := []byte{1, 2, 3}
 		req := catfsPayload{Path: "/x.png", Data: xData}
 		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkCatfsFileContent(t, ctx, control, "x.png", xData)
 
 		// Do some allowed io to check if the fs is actually working.
 		// The test does not check on the kind of errors otherwise.
 		xPath := filepath.Join(mount.Dir, "x.png")
-		data, err := ioutil.ReadFile(xPath)
-		require.Nil(t, err)
-		require.Equal(t, data, xData)
 		checkFuseFileMatchToCatFS(t, ctx, control, xPath, "x.png")
 
 		// Try creating a new file:
@@ -429,21 +430,29 @@ func TestReadOnlyFs(t *testing.T) {
 
 func TestWithRoot(t *testing.T) {
 	withMount(t, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
+		data := []byte{1, 2, 3}
 		// Populate catFS with some files in different directories
-		req := catfsPayload{Path: "/u.png", Data: []byte{1, 2, 3}}
+		req := catfsPayload{Path: "/u.png", Data: data}
 		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkCatfsFileContent(t, ctx, control, req.Path, data)
 		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
-		req = catfsPayload{Path: "/a/x.png", Data: []byte{2, 3, 4}}
+		data = []byte{2, 3, 4}
+		req = catfsPayload{Path: "/a/x.png", Data: data}
 		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkCatfsFileContent(t, ctx, control, req.Path, data)
 		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
-		req = catfsPayload{Path: "/a/b/y.png", Data: []byte{3, 4, 5}}
+		data = []byte{3, 4, 5}
+		req = catfsPayload{Path: "/a/b/y.png", Data: data}
 		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkCatfsFileContent(t, ctx, control, req.Path, data)
 		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
-		req = catfsPayload{Path: "/a/b/c/z.png", Data: []byte{4, 5, 6}}
+		data = []byte{4, 5, 6}
+		req = catfsPayload{Path: "/a/b/c/z.png", Data: data}
 		require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkCatfsFileContent(t, ctx, control, req.Path, data)
 		checkFuseFileMatchToCatFS(t, ctx, control, filepath.Join(mount.Dir, req.Path), req.Path)
 
 		// Now we need to remount fuse with different root directory
@@ -460,9 +469,10 @@ func TestWithRoot(t *testing.T) {
 		checkFuseFileMatchToCatFS(t, ctx, control, yPath, "/a/b/y.png")
 
 		// Write to a new file
+		data = []byte{5, 6, 7}
 		newPath := filepath.Join(mount.Dir, "new.png")
-		require.Nil(t, ioutil.WriteFile(newPath, []byte{5, 6, 7}, 0644))
-		checkFuseFileMatchToCatFS(t, ctx, control, newPath, "/a/b/new.png")
+		require.Nil(t, ioutil.WriteFile(newPath, data, 0644))
+		checkCatfsFileContent(t, ctx, control, "/a/b/new.png", data)
 
 		// Attempt to read file above mounted root
 		inAccessiblePath := filepath.Join(mount.Dir, "u.png")
