@@ -265,15 +265,19 @@ func checkFuseFileMatchToCatFS(t *testing.T, ctx context.Context, control *spawn
 	require.Nil(t, err)
 
 	// is catFS seeing the same data
+	checkCatfsFileContent(t, ctx, control, catfsPath, fuseData)
+}
+
+func checkCatfsFileContent(t *testing.T, ctx context.Context, control *spawntest.Control, catfsPath string, expected []byte) {
 	req := catfsPayload{Path: catfsPath}
 	out := catfsPayload{}
 	require.Nil(t, control.JSON("/catfsGetData").Call(ctx, req, &out))
-	require.Equal(t, len(out.Data), len(fuseData))
+	require.Equal(t, len(out.Data), len(expected))
 	if out.Data == nil {
 		// this is special for the 0 length data
 		out.Data = []byte{}
 	}
-	require.Equal(t, out.Data, fuseData)
+	require.Equal(t, out.Data, expected)
 }
 
 // Finally we ready to do tests
