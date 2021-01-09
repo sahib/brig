@@ -232,7 +232,6 @@ func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, cont
 	if err != nil {
 		t.Fatalf("Failed to create temp dir for brig file system: %v", err)
 	}
-	require.Nil(t, err)
 
 	req := mountingRequest{
 		DbPath:  dbPath,
@@ -243,7 +242,6 @@ func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, cont
 	if err := control.JSON("/mount").Call(ctx, req, &nothing{}); err != nil {
 		t.Fatalf("calling helper: %v", err)
 	}
-	require.Nil(t, err)
 
 	mount := mountInfo{Dir: req.MntPath, Opts: req.Opts}
 	// function which required mounts
@@ -253,7 +251,6 @@ func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, cont
 	if err := control.JSON("/unmount").Call(ctx, nothing{}, &nothing{}); err != nil {
 		t.Fatalf("calling helper: %v", err)
 	}
-	require.Nil(t, err)
 }
 
 func checkFuseFileMatcheToBrig(t *testing.T, ctx context.Context, control *spawntest.Control, fusePath string, brigPath string) {
