@@ -243,9 +243,11 @@ func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, cont
 		t.Fatalf("calling helper: %v", err)
 	}
 
-	mount := mountInfo{Dir: req.MntPath, Opts: req.Opts}
 	// function which required mounts
-	f(ctx, control, &mount)
+	f(ctx, control, &mountInfo{
+		Dir: req.MntPath,
+		Opts: req.Opts,
+	})
 
 	// cleanup and unmount
 	if err := control.JSON("/unmount").Call(ctx, nothing{}, &nothing{}); err != nil {
