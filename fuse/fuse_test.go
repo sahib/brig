@@ -221,14 +221,14 @@ type mountInfo struct { // fuse related info available to OS layer
 }
 
 // Call helper for unmount and cleanup
-func callUnMount(t *testing.T, ctx context.Context, control *spawntest.Control) {
+func callUnMount(t testing.TB, ctx context.Context, control *spawntest.Control) {
 	if err := control.JSON("/unmount").Call(ctx, nothing{}, &nothing{}); err != nil {
 		t.Fatalf("calling helper: %v", err)
 	}
 }
 
 // Spawns helper, prepare catFS, connects it to fuse layer, and execute function f
-func withMount(t *testing.T, opts MountOptions, f func(ctx context.Context, control *spawntest.Control, mount *mountInfo)) {
+func withMount(t testing.TB, opts MountOptions, f func(ctx context.Context, control *spawntest.Control, mount *mountInfo)) {
 	// set up mounts
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
