@@ -38,7 +38,6 @@ tasks:
       - ./gateway/static/**/**/**/**
 
   build:
-    deps: [generate]
     desc: "Build the brig binary"
     cmds:
       - ./scripts/build.sh
@@ -47,6 +46,10 @@ tasks:
       - go.mod
       - ./*.go
       - ./**/*.go
+
+  dev-build:
+    deps: [generate, build]
+    desc: "Developer build from scratch (regenerates internal resources)"
 
   test:
     desc: "Run integration & unit tests"
