@@ -5,7 +5,7 @@ set -euo pipefail
 # Collect some basic info about the repo state:
 BUILD_TIME="$(date --iso-8601=seconds)"
 GIT_REVISION="$(git rev-parse HEAD)"
-CURRENT_BRANCH="$(git branch --show-current)"
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
 VERSION_PACKAGE='github.com/sahib/brig/version'
 
