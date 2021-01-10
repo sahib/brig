@@ -2,19 +2,14 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"log/syslog"
 	"net"
-	"os"
 	"path/filepath"
 	"runtime/debug"
 
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/repo"
-	formatter "github.com/sahib/brig/util/log"
+	"github.com/sahib/brig/util"
 	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/util/server"
 	log "github.com/sirupsen/logrus"
@@ -55,32 +50,13 @@ func readPasswordFromHelper(basePath string, passwordFn func() (string, error)) 
 	return pwutil.ReadPasswordFromHelper(basePath, passwordCmd)
 }
 
-func switchToSyslog() {
-	wSyslog, err := syslog.New(syslog.LOG_NOTICE, "brig")
+func listenerFromServerURL(s string) (net.Listener, error) {
+	scheme, addr, err := util.URLToSchemeAndAddr(s)
 	if err != nil {
-		log.Warningf("failed to open connection to syslog for brig: %v", err)
-		logFd, err := ioutil.TempFile("", "brig-*.log")
-		if err != nil {
-			log.Warningf("")
-		} else {
-			log.Warningf("Will log to %s from now on.", logFd.Name())
-			log.SetOutput(logFd)
-		}
-
-		return
+		return nil, err
 	}
 
-	log.SetLevel(log.DebugLevel)
-	log.SetFormatter(&formatter.FancyLogFormatter{
-		UseColors: false,
-	})
-
-	log.SetOutput(
-		io.MultiWriter(
-			formatter.NewSyslogWrapper(wSyslog),
-			os.Stdout,
-		),
-	)
+	return net.Listen(scheme, addr)
 }
 
 func applyFstabInitially(base *base) error {
@@ -88,17 +64,10 @@ func applyFstabInitially(base *base) error {
 }
 
 // BootServer will boot up the local server.
-// `basePath` is the path to the repository.
-// `passwordFn` is a function that will deliver a password when
-// no password was configured.
-// `bindHost` is the host to bind too.
-// `port` is the port to listen for requests.
-// `logToStdout` should be true when logging to stdout.
 func BootServer(
 	basePath string,
+	serverURL string,
 	passwordFn func() (string, error),
-	bindHost string,
-	port int,
 	logToStdout bool,
 ) (*Server, error) {
 	defer func() {
@@ -112,15 +81,7 @@ func BootServer(
 		}
 	}()
 
-	if logToStdout {
-		// Be sure it's really set to stdout.
-		log.SetOutput(os.Stdout)
-	} else {
-		switchToSyslog()
-	}
-
-	addr := fmt.Sprintf("%s:%d", bindHost, port)
-	log.Infof("starting daemon for %s on port %s", basePath, addr)
+	log.Infof("starting daemon for %s at %s", basePath, serverURL)
 
 	password, err := readPasswordFromHelper(basePath, passwordFn)
 	if err != nil {
@@ -132,7 +93,6 @@ func BootServer(
 	}
 
 	log.Infof("password is valid")
-
 	if err := increaseMaxOpenFds(); err != nil {
 		log.Warningf("failed to increase number of open fds")
 	}
@@ -141,15 +101,12 @@ func BootServer(
 	quitCh := make(chan struct{})
 	base := newBase(
 		ctx,
-		int64(port),
 		basePath,
 		password,
-		bindHost,
 		quitCh,
-		logToStdout,
 	)
 
-	lst, err := net.Listen("tcp", addr)
+	lst, err := listenerFromServerURL(serverURL)
 	if err != nil {
 		return nil, err
 	}

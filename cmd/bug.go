@@ -68,8 +68,12 @@ Please include anything else you think is helpful. Thanks!
 		version.BuildTime,
 	)
 
-	port := guessPort(ctx, false)
-	ctl, err := client.Dial(context.Background(), port)
+	daemonURL, err := guessDaemonURL(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctl, err := client.Dial(context.Background(), daemonURL)
 	if err == nil {
 		// Try to get the server side / ipfs version.
 		version, err := ctl.Version()

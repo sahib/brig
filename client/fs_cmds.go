@@ -3,11 +3,12 @@ package client
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"time"
 
+	"github.com/sahib/brig/backend/httpipfs"
+	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/server/capnp"
 	h "github.com/sahib/brig/util/hashlib"
 )
@@ -28,6 +29,7 @@ type StatInfo struct {
 	TreeHash    h.Hash
 	ContentHash h.Hash
 	BackendHash h.Hash
+	Key         []byte
 }
 
 func convertHash(hashBytes []byte, err error) (h.Hash, error) {
@@ -66,6 +68,11 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 		return nil, err
 	}
 
+	key, err := capInfo.Key()
+	if err != nil {
+		return nil, err
+	}
+
 	modTimeData, err := capInfo.ModTime()
 	if err != nil {
 		return nil, err
@@ -88,6 +95,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.TreeHash = treeHash
 	info.ContentHash = contentHash
 	info.BackendHash = backendHash
+	info.Key = key
 	return info, nil
 }
 
@@ -138,23 +146,60 @@ func (cl *Client) Stage(localPath, repoPath string) error {
 
 // StageFromReader will create a new node at `repoPath` from the contents of `r`.
 func (cl *Client) StageFromReader(repoPath string, r io.Reader) error {
-	fd, err := ioutil.TempFile("", "brig-stage-temp")
-	if err != nil {
-		return err
+	call := cl.api.StageFromStream(cl.ctx, func(p capnp.FS_stageFromStream_Params) error {
+		return p.SetRepoPath(repoPath)
+	})
+
+	// NOTE: Promise pipelining happens here,
+	// cb might not have been returned yet by the server.
+	// We can still use it, since Cap'n Proto returns a promise here.
+	// First network call happens only at the first Struct() call.
+	stream := call.Stream()
+
+	// relative large buffer to minimize Cap'n Proto overhead even further.
+	buf := make([]byte, 128*1024)
+	chunkIdx, blockCheck := 0, 1
+
+	for {
+		isEOF := false
+		n, err := io.ReadFull(r, buf)
+		if err != nil {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				isEOF = true
+			} else {
+				return err
+			}
+		}
+
+		if n > 0 {
+			promise := stream.SendChunk(cl.ctx, func(params capnp.FS_StageStream_sendChunk_Params) error {
+				return params.SetChunk(buf[:n])
+			})
+
+			// Assumption here: If transfer fails it will fail in the first few blocks.
+			// For the rest of the block we can skip error checks on most blocks.
+			if chunkIdx%blockCheck == 0 {
+				if _, err := promise.Struct(); err != nil {
+					return err
+				}
+
+				if blockCheck < 128 {
+					blockCheck *= 2
+				}
+			}
+
+			chunkIdx++
+		}
+
+		if isEOF {
+			break
+		}
 	}
 
-	defer os.Remove(fd.Name())
-
-	if _, err := io.Copy(fd, r); err != nil {
-		fd.Close()
-		return err
-	}
-
-	if err := fd.Close(); err != nil {
-		return err
-	}
-
-	return cl.Stage(fd.Name(), repoPath)
+	// Tell the server side that we're done sending chunks and that the data
+	// should be already staged.
+	_, err := stream.Done(cl.ctx, nil).Struct()
+	return err
 }
 
 // Cat outputs the contents of the node at `path`.
@@ -177,6 +222,59 @@ func (cl *Client) Cat(path string, offline bool) (io.ReadCloser, error) {
 	}
 
 	return conn, nil
+}
+
+func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
+	info, err := cl.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	ipfsPath, err := cl.ConfigGet("daemon.ipfs_path")
+	if err != nil {
+		return err
+	}
+
+	if ipfsPath == "" {
+		return fmt.Errorf("no ipfs-path found - is this repo using IPFS?")
+	}
+
+	if offline {
+		isCached, err := cl.IsCached(path)
+		if err != nil {
+			return err
+		}
+
+		if !isCached {
+			return fmt.Errorf("not cached")
+		}
+	}
+
+	nd, err := httpipfs.NewNode(
+		ipfsPath,
+		"",
+		httpipfs.WithNoLogging(),
+	)
+	if err != nil {
+		return err
+	}
+
+	defer nd.Close()
+
+	ipfsStream, err := nd.Cat(info.BackendHash)
+	if err != nil {
+		return err
+	}
+
+	defer ipfsStream.Close()
+
+	stream, err := mio.NewOutStream(ipfsStream, info.Key)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(os.Stdout, stream)
+	return err
 }
 
 // Tar outputs a tar archive with the contents of `path`.

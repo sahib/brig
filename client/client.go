@@ -2,10 +2,10 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/sahib/brig/server/capnp"
+	"github.com/sahib/brig/util"
 	"zombiezen.com/go/capnproto2/rpc"
 )
 
@@ -15,39 +15,50 @@ import (
 type Client struct {
 	ctx     context.Context
 	conn    *rpc.Conn
-	tcpConn net.Conn
-
-	api capnp.API
+	rawConn net.Conn
+	api     capnp.API
 }
 
-// Dial will attempt to connect to brigd under the specified port
-func Dial(ctx context.Context, port int) (*Client, error) {
-	addr := fmt.Sprintf("localhost:%d", port)
-	tcpConn, err := net.Dial("tcp", addr)
+func connFromURL(s string) (net.Conn, error) {
+	scheme, addr, err := util.URLToSchemeAndAddr(s)
 	if err != nil {
 		return nil, err
 	}
 
-	transport := rpc.StreamTransport(tcpConn)
-	clientConn := rpc.NewConn(transport, rpc.ConnLog(nil))
-	api := capnp.API{Client: clientConn.Bootstrap(ctx)}
+	return net.Dial(scheme, addr)
+}
+
+// Dial will attempt to connect to brigd under the specified port
+func Dial(ctx context.Context, daemonURL string) (*Client, error) {
+	rawConn, err := connFromURL(daemonURL)
+	if err != nil {
+		return nil, err
+	}
+
+	transport := rpc.StreamTransport(rawConn)
+	conn := rpc.NewConn(
+		transport,
+		rpc.ConnLog(nil),
+		rpc.SendBufferSize(128),
+	)
+	api := capnp.API{Client: conn.Bootstrap(ctx)}
 
 	return &Client{
 		ctx:     ctx,
-		conn:    clientConn,
-		tcpConn: tcpConn,
+		rawConn: rawConn,
+		conn:    conn,
 		api:     api,
 	}, nil
 }
 
 // LocalAddr return info about the local addr
 func (cl *Client) LocalAddr() net.Addr {
-	return cl.tcpConn.LocalAddr()
+	return cl.rawConn.LocalAddr()
 }
 
 // RemoteAddr return info about the remote addr
 func (cl *Client) RemoteAddr() net.Addr {
-	return cl.tcpConn.RemoteAddr()
+	return cl.rawConn.RemoteAddr()
 }
 
 // Close will close the connection from the client side

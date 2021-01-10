@@ -2,13 +2,14 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"os"
+	"time"
 
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
+	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -41,6 +42,10 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 	}
 
 	if err := capInfo.SetBackendHash(info.BackendHash.Bytes()); err != nil {
+		return nil, err
+	}
+
+	if err := capInfo.SetKey(info.Key); err != nil {
 		return nil, err
 	}
 
@@ -138,6 +143,27 @@ func (fh *fsHandler) Stage(call capnp.FS_stage) error {
 	})
 }
 
+///////////////
+
+func (fh *fsHandler) StageFromStream(call capnp.FS_stageFromStream) error {
+	server.Ack(call.Options)
+
+	repoPath, err := call.Params.RepoPath()
+	if err != nil {
+		return err
+	}
+
+	// Immediately return, but tell Cap'n Proto which code
+	// to call once we receive a chunk.
+	return call.Results.SetStream(
+		capnp.FS_StageStream_ServerToClient(
+			newStreamServer(fh.base, repoPath),
+		),
+	)
+}
+
+///////////////
+
 func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 	server.Ack(call.Options)
 
@@ -163,17 +189,18 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			return err
 		}
 
-		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
+		port, err := bootTransferServer(fs, "127.0.0.1", func(conn net.Conn) {
 			defer stream.Close()
 			localAddr := conn.LocalAddr().String()
 
-			n, err := io.Copy(conn, stream)
+			start := time.Now()
+			n, err := testutil.DumbCopy(conn, stream, false, false)
 			if err != nil {
-				log.Warningf("IO failed for path %s on %s: %v", path, localAddr, err)
+				log.Warningf("I/O failed for path %s on %s: %v", path, localAddr, err)
 				return
 			}
 
-			log.Infof("Wrote %d bytes of `%s` over %s", n, path, localAddr)
+			log.Infof("Wrote %d bytes of `%s` over %s in %v", n, path, localAddr, time.Since(start))
 		})
 
 		if err != nil {
@@ -211,7 +238,7 @@ func (fh *fsHandler) Tar(call capnp.FS_tar) error {
 			return err
 		}
 
-		port, err := bootTransferServer(fs, fh.base.bindHost, func(conn net.Conn) {
+		port, err := bootTransferServer(fs, "127.0.0.1", func(conn net.Conn) {
 			localAddr := conn.LocalAddr().String()
 			if err := fs.Tar(path, conn, nil); err != nil {
 				log.Warningf("tar failed for path %s on %s: %v", path, localAddr, err)

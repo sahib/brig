@@ -827,6 +827,10 @@ EXAMPLES:
 				Name:  "offline,o",
 				Usage: "Only output the file if it is cached locally.",
 			},
+			cli.BoolFlag{
+				Name:  "stream,s",
+				Usage: "Use experimental streaming implementation.",
+			},
 		},
 		Description: `Decrypt and decompress the stream from IPFS and write it to standard output.
 

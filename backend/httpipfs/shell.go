@@ -35,6 +35,7 @@ type Node struct {
 	fingerprint    string
 	version        *semver.Version
 	cache          *IpfsStateCache
+	quiet          bool
 }
 
 func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
@@ -61,52 +62,73 @@ func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
 	return raw.Experimental, nil
 }
 
+type Option func(nd *Node)
+
+func WithNoLogging() Option {
+	return func(nd *Node) {
+		nd.quiet = true
+	}
+}
+
 // NewNode returns a new http based IPFS backend.
-func NewNode(ipfsPath, fingerprint string) (*Node, error) {
+func NewNode(ipfsPath, fingerprint string, opts ...Option) (*Node, error) {
+	nd := &Node{
+		allowNetOps: true,
+		fingerprint: fingerprint,
+		cache: &IpfsStateCache{
+			locallyCached: cache.New(5*time.Minute, 10*time.Minute),
+		},
+	}
+
+	for _, opt := range opts {
+		opt(nd)
+	}
+
 	addr, err := setup.GetAPIAddrForPath(ipfsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("Connecting to IPFS HTTP API at %s", addr)
-	sh := shell.NewShell(addr)
+	if !nd.quiet {
+		log.Infof("Connecting to IPFS HTTP API at %s", addr)
+	}
 
-	versionString, _, err := sh.Version()
-	if err != nil {
+	nd.sh = shell.NewShell(addr)
+
+	versionString, _, err := nd.sh.Version()
+	if err != nil && !nd.quiet {
 		log.Warningf("failed to get version: %v", err)
 	}
 
 	version, err := semver.Parse(versionString)
-	if err != nil {
+	if err != nil && !nd.quiet {
 		log.Warningf("failed to parse version string of IPFS (»%s«): %v", versionString, err)
 	}
 
-	log.Infof("The IPFS version is »%s«.", version)
-	if version.LT(semver.MustParse("0.4.18")) {
-		log.Warningf("This version is quite old. Please update, if possible.\n")
-		log.Warningf("We only test on newer versions (>= 0.4.18).\n")
-	}
-
-	features, err := getExperimentalFeatures(sh)
-	if err != nil {
-		log.Warningf("Failed to get experimental feature list: %v", err)
-	} else {
-		if !features["Libp2pStreamMounting"] {
-			log.Warningf("Stream mounting does not seem to be enabled.")
-			log.Warningf("Please execute the following to change that:")
-			log.Warningf("$ ipfs config --json Experimental.Libp2pStreamMounting true")
+	if !nd.quiet {
+		log.Infof("The IPFS version is »%s«.", version)
+		if version.LT(semver.MustParse("0.4.18")) {
+			log.Warningf("This version is quite old. Please update, if possible.\n")
+			log.Warningf("We only test on newer versions (>= 0.4.18).\n")
 		}
 	}
 
-	return &Node{
-		sh:          sh,
-		allowNetOps: true,
-		fingerprint: fingerprint,
-		version:     &version,
-		cache: &IpfsStateCache{
-			locallyCached: cache.New(5*time.Minute, 10*time.Minute),
-		},
-	}, nil
+	nd.version = &version
+
+	if !nd.quiet {
+		features, err := getExperimentalFeatures(nd.sh)
+		if err != nil {
+			log.Warningf("Failed to get experimental feature list: %v", err)
+		} else {
+			if !features["Libp2pStreamMounting"] {
+				log.Warningf("Stream mounting does not seem to be enabled.")
+				log.Warningf("Please execute the following to change that:")
+				log.Warningf("$ ipfs config --json Experimental.Libp2pStreamMounting true")
+			}
+		}
+	}
+
+	return nd, nil
 }
 
 // IsOnline returns true if the node is in online mode and the daemon is reachable.

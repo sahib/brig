@@ -35,9 +35,6 @@ import (
 type base struct {
 	mu sync.Mutex
 
-	// port used by the local server
-	port int64
-
 	// base path to the repository (i.e. BRIG_PATH)
 	basePath string
 
@@ -46,12 +43,6 @@ type base struct {
 	// which is not optimal. Measures needs to be taken
 	// to secure access to Password here.
 	password string
-
-	// On what host the server is running on
-	// (e.g. localhost or 0.0.0.0;
-	//  running on 0.0.0.0 is discouraged, but can be
-	//  useful for running it in docker)
-	bindHost string
 
 	ctx context.Context
 
@@ -64,9 +55,6 @@ type base struct {
 	quitCh  chan struct{}
 
 	conductor *conductor.Conductor
-
-	// logToStdout is true when logging to stdout was explicitly requested.
-	logToStdout bool
 
 	// gateway is the control object for the gateway server
 	gateway *gateway.Gateway
@@ -106,6 +94,7 @@ func (b *base) Handle(ctx context.Context, conn net.Conn) {
 		transport,
 		rpc.MainInterface(srv.Client),
 		rpc.ConnLog(nil),
+		rpc.SendBufferSize(128),
 	)
 
 	if err := rpcConn.Wait(); err != nil {
@@ -435,22 +424,16 @@ func (b *base) Quit() (err error) {
 
 func newBase(
 	ctx context.Context,
-	port int64,
 	basePath string,
 	password string,
-	bindHost string,
 	quitCh chan struct{},
-	logToStdout bool,
 ) *base {
 	return &base{
-		ctx:         ctx,
-		port:        port,
-		basePath:    basePath,
-		password:    password,
-		bindHost:    bindHost,
-		quitCh:      quitCh,
-		logToStdout: logToStdout,
-		conductor:   conductor.New(5*time.Minute, 100),
+		ctx:       ctx,
+		basePath:  basePath,
+		password:  password,
+		quitCh:    quitCh,
+		conductor: conductor.New(5*time.Minute, 100),
 	}
 }
 

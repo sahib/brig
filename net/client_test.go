@@ -45,17 +45,23 @@ func withNetServer(t *testing.T, name string, basePath string, fn func(u testUni
 	bk, err := backend.FromName("mock", basePath, "")
 	require.Nil(t, err)
 
-	err = repo.Init(basePath, name, "password", "mock", 6666)
-	require.Nil(t, err)
+	err = repo.Init(repo.InitOptions{
+		BaseFolder:  basePath,
+		Owner:       name,
+		Password:    "password",
+		BackendName: "mock",
+		DaemonURL:   "not-relevant-here",
+	})
+	require.NoError(t, err)
 
 	rp, err := repo.Open(basePath, "password")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	srv, err := NewServer(rp, bk, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	fs, err := rp.FS(name, bk)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	waitForDeath := make(chan bool)
 	go func() {

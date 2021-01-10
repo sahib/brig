@@ -19,7 +19,13 @@ func TestRepoInit(t *testing.T) {
 	testDir := "/tmp/.brig-repo-test"
 	require.Nil(t, os.RemoveAll(testDir))
 
-	err := Init(testDir, "alice", "klaus", "mock", 6666)
+	err := Init(InitOptions{
+		BaseFolder:  testDir,
+		Owner:       "alice",
+		Password:    "klaus",
+		BackendName: "mock",
+		DaemonURL:   "yadda-yadda",
+	})
 	require.Nil(t, err)
 
 	rp, err := Open(testDir, "klaus")
@@ -38,9 +44,8 @@ func TestRepoInit(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, data, []byte{1, 2, 3})
 
-	require.Nil(t, fs.Close())
-	require.Nil(t, rp.Close("klaus"))
-
+	require.NoError(t, fs.Close())
+	require.NoError(t, rp.Close("klaus"))
 }
 
 func dirSize(t *testing.T, path string) int64 {

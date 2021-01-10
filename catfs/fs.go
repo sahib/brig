@@ -116,6 +116,9 @@ type StatInfo struct {
 	IsPinned bool
 	// IsExplicit is true when the user pinned this node on purpose
 	IsExplicit bool
+
+	// Key is the encryption key for the file.
+	Key []byte
 }
 
 // DiffPair is a pair of nodes.
@@ -211,8 +214,16 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		log.Warningf("stat: failed to acquire pin state: %v", err)
 	}
 
-	isDir := false
+	var isDir bool
+	var key []byte
+
 	switch nd.Type() {
+	case n.NodeTypeFile:
+		file, ok := nd.(*n.File)
+		if ok {
+			key = make([]byte, len(file.Key()))
+			copy(key, file.Key())
+		}
 	case n.NodeTypeDirectory:
 		isDir = true
 	case n.NodeTypeGhost:
@@ -236,6 +247,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		ContentHash: nd.ContentHash().Clone(),
 		BackendHash: nd.BackendHash().Clone(),
 		TreeHash:    nd.TreeHash().Clone(),
+		Key:         key,
 	}
 }
 
