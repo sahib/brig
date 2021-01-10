@@ -5,9 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Reader decrypts and encrypted datastream from Reader.
@@ -92,63 +89,25 @@ func (r *Reader) readHeaderIfNotDone() error {
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
 
-var (
-	totalSum   time.Duration
-	totalCount time.Duration
-
-	headerSum   time.Duration
-	headerCount time.Duration
-
-	blockSum   time.Duration
-	blockCount time.Duration
-
-	backlogSum   time.Duration
-	backlogCount time.Duration
-)
-
-func Debug() {
-	log.Printf("read took avg %v", totalSum/totalCount)
-	log.Printf("  header took avg %v", headerSum/headerCount)
-	log.Printf("  block took avg %v", blockSum/blockCount)
-	log.Printf("  backlog took avg %v", backlogSum/backlogCount)
-}
-
 func (r *Reader) Read(dest []byte) (int, error) {
-	tt := time.Now()
-	defer func() {
-		totalSum += time.Since(tt)
-		totalCount++
-	}()
-
 	// Make sure we have the info needed to parse the header:
-	t := time.Now()
-	headerCount++
 	if err := r.readHeaderIfNotDone(); err != nil {
-		backlogSum += time.Since(t)
 		return 0, err
 	}
-	backlogSum += time.Since(t)
 
 	readBytes := 0
 
 	// Try our best to fill len(dest)
 	for readBytes < len(dest) {
-		t = time.Now()
-		blockCount++
 		if r.backlog.Len() == 0 {
 			if _, rerr := r.readBlock(); rerr != nil && rerr != io.EOF {
-				blockSum += time.Since(t)
 				return readBytes, rerr
 			}
 		}
-		blockSum += time.Since(t)
 
-		t = time.Now()
-		backlogCount++
 		n, berr := r.backlog.Read(dest[readBytes:])
 		r.lastDecSeekPos += int64(n)
 		readBytes += n
-		backlogSum += time.Since(t)
 
 		if berr == io.EOF {
 			return readBytes, io.EOF
@@ -353,10 +312,6 @@ func (r *Reader) WriteTo(w io.Writer) (int64, error) {
 		r.lastDecSeekPos += bn
 	}
 
-	// TODO(optimization): do not write to decBuf, but directly to `w`.
-	// This will save us one copy. In WriteTo() we have control over
-	// how big we can choose the buffer, so we can make it big enough
-	// to hold exactly one block.
 	for {
 		nread, rerr := r.readBlock()
 		if rerr != nil && rerr != io.EOF {

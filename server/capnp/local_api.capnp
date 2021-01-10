@@ -19,6 +19,7 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     contentHash @10 :Data;
     user        @11 :Text;
     backendHash @12 :Data;
+    key         @13 :Data;
 }
 
 struct Commit $Go.doc("Single log entry") {
@@ -153,16 +154,14 @@ interface FS {
     undelete          @15  (path :Text);
     repin             @16  (path :Text);
     isCached          @17  (path :Text) -> (isCached :Bool);
+
+    # note: stageFromStream is slower than regular stage.
+    # currently only used for `brig stage --stdin`.
     stageFromStream   @18  (repoPath :Text) -> (stream :StageStream);
-    catStream         @19  (path :Text, offline :Bool, stream :ClientStream) -> ();
 
     interface StageStream {
         sendChunk @0 (chunk :Data) -> ();
         done @1 ();
-    }
-
-    interface ClientStream {
-        sendChunk @0 (chunk :Data) -> ();
     }
 }
 

@@ -1,16 +1,13 @@
 package server
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"time"
 
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
-	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
@@ -45,6 +42,10 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 	}
 
 	if err := capInfo.SetBackendHash(info.BackendHash.Bytes()); err != nil {
+		return nil, err
+	}
+
+	if err := capInfo.SetKey(info.Key); err != nil {
 		return nil, err
 	}
 
@@ -171,33 +172,6 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		return err
 	}
 
-	fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		x1 := time.Now()
-		stream, _ := fs.Cat(url.Path)
-		testutil.DumbCopy(ioutil.Discard, stream, false, false)
-		log.Printf("discard copy takes %v", time.Since(x1))
-
-		stream, _ = fs.Cat(url.Path)
-		b := bytes.NewBuffer(make([]byte, 256*1024*1024))
-		x2 := time.Now()
-		testutil.DumbCopy(b, stream, false, false)
-		log.Printf("mem copy takes %v", time.Since(x2))
-
-		stream, _ = fs.Cat(url.Path)
-		x3 := time.Now()
-		b.Reset()
-		stream.WriteTo(b)
-		log.Printf("discard copy (write to) takes %v", time.Since(x3))
-
-		stream, _ = fs.Cat(url.Path)
-		x4 := time.Now()
-		b.Reset()
-		stream.WriteTo(b)
-		log.Printf("mem copy (write to) takes %v", time.Since(x4))
-
-		return nil
-	})
-
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
 		if call.Params.Offline() {
 			isCached, err := fs.IsCached(url.Path)
@@ -215,21 +189,17 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			return err
 		}
 
-		// TODO: Get rid of this, also stream over Capn'Proto.
-		// Before doing this, we need to get the performance on-par though.
 		port, err := bootTransferServer(fs, "127.0.0.1", func(conn net.Conn) {
 			defer stream.Close()
 			localAddr := conn.LocalAddr().String()
 
 			start := time.Now()
-			// n, err := io.Copy(conn, stream)
 			n, err := testutil.DumbCopy(conn, stream, false, false)
 			if err != nil {
 				log.Warningf("I/O failed for path %s on %s: %v", path, localAddr, err)
 				return
 			}
 
-			encrypt.Debug()
 			log.Infof("Wrote %d bytes of `%s` over %s in %v", n, path, localAddr, time.Since(start))
 		})
 
@@ -242,40 +212,6 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 		call.Results.SetPort(int32(port))
 		return nil
 	})
-}
-
-func (fh *fsHandler) CatStream(call capnp.FS_catStream) error {
-	server.Ack(call.Options)
-
-	path, err := call.Params.Path()
-	if err != nil {
-		return err
-	}
-
-	capnpStream := call.Params.Stream()
-	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		if call.Params.Offline() {
-			isCached, err := fs.IsCached(url.Path)
-			if err != nil {
-				return err
-			}
-
-			if !isCached {
-				return fmt.Errorf("file is not in local cache")
-			}
-		}
-
-		fsStream, err := fs.Cat(url.Path)
-		if err != nil {
-			return err
-		}
-
-		defer fsStream.Close()
-
-		return serverToClientStream(fsStream, capnpStream)
-	})
-
-	return nil
 }
 
 func (fh *fsHandler) Tar(call capnp.FS_tar) error {

@@ -181,7 +181,7 @@ func handleCat(ctx *cli.Context, ctl *client.Client) error {
 	if info.IsDir {
 		stream, err = ctl.Tar(path, doOffline)
 	} else if ctx.Bool("stream") {
-		return ctl.CatStream(path, doOffline, os.Stdout)
+		return ctl.CatOnClient(path, doOffline, os.Stdout)
 	} else {
 		stream, err = ctl.Cat(path, doOffline)
 	}

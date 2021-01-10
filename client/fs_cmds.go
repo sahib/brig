@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"time"
 
+	"github.com/sahib/brig/backend/httpipfs"
+	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/server/capnp"
 	h "github.com/sahib/brig/util/hashlib"
 )
@@ -26,6 +29,7 @@ type StatInfo struct {
 	TreeHash    h.Hash
 	ContentHash h.Hash
 	BackendHash h.Hash
+	Key         []byte
 }
 
 func convertHash(hashBytes []byte, err error) (h.Hash, error) {
@@ -64,6 +68,11 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 		return nil, err
 	}
 
+	key, err := capInfo.Key()
+	if err != nil {
+		return nil, err
+	}
+
 	modTimeData, err := capInfo.ModTime()
 	if err != nil {
 		return nil, err
@@ -86,6 +95,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.TreeHash = treeHash
 	info.ContentHash = contentHash
 	info.BackendHash = backendHash
+	info.Key = key
 	return info, nil
 }
 
@@ -214,39 +224,56 @@ func (cl *Client) Cat(path string, offline bool) (io.ReadCloser, error) {
 	return conn, nil
 }
 
-type streamReceiver struct {
-	w io.Writer
-}
-
-func (sr *streamReceiver) SendChunk(call capnp.FS_ClientStream_sendChunk) error {
-	data, err := call.Params.Chunk()
+func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
+	info, err := cl.Stat(path)
 	if err != nil {
 		return err
 	}
 
-	_, err = sr.w.Write(data)
-	return err
-}
+	ipfsPath, err := cl.ConfigGet("daemon.ipfs_path")
+	if err != nil {
+		return err
+	}
 
-// CatStream is like Cat() but the stream goes over the Cap'n Proto connection.
-// It does not utilize an additional connection.
-func (cl *Client) CatStream(path string, offline bool, w io.Writer) error {
-	call := cl.api.CatStream(cl.ctx, func(p capnp.FS_catStream_Params) error {
-		if err := p.SetStream(
-			capnp.FS_ClientStream_ServerToClient(
-				&streamReceiver{
-					w: w,
-				},
-			),
-		); err != nil {
+	if ipfsPath == "" {
+		return fmt.Errorf("no ipfs-path found - is this repo using IPFS?")
+	}
+
+	if offline {
+		isCached, err := cl.IsCached(path)
+		if err != nil {
 			return err
 		}
 
-		p.SetOffline(offline)
-		return p.SetPath(path)
-	})
+		if !isCached {
+			return fmt.Errorf("not cached")
+		}
+	}
 
-	_, err := call.Struct()
+	nd, err := httpipfs.NewNode(
+		ipfsPath,
+		"",
+		httpipfs.WithNoLogging(),
+	)
+	if err != nil {
+		return err
+	}
+
+	defer nd.Close()
+
+	ipfsStream, err := nd.Cat(info.BackendHash)
+	if err != nil {
+		return err
+	}
+
+	defer ipfsStream.Close()
+
+	stream, err := mio.NewOutStream(ipfsStream, info.Key)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(os.Stdout, stream)
 	return err
 }
 
