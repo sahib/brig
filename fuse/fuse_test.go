@@ -39,7 +39,7 @@ import (
 // infrastructure which helps run tests in different communicating via socket processes.
 
 func init() {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.ErrorLevel)
 }
 
 func TestMain(m *testing.M) {
