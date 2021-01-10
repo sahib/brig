@@ -36,7 +36,11 @@ func Dial(ctx context.Context, daemonURL string) (*Client, error) {
 	}
 
 	transport := rpc.StreamTransport(rawConn)
-	conn := rpc.NewConn(transport, rpc.ConnLog(nil))
+	conn := rpc.NewConn(
+		transport,
+		rpc.ConnLog(nil),
+		rpc.SendBufferSize(128),
+	)
 	api := capnp.API{Client: conn.Bootstrap(ctx)}
 
 	return &Client{

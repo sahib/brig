@@ -94,6 +94,7 @@ func (b *base) Handle(ctx context.Context, conn net.Conn) {
 		transport,
 		rpc.MainInterface(srv.Client),
 		rpc.ConnLog(nil),
+		rpc.SendBufferSize(128),
 	)
 
 	if err := rpcConn.Wait(); err != nil {

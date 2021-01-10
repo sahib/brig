@@ -2,6 +2,8 @@
 
 set -e
 
+export GOMAXPROCS=20
+
 USE_SINGLE=false
 
 while getopts ":s" opt; do
