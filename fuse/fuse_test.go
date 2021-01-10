@@ -363,7 +363,7 @@ func TestTouchWrite(t *testing.T) {
 		for _, size := range DataSizes {
 			t.Run(fmt.Sprintf("%d", size), func(t *testing.T) {
 
-				catfsFilePath := fmt.Sprintf("/emty_at_creation_by_catfs_%d", size)
+				catfsFilePath := fmt.Sprintf("/empty_at_creation_by_catfs_%d", size)
 				req := catfsPayload{Path: catfsFilePath, Data: []byte{}}
 				require.Nil(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
 				checkCatfsFileContent(t, ctx, control, catfsFilePath, req.Data)
