@@ -480,3 +480,44 @@ func TestWithRoot(t *testing.T) {
 		require.NotNil(t, err)
 	})
 }
+
+// Benchmarks
+
+var (
+	BenchmarkDataSizes = []int64{
+		0,
+		1024, 2*1024, 16*1024, 64*1024, 128*1023,
+		1*1024*1024, 16*1024*1024,
+	}
+)
+
+func stageAndRead(b *testing.B, ctx context.Context, control *spawntest.Control, mount *mountInfo, label string, data []byte) {
+	size := len(data)
+	// stage data to catFS
+	catfsFilePath := fmt.Sprintf("%s_file_%d", label, size)
+	req := catfsPayload{Path: catfsFilePath, Data: data}
+	require.Nil(b, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+	fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
+
+	// Read it back via fuse
+	b.Run(fmt.Sprintf("%s_Size_%d", label, size), func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			ioutil.ReadFile(fuseFilePath)
+		}
+	})
+}
+
+func BenchmarkRead(b *testing.B) {
+	withMount(b, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
+		for _, size := range BenchmarkDataSizes {
+			// Check how fast is readout of a file with compressible content
+			data := testutil.CreateDummyBuf(size)
+			stageAndRead(b, ctx, control, mount,  "CompressibleContent", data)
+
+			// Check how fast is readout of a file with random/uncompressible content
+			data = testutil.CreateRandomDummyBuf(size, 1)
+			stageAndRead(b, ctx, control, mount,  "RandomContent", data)
+		}
+	})
+}
+
