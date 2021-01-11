@@ -521,3 +521,58 @@ func BenchmarkRead(b *testing.B) {
 	})
 }
 
+func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
+	// Writing could be very space demanding even for a small size,
+	// Since benchmark runs many-many times it will consume a lot of space
+	// we have to remount everything every time to start with clean catFS DB
+	// Consequently, this test takes long time, since mounting is long operation
+	label := "dummy"
+	size := len(data)
+	for n := 0; n < b.N; n++ {
+		b.StopTimer()
+		withMount(b, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
+			// Check how fast is write to a file with compressible content
+			catfsFilePath := fmt.Sprintf("%s_file_%d", label, size)
+			fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
+
+			b.StartTimer()
+			for i := 0; i < ntimes; i++ {
+				if len(data)>0 {
+					// generate new content for backend
+					data[0]++
+				}
+			}
+			require.Nil(b, ioutil.WriteFile(fuseFilePath, data, 0644))
+			b.StopTimer()
+		})
+	}
+}
+
+var (
+	// keep this low or you might run out of space
+	NumberOfOverWrites = []int{
+		1, 2,  5,
+	}
+)
+
+func BenchmarkWrite(b *testing.B) {
+	size := int64(10*1024*1024)
+
+	for _, Ntimes := range NumberOfOverWrites {
+		// Check how fast is write to a file with compressible content
+		data := testutil.CreateDummyBuf(size)
+		prefix := fmt.Sprintf("Owerwrite_%d", Ntimes)
+		label := fmt.Sprintf("%s/CompressibleContent_Size_%d", prefix, size)
+		b.Run(label, func(b *testing.B) {
+			writeDataNtimes(b, data, Ntimes)
+		})
+
+		// Check how fast is write to a file with random/uncompressible content
+		data = testutil.CreateRandomDummyBuf(size, 1)
+		label = fmt.Sprintf("%s/RandomContent_Size_%d", prefix, size)
+		b.Run(label, func(b *testing.B) {
+			writeDataNtimes(b, data, Ntimes)
+		})
+	}
+}
+
