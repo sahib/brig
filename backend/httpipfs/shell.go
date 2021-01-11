@@ -62,8 +62,12 @@ func getExperimentalFeatures(sh *shell.Shell) (map[string]bool, error) {
 	return raw.Experimental, nil
 }
 
+// Option is a option you can pass to NewNode()
+// It controls the behavior of the node.
 type Option func(nd *Node)
 
+// WithNoLogging will make the node not print log messages.
+// Useful for commandline use cases.
 func WithNoLogging() Option {
 	return func(nd *Node) {
 		nd.quiet = true
