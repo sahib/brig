@@ -526,6 +526,10 @@ func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
 	// Since benchmark runs many-many times, it will consume a lot of space.
 	// We have to remount everything every time to start with clean catFS DB.
 	// Consequently, this test takes long time, since mounting is long operation.
+	require.True(b, ntimes > 0, "ntimes must be positive")
+	// note ntimes =0 is bad too,
+	// since execution time between StartTimer/StopTimer is too short/jittery
+	// and benchmarks run forever
 	label := "dummy"
 	size := len(data)
 	for n := 0; n < b.N; n++ {
