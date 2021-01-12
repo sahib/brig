@@ -5,6 +5,7 @@ package fuse
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -544,7 +545,7 @@ func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
 				if len(data) > 0 {
 					// modification of one byte is enough
 					// to generate new encrypted content for the backend
-					data[0]++
+					binary.LittleEndian.PutUint64(data[0:8], uint64(i))
 				}
 				require.NoError(b, ioutil.WriteFile(fuseFilePath, data, 0644))
 			}
