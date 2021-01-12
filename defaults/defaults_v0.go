@@ -276,11 +276,6 @@ var DefaultsV0 = config.DefaultMapping{
 			NeedsRestart: false,
 			Docs:         "The repository owner that is published to the outside.",
 		},
-		"password_command": config.DefaultEntry{
-			Default:      "",
-			NeedsRestart: false,
-			Docs:         "If set, the repo password is taken from stdout of this command.",
-		},
 		"autogc": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,

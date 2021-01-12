@@ -48,14 +48,14 @@ func withNetServer(t *testing.T, name string, basePath string, fn func(u testUni
 	err = repo.Init(repo.InitOptions{
 		BaseFolder:  basePath,
 		Owner:       name,
-		Password:    "password",
 		BackendName: "mock",
 		DaemonURL:   "not-relevant-here",
 	})
 	require.NoError(t, err)
 
-	rp, err := repo.Open(basePath, "password")
+	rp, err := repo.Open(basePath)
 	require.NoError(t, err)
+	defer rp.Close()
 
 	srv, err := NewServer(rp, bk, nil)
 	require.NoError(t, err)

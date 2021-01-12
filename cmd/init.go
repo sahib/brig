@@ -13,9 +13,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Init creates a new brig repository at `basePath` with `owner`.
-// `password` is used to encrypt it and `backendName` tells `brig` what backend
-// to initialize.
+// Init creates a new brig repository at `basePath` with specified options.
 func Init(ctx *cli.Context, ipfsPath string, opts repo.InitOptions) error {
 	if err := repo.Init(opts); err != nil {
 		return e.Wrapf(err, "repo-init")

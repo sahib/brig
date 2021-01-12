@@ -25,7 +25,6 @@ import (
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
 	formatter "github.com/sahib/brig/util/log"
-	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -70,14 +69,7 @@ If you're done with this README, you can easily remove it:
 
     $ brig rm README.md
 
-We recommend highly to install a password manager and hook it up
-with brig. For example, with "pass" you can execute the following
-to avoid re-entering your password on every daemon startup:
-
-    $ brig cfg set repo.password_command "pass brig/my_pwd_key"
-
-The next start of brig will then read the password from the
-standard output of this process. Your repository is here:
+Your repository is here:
 
     %s
 
@@ -160,26 +152,6 @@ func handleInit(ctx *cli.Context) error {
 		}
 	}
 
-	// If a password helper is set, we should read the password from it directly.
-	password := readPasswordFromArgs(folder, ctx)
-	if pwHelper := ctx.String("pw-helper"); password == "" && pwHelper != "" {
-		var err error
-		password, err = pwutil.ReadPasswordFromHelper(folder, pwHelper)
-		if err != nil {
-			return fmt.Errorf("failed to read password from helper: %s", err)
-		}
-	}
-
-	if password == "" {
-		pwdBytes, err := pwd.PromptNewPassword(20)
-		if err != nil {
-			msg := fmt.Sprintf("Failed to read password: %v", err)
-			return ExitCode{UnknownError, msg}
-		}
-
-		password = string(pwdBytes)
-	}
-
 	daemonURL, err := guessFreeDaemonURL(ctx, owner)
 	if err != nil {
 		log.WithError(err).Warnf("failed to figure out a free daemon url")
@@ -191,7 +163,6 @@ func handleInit(ctx *cli.Context) error {
 		repo.InitOptions{
 			BaseFolder:  folder,
 			Owner:       owner,
-			Password:    password,
 			BackendName: backend,
 			DaemonURL:   daemonURL,
 		},
@@ -226,20 +197,6 @@ func handleInitPost(ctx *cli.Context, ctl *client.Client, folder string) error {
 
 		if !ctx.Bool("empty") {
 			fmt.Println(initBanner)
-		}
-	}
-
-	if ctx.Bool("no-password") {
-		// Set a command in the config that simply echoes a static password:
-		staticPasswordHelper := "echo no-password"
-		if err := ctl.ConfigSet("repo.password_command", staticPasswordHelper); err != nil {
-			return err
-		}
-	}
-
-	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
-		if err := ctl.ConfigSet("repo.password_command", pwHelper); err != nil {
-			return err
 		}
 	}
 
@@ -414,17 +371,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		defer trace.Stop()
 	}
 
-	// If the repository was not initialized yet,
-	// we should not ask for a password, since init
-	// will already ask for one. If we recognize the repo
-	// wrongly as uninitialized, then it won't unlock without
-	// a password though.
 	repoPath, err := guessRepoFolder(ctx)
-	if err != nil {
-		return err
-	}
-
-	isInitialized, err := repoIsInitialized(repoPath)
 	if err != nil {
 		return err
 	}
@@ -462,23 +409,6 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		}
 	}
 
-	var password string
-	passwordFn := func() (string, error) {
-		if !isInitialized {
-			return "", nil
-		}
-
-		password, err = readPassword(ctx, repoPath)
-		if err != nil {
-			return "", ExitCode{
-				UnknownError,
-				fmt.Sprintf("Failed to read password: %v", err),
-			}
-		}
-
-		return password, nil
-	}
-
 	logToStdout := ctx.Bool("log-to-stdout")
 	if !logToStdout {
 		log.Infof("all further logs will be also piped to the syslog daemon.")
@@ -491,7 +421,6 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	server, err := server.BootServer(
 		repoPath,
 		daemonURL,
-		passwordFn,
 		logToStdout,
 	)
 

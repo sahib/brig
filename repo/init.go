@@ -27,8 +27,6 @@ type InitOptions struct {
 	BaseFolder string
 	// Owner is the owner id of the repository.
 	Owner string
-	// Password is the password used to lock the repository.
-	Password string
 	// BackendName says what backend we should use.
 	BackendName string
 	// DaemonURL is the URL that will be used for the brig daemon.
@@ -142,35 +140,20 @@ func Init(opts InitOptions) error {
 
 	configPath := filepath.Join(opts.BaseFolder, "config.yml")
 	if err := config.ToYamlFile(configPath, cfg); err != nil {
-		return e.Wrap(err, "Failed to setup default config")
+		return e.Wrap(err, "failed to setup default config")
 	}
 
 	dataFolder := filepath.Join(opts.BaseFolder, "data", opts.BackendName)
 	if err := os.MkdirAll(dataFolder, 0700); err != nil {
-		return e.Wrap(err, "Failed to setup dirs for backend")
+		return e.Wrap(err, "failed to setup dirs for backend")
 	}
 
 	// Create initial key pair:
 	if err := createKeyPair(opts.Owner, opts.BaseFolder, 2048); err != nil {
-		return e.Wrap(err, "Failed to setup gpg keys")
+		return e.Wrap(err, "failed to setup gpg keys")
 	}
 
-	passwdFile := filepath.Join(opts.BaseFolder, "passwd")
-	if err := ioutil.WriteFile(
-		passwdFile,
-		[]byte(opts.Owner),
-		0644,
-	); err != nil {
-		return err
-	}
-
-	// passwd is used to verify the user password,
-	// so it needs to be locked only once on init and
-	// kept out otherwise from the locking machinery.
-	return lockFile(
-		passwdFile,
-		keyFromPassword(opts.Owner, opts.Password),
-	)
+	return nil
 }
 
 // OverwriteConfigKey allows to overwrite a single key/val pair in the config,

@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,18 +11,6 @@ import (
 	fserr "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/config"
-	log "github.com/sirupsen/logrus"
-)
-
-var (
-	// Do not encrypt "data" (already contains encrypted streams) and
-	excludedFromLock   = []string{"data", "OWNER", "BACKEND", "REPO_ID", "config.yml"}
-	excludedFromUnlock = []string{"passwd.locked"}
-)
-
-var (
-	// ErrBadPassword is returned by Open() when the decyption password seems to be wrong.
-	ErrBadPassword = errors.New("Failed to open repository. Probably wrong password")
 )
 
 // Repository provides access to the file structure of a single repository.
@@ -67,59 +54,13 @@ type Repository struct {
 	autoGCControl chan bool
 }
 
-// CheckPassword will try to validate `password` by decrypting something
-// in `baseFolder`.
-func CheckPassword(baseFolder, password string) error {
-	passwdFile := filepath.Join(baseFolder, "passwd.locked")
-
-	// If the file does not exist yet, it probably means
-	// that the repo was not initialized yet.
-	// Act like the password is okay and wait for the init.
-	if _, err := os.Stat(passwdFile); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Try to get the owner of the repo.
-	// Needed for the key derivation function.
-	ownerPath := filepath.Join(baseFolder, "OWNER")
-	owner, err := ioutil.ReadFile(ownerPath) // #nosec
-	if err != nil {
-		return e.Wrap(err, "failed to read OWNER")
-	}
-
-	key := keyFromPassword(string(owner), password)
-	if err := checkUnlockability(passwdFile, key); err != nil {
-		log.Warningf("Failed to unlock passwd file. Wrong password entered?")
-		return ErrBadPassword
-	}
-
-	return nil
-}
-
-// Open will open the repository at `baseFolder` by using `password`.
-func Open(baseFolder, password string) (*Repository, error) {
-	// This is only a sanity check here. If the wrong password
-	// was supplied, we won't be able to unlock the repo anyways.
-	// But try to bail out here with an meaningful error message.
-	if err := CheckPassword(baseFolder, password); err != nil {
-		return nil, err
-	}
-
+// Open will open the repository at `baseFolder`
+func Open(baseFolder string) (*Repository, error) {
 	ownerPath := filepath.Join(baseFolder, "OWNER")
 	owner, err := ioutil.ReadFile(ownerPath) // #nosec
 	if err != nil {
 		return nil, e.Wrap(err, "failed to read OWNER")
 	}
-
-	err = UnlockRepo(
-		baseFolder,
-		string(owner),
-		password,
-		excludedFromLock,
-		excludedFromUnlock,
-	)
 
 	if err != nil {
 		return nil, err
@@ -160,15 +101,9 @@ func Open(baseFolder, password string) (*Repository, error) {
 }
 
 // Close will lock the repository, making this instance unusable.
-func (rp *Repository) Close(password string) error {
+func (rp *Repository) Close() error {
 	rp.stopAutoGCLoop()
-	return LockRepo(
-		rp.BaseFolder,
-		rp.Owner,
-		password,
-		excludedFromLock,
-		excludedFromUnlock,
-	)
+	return nil
 }
 
 // BackendName returns the backend name used when constructing the repo.

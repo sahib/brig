@@ -18,12 +18,9 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/mitchellh/go-homedir"
 	"github.com/sahib/brig/client"
-	"github.com/sahib/brig/cmd/pwd"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util"
-	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -81,16 +78,8 @@ func guessRepoFolder(ctx *cli.Context) (string, error) {
 	}
 
 	guessLocations := []string{
+		// TODO: For now just one.
 		".",
-	}
-
-	home, err := homedir.Dir()
-	if err == nil {
-		guessLocations = append(guessLocations, []string{
-			// TODO: figure out good default locations.
-			filepath.Join(home, ".brig"),
-			filepath.Join(home, ".cache/brig"),
-		}...)
 	}
 
 	var lastError error
@@ -173,60 +162,6 @@ func guessFreeDaemonURL(ctx *cli.Context, owner string) (string, error) {
 	}
 }
 
-func readPasswordFromArgs(basePath string, ctx *cli.Context) string {
-	if ctx.Bool("no-password") {
-		return "no-password"
-	}
-
-	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
-		password, err := pwutil.ReadPasswordFromHelper(basePath, pwHelper)
-
-		if err == nil {
-			return password
-		}
-
-		logVerbose(ctx, "failed to read password from '%s': %v\n", pwHelper, err)
-	}
-
-	// Note: the "--no-password" switch of init is handled by
-	// setting a password command that echoes a static password.
-	for curr := ctx; curr != nil; {
-		if password := curr.String("password"); password != "" {
-			return password
-		}
-
-		curr = curr.Parent()
-	}
-
-	return ""
-}
-
-func readPassword(ctx *cli.Context, repoPath string) (string, error) {
-	isInitialized, err := repoIsInitialized(repoPath)
-	if err != nil {
-		return "", err
-	}
-
-	if !isInitialized {
-		logVerbose(ctx, "repository is not initialized, skipping password entry")
-		return "", nil
-	}
-
-	// Try to read the password from -x or fallback to the default
-	// password if requested by the --no-pass switch.
-	if password := readPasswordFromArgs(repoPath, ctx); password != "" {
-		return password, nil
-	}
-
-	// Read the password from stdin:
-	password, err := pwd.PromptPassword()
-	if err != nil {
-		return "", err
-	}
-
-	return password, nil
-}
-
 func prefixSlash(s string) string {
 	if !strings.HasPrefix(s, "/") {
 		return "/" + s
@@ -265,20 +200,6 @@ func startDaemon(ctx *cli.Context, repoPath, daemonURL string) (*client.Client, 
 
 	logVerbose(ctx, "using executable path: %s", exePath)
 
-	// If a password helper is configured, we should not ask the password right here.
-	askPassword := true
-	cfg, err := defaults.OpenMigratedConfig(
-		filepath.Join(repoPath, "config.yml"),
-	)
-
-	if err != nil {
-		logVerbose(ctx, "failed to open config for guessing password method: %v", err)
-	} else {
-		if cfg.String("repo.password_command") != "" {
-			askPassword = false
-		}
-	}
-
 	logVerbose(
 		ctx,
 		"No Daemon running at %s. Starting daemon from binary: %s",
@@ -296,21 +217,7 @@ func startDaemon(ctx *cli.Context, repoPath, daemonURL string) (*client.Client, 
 	logVerbose(ctx, "Starting daemon as: %s %s", exePath, argString)
 
 	proc := exec.Command(exePath, daemonArgs...) // #nosec
-
-	if askPassword {
-		logVerbose(ctx, "asking password since no password command was given")
-		pwd, err := readPassword(ctx, repoPath)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(pwd) != 0 {
-			proc.Env = append(proc.Env, fmt.Sprintf("BRIG_PASSWORD=%s", pwd))
-		}
-	}
-
 	proc.Env = append(proc.Env, fmt.Sprintf("PATH=%s", os.Getenv("PATH")))
-
 	if err := proc.Start(); err != nil {
 		log.Infof("Failed to start the daemon: %v", err)
 		return nil, err

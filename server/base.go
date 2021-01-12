@@ -38,12 +38,6 @@ type base struct {
 	// base path to the repository (i.e. BRIG_PATH)
 	basePath string
 
-	// password used to lock/unlock the repo.
-	// This is currently stored until end of the daemon,
-	// which is not optimal. Measures needs to be taken
-	// to secure access to Password here.
-	password string
-
 	ctx context.Context
 
 	repo       *repo.Repository
@@ -116,7 +110,7 @@ func (b *base) loadRepo() error {
 	// Sanity check, so that we do not call a repo command without
 	// an initialized repo. Error early for a meaningful message here.
 	log.Infof("loading repository at %s", b.basePath)
-	rp, err := repo.Open(b.basePath, b.password)
+	rp, err := repo.Open(b.basePath)
 	if err != nil {
 		log.Warningf("failed to load repository at `%s`: %v", b.basePath, err)
 		return err
@@ -409,7 +403,7 @@ func (b *base) Quit() (err error) {
 
 	log.Infof("trying to lock repository...")
 
-	if err = b.repo.Close(b.password); err != nil {
+	if err = b.repo.Close(); err != nil {
 		log.Warningf("failed to lock repository: %v", err)
 	}
 
@@ -425,13 +419,11 @@ func (b *base) Quit() (err error) {
 func newBase(
 	ctx context.Context,
 	basePath string,
-	password string,
 	quitCh chan struct{},
 ) *base {
 	return &base{
 		ctx:       ctx,
 		basePath:  basePath,
-		password:  password,
 		quitCh:    quitCh,
 		conductor: conductor.New(5*time.Minute, 100),
 	}

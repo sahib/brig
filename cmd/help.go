@@ -33,15 +33,6 @@ var helpTexts = map[string]helpEntry{
 				Value: "httpipfs",
 				Usage: "What data backend to use for the new repo. One of  `mock`, `httpipfs`. This cannot be changed later!",
 			},
-			cli.StringFlag{
-				Name:  "w,pw-helper",
-				Value: "",
-				Usage: "Password helper command. The stdout of this command is used as password.",
-			},
-			cli.BoolFlag{
-				Name:  "no-password,x",
-				Usage: "Use a static password. Not recommended besides testing.",
-			},
 			cli.BoolFlag{
 				Name:  "empty,e",
 				Usage: "Do not create an initial README and no initial commit.",
@@ -81,18 +72,11 @@ var helpTexts = map[string]helpEntry{
    is especially important for commands like »brig net locate« but is not used
    extensively by anything else yet.
 
-   You will be asked to enter a password if you did not specify -w. This
-   password will be used to encrypt the repository while brig is not running.
-   For ease of use we recommend to specify a password helper with the -w
-   option. This allows you to specify a password command that will print the
-   desired password as output. This output is read by brig and used as
-   password. For testing you could use »-w "echo mypass"«, while for serious
-   use, you should use something like »pass brig/desktop/password«.
-
 EXAMPLES:
 
-	# Easiest way to create a repository at ~/.brig
-	$ brig init ali@wonderland.org/rabbithole
+	# TODO: Allow --repo to also come after init.
+	# Easiest way to create a repository at /tmp/brig
+	$ brig --repo /tmp/brig init ali@wonderland.org/rabbithole
 
 `,
 	},
@@ -987,10 +971,9 @@ EXAMPLES:
 		Description: `Commands to manually start or stop the daemon.
 
    The daemon process is normally started whenever you issue the first command
-   (like »brig init« or later on a »brig ls«). Once you entered your password
-   (if you did not specify a password helper), it will be started for you in
-   the background. Therefore it is seldom useful to use any of those commands -
-   unless you know what you're doing.
+   (like »brig init« or later on a »brig ls«). This command will start it for
+   you in the background. Therefore it is seldom useful to use any of those
+   commands - unless you are debugging brig.
 `,
 	},
 	"daemon.launch": {
