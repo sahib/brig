@@ -523,9 +523,9 @@ func BenchmarkRead(b *testing.B) {
 
 func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
 	// Writing could be very space demanding even for a small size,
-	// Since benchmark runs many-many times it will consume a lot of space
-	// we have to remount everything every time to start with clean catFS DB
-	// Consequently, this test takes long time, since mounting is long operation
+	// Since benchmark runs many-many times, it will consume a lot of space.
+	// We have to remount everything every time to start with clean catFS DB.
+	// Consequently, this test takes long time, since mounting is long operation.
 	label := "dummy"
 	size := len(data)
 	for n := 0; n < b.N; n++ {
@@ -538,11 +538,12 @@ func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
 			b.StartTimer()
 			for i := 0; i < ntimes; i++ {
 				if len(data)>0 {
-					// generate new content for backend
+					// modification of one byte is enough
+					// to generate new encrypted content for the backend
 					data[0]++
 				}
+				require.Nil(b, ioutil.WriteFile(fuseFilePath, data, 0644))
 			}
-			require.Nil(b, ioutil.WriteFile(fuseFilePath, data, 0644))
 			b.StopTimer()
 		})
 	}
