@@ -254,7 +254,7 @@ func withMount(t testing.TB, opts MountOptions, f func(ctx context.Context, cont
 
 	// function which required mounts
 	f(ctx, control, &mountInfo{
-		Dir: req.MntPath,
+		Dir:  req.MntPath,
 		Opts: req.Opts,
 	})
 }
@@ -314,7 +314,7 @@ var (
 	DataSizes = []int64{
 		0, 1, 2, 4, 8, 16, 32, 64, 1024,
 		2048, 4095, 4096, 4097, 147611,
-		2*1024*1024+123, // in case if we have buffer size interference
+		2*1024*1024 + 123, // in case if we have buffer size interference
 	}
 )
 
@@ -486,8 +486,8 @@ func TestWithRoot(t *testing.T) {
 var (
 	BenchmarkDataSizes = []int64{
 		0,
-		1024, 2*1024, 16*1024, 64*1024, 128*1024,
-		1*1024*1024, 16*1024*1024,
+		1024, 2 * 1024, 16 * 1024, 64 * 1024, 128 * 1024,
+		1 * 1024 * 1024, 16 * 1024 * 1024,
 	}
 )
 
@@ -512,11 +512,11 @@ func BenchmarkRead(b *testing.B) {
 		for _, size := range BenchmarkDataSizes {
 			// Check how fast is readout of a file with compressible content
 			data := testutil.CreateDummyBuf(size)
-			stageAndRead(b, ctx, control, mount,  "CompressibleContent", data)
+			stageAndRead(b, ctx, control, mount, "CompressibleContent", data)
 
 			// Check how fast is readout of a file with random/uncompressible content
 			data = testutil.CreateRandomDummyBuf(size, 1)
-			stageAndRead(b, ctx, control, mount,  "RandomContent", data)
+			stageAndRead(b, ctx, control, mount, "RandomContent", data)
 		}
 	})
 }
@@ -537,7 +537,7 @@ func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
 
 			b.StartTimer()
 			for i := 0; i < ntimes; i++ {
-				if len(data)>0 {
+				if len(data) > 0 {
 					// modification of one byte is enough
 					// to generate new encrypted content for the backend
 					data[0]++
@@ -552,12 +552,12 @@ func writeDataNtimes(b *testing.B, data []byte, ntimes int) {
 var (
 	// keep this low or you might run out of space
 	NumberOfOverWrites = []int{
-		1, 2,  5,
+		1, 2, 5,
 	}
 )
 
 func BenchmarkWrite(b *testing.B) {
-	size := int64(10*1024*1024)
+	size := int64(10 * 1024 * 1024)
 
 	for _, Ntimes := range NumberOfOverWrites {
 		// Check how fast is write to a file with compressible content
@@ -576,4 +576,3 @@ func BenchmarkWrite(b *testing.B) {
 		})
 	}
 }
-
