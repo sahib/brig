@@ -16,7 +16,7 @@ type File struct {
 	Base
 
 	size       uint64
-	cachedSize uint64 // MaxUint64 indicates that it is unknown
+	cachedSize int64 // Negative indicates that it is unknown
 	parent     string
 	key        []byte
 }
@@ -128,7 +128,7 @@ func (f *File) readFileAttrs(capFile capnp_model.File) error {
 func (f *File) Size() uint64 { return f.size }
 
 // CachedSize returns the number of bytes in the file's backend storage.
-func (f *File) CachedSize() uint64 { return f.cachedSize }
+func (f *File) CachedSize() int64 { return f.cachedSize }
 
 ////////////////// ATTRIBUTE SETTERS //////////////////
 
@@ -150,7 +150,7 @@ func (f *File) SetSize(s uint64) {
 }
 
 // SetCachedSize will update the cached size of the file and update it's mod time.
-func (f *File) SetCachedSize(s uint64) {
+func (f *File) SetCachedSize(s int64) {
 	f.cachedSize = s
 	f.SetModTime(time.Now())
 }

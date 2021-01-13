@@ -364,13 +364,12 @@ func StageFromFileNode(lkr *Linker, f *n.File) (*n.File, error) {
 // TODO rename Stage calls everywhere (especially in tests) and then
 // rename Stage -> StageWithoutCacheSize, and StageWithFullInfo -> Stage
 func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte, modTime time.Time) (file *n.File, err error) {
-	// MaxUint64 indicates that cachedSize is unknown
-	MaxUint64 := uint64(1<<64 - 1)
-	return StageWithFullInfo(lkr, repoPath, contentHash, backendHash, size, MaxUint64, key, modTime)
+	cachedSize := int64(-1) // Negative indicates unknown
+	return StageWithFullInfo(lkr, repoPath, contentHash, backendHash, size, cachedSize, key, modTime)
 }
 
 // StageWithFullInfo adds a file to brigs DAG.
-func StageWithFullInfo(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size, cachedSize uint64, key []byte, modTime time.Time) (file *n.File, err error) {
+func StageWithFullInfo(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, cachedSize int64, key []byte, modTime time.Time) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
 		err = lerr

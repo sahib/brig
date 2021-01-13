@@ -288,7 +288,7 @@ func (c *Commit) Size() uint64 {
 
 // CachedSize returns zero.
 // Same reasons as for Size() above.
-func (c *Commit) CachedSize() uint64 { return 0 }
+func (c *Commit) CachedSize() int64 { return 0 }
 
 // Index of the commit. First commit has the index 0,
 // next commit has the index 1 and so on.
