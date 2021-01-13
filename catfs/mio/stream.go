@@ -88,13 +88,13 @@ func NewInStream(r io.Reader, key []byte, algo compress.AlgorithmType) (io.Reade
 // It provides the same
 type limitedStream struct {
 	stream Stream
-	pos    int64
-	size   int64
+	pos    uint64
+	size   uint64
 }
 
 func (ls *limitedStream) Read(buf []byte) (int, error) {
 	isEOF := false
-	if ls.pos+int64(len(buf)) >= ls.size {
+	if ls.pos+uint64(len(buf)) >= ls.size {
 		buf = buf[:ls.size-ls.pos]
 		isEOF = true
 	}
@@ -131,7 +131,7 @@ func (ls *limitedStream) Seek(offset int64, whence int) (int64, error) {
 		return int64(ls.size), io.EOF
 	}
 
-	ls.pos = int64(newPos)
+	ls.pos = uint64(newPos)
 	return ls.stream.Seek(newPos, io.SeekStart)
 }
 
@@ -147,7 +147,7 @@ func (ls *limitedStream) Close() error {
 
 // LimitStream is like io.LimitReader, but works for mio.Stream.
 // It will not allow reading/seeking after the specified size.
-func LimitStream(stream Stream, size int64) Stream {
+func LimitStream(stream Stream, size uint64) Stream {
 	return &limitedStream{
 		stream: stream,
 		pos:    0,

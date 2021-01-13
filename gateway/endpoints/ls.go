@@ -32,7 +32,7 @@ type LsRequest struct {
 type StatInfo struct {
 	Path       string `json:"path"`
 	User       string `json:"user"`
-	Size       int64  `json:"size"`
+	Size       uint64 `json:"size"`
 	Inode      uint64 `json:"inode"`
 	Depth      int    `json:"depth"`
 	ModTime    int64  `json:"last_modified_ms"`

@@ -79,7 +79,7 @@ func TestStat(t *testing.T) {
 		require.Nil(t, err)
 		require.Equal(t, info.Path, "/sub/x")
 		require.Equal(t, info.IsDir, false)
-		require.Equal(t, info.Size, int64(0))
+		require.Equal(t, info.Size, uint64(0))
 		require.Equal(t, info.Inode, file.Inode())
 		require.Equal(t, info.TreeHash, file.TreeHash())
 
@@ -88,14 +88,14 @@ func TestStat(t *testing.T) {
 
 		info, err = fs.Stat("/sub/x")
 		require.Nil(t, err)
-		require.Equal(t, info.Size, int64(len(data)))
+		require.Equal(t, info.Size, uint64(len(data)))
 		require.Equal(t, info.TreeHash, file.TreeHash())
 
 		info, err = fs.Stat("/sub")
 		require.Nil(t, err)
 		require.Equal(t, info.Path, "/sub")
 		require.Equal(t, info.IsDir, true)
-		require.Equal(t, int64(len(data)), info.Size)
+		require.Equal(t, uint64(len(data)), info.Size)
 	})
 }
 
@@ -170,7 +170,7 @@ func TestCat(t *testing.T) {
 		contentHash := h.TestDummy(t, 23)
 
 		// Stage the file manually (without fs.Stage)
-		_, err = c.Stage(fs.lkr, "/x", contentHash, backendHash, int64(len(raw)), TestKey, time.Now())
+		_, err = c.Stage(fs.lkr, "/x", contentHash, backendHash, uint64(len(raw)), TestKey, time.Now())
 		require.Nil(t, err)
 
 		// Cat the file again:
@@ -717,7 +717,7 @@ func TestTruncate(t *testing.T) {
 
 		for _, size := range []int{1025, 512, 1, 0, 1024} {
 			t.Run(fmt.Sprintf("size-%d", size), func(t *testing.T) {
-				require.NoError(t, fs.Truncate("/x", int64(size)))
+				require.Nil(t, fs.Truncate("/x", uint64(size)))
 				// clamp to 1024 for assertion:
 				readSize := size
 				if size > 1024 {

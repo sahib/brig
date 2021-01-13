@@ -68,7 +68,7 @@ func TestOpenTruncate(t *testing.T) {
 				fd, err := fs.Open("/x")
 				require.Nil(t, err)
 
-				require.NoError(t, fd.Truncate(int64(idx)))
+				require.Nil(t, fd.Truncate(uint64(idx)))
 
 				data, err := ioutil.ReadAll(fd)
 				require.Nil(t, err)

@@ -184,7 +184,7 @@ func TestClientFetchStore(t *testing.T) {
 		// Check superficially that store was imported right:
 		require.Equal(t, info.Path, filePath)
 		require.Equal(t, info.User, "alice")
-		require.Equal(t, info.Size, int64(3))
+		require.Equal(t, info.Size, uint64(3))
 		require.Equal(t, info.IsDir, false)
 	})
 }
@@ -215,7 +215,7 @@ func TestClientFetchPatch(t *testing.T) {
 		newFileInfo, err := aliceFsAtBob.Stat("/new_file")
 		require.NoError(t, err)
 		require.Equal(t, "/new_file", newFileInfo.Path)
-		require.Equal(t, int64(3), newFileInfo.Size)
+		require.Equal(t, uint64(3), newFileInfo.Size)
 
 		// Check that the new patch version is 2 (i.e. bob has two commits)
 		aliceFsAtBob.Log("HEAD", func(c *catfs.Commit) error {

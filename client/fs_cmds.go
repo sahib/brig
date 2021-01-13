@@ -18,8 +18,8 @@ import (
 type StatInfo struct {
 	Path        string
 	User        string
-	Size        int64
-	CachedSize  int64
+	Size        uint64
+	CachedSize  uint64
 	Inode       uint64
 	IsDir       bool
 	Depth       int

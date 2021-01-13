@@ -124,7 +124,7 @@ func TestLimitedStream(t *testing.T) {
 		_, err := stream.Seek(0, io.SeekStart)
 		require.Nil(t, err)
 
-		smallStream := LimitStream(stream, int64(idx))
+		smallStream := LimitStream(stream, uint64(idx))
 		data, err := ioutil.ReadAll(smallStream)
 		require.Nil(t, err)
 		require.Equal(t, testData[:idx], data)
@@ -391,7 +391,7 @@ func TestLimitStreamSize(t *testing.T) {
 		Closer:   ioutil.NopCloser(rZip),
 	}
 
-	r := LimitStream(stream, int64(len(data)))
+	r := LimitStream(stream, uint64(len(data)))
 
 	size, err := r.Seek(0, io.SeekEnd)
 	require.Nil(t, err)

@@ -119,30 +119,31 @@ func (nd *Node) IsCached(hash h.Hash) (bool, error) {
 }
 
 // CachedSize returns the cached size of the node.
-// Negative indicates unknown size due to errors or hash not being present locally
-func (nd *Node) CachedSize(hash h.Hash) (int64, error) {
+func (nd *Node) CachedSize(hash h.Hash) (uint64, error) {
+	// MaxUint64 indicates that cachedSize is unknown
+	MaxUint64 := uint64(1<<64 - 1)
 	ctx := context.Background()
 	req := nd.sh.Request("object/stat", hash.B58String())
 	// provides backend size only for cached objects
 	req.Option("offline", "true")
 	resp, err := req.Send(ctx)
 	if err != nil {
-		return -1, err
+		return MaxUint64, err
 	}
 
 	defer resp.Close()
 
 	if resp.Error != nil {
-		return -1, resp.Error
+		return MaxUint64, resp.Error
 	}
 
 	raw := struct {
-		CumulativeSize int64
+		CumulativeSize uint64
 		Key            string
 	}{}
 
 	if err := json.NewDecoder(resp.Output).Decode(&raw); err != nil {
-		return -1, err
+		return MaxUint64, err
 	}
 
 	return raw.CumulativeSize, nil

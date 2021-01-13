@@ -198,7 +198,7 @@ func MustCommitIfPossible(t *testing.T, lkr *Linker, msg string) *n.Commit {
 
 // MustTouchAndCommit is a combined MustTouch and MustCommit.
 func MustTouchAndCommit(t *testing.T, lkr *Linker, path string, seed byte) (*n.File, *n.Commit) {
-	file, err := Stage(lkr, path, h.TestDummy(t, seed), h.TestDummy(t, seed), int64(seed), nil, time.Now())
+	file, err := Stage(lkr, path, h.TestDummy(t, seed), h.TestDummy(t, seed), uint64(seed), nil, time.Now())
 	if err != nil {
 		t.Fatalf("Failed to stage %s at %d: %v", path, seed, err)
 	}
@@ -218,7 +218,7 @@ func MustModify(t *testing.T, lkr *Linker, file *n.File, seed int) {
 		t.Fatalf("Unable to remove %s from /: %v", file.Path(), err)
 	}
 
-	file.SetSize(int64(seed))
+	file.SetSize(uint64(seed))
 	file.SetBackend(lkr, h.TestDummy(t, byte(seed)))
 	file.SetContent(lkr, h.TestDummy(t, byte(seed)))
 

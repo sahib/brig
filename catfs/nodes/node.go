@@ -50,10 +50,10 @@ type Metadatable interface {
 	User() string
 
 	// Size returns the size of the node in bytes.
-	Size() int64
+	Size() uint64
 
 	// CachedSize returns the size of the node at the backend in bytes.
-	CachedSize() int64
+	CachedSize() uint64
 
 	// ModTime returns the time when the last modification to the node happened.
 	ModTime() time.Time
@@ -131,7 +131,7 @@ type ModNode interface {
 	Node
 
 	// SetSize sets the size of the node in bytes
-	SetSize(size int64)
+	SetSize(size uint64)
 
 	// SetModTime updates the modtime timestamp
 	SetModTime(modTime time.Time)

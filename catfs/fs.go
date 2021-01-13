@@ -100,9 +100,9 @@ type StatInfo struct {
 	// User is the name of the user that modified this node last.
 	User string
 	// Size in bytes
-	Size int64
+	Size uint64
 	// Cached Size in bytes, i.e. size at backend
-	CachedSize int64
+	CachedSize uint64
 	// Inode is a unique number specific to this node
 	Inode uint64
 	// Depth is the hierarchy level inside of this node (root has 0)
@@ -850,7 +850,7 @@ func (fs *FS) Touch(path string) error {
 // Note that this is not implemented as an actual IO operation.
 // It is possible to go back to a bigger size until the actual
 // content was changed via Stage().
-func (fs *FS) Truncate(path string, size int64) error {
+func (fs *FS) Truncate(path string, size uint64) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -1191,7 +1191,7 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 }
 
 // NOTE: This method can be called without locking fs.mu!
-func (fs *FS) catHash(backendHash h.Hash, key []byte, size int64) (mio.Stream, error) {
+func (fs *FS) catHash(backendHash h.Hash, key []byte, size uint64) (mio.Stream, error) {
 	rawStream, err := fs.bk.Cat(backendHash)
 	if err != nil {
 		return nil, err

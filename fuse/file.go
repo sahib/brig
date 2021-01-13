@@ -58,7 +58,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	if fi.hd != nil && fi.hd.writers > 0 {
 		attr.Size = uint64(len(fi.hd.data))
 	} else {
-		attr.Size = uint64(info.Size)
+		attr.Size = info.Size
 	}
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
@@ -71,8 +71,8 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	// (assuming every fs block takes actual storage, but we only emulate this
 	// here for compatibility; see man 2 stat for the why for "512")
 	attr.BlockSize = 4096
-	attr.Blocks = uint64(info.Size / 512)
-	if info.Size%512 > 0 {
+	attr.Blocks = info.Size / 512
+	if info.Size%uint64(512) > 0 {
 		attr.Blocks++
 	}
 
