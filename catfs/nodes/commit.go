@@ -282,13 +282,13 @@ func (c *Commit) Path() string {
 // Size will always return 0 since a commit has no defined size.
 // If you're interested in the size of the snapshot, check the size
 // of the root directory.
-func (c *Commit) Size() uint64 {
+func (c *Commit) Size() int64 {
 	return 0
 }
 
 // CachedSize returns zero.
 // Same reasons as for Size() above.
-func (c *Commit) CachedSize() uint64 { return 0 }
+func (c *Commit) CachedSize() int64 { return 0 }
 
 // Index of the commit. First commit has the index 0,
 // next commit has the index 1 and so on.

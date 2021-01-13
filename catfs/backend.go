@@ -49,8 +49,8 @@ type FsBackend interface {
 	IsCached(hash h.Hash) (bool, error)
 
 	// CachedSize returns the backend size for a given hash
-	// return value of MaxUint64 := uint64(1<<64 - 1) indicates that cachedSize is unknown
-	CachedSize(hash h.Hash) (uint64, error)
+	// Negative indicates that cachedSize is unknown
+	CachedSize(hash h.Hash) (int64, error)
 }
 
 // MemFsBackend is a mock structure that implements FsBackend.
@@ -125,20 +125,19 @@ func (mb *MemFsBackend) IsPinned(hash h.Hash) (bool, error) {
 }
 
 // IsCached implements FsBackend.IsCached by checking if the file exists.
-// If yes, the file is cached always.
+// If no error (i.e. hash is known), the file is cached.
 func (mb *MemFsBackend) IsCached(hash h.Hash) (bool, error) {
 	_, ok := mb.data[hash.B58String()]
 	return ok, nil
 }
 
 // CachedSize implements FsBackend.CachedSize by returnig data size
-// If yes, the file is cached always.
-func (mb *MemFsBackend) CachedSize(hash h.Hash) (uint64, error) {
+// If no error (i.e. hash is known), the file is cached.
+// Negative indicates unknown size due to error
+func (mb *MemFsBackend) CachedSize(hash h.Hash) (int64, error) {
 	data, ok := mb.data[hash.B58String()]
-	// MaxUint64 indicates that cachedSize is unknown
-	MaxUint64 := uint64(1<<64 - 1)
 	if !ok {
-		return MaxUint64, nil
+		return -1, nil
 	}
-	return uint64(len(data)), nil
+	return int64(len(data)), nil
 }

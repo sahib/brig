@@ -8,8 +8,8 @@ $Go.import("github.com/sahib/brig/server/capnp");
 struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     path        @0  :Text;
     treeHash    @1  :Data;
-    size        @2  :UInt64;
-    cachedSize  @3  :UInt64;
+    size        @2  :Int64;
+    cachedSize  @3  :Int64;
     inode       @4  :UInt64;
     isDir       @5  :Bool;
     depth       @6  :Int32;

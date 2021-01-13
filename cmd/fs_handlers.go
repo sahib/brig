@@ -226,7 +226,7 @@ func handleCp(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Copy(srcPath, dstPath)
 }
 
-func colorForSize(size uint64) func(f string, a ...interface{}) string {
+func colorForSize(size int64) func(f string, a ...interface{}) string {
 	switch {
 	case size >= 1024 && size < 1024<<10:
 		return color.CyanString
@@ -352,8 +352,8 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 		fmt.Fprintf(
 			tabW,
 			"%s\t%s\t%s\t%s%s\t%s\t%s\n",
-			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
-			colorForSize(entry.Size)(humanize.Bytes(entry.CachedSize)),
+			colorForSize(entry.Size)(humanize.Bytes(uint64(entry.Size))),
+			colorForSize(entry.Size)(humanize.Bytes(uint64(entry.CachedSize))),
 			entry.ModTime.Format("2006-01-02 15:04:05 MST"),
 			userEntry,
 			coloredPath,
@@ -504,8 +504,8 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("Path", info.Path)
 	printPair("User", info.User)
 	printPair("Type", nodeType)
-	printPair("Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.Size), info.Size))
-	printPair("Backend Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.CachedSize), info.CachedSize))
+	printPair("Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(uint64(info.Size)), info.Size))
+	printPair("Backend Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(uint64(info.CachedSize)), info.CachedSize))
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)

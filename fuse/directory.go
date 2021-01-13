@@ -35,7 +35,7 @@ func (dir *Directory) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Gid = uint32(os.Getgid())
 
 	attr.Mode = os.ModeDir | 0755
-	attr.Size = info.Size
+	attr.Size = uint64(info.Size)
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
 	return nil

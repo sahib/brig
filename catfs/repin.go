@@ -13,7 +13,7 @@ import (
 )
 
 type partition struct {
-	PinSize uint64
+	PinSize int64
 
 	// nodes that are within min_depth and should stay pinned
 	// (or are even re-pinned if needed)
@@ -91,8 +91,8 @@ func (fs *FS) partitionNodeHashes(nd n.ModNode, minDepth, maxDepth int64) (*part
 	return part, nil
 }
 
-func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
-	newlyPinned := uint64(0)
+func (fs *FS) ensurePin(entries []n.ModNode) (int64, error) {
+	newlyPinned := int64(0)
 	isPinUnpinned := fs.cfg.Bool("repin.pin_unpinned")
 
 	for _, nd := range entries {
@@ -131,8 +131,8 @@ func (fs *FS) ensurePin(entries []n.ModNode) (uint64, error) {
 	return newlyPinned, nil
 }
 
-func (fs *FS) ensureUnpin(entries []n.ModNode) (uint64, error) {
-	savedStorage := uint64(0)
+func (fs *FS) ensureUnpin(entries []n.ModNode) (int64, error) {
+	savedStorage := int64(0)
 
 	for _, nd := range entries {
 		isPinned, _, err := fs.pinner.IsNodePinned(nd)
@@ -169,13 +169,13 @@ func findLastPinnedIdx(pinner *Pinner, nds []n.ModNode) (int, error) {
 	return -1, nil
 }
 
-func (fs *FS) balanceQuota(ps []*partition, totalStorage, quota uint64) (uint64, error) {
+func (fs *FS) balanceQuota(ps []*partition, totalStorage, quota int64) (int64, error) {
 	sort.Slice(ps, func(i, j int) bool {
 		return ps[i].PinSize < ps[j].PinSize
 	})
 
 	idx, empties := 0, 0
-	savedStorage := uint64(0)
+	savedStorage := int64(0)
 
 	// Try to reduce the pinned storage amount until
 	// we stay below the determined quota.
@@ -232,19 +232,20 @@ func (fs *FS) repin(root string) error {
 	maxDepth := util.Max64(1, fs.cfg.Int("repin.max_depth"))
 	quotaSrc := fs.cfg.String("repin.quota")
 
-	quota, err := humanize.ParseBytes(quotaSrc)
+	quota_uint64, err := humanize.ParseBytes(quotaSrc)
 	if err != nil {
 		return err
 	}
+	quota := int64(quota_uint64)
 
 	rootNd, err := fs.lkr.LookupDirectory(root)
 	if err != nil {
 		return err
 	}
 
-	totalStorage := uint64(0)
-	addedToStorage := uint64(0)
-	savedStorage := uint64(0)
+	totalStorage := int64(0)
+	addedToStorage := int64(0)
+	savedStorage := int64(0)
 	parts := []*partition{}
 
 	log.Infof("repin started (min=%d max=%d quota=%s)", minDepth, maxDepth, quotaSrc)
@@ -295,9 +296,9 @@ func (fs *FS) repin(root string) error {
 	totalStorage -= quotaUnpins
 
 	if savedStorage >= addedToStorage {
-		log.Infof("repin finished; freed %s, total storage is %s", humanize.Bytes(savedStorage-addedToStorage), humanize.Bytes(totalStorage))
+		log.Infof("repin finished; freed %s, total storage is %s", humanize.Bytes(uint64(savedStorage-addedToStorage)), humanize.Bytes(uint64(totalStorage)))
 	} else {
-		log.Infof("repin finished; used extra %s, total storage is %s", humanize.Bytes(addedToStorage-savedStorage), humanize.Bytes(totalStorage))
+		log.Infof("repin finished; used extra %s, total storage is %s", humanize.Bytes(uint64(addedToStorage-savedStorage)), humanize.Bytes(uint64(totalStorage)))
 	}
 	return nil
 }

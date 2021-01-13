@@ -227,7 +227,7 @@ func (gh *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		prefixStream, mimeType := mimeTypeFromStream(stream)
 		hdr.Set("Content-Type", mimeType)
-		hdr.Set("Content-Length", strconv.FormatUint(info.Size, 10))
+		hdr.Set("Content-Length", strconv.FormatInt(info.Size, 10))
 
 		isDirectDownload := r.URL.Query().Get("direct") == "yes"
 

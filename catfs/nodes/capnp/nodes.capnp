@@ -26,16 +26,16 @@ struct DirEntry $Go.doc("A single directory entry") {
 }
 
 struct Directory $Go.doc("Directory contains one or more directories or files") {
-    size       @0 :UInt64;
-    cachedSize @1 :UInt64;
+    size       @0 :Int64;
+    cachedSize @1 :Int64;
     parent     @2 :Text;
     children   @3 :List(DirEntry);
     contents   @4 :List(DirEntry);
 }
 
 struct File $Go.doc("A leaf node in the MDAG") {
-    size       @0 :UInt64;
-    cachedSize @1 :UInt64;
+    size       @0 :Int64;
+    cachedSize @1 :Int64;
     parent     @2 :Text;
     key        @3 :Data;
 }

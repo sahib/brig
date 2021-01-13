@@ -112,25 +112,25 @@ func Touch(path string) error {
 //   fmt.Printf("Wrote %d bytes to stdout\n", s.Size())
 //
 type SizeAccumulator struct {
-	size uint64
+	size int64
 }
 
 // Write simply increments the internal size count without any IO.
 // It can be safely called from any go routine.
 func (s *SizeAccumulator) Write(buf []byte) (int, error) {
-	atomic.AddUint64(&s.size, uint64(len(buf)))
+	atomic.AddInt64(&s.size, int64(len(buf)))
 	return len(buf), nil
 }
 
 // Size returns the cumulated written bytes.
 // It can be safely called from any go routine.
-func (s *SizeAccumulator) Size() uint64 {
-	return atomic.LoadUint64(&s.size)
+func (s *SizeAccumulator) Size() int64 {
+	return atomic.LoadInt64(&s.size)
 }
 
 // Reset resets the size counter to 0.
 func (s *SizeAccumulator) Reset() {
-	atomic.StoreUint64(&s.size, 0)
+	atomic.StoreInt64(&s.size, 0)
 }
 
 // NopWriteCloser returns a WriteCloser with a no-op Close method wrapping the

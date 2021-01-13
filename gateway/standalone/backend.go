@@ -98,12 +98,12 @@ func (tb *TmpFsBackend) IsCached(hash h.Hash) (bool, error) {
 }
 
 // CachedSize implements FsBackend.CachedSize by returning file size
-func (tb *TmpFsBackend) CachedSize(hash h.Hash) (uint64, error) {
+func (tb *TmpFsBackend) CachedSize(hash h.Hash) (int64, error) {
 	path := filepath.Join(tb.root, hash.B58String())
 
 	fi, err := os.Stat(path)
 	if err != nil {
-		return uint64(1<<64 - 1), err // MaxUint64 indicates unknown
+		return -1, err // Negative indicates unknown
 	}
-	return uint64(fi.Size()), nil
+	return int64(fi.Size()), nil
 }

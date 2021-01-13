@@ -124,7 +124,7 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 		return n, err
 	}
 
-	minSize := uint64(hdl.layer.MinSize())
+	minSize := int64(hdl.layer.MinSize())
 	if hdl.file.Size() < minSize {
 		hdl.fs.mu.Lock()
 		hdl.file.SetSize(minSize)
@@ -167,7 +167,7 @@ func (hdl *Handle) Seek(offset int64, whence int) (int64, error) {
 }
 
 // Truncate truncates the file to a specific length.
-func (hdl *Handle) Truncate(size uint64) error {
+func (hdl *Handle) Truncate(size int64) error {
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
