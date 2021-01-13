@@ -102,7 +102,7 @@ type StatInfo struct {
 	// Size in bytes
 	Size uint64
 	// Cached Size in bytes, i.e. size at backend
-	CachedSize uint64
+	CachedSize int64
 	// Inode is a unique number specific to this node
 	Inode uint64
 	// Depth is the hierarchy level inside of this node (root has 0)

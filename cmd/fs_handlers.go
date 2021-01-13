@@ -353,7 +353,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			tabW,
 			"%s\t%s\t%s\t%s%s\t%s\t%s\n",
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
-			colorForSize(entry.Size)(humanize.Bytes(entry.CachedSize)),
+			colorForSize(entry.Size)(humanize.Bytes(uint64(entry.CachedSize))),
 			entry.ModTime.Format("2006-01-02 15:04:05 MST"),
 			userEntry,
 			coloredPath,
@@ -505,7 +505,7 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("User", info.User)
 	printPair("Type", nodeType)
 	printPair("Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.Size), info.Size))
-	printPair("Backend Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(info.CachedSize), info.CachedSize))
+	printPair("Backend Size", fmt.Sprintf("%s (%d bytes)", humanize.Bytes(uint64(info.CachedSize)), info.CachedSize))
 	printPair("Inode", strconv.FormatUint(info.Inode, 10))
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)
