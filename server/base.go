@@ -120,7 +120,7 @@ func (b *base) loadRepo() error {
 
 	// Adjust the backend's logging output here, since this should be done
 	// before actually loading the backend (which might produce logs already)
-	backendName := rp.BackendName()
+	backendName := rp.Immutables.Backend()
 	logName := fmt.Sprintf("brig-%s", backendName)
 	wSyslog, err := syslog.New(syslog.LOG_NOTICE, logName)
 	if err != nil {
@@ -164,10 +164,15 @@ func (b *base) loadProfileServer() {
 /////////
 
 func (b *base) loadBackend() error {
-	backendName := b.repo.BackendName()
+	backendName := b.repo.Immutables.Backend()
 	log.Infof("loading backend `%s`", backendName)
 
-	pubKey, err := b.repo.Keyring().OwnPubKey()
+	kr, err := b.repo.Keyring()
+	if err != nil {
+		return err
+	}
+
+	pubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return err
 	}
@@ -430,7 +435,8 @@ func newBase(
 }
 
 func (b *base) doFetch(who string) error {
-	if who == b.repo.Owner {
+	owner := b.repo.Immutables.Owner()
+	if who == owner {
 		log.Infof("skipping fetch for own metadata")
 		return nil
 	}
@@ -547,7 +553,8 @@ func (b *base) notifyFsChangeEvent() {
 	}
 
 	// Do not trigger events when we're looking at the store of somebody else.
-	if b.repo.Owner != b.repo.CurrentUser() {
+	owner := b.repo.Immutables.Owner()
+	if owner != b.repo.CurrentUser() {
 		return
 	}
 

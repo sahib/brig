@@ -97,9 +97,10 @@ func NewServer(rp *repo.Repository, bk backend.Backend, rapi remotesapi.RemotesA
 		return nil, e.Wrapf(err, "new-server")
 	}
 
-	log.Debugf("publishing own identity to network: %s", rp.Owner)
-	if err := publishSelf(bk, rp.Owner); err != nil {
-		log.Warningf("failed to publish `%v` to the network: %v", rp.Owner, err)
+	owner := rp.Immutables.Owner()
+	log.Debugf("publishing own identity to network: %s", owner)
+	if err := publishSelf(bk, owner); err != nil {
+		log.Warningf("failed to publish `%v` to the network: %v", owner, err)
 		log.Warningf("you will not be visible to other users.")
 	}
 
@@ -305,7 +306,12 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 	// This is not a technical problem, but more due to the fact that it makes
 	// it easier to pass the current remote to the active handler.
 	// Make sure to reset the current remote:
-	keyring := hdl.rp.Keyring()
+	keyring, err := hdl.rp.Keyring()
+	if err != nil {
+		log.WithError(err).Warnf("failed to load keyring in net handle")
+		return
+	}
+
 	ownPubKey, err := keyring.OwnPubKey()
 	if err != nil {
 		log.Warnf("Failed to retrieve own pubkey: %v", err)
@@ -360,7 +366,14 @@ func (hdl *connHandler) Handle(ctx context.Context, conn net.Conn) {
 	}
 
 	// Take the raw connection we get and add an authentication layer on top of it.
-	authConn := NewAuthReadWriter(conn, keyring, ownPubKey, hdl.rp.Owner, authChecker)
+	owner := hdl.rp.Immutables.Owner()
+	authConn := NewAuthReadWriter(
+		conn,
+		keyring,
+		ownPubKey,
+		owner,
+		authChecker,
+	)
 
 	// Trigger the authentication. This is not strictly necessary and would
 	// happen anyways on the first read/write on the connection. But doing it

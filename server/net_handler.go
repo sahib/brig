@@ -36,14 +36,20 @@ func (nh *netHandler) Whoami(call capnp.Net_whoami) error {
 
 	// Compute our own fingerprint:
 	rp := nh.base.repo
-	ownPubKey, err := rp.Keyring().OwnPubKey()
+	kr, err := rp.Keyring()
+	if err != nil {
+		return err
+	}
+
+	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return err
 	}
 
 	finger := peer.BuildFingerprint(self.Addr, ownPubKey)
 
-	if err := capID.SetOwner(rp.Owner); err != nil {
+	owner := rp.Immutables.Owner()
+	if err := capID.SetOwner(owner); err != nil {
 		return err
 	}
 
@@ -297,7 +303,8 @@ func (nh *netHandler) RemoteAddOrUpdate(call capnp.Net_remoteAddOrUpdate) error 
 		return err
 	}
 
-	if rp.Owner == remote.Name {
+	owner := rp.Immutables.Owner()
+	if owner == remote.Name {
 		return fmt.Errorf("refusing to add a remote with the same as the repo owner")
 	}
 

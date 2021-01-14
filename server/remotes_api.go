@@ -125,7 +125,12 @@ func (a *RemotesAPI) Remove(name string) error {
 
 // Self returns the identity of this repository.
 func (a *RemotesAPI) Self() (remotesapi.Identity, error) {
-	ownPubKey, err := a.base.repo.Keyring().OwnPubKey()
+	kr, err := a.base.repo.Keyring()
+	if err != nil {
+		return remotesapi.Identity{}, err
+	}
+
+	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return remotesapi.Identity{}, err
 	}
@@ -135,9 +140,10 @@ func (a *RemotesAPI) Self() (remotesapi.Identity, error) {
 		return remotesapi.Identity{}, err
 	}
 
+	owner := a.base.repo.Immutables.Owner()
 	fp := peer.BuildFingerprint(identity.Addr, ownPubKey)
 	return remotesapi.Identity{
-		Name:        string(a.base.repo.Owner),
+		Name:        owner,
 		Fingerprint: string(fp),
 	}, nil
 }

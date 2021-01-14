@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,41 +10,40 @@ import (
 	fserr "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // Repository provides access to the file structure of a single repository.
 //
 // Informal: This file structure currently looks like this:
+//
 // config.yml
-// OWNER
-// BACKEND
-// REPO_ID
+// immutables.yml
 // remotes.yml
-// data/
-//    <backend_name>
-//        (data-backend specific)
+// keyring/
+//    <remote_name>
+//        key.prv
+//        key.pub
 // metadata/
-//    <name_1>
+//    <remote_name>
 //        (fs-backend specific)
-//    <name_2>
-//        (fs-backend specific)
+// gateway/
+//    (gateway specific)
 type Repository struct {
 	mu sync.Mutex
 
 	// Map between owner and related filesystem.
 	fsMap map[string]*catfs.FS
 
-	// Name of the backend in use
-	backendName string
-
 	// Absolute path to the repository root
 	BaseFolder string
 
-	// Name of the owner of this repository
-	Owner string
-
 	// Config interface
 	Config *config.Config
+
+	// Immutables gives access to things that do not change
+	// after initializing the repository.
+	Immutables *Immutables
 
 	// Remotes gives access to all known remotes
 	Remotes *RemoteList
@@ -56,14 +54,9 @@ type Repository struct {
 
 // Open will open the repository at `baseFolder`
 func Open(baseFolder string) (*Repository, error) {
-	ownerPath := filepath.Join(baseFolder, "OWNER")
-	owner, err := ioutil.ReadFile(ownerPath) // #nosec
+	immutables, err := NewImmutables(filepath.Join(baseFolder, "immutable.yml"))
 	if err != nil {
-		return nil, e.Wrap(err, "failed to read OWNER")
-	}
-
-	if err != nil {
-		return nil, err
+		return nil, e.Wrap(err, "failed to open immutable store")
 	}
 
 	cfgPath := filepath.Join(baseFolder, "config.yml")
@@ -72,46 +65,29 @@ func Open(baseFolder string) (*Repository, error) {
 		return nil, err
 	}
 
-	cfg.SetString("repo.current_user", string(owner))
+	// TODO: Why do we do this?
+	cfg.SetString("repo.current_user", immutables.Owner())
 
-	// Load the remote list:
 	remotePath := filepath.Join(baseFolder, "remotes.yml")
 	remotes, err := NewRemotes(remotePath)
 	if err != nil {
 		return nil, err
 	}
 
-	backendNamePath := filepath.Join(baseFolder, "BACKEND")
-	backendName, err := ioutil.ReadFile(backendNamePath) // #nosec
-	if err != nil {
-		return nil, err
-	}
-
-	rp := &Repository{
+	return &Repository{
 		BaseFolder:    baseFolder,
-		backendName:   string(backendName),
+		Immutables:    immutables,
 		Config:        cfg,
 		Remotes:       remotes,
-		Owner:         string(owner),
 		fsMap:         make(map[string]*catfs.FS),
 		autoGCControl: make(chan bool, 1),
-	}
-
-	return rp, nil
+	}, nil
 }
 
 // Close will lock the repository, making this instance unusable.
 func (rp *Repository) Close() error {
 	rp.stopAutoGCLoop()
 	return nil
-}
-
-// BackendName returns the backend name used when constructing the repo.
-func (rp *Repository) BackendName() string {
-	rp.mu.Lock()
-	defer rp.mu.Unlock()
-
-	return rp.backendName
 }
 
 // HaveFS will return true if we have data for a certain owner.
@@ -137,7 +113,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return fs, nil
 	}
 
-	isReadOnly := rp.Owner != owner
+	isReadOnly := rp.Immutables.Owner() != owner
 
 	// No fs was created yet for this owner.
 	// Create it & give it a part of the main config.
@@ -177,18 +153,15 @@ func (rp *Repository) SetCurrentUser(user string) {
 }
 
 // Keyring returns the keyring of the repository.
-func (rp *Repository) Keyring() *Keyring {
-	return newKeyringHandle(rp.BaseFolder)
-}
-
-// RepoID returns a unique ID specific to this repository.
-func (rp *Repository) RepoID() (string, error) {
-	data, err := ioutil.ReadFile(filepath.Join(rp.BaseFolder, "REPO_ID"))
-	if err != nil {
-		return "", err
+func (rp *Repository) Keyring() (*Keyring, error) {
+	owner := rp.Immutables.Owner()
+	path := filepath.Join(rp.BaseFolder, "keyring")
+	if err := os.MkdirAll(path, 0700); err != nil {
+		log.WithError(err).Warnf("failed to create keyring directory: %s", path)
+		return nil, err
 	}
 
-	return string(data), nil
+	return newKeyringHandle(path, owner), nil
 }
 
 // SaveConfig dumps the in memory config to disk.

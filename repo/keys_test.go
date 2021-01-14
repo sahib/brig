@@ -11,9 +11,14 @@ import (
 func TestKeyring(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "brig-repo-key-test")
 	require.Nil(t, os.MkdirAll(testDir, 0755))
-	require.Nil(t, createKeyPair("alice", testDir, 1024))
+	defer os.RemoveAll(testDir)
 
-	kr := newKeyringHandle(testDir)
+	require.Nil(
+		t,
+		createKeyPair("alice", testDir, 1024),
+	)
+
+	kr := newKeyringHandle(testDir, "alice")
 	ownPubKey, err := kr.OwnPubKey()
 	require.Nil(t, err)
 	require.True(t, len(ownPubKey) > 256)
@@ -22,11 +27,11 @@ func TestKeyring(t *testing.T) {
 	// but that's good enough for testing if it works.
 	testData := []byte("Hello!")
 	encTestData, err := kr.Encrypt(testData, ownPubKey)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotEqual(t, testData, encTestData)
 
 	decTestData, err := kr.Decrypt(encTestData)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, testData, decTestData)
 
 	require.Nil(t, kr.SavePubKey("a", []byte{1}))

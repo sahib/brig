@@ -53,7 +53,11 @@ func DialByAddr(
 	bk netBackend.Backend,
 	pingMap *PingMap,
 ) (*Client, error) {
-	kr := rp.Keyring()
+	kr, err := rp.Keyring()
+	if err != nil {
+		return nil, err
+	}
+
 	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return nil, err
@@ -67,7 +71,7 @@ func DialByAddr(
 		return nil, e.Wrapf(err, "raw")
 	}
 
-	ownName := rp.Owner
+	ownName := rp.Immutables.Owner()
 	if fingerprint == "" {
 		return nil, fmt.Errorf("rejecting own, empty fingerprint... bug?")
 	}
@@ -111,7 +115,11 @@ func PeekRemotePubkey(
 	rp *repo.Repository,
 	bk netBackend.Backend,
 ) ([]byte, string, error) {
-	kr := rp.Keyring()
+	kr, err := rp.Keyring()
+	if err != nil {
+		return nil, "", err
+	}
+
 	ownPubKey, err := kr.OwnPubKey()
 	if err != nil {
 		return nil, "", err
@@ -123,7 +131,7 @@ func PeekRemotePubkey(
 		return nil, "", e.Wrapf(err, "raw")
 	}
 
-	owner := rp.Owner
+	owner := rp.Immutables.Owner()
 	authConn := NewAuthReadWriter(rawConn, kr, ownPubKey, owner, func(_ []byte) error {
 		return nil
 	})
