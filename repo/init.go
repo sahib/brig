@@ -90,12 +90,21 @@ func Init(opts InitOptions) error {
 	for _, emptyFolder := range []string{"metadata", "keyring"} {
 		absFolder := filepath.Join(opts.BaseFolder, emptyFolder)
 		if err := os.Mkdir(absFolder, 0700); err != nil {
-			return e.Wrapf(err, "Failed to create dir: %v (repo exists?)", absFolder)
+			return e.Wrapf(err, "failed to create dir: %v (repo exists?)", absFolder)
 		}
 	}
 
 	if err := touch(filepath.Join(opts.BaseFolder, "remotes.yml")); err != nil {
-		return e.Wrapf(err, "Failed touch remotes.yml")
+		return e.Wrapf(err, "failed to touch remotes.yml")
+	}
+
+	err = ioutil.WriteFile(
+		filepath.Join(opts.BaseFolder, "README.md"),
+		[]byte(repoReadmeTxt),
+		0600,
+	)
+	if err != nil {
+		return e.Wrap(err, "failed to write README.md")
 	}
 
 	immutables, err := config.Open(nil, immutableDefaultsV0, config.StrictnessPanic)
