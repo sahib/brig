@@ -537,6 +537,14 @@ func RunCmdline(args []string) int {
 			Category: repoGroup,
 			Action:   withDaemon(handleGc, true),
 		}, {
+			Name:     "pack-repo",
+			Category: repoGroup,
+			Action:   handleRepoPack,
+		}, {
+			Name:     "unpack-repo",
+			Category: repoGroup,
+			Action:   handleRepoUnpack,
+		}, {
 			Name:   "docs",
 			Action: handleOpenHelp,
 			Hidden: true,

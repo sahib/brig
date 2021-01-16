@@ -245,6 +245,24 @@ func startDaemon(ctx *cli.Context, repoPath, daemonURL string) (*client.Client, 
 	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
 }
 
+func isDaemonRunning(ctx *cli.Context) (bool, error) {
+	daemonURL, err := guessDaemonURL(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	ctl, err := client.Dial(tctx, daemonURL)
+	if err != nil {
+		return false, nil
+	}
+
+	defer ctl.Close()
+	return true, nil
+}
+
 func withDaemon(handler cmdHandlerWithClient, startNew bool) cli.ActionFunc {
 	return func(ctx *cli.Context) error {
 		daemonURL, _ := guessDaemonURL(ctx)
@@ -328,7 +346,7 @@ func needAtLeast(min int) checkFunc {
 	}
 }
 
-func repoIsInitialized(dir string) (bool, error) {
+func isNonEmptyDir(dir string) (bool, error) {
 	fd, err := os.Open(dir) // #nosec
 	if err != nil && os.IsNotExist(err) {
 		return false, nil
@@ -343,6 +361,8 @@ func repoIsInitialized(dir string) (bool, error) {
 		return false, err
 	}
 
+	// dumb heuristic: if there's stuff in there,
+	// assume we shouldn't init over.
 	return len(names) >= 1, nil
 }
 

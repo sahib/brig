@@ -131,18 +131,8 @@ func Init(opts InitOptions) error {
 		return e.Wrap(err, "failed to setup default config")
 	}
 
-	// TODO: should we even create that?
-	// dataFolder := filepath.Join(opts.BaseFolder, "data", opts.BackendName)
-	// if err := os.MkdirAll(dataFolder, 0700); err != nil {
-	// 	return e.Wrap(err, "failed to setup dirs for backend")
-	// }
-
 	// Create initial key pair:
-	keyringFolder := filepath.Join(opts.BaseFolder, "keyring", opts.Owner)
-	if err := os.MkdirAll(keyringFolder, 0700); err != nil {
-		return e.Wrap(err, "failed to create keyring directory")
-	}
-
+	keyringFolder := filepath.Join(opts.BaseFolder, "keyring")
 	if err := createKeyPair(opts.Owner, keyringFolder, 2048); err != nil {
 		return e.Wrap(err, "failed to setup gpg keys")
 	}

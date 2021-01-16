@@ -1338,6 +1338,83 @@ EXAMPLES:
    - Rights: A list of rights this users has (might be empty).
 `,
 	},
+	"pack-repo": {
+		Description: `
+    Pack a repo into an encrypted tar archive.
+
+	This is mainly useful to lock the repository after using it.
+	The encryption key is derived from the password that you either...
+
+	* ...enter on stdin.
+	* ...specify with --password-command.
+	* ...specify with --password-file.
+
+    If you move a brig repository between computers or if you use brig
+	in an untrusted environment, then this command is for you.
+
+	By default, the archive is written next to the repository as
+	»$BRIG_PATH.repopack«. If --remove is specified the repository
+	is removed upon successful completion.
+
+EXAMPLES:
+
+    # Pack a repository, read password from 'pass' and write to usb stick.
+	# Also remove the original repository.
+    brig --repo /tmp/repo pack-repo \
+		--password-command "pass my/password/path" \
+		--archive-path /mnt/usb/brig.repopack \
+		--remove
+`,
+		Usage: "Create an encrypted archive of the brig repo.",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "archive-path,a",
+				Usage: "Where to store the archive. If empty uses repo path plus ».repopack« extension.",
+			},
+			cli.StringFlag{
+				Name:  "password-command,p",
+				Usage: "Execute this command to get the password from its stdout.",
+			},
+			cli.StringFlag{
+				Name:  "password-file,P",
+				Usage: "Read this file to get the password.",
+			},
+			cli.BoolFlag{
+				Name:  "remove,r",
+				Usage: "Remove the repository after successfully packing",
+			},
+		},
+	},
+	"unpack-repo": {
+		Description: `
+    The unpack-repo is the inverse of the pack-repo command.
+
+EXAMPLES:
+
+    # Unpack a repository from an usb stick and write to a location
+	# of your choice. Password is read from 'pass'. The archive is
+	# removed upon successful completion.
+    brig --repo /tmp/repo unpack-repo \
+		/mnt/usb/brig.repopack \
+		--password-command "pass my/password/path" \
+		--remove
+`,
+		Usage: "Unpack an encrypted archive of a brig repo.",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "password-command,p",
+				Usage: "Execute this command to get the password from its stdout.",
+			},
+			cli.StringFlag{
+				Name:  "password-file,P",
+				Usage: "Read this file to get the password.",
+			},
+			cli.BoolFlag{
+				Name:  "remove,r",
+				Usage: "Remove the archive after successfully unpacking",
+			},
+		},
+	},
 	"debug": {
 		Usage: "Various debbugging utilities. Use with care.",
 	},

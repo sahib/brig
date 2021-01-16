@@ -18,20 +18,20 @@ const (
 	msgMaxTriesHit = "Maximum number of password tries exceeded: %d"
 )
 
-func doPromptLine(rl *readline.Instance, prompt string, hide bool) (string, error) {
-	var line string
-	var bytepwd []byte
+func doPromptLine(rl *readline.Instance, prompt string, hide bool) ([]byte, error) {
+	var line []byte
+	var sline string
 	var err error
 
 	if hide {
-		bytepwd, err = rl.ReadPassword(prompt)
-		line = string(bytepwd)
+		line, err = rl.ReadPassword(prompt)
 	} else {
-		line, err = rl.Readline()
+		sline, err = rl.Readline()
+		line = []byte(sline)
 	}
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return line, nil
@@ -128,59 +128,19 @@ func PromptNewPassword(minEntropy float64) ([]byte, error) {
 	return pwd, nil
 }
 
-func promptPassword(prompt string) (string, error) {
+func promptPassword(prompt string) ([]byte, error) {
 	rl, err := readline.New(prompt)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	defer util.Closer(rl)
 
+	defer util.Closer(rl)
 	return doPromptLine(rl, prompt, true)
 }
 
 // PromptPassword just opens an uncolored password prompt.
 //
 // The password is not echo'd to stdout for safety reasons.
-func PromptPassword() (string, error) {
+func PromptPassword() ([]byte, error) {
 	return promptPassword("Password: ")
-}
-
-// ErrTooManyTries happens when the user failed the password check too often
-type ErrTooManyTries struct {
-	Tries int
-}
-
-func (e ErrTooManyTries) Error() string {
-	return fmt.Sprintf(msgMaxTriesHit, e.Tries)
-}
-
-var triesToColor = map[int]func(string, ...interface{}) string{
-	0: color.GreenString,
-	1: color.YellowString,
-	2: color.MagentaString,
-	3: color.RedString,
-}
-
-// PromptPasswordMaxTries tries to read a password maxTries times.
-//
-// The typed password can be validated by the caller via the passfn function.
-// If the user failed to pass the correct password, ErrTooManyTries is returned.
-// For visual guidance the prompt color will gradually change from green to red
-// with each failed try.
-func PromptPasswordMaxTries(maxTries int, passfn func(string) bool) (string, error) {
-	for i := 0; i < maxTries; i++ {
-		colorFn := triesToColor[util.Min(i, len(triesToColor))]
-		pwd, err := promptPassword(colorFn("Password: "))
-		if err != nil {
-			return "", err
-		}
-
-		if !passfn(pwd) {
-			continue
-		}
-
-		return pwd, err
-	}
-
-	return "", ErrTooManyTries{maxTries}
 }

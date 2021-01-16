@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,6 +23,7 @@ import (
 	"github.com/sahib/brig/cmd/tabwriter"
 	"github.com/sahib/brig/gateway"
 	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/repo/lock"
 	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
@@ -128,9 +131,8 @@ func handleInit(ctx *cli.Context) error {
 		fmt.Printf("-- Guessed folder for init: %s\n", folder)
 	}
 
-	// Check if the folder exists...
 	// doing init twice can easily break things.
-	isInitialized, err := repoIsInitialized(folder)
+	isInitialized, err := isNonEmptyDir(folder)
 	if err != nil {
 		return err
 	}
@@ -383,6 +385,8 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 
 	// TODO: Why is this not in the config? Encryption?
 	// TODO: Write a short README.md in the repo like restic does.
+
+	// TODO: that code is broken.
 	startIPFSdaemon := true
 	backendPath := filepath.Join(repoPath, "BACKEND")
 	backendData, err := ioutil.ReadFile(backendPath)
@@ -1072,4 +1076,142 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return tabW.Flush()
+}
+
+func readPassword(ctx *cli.Context, isNew bool) ([]byte, error) {
+	if ctx.IsSet("password-command") {
+		log.Debugf("reading by password command.")
+		cmd := exec.Command("/bin/sh", "-c", ctx.String("password-command"))
+
+		// Make sure sub command can access our streams.
+		// Some password managers might ask for a master password.
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+
+		// TODO: that probably also includes the last newline.
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, err
+		}
+
+		return bytes.TrimRight(out, "\n\r"), nil
+	}
+
+	if ctx.IsSet("password-file") {
+		log.Debugf("reading from password file.")
+		return ioutil.ReadFile(ctx.String("password-file"))
+	}
+
+	if isNew {
+		return pwd.PromptNewPassword(10)
+	}
+
+	return pwd.PromptPassword()
+}
+
+func handleRepoPack(ctx *cli.Context) error {
+	log.Debugf("guessing repo folder...")
+	folder, err := guessRepoFolder(ctx)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("checking if daemon is running...")
+	isRunning, err := isDaemonRunning(ctx)
+	if err != nil {
+		return e.Wrap(err, "failed to check if daemon is running")
+	}
+
+	if isRunning {
+		log.Error("daemon is still running for this repo, please quit it first!")
+		log.Errorf("Use »brig --repo %s daemon quit« for this.", folder)
+		return errors.New("refusing to pack data, there might be inconsistencies.")
+	}
+
+	log.Debugf("repo is at %s", folder)
+	log.Debugf("reading password...")
+	pass, err := readPassword(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("deriving key from password")
+	key := lock.KeyFromPassword(string(pass))
+	var archivePath string
+	if ctx.IsSet("archive-path") {
+		archivePath = folder + ".repopack"
+	}
+
+	log.Infof("writing archive to »%s«", archivePath)
+	fd, err := os.OpenFile(archivePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("locking repository...")
+	if err := lock.LockRepo(folder, key, fd); err != nil {
+		fd.Close()
+		return err
+	}
+
+	if err := fd.Close(); err != nil {
+		return err
+	}
+
+	if ctx.Bool("remove") {
+		log.Infof("removing repository...")
+		return os.RemoveAll(folder)
+	}
+
+	log.Debugf("successfully finished!")
+	return nil
+}
+
+func handleRepoUnpack(ctx *cli.Context) error {
+	archivePath := ctx.Args().First()
+	r := os.Stdin
+
+	folder, err := guessRepoFolder(ctx)
+	if err != nil {
+		return err
+	}
+
+	isNonEmpty, err := isNonEmptyDir(folder)
+	if err != nil {
+		return err
+	}
+
+	if isNonEmpty {
+		return fmt.Errorf("»%s« is non-empty, refusing to overwrite", folder)
+	}
+
+	if archivePath != "" {
+		fd, err := os.Open(archivePath)
+		if err != nil {
+			return err
+		}
+
+		defer fd.Close()
+		r = fd
+	}
+
+	log.Debugf("read password...")
+	pass, err := readPassword(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("unpacking repository to %s", folder)
+	key := lock.KeyFromPassword(string(pass))
+	if err := lock.UnlockRepo(r, key, folder); err != nil {
+		return err
+	}
+
+	if ctx.Bool("remove") {
+		log.Debugf("removing archive...")
+		return os.Remove(archivePath)
+	}
+
+	log.Debugf("successfully finished!")
+	return nil
 }
