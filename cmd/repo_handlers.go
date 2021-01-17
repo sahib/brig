@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,11 +23,11 @@ import (
 	"github.com/sahib/brig/cmd/tabwriter"
 	"github.com/sahib/brig/gateway"
 	"github.com/sahib/brig/repo"
+	"github.com/sahib/brig/repo/repopack"
 	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
 	formatter "github.com/sahib/brig/util/log"
-	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/version"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -70,14 +72,7 @@ If you're done with this README, you can easily remove it:
 
     $ brig rm README.md
 
-We recommend highly to install a password manager and hook it up
-with brig. For example, with "pass" you can execute the following
-to avoid re-entering your password on every daemon startup:
-
-    $ brig cfg set repo.password_command "pass brig/my_pwd_key"
-
-The next start of brig will then read the password from the
-standard output of this process. Your repository is here:
+Your repository is here:
 
     %s
 
@@ -136,9 +131,8 @@ func handleInit(ctx *cli.Context) error {
 		fmt.Printf("-- Guessed folder for init: %s\n", folder)
 	}
 
-	// Check if the folder exists...
 	// doing init twice can easily break things.
-	isInitialized, err := repoIsInitialized(folder)
+	isInitialized, err := isNonEmptyDir(folder)
 	if err != nil {
 		return err
 	}
@@ -160,26 +154,6 @@ func handleInit(ctx *cli.Context) error {
 		}
 	}
 
-	// If a password helper is set, we should read the password from it directly.
-	password := readPasswordFromArgs(folder, ctx)
-	if pwHelper := ctx.String("pw-helper"); password == "" && pwHelper != "" {
-		var err error
-		password, err = pwutil.ReadPasswordFromHelper(folder, pwHelper)
-		if err != nil {
-			return fmt.Errorf("failed to read password from helper: %s", err)
-		}
-	}
-
-	if password == "" {
-		pwdBytes, err := pwd.PromptNewPassword(20)
-		if err != nil {
-			msg := fmt.Sprintf("Failed to read password: %v", err)
-			return ExitCode{UnknownError, msg}
-		}
-
-		password = string(pwdBytes)
-	}
-
 	daemonURL, err := guessFreeDaemonURL(ctx, owner)
 	if err != nil {
 		log.WithError(err).Warnf("failed to figure out a free daemon url")
@@ -191,7 +165,6 @@ func handleInit(ctx *cli.Context) error {
 		repo.InitOptions{
 			BaseFolder:  folder,
 			Owner:       owner,
-			Password:    password,
 			BackendName: backend,
 			DaemonURL:   daemonURL,
 		},
@@ -226,20 +199,6 @@ func handleInitPost(ctx *cli.Context, ctl *client.Client, folder string) error {
 
 		if !ctx.Bool("empty") {
 			fmt.Println(initBanner)
-		}
-	}
-
-	if ctx.Bool("no-password") {
-		// Set a command in the config that simply echoes a static password:
-		staticPasswordHelper := "echo no-password"
-		if err := ctl.ConfigSet("repo.password_command", staticPasswordHelper); err != nil {
-			return err
-		}
-	}
-
-	if pwHelper := ctx.String("pw-helper"); pwHelper != "" {
-		if err := ctl.ConfigSet("repo.password_command", pwHelper); err != nil {
-			return err
 		}
 	}
 
@@ -414,17 +373,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		defer trace.Stop()
 	}
 
-	// If the repository was not initialized yet,
-	// we should not ask for a password, since init
-	// will already ask for one. If we recognize the repo
-	// wrongly as uninitialized, then it won't unlock without
-	// a password though.
 	repoPath, err := guessRepoFolder(ctx)
-	if err != nil {
-		return err
-	}
-
-	isInitialized, err := repoIsInitialized(repoPath)
 	if err != nil {
 		return err
 	}
@@ -434,49 +383,24 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		return err
 	}
 
-	// TODO: Why is this not in the config? Encryption?
-	// TODO: Write a short README.md in the repo like restic does.
-	startIPFSdaemon := true
-	backendPath := filepath.Join(repoPath, "BACKEND")
-	backendData, err := ioutil.ReadFile(backendPath)
+	// Make sure IPFS is running. Also set required options,
+	// but don't bother to set optimizations.
+	var ipfsPath string
+	cfg, err := openConfig(repoPath)
 	if err != nil {
-		log.Warningf("failed to read %v: %v", backendPath, err)
+		log.Warningf("failed to read config at %v: %v", repoPath, err)
 	} else {
-		startIPFSdaemon = string(backendData) == "httpipfs"
+		ipfsPath = cfg.String("daemon.ipfs_path")
 	}
 
-	if startIPFSdaemon {
-		// Make sure IPFS is running. Also set required options,
-		// but don't bother to set optimizations.
-		ipfsPath := ""
-		cfg, err := openConfig(repoPath)
-		if err != nil {
-			log.Warningf("failed to read config at %v: %v", repoPath, err)
-		} else {
-			ipfsPath = cfg.String("daemon.ipfs_path")
-		}
-
-		_, err = setup.IPFS(&logWriter{prefix: "ipfs"}, true, true, false, ipfsPath)
-		if err != nil {
-			return err
-		}
-	}
-
-	var password string
-	passwordFn := func() (string, error) {
-		if !isInitialized {
-			return "", nil
-		}
-
-		password, err = readPassword(ctx, repoPath)
-		if err != nil {
-			return "", ExitCode{
-				UnknownError,
-				fmt.Sprintf("Failed to read password: %v", err),
-			}
-		}
-
-		return password, nil
+	if _, err := setup.IPFS(
+		&logWriter{prefix: "ipfs"},
+		true,
+		true,
+		false,
+		ipfsPath,
+	); err != nil {
+		return err
 	}
 
 	logToStdout := ctx.Bool("log-to-stdout")
@@ -491,7 +415,6 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	server, err := server.BootServer(
 		repoPath,
 		daemonURL,
-		passwordFn,
 		logToStdout,
 	)
 
@@ -1143,4 +1066,111 @@ func handleGatewayUserList(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	return tabW.Flush()
+}
+
+func readPassword(ctx *cli.Context, isNew bool) ([]byte, error) {
+	if ctx.IsSet("password-command") {
+		log.Debugf("reading by password command.")
+		cmd := exec.Command("/bin/sh", "-c", ctx.String("password-command"))
+
+		// Make sure sub command can access our streams.
+		// Some password managers might ask for a master password.
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, err
+		}
+
+		// Strip any newline produced by the tool.
+		// Just hope that nobody really tries to use newlines
+		// as part of the password. Would still work though
+		// as long only --password-command is used to enter the password.
+		return bytes.TrimRight(out, "\n\r"), nil
+	}
+
+	if ctx.IsSet("password-file") {
+		log.Debugf("reading from password file.")
+		return ioutil.ReadFile(ctx.String("password-file"))
+	}
+
+	if isNew {
+		return pwd.PromptNewPassword(10)
+	}
+
+	return pwd.PromptPassword()
+}
+
+func handleRepoPack(ctx *cli.Context) error {
+	folder, err := guessRepoFolder(ctx)
+	if err != nil {
+		return err
+	}
+
+	isRunning, err := isDaemonRunning(ctx)
+	if err != nil {
+		return e.Wrap(err, "failed to check if daemon is running")
+	}
+
+	if isRunning {
+		log.Error("daemon is still running for this repo, please quit it first!")
+		log.Errorf("Use »brig --repo %s daemon quit« for this.", folder)
+		return errors.New("refusing to pack data, there might be inconsistencies")
+	}
+
+	pass, err := readPassword(ctx, true)
+	if err != nil {
+		return err
+	}
+
+	archivePath := ctx.Args().First()
+	if archivePath == "" {
+		archivePath = folder + ".repopack"
+	}
+
+	log.Infof("writing archive to »%s«", archivePath)
+	return repopack.PackRepo(
+		folder,
+		archivePath,
+		string(pass),
+		!ctx.Bool("no-remove"),
+	)
+}
+
+func handleRepoUnpack(ctx *cli.Context) error {
+	archivePath := ctx.Args().First()
+	folder, err := guessRepoFolder(ctx)
+	if err != nil {
+		// Small convenience hack: if the archive ends in .repopack
+		// assume that it was created from a repo with the same path
+		// but without the suffix.
+		folder = strings.TrimSuffix(archivePath, ".repopack")
+	}
+
+	isNonEmpty, err := isNonEmptyDir(folder)
+	if err != nil {
+		return err
+	}
+
+	if isNonEmpty {
+		return fmt.Errorf("»%s« is non-empty, refusing to overwrite", folder)
+	}
+
+	if archivePath == "" {
+		return fmt.Errorf("please specify the location of the packed archive")
+	}
+
+	pass, err := readPassword(ctx, false)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("unpacking to »%s«", folder)
+	return repopack.UnpackRepo(
+		folder,
+		archivePath,
+		string(pass),
+		!ctx.Bool("no-remove"),
+	)
 }

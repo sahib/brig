@@ -316,7 +316,7 @@ func (rh *repoHandler) Become(call capnp.Repo_become) error {
 	// We can only be users that are present in the remote list (and owner)
 	// (This is not a technical limitation)
 	rp := rh.base.repo
-	if who != rp.Owner {
+	if who != rp.Immutables.Owner() {
 		_, err = rp.Remotes.Remote(who)
 		if err != nil {
 			return err
@@ -332,7 +332,7 @@ func (rh *repoHandler) Version(call capnp.Repo_version) error {
 	server.Ack(call.Options)
 
 	rp := rh.base.repo
-	name := rp.BackendName()
+	name := rp.Immutables.Backend()
 	ipfsPath := rp.Config.String("daemon.ipfs_path")
 	bkVersion := backend.Version(name, ipfsPath)
 	if bkVersion == nil {

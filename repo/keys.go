@@ -2,6 +2,7 @@ package repo
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,8 +16,8 @@ import (
 
 // create a new gpg key pair with self-signed subkeys
 func createKeyPair(owner, folder string, bits int) error {
-	// Setting expiry time to zero is good enough for now.
-	// (key wil never expire; not sure yet if expiring keys make sense for brig)
+	// Setting expiry time to zero is good enough for now. (key wil never
+	// expire; not sure yet if expiring keys make sense for brig)
 	cfg := gpgeez.Config{
 		Expiry: 0 * time.Second,
 	}
@@ -28,8 +29,13 @@ func createKeyPair(owner, folder string, bits int) error {
 		return err
 	}
 
-	pubPath := filepath.Join(folder, "gpg.pub")
-	prvPath := filepath.Join(folder, "gpg.prv")
+	baseFolder := filepath.Join(folder, owner)
+	if err := os.MkdirAll(baseFolder, 0700); err != nil {
+		return err
+	}
+
+	pubPath := filepath.Join(baseFolder, "key.pub")
+	prvPath := filepath.Join(baseFolder, "key.prv")
 	if err := ioutil.WriteFile(pubPath, key.Keyring(), 0600); err != nil {
 		return err
 	}
@@ -66,8 +72,8 @@ func encryptAsymmetric(data, pubKey []byte) ([]byte, error) {
 // decryptAsymetric uses the private key from `folder` to decrypt `data`.
 // This is not an efficient method and is not supposed to be used for large
 // amounts of data.
-func decryptAsymetric(folder string, data []byte) ([]byte, error) {
-	prvPath := filepath.Join(folder, "gpg.prv")
+func decryptAsymetric(folder, owner string, data []byte) ([]byte, error) {
+	prvPath := filepath.Join(folder, owner, "key.prv")
 	fd, err := os.Open(prvPath) // #nosec
 	if err != nil {
 		return nil, err
@@ -92,10 +98,14 @@ func decryptAsymetric(folder string, data []byte) ([]byte, error) {
 // pubkeys of other remotes.
 type Keyring struct {
 	folder string
+	owner  string
 }
 
-func newKeyringHandle(folder string) *Keyring {
-	return &Keyring{folder: folder}
+func newKeyringHandle(folder, owner string) *Keyring {
+	return &Keyring{
+		folder: folder,
+		owner:  owner,
+	}
 }
 
 // Encrypt `data` with `pubKey`.
@@ -111,24 +121,28 @@ func (kp *Keyring) Encrypt(data, pubKey []byte) ([]byte, error) {
 // This is not an efficient method and is not supposed to be used for large
 // amounts of data.
 func (kp *Keyring) Decrypt(data []byte) ([]byte, error) {
-	return decryptAsymetric(kp.folder, data)
+	return decryptAsymetric(kp.folder, kp.owner, data)
 }
 
 // OwnPubKey returns an exported version of our own public key.
 func (kp *Keyring) OwnPubKey() ([]byte, error) {
-	pubPath := filepath.Join(kp.folder, "gpg.pub")
+	pubPath := filepath.Join(kp.folder, kp.owner, "key.pub")
 	return ioutil.ReadFile(pubPath) // #nosec
 }
 
 // PubKeyFor returns the stored public key for a partner named `name`
 func (kp *Keyring) PubKeyFor(name string) ([]byte, error) {
-	path := filepath.Join(kp.folder, "pubkeys", filepath.Clean(name))
+	path := filepath.Join(kp.folder, name, filepath.Clean(name))
 	return ioutil.ReadFile(path) // #nosec
 }
 
 // SavePubKey stores a public key from a partner with the name `name`
 func (kp *Keyring) SavePubKey(name string, pubKey []byte) error {
-	base := filepath.Join(kp.folder, "pubkeys")
+	if name == kp.owner {
+		return errors.New("cannot save public key with same name as owner")
+	}
+
+	base := filepath.Join(kp.folder, name)
 	if err := os.MkdirAll(base, 0700); err != nil {
 		return err
 	}

@@ -48,14 +48,14 @@ func withNetServer(t *testing.T, name string, basePath string, fn func(u testUni
 	err = repo.Init(repo.InitOptions{
 		BaseFolder:  basePath,
 		Owner:       name,
-		Password:    "password",
 		BackendName: "mock",
 		DaemonURL:   "not-relevant-here",
 	})
 	require.NoError(t, err)
 
-	rp, err := repo.Open(basePath, "password")
+	rp, err := repo.Open(basePath)
 	require.NoError(t, err)
+	defer rp.Close()
 
 	srv, err := NewServer(rp, bk, nil)
 	require.NoError(t, err)
@@ -89,11 +89,14 @@ func withNetServer(t *testing.T, name string, basePath string, fn func(u testUni
 }
 
 func buildFingerprint(t *testing.T, u testUnit) peer.Fingerprint {
-	ownPubKey, err := u.rp.Keyring().OwnPubKey()
-	require.Nil(t, err)
+	kr, err := u.rp.Keyring()
+	require.NoError(t, err)
+
+	ownPubKey, err := kr.OwnPubKey()
+	require.NoError(t, err)
 
 	self, err := u.srv.Identity()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	return peer.BuildFingerprint(self.Addr, ownPubKey)
 }

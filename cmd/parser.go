@@ -154,12 +154,6 @@ func RunCmdline(args []string) int {
 			Name:  "verbose,V",
 			Usage: "Show certain messages during client startup (helpful for debugging)",
 		},
-		cli.StringFlag{
-			Name:   "password",
-			Usage:  "Supply user password. Usage is not recommended.",
-			EnvVar: "BRIG_PASSWORD",
-			Value:  "",
-		},
 		cli.BoolFlag{
 			Name:  "nodaemon,n",
 			Usage: "Don't start the daemon automatically.",
@@ -542,6 +536,16 @@ func RunCmdline(args []string) int {
 			Name:     "gc",
 			Category: repoGroup,
 			Action:   withDaemon(handleGc, true),
+		}, {
+			Name:     "pack-repo",
+			Category: repoGroup,
+			Action:   handleRepoPack,
+			Aliases:  []string{"pr"},
+		}, {
+			Name:     "unpack-repo",
+			Category: repoGroup,
+			Action:   withArgCheck(needAtLeast(1), handleRepoUnpack),
+			Aliases:  []string{"ur"},
 		}, {
 			Name:   "docs",
 			Action: handleOpenHelp,

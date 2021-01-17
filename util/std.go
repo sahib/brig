@@ -3,7 +3,6 @@
 package util
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -91,7 +90,7 @@ func Closer(c io.Closer) {
 
 // Touch works like the unix touch(1)
 func Touch(path string) error {
-	fd, err := os.Create(path)
+	fd, err := os.OpenFile(path, os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
@@ -168,28 +167,6 @@ func (s *syncReadWriter) Read(buf []byte) (int, error) {
 // to Read() and Write() with a sync.Mutex.
 func SyncedReadWriter(w io.ReadWriter) io.ReadWriter {
 	return &syncReadWriter{ReadWriter: w}
-}
-
-// SyncBuffer is a bytes.Buffer that protects each call
-// to Read() and Write() with a sync.RWMutex, i.e. parallel
-// access to Read() is possible, but blocks when doing a Write().
-type SyncBuffer struct {
-	sync.RWMutex
-	buf bytes.Buffer
-}
-
-func (b *SyncBuffer) Read(p []byte) (int, error) {
-	b.Lock()
-	defer b.Unlock()
-
-	return b.buf.Read(p)
-}
-
-func (b *SyncBuffer) Write(p []byte) (int, error) {
-	b.Lock()
-	defer b.Unlock()
-
-	return b.buf.Write(p)
 }
 
 // TimeoutReadWriter is io.ReadWriter capable of returning ErrTimeout

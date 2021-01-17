@@ -15,6 +15,7 @@ Precursor: The help system
 Before we dive in, we go over a few things that will make your life easier
 along the way. ``brig`` has some built-in helpers to serve as support for your
 memory. If you're not interested in that you can skip right to the next section.
+But please check those help texts before asking questions.
 
 Built-in reference documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,7 +79,7 @@ Open the online documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By typing ``brig docs`` you'll get a tab opened in your default browser with this
-domain loaded. Please stop typing ``brig documentation`` into Google.
+domain loaded. Please stop typing ``brig docs`` into Google and save some energy.
 
 Reporting bugs
 ~~~~~~~~~~~~~~~

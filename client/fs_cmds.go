@@ -224,6 +224,8 @@ func (cl *Client) Cat(path string, offline bool) (io.ReadCloser, error) {
 	return conn, nil
 }
 
+// CatOnClient is like Cat, but will fetch the stream directly from IPFS
+// and decode it on the client side. This is usually faster than other way round.
 func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
 	info, err := cl.Stat(path)
 	if err != nil {

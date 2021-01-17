@@ -22,13 +22,12 @@ func TestRepoInit(t *testing.T) {
 	err := Init(InitOptions{
 		BaseFolder:  testDir,
 		Owner:       "alice",
-		Password:    "klaus",
 		BackendName: "mock",
 		DaemonURL:   "yadda-yadda",
 	})
 	require.Nil(t, err)
 
-	rp, err := Open(testDir, "klaus")
+	rp, err := Open(testDir)
 	require.Nil(t, err)
 
 	bk := mock.NewMockBackend("", "")
@@ -45,7 +44,7 @@ func TestRepoInit(t *testing.T) {
 	require.Equal(t, data, []byte{1, 2, 3})
 
 	require.NoError(t, fs.Close())
-	require.NoError(t, rp.Close("klaus"))
+	require.NoError(t, rp.Close())
 }
 
 func dirSize(t *testing.T, path string) int64 {
