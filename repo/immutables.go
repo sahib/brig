@@ -57,12 +57,13 @@ func openMigratedImmutables(path string) (*config.Config, error) {
 	return cfg, nil
 }
 
-// TODO: rename this file to immutables.go
-
+// Immutables gives access to different values that can not be changed
+// by the user and were determined during the init of the repository.
 type Immutables struct {
 	cfg *config.Config
 }
 
+// NewImmutables loads the immutable.yml at `path`
 func NewImmutables(path string) (*Immutables, error) {
 	cfg, err := openMigratedImmutables(path)
 	if err != nil {
@@ -72,10 +73,12 @@ func NewImmutables(path string) (*Immutables, error) {
 	return &Immutables{cfg: cfg}, nil
 }
 
+// Owner returns the owner of the repository.
 func (i *Immutables) Owner() string {
 	return i.cfg.String("owner")
 }
 
+// Backend returns the chosen backend of the repository.
 func (i *Immutables) Backend() string {
 	return i.cfg.String("backend")
 }

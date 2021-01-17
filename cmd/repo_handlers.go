@@ -23,7 +23,7 @@ import (
 	"github.com/sahib/brig/cmd/tabwriter"
 	"github.com/sahib/brig/gateway"
 	"github.com/sahib/brig/repo"
-	"github.com/sahib/brig/repo/lock"
+	"github.com/sahib/brig/repo/repopack"
 	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util"
@@ -383,34 +383,24 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		return err
 	}
 
-	// TODO: Why is this not in the config? Encryption?
-	// TODO: Write a short README.md in the repo like restic does.
-
-	// TODO: that code is broken.
-	startIPFSdaemon := true
-	backendPath := filepath.Join(repoPath, "BACKEND")
-	backendData, err := ioutil.ReadFile(backendPath)
+	// Make sure IPFS is running. Also set required options,
+	// but don't bother to set optimizations.
+	var ipfsPath string
+	cfg, err := openConfig(repoPath)
 	if err != nil {
-		log.Warningf("failed to read %v: %v", backendPath, err)
+		log.Warningf("failed to read config at %v: %v", repoPath, err)
 	} else {
-		startIPFSdaemon = string(backendData) == "httpipfs"
+		ipfsPath = cfg.String("daemon.ipfs_path")
 	}
 
-	if startIPFSdaemon {
-		// Make sure IPFS is running. Also set required options,
-		// but don't bother to set optimizations.
-		ipfsPath := ""
-		cfg, err := openConfig(repoPath)
-		if err != nil {
-			log.Warningf("failed to read config at %v: %v", repoPath, err)
-		} else {
-			ipfsPath = cfg.String("daemon.ipfs_path")
-		}
-
-		_, err = setup.IPFS(&logWriter{prefix: "ipfs"}, true, true, false, ipfsPath)
-		if err != nil {
-			return err
-		}
+	if _, err := setup.IPFS(
+		&logWriter{prefix: "ipfs"},
+		true,
+		true,
+		false,
+		ipfsPath,
+	); err != nil {
+		return err
 	}
 
 	logToStdout := ctx.Bool("log-to-stdout")
@@ -1088,12 +1078,15 @@ func readPassword(ctx *cli.Context, isNew bool) ([]byte, error) {
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
 
-		// TODO: that probably also includes the last newline.
 		out, err := cmd.Output()
 		if err != nil {
 			return nil, err
 		}
 
+		// Strip any newline produced by the tool.
+		// Just hope that nobody really tries to use newlines
+		// as part of the password. Would still work though
+		// as long only --password-command is used to enter the password.
 		return bytes.TrimRight(out, "\n\r"), nil
 	}
 
@@ -1110,13 +1103,11 @@ func readPassword(ctx *cli.Context, isNew bool) ([]byte, error) {
 }
 
 func handleRepoPack(ctx *cli.Context) error {
-	log.Debugf("guessing repo folder...")
 	folder, err := guessRepoFolder(ctx)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("checking if daemon is running...")
 	isRunning, err := isDaemonRunning(ctx)
 	if err != nil {
 		return e.Wrap(err, "failed to check if daemon is running")
@@ -1125,55 +1116,36 @@ func handleRepoPack(ctx *cli.Context) error {
 	if isRunning {
 		log.Error("daemon is still running for this repo, please quit it first!")
 		log.Errorf("Use »brig --repo %s daemon quit« for this.", folder)
-		return errors.New("refusing to pack data, there might be inconsistencies.")
+		return errors.New("refusing to pack data, there might be inconsistencies")
 	}
 
-	log.Debugf("repo is at %s", folder)
-	log.Debugf("reading password...")
 	pass, err := readPassword(ctx, true)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("deriving key from password")
-	key := lock.KeyFromPassword(string(pass))
-	var archivePath string
-	if ctx.IsSet("archive-path") {
+	archivePath := ctx.Args().First()
+	if archivePath == "" {
 		archivePath = folder + ".repopack"
 	}
 
 	log.Infof("writing archive to »%s«", archivePath)
-	fd, err := os.OpenFile(archivePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("locking repository...")
-	if err := lock.LockRepo(folder, key, fd); err != nil {
-		fd.Close()
-		return err
-	}
-
-	if err := fd.Close(); err != nil {
-		return err
-	}
-
-	if ctx.Bool("remove") {
-		log.Infof("removing repository...")
-		return os.RemoveAll(folder)
-	}
-
-	log.Debugf("successfully finished!")
-	return nil
+	return repopack.PackRepo(
+		folder,
+		archivePath,
+		string(pass),
+		!ctx.Bool("no-remove"),
+	)
 }
 
 func handleRepoUnpack(ctx *cli.Context) error {
 	archivePath := ctx.Args().First()
-	r := os.Stdin
-
 	folder, err := guessRepoFolder(ctx)
 	if err != nil {
-		return err
+		// Small convenience hack: if the archive ends in .repopack
+		// assume that it was created from a repo with the same path
+		// but without the suffix.
+		folder = strings.TrimSuffix(archivePath, ".repopack")
 	}
 
 	isNonEmpty, err := isNonEmptyDir(folder)
@@ -1185,33 +1157,20 @@ func handleRepoUnpack(ctx *cli.Context) error {
 		return fmt.Errorf("»%s« is non-empty, refusing to overwrite", folder)
 	}
 
-	if archivePath != "" {
-		fd, err := os.Open(archivePath)
-		if err != nil {
-			return err
-		}
-
-		defer fd.Close()
-		r = fd
+	if archivePath == "" {
+		return fmt.Errorf("please specify the location of the packed archive")
 	}
 
-	log.Debugf("read password...")
 	pass, err := readPassword(ctx, false)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("unpacking repository to %s", folder)
-	key := lock.KeyFromPassword(string(pass))
-	if err := lock.UnlockRepo(r, key, folder); err != nil {
-		return err
-	}
-
-	if ctx.Bool("remove") {
-		log.Debugf("removing archive...")
-		return os.Remove(archivePath)
-	}
-
-	log.Debugf("successfully finished!")
-	return nil
+	log.Infof("unpacking to »%s«", folder)
+	return repopack.UnpackRepo(
+		folder,
+		archivePath,
+		string(pass),
+		!ctx.Bool("no-remove"),
+	)
 }

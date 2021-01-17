@@ -540,10 +540,12 @@ func RunCmdline(args []string) int {
 			Name:     "pack-repo",
 			Category: repoGroup,
 			Action:   handleRepoPack,
+			Aliases:  []string{"pr"},
 		}, {
 			Name:     "unpack-repo",
 			Category: repoGroup,
-			Action:   handleRepoUnpack,
+			Action:   withArgCheck(needAtLeast(1), handleRepoUnpack),
+			Aliases:  []string{"ur"},
 		}, {
 			Name:   "docs",
 			Action: handleOpenHelp,

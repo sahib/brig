@@ -74,9 +74,9 @@ var helpTexts = map[string]helpEntry{
 
 EXAMPLES:
 
-	# TODO: Allow --repo to also come after init.
-	# Easiest way to create a repository at /tmp/brig
-	$ brig --repo /tmp/brig init ali@wonderland.org/rabbithole
+    # TODO: Allow --repo to also come after init.
+    # Easiest way to create a repository at /tmp/brig
+    $ brig --repo /tmp/brig init ali@wonderland.org/rabbithole
 
 `,
 	},
@@ -184,10 +184,10 @@ EXAMPLES:
 
    You can format the output by using »--format« with one the following attributes:
 
-	   * .Name
-	   * .Fingerprint
-	   * .Folders
-	   * .AutoUpdate
+       * .Name
+       * .Fingerprint
+       * .Folders
+       * .AutoUpdate
 
    The syntax of the template is borrowed from Go. You can read about the details here:
    https://golang.org/pkg/text/template
@@ -242,11 +242,11 @@ EXAMPLES:
 
 EXAMPLES:
 
-	# Enable auto-updating both for bob and charlie.
-	$ brig remote auto-update enable bob charlie
+    # Enable auto-updating both for bob and charlie.
+    $ brig remote auto-update enable bob charlie
 
-	# or shorter to prevent you from RSI:
-	brig rmt au e bob charlie
+    # or shorter to prevent you from RSI:
+    brig rmt au e bob charlie
 `,
 		Flags: []cli.Flag{
 			cli.BoolFlag{
@@ -635,16 +635,16 @@ EXAMPLES:
 
    The symbols in the output prefixing every path have the following meaning:
 
-	+	The file is only present on the remote side.
-	-	The file was removed on the remote side.
-	→	The file was moved to a new location.
-	*	This file was ignored because we chose to, due to our settings.
-	⇄	Both sides have changes, but they are compatible and can be merged.
-	⚡   Both sides have changes, but they are incompatible and result in conflicts.
-	_	The file is missing on the remote side.
+    +   The file is only present on the remote side.
+    -   The file was removed on the remote side.
+    →   The file was moved to a new location.
+    *   This file was ignored because we chose to, due to our settings.
+    ⇄   Both sides have changes, but they are compatible and can be merged.
+    ⚡   Both sides have changes, but they are incompatible and result in conflicts.
+    _   The file is missing on the remote side.
 
-	See also »brig help diff« for some more details.
-	Files from other remotes are not pinned automatically.
+    See also »brig help diff« for some more details.
+    Files from other remotes are not pinned automatically.
 `,
 	},
 	"push": {
@@ -1211,7 +1211,7 @@ CAVEATS
 
    The trash bin is a convenience interface to list and restore deleted files.
    It will list all files that were deleted and were not overwritten by other files.
-		`,
+        `,
 	},
 	"trash.list": {
 		Usage: "List all items in the trash bin.",
@@ -1339,38 +1339,34 @@ EXAMPLES:
 `,
 	},
 	"pack-repo": {
+		ArgsUsage: "<archive-path>",
 		Description: `
     Pack a repo into an encrypted tar archive.
 
-	This is mainly useful to lock the repository after using it.
-	The encryption key is derived from the password that you either...
+    This is mainly useful to lock the repository after using it.
+    The encryption key is derived from the password that you either...
 
-	* ...enter on stdin.
-	* ...specify with --password-command.
-	* ...specify with --password-file.
+    * ...enter on stdin.
+    * ...specify with --password-command.
+    * ...specify with --password-file.
 
     If you move a brig repository between computers or if you use brig
-	in an untrusted environment, then this command is for you.
+    in an untrusted environment, then this command is for you.
 
-	By default, the archive is written next to the repository as
-	»$BRIG_PATH.repopack«. If --remove is specified the repository
-	is removed upon successful completion.
+    By default, the archive is written next to the repository as
+    »$BRIG_PATH.repopack«. If --no-remove is specified the repository
+    is not removed upon successful completion.
 
 EXAMPLES:
 
     # Pack a repository, read password from 'pass' and write to usb stick.
-	# Also remove the original repository.
+    # Also removes the original repository!
     brig --repo /tmp/repo pack-repo \
-		--password-command "pass my/password/path" \
-		--archive-path /mnt/usb/brig.repopack \
-		--remove
+        /mnt/usb/brig.repopack \
+        --password-command "pass my/password/path"
 `,
 		Usage: "Create an encrypted archive of the brig repo.",
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "archive-path,a",
-				Usage: "Where to store the archive. If empty uses repo path plus ».repopack« extension.",
-			},
 			cli.StringFlag{
 				Name:  "password-command,p",
 				Usage: "Execute this command to get the password from its stdout.",
@@ -1380,24 +1376,27 @@ EXAMPLES:
 				Usage: "Read this file to get the password.",
 			},
 			cli.BoolFlag{
-				Name:  "remove,r",
-				Usage: "Remove the repository after successfully packing",
+				Name:  "no-remove,n",
+				Usage: "Do not remove the repository after successfully packing",
 			},
 		},
 	},
 	"unpack-repo": {
+		ArgsUsage: "<archive-path>",
 		Description: `
     The unpack-repo is the inverse of the pack-repo command.
 
 EXAMPLES:
 
     # Unpack a repository from an usb stick and write to a location
-	# of your choice. Password is read from 'pass'. The archive is
-	# removed upon successful completion.
+    # of your choice. Password is read from 'pass'. The archive is
+    # removed upon successful completion.
+	#
+	# Specifying --repo is not necessary, but can be used to specify
+	# where the repository should be unpacked to.
     brig --repo /tmp/repo unpack-repo \
-		/mnt/usb/brig.repopack \
-		--password-command "pass my/password/path" \
-		--remove
+        /mnt/usb/brig.repopack \
+        --password-command "pass my/password/path"
 `,
 		Usage: "Unpack an encrypted archive of a brig repo.",
 		Flags: []cli.Flag{
@@ -1410,8 +1409,8 @@ EXAMPLES:
 				Usage: "Read this file to get the password.",
 			},
 			cli.BoolFlag{
-				Name:  "remove,r",
-				Usage: "Remove the archive after successfully unpacking",
+				Name:  "no-remove,n",
+				Usage: "Do not remove the archive after successfully unpacking",
 			},
 		},
 	},
