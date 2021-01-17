@@ -496,7 +496,7 @@ var (
 	}
 )
 
-func stageAndRead(b *testing.B, ctx context.Context, control *spawntest.Control, mount *mountInfo, label string, data []byte) {
+func stageAndRead(ctx context.Context, b *testing.B, control *spawntest.Control, mount *mountInfo, label string, data []byte) {
 	size := len(data)
 	// stage data to catFS
 	catfsFilePath := fmt.Sprintf("%s_file_%d", label, size)
@@ -517,11 +517,11 @@ func BenchmarkRead(b *testing.B) {
 		for _, size := range BenchmarkDataSizes {
 			// Check how fast is readout of a file with compressible content
 			data := testutil.CreateDummyBuf(size)
-			stageAndRead(b, ctx, control, mount, "CompressibleContent", data)
+			stageAndRead(ctx, b, control, mount, "CompressibleContent", data)
 
 			// Check how fast is readout of a file with random/uncompressible content
 			data = testutil.CreateRandomDummyBuf(size, 1)
-			stageAndRead(b, ctx, control, mount, "RandomContent", data)
+			stageAndRead(ctx, b, control, mount, "RandomContent", data)
 		}
 	})
 }
