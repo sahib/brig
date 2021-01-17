@@ -14,9 +14,10 @@ theory, let's get started:
 .. code-block:: bash
 
     # Create a place where we store our metadata.
-    # The repository is created by default at ~/.brig
+    # The repository is created by default in the current working directory.
     # (This can be changed via `brig --repo`)
 
+    $ mkdir repo && cd repo
     $ brig init ali@woods.org/desktop -w 'echo my-password'
 
            _____         /  /\        ___          /  /\
@@ -34,9 +35,9 @@ theory, let's get started:
          A new file README.md was automatically added.
          Use 'brig cat README.md' to view it & get started.
 
-    $ ls ~/.brig
-    config.yml  data  gpg.prv  gpg.pub  logs  metadata
-    meta.yml  passwd.locked  remotes.yml
+    $ ls
+    config.yml  gateway    immutable.yml  keyring
+    metadata    README.md  remotes.yml
 
 The name you specified after the ``init`` is the name that will be shown
 to other users and by which you are searchable in the network.
@@ -54,52 +55,6 @@ you in the background without you noticing.
    default, ``brig init`` will also set some default options that help ``brig``
    to run a bit smoother. If you do not want those, please add
    ``--no-ipfs-optimization`` to the ``init`` command above.
-
-Passwords
-~~~~~~~~~
-
-``brig`` needs a password to securely encrypt your repository. In the example above
-we specified a password helper (``-w 'echo my-password'``). That's simply a program
-that will output the correct password to ``stdout``. Obviously, using ``echo`` for this job
-is not perfect (although it works fine in test environments). Instead we recommend to use
-a password manager like `pass <https://www.passwordstore.org/>`_  and to initialize your repo
-like that:
-
-.. code-block:: bash
-
-    # Generate a password and store it in "pass":
-    $ pass generate brig/ali -n 20
-    $ brig init ali@woods.org/desktop -w "pass brig/ali" 
-
-The advantage here is that your password is protected with a master password
-that will be handled by ``pass``. If you already set it up like above you can
-simply change the password helper command:
-
-.. code-block:: bash
-
-   $ brig cfg set repo.password_command "pass brig/ali"
-
-There are two alternatives to using a password manager (which we do **not** recommend):
-
-1. Do not use the ``-w / --password-helper`` flag. You will be asked to enter
-   a new password. The more secure the password is you entered, the greener the
-   prompt gets [#]_. The clear disadvantage here is that you need to re-enter the password
-   every time you restart the daemon.
-
-2. Do not use a password. You can do this by passing ``-x`` to the ``init`` command.
-   This is obviously not recommended.
-
-.. note::
-
-    Using a good password is especially important if you're planning to move
-    the repo, i.e. carrying it around you on a usb stick. When the daemon shuts
-    down it locks and encrypts all files in the repository (including all
-    metadata and keys), so nobodoy is able to access them anymore.
-
-
-.. [#] The *"security"* is measured by `Dropbox's password strength library »zxcvbn« <https://github.com/dropbox/zxcvbn>`_. Don't rely on the outputs it gives.
-
-.. _about_names:
 
 Choosing and finding names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,3 +166,13 @@ specific about the repository (``--repo``) path. Here is an example:
    might get confusing though when it comes to pinning, it is recommended to
    have several IPFS daemons running in this case. This is done via the
    ``--ipfs-port`` flag in the example above.
+
+Locking the repository.
+-----------------------
+
+The repository on disk is not encrypted. If you plan on moving the repository
+to somewhere else, e.g. by copying it onto an USB stick and physically moving
+it somewhere else you should always consider to first create an encrypted
+archive out of it and unpack it on the target machine. ``brig`` has a built-in
+helper for this. Please refer to ``brig pack-repo --help`` and ``brig
+unpack-repo --help``.
