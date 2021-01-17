@@ -33,7 +33,7 @@ type Handle struct {
 
 func (hd *Handle) loadData(path string) error {
 	// Reads the whole file into the memory buffer
-	log.Error("fuse: loadData for ", path)
+	log.Debug("fuse: loadData for ", path)
 	hd.data = nil
 	hd.wasModified = false
 	// rewind to start

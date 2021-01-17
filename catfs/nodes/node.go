@@ -53,7 +53,8 @@ type Metadatable interface {
 	Size() uint64
 
 	// CachedSize returns the size of the node at the backend in bytes.
-	CachedSize() uint64
+	// Negative indicates unknown status
+	CachedSize() int64
 
 	// ModTime returns the time when the last modification to the node happened.
 	ModTime() time.Time

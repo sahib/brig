@@ -20,7 +20,7 @@ type Directory struct {
 	Base
 
 	size       uint64
-	cachedSize uint64 // MaxUint64 indicates that it is unknown
+	cachedSize int64 // Negative indicates that it is unknown
 	parentName string
 	children   map[string]h.Hash
 	contents   map[string]h.Hash
@@ -163,7 +163,7 @@ func (d *Directory) setDirectoryAttrs(seg *capnp.Segment) (*capnp_model.Director
 	}
 
 	capDir.SetSize(d.size)
-	capDir.SetCachedSize(d.size)
+	capDir.SetCachedSize(int64(d.size))
 	return &capDir, nil
 }
 
@@ -263,7 +263,7 @@ func (d *Directory) Size() uint64 {
 }
 
 // CachedSize is similar to Size() above but for accumulated backends storage
-func (d *Directory) CachedSize() uint64 {
+func (d *Directory) CachedSize() int64 {
 	return d.cachedSize
 }
 
@@ -517,7 +517,7 @@ func (d *Directory) Lookup(lkr Linker, repoPath string) (Node, error) {
 func (d *Directory) SetSize(size uint64) { d.size = size }
 
 // SetCachedSize sets the cached size of the directory.
-func (d *Directory) SetCachedSize(cachedSize uint64) { d.cachedSize = cachedSize }
+func (d *Directory) SetCachedSize(cachedSize int64) { d.cachedSize = cachedSize }
 
 // SetName will set the name of this directory.
 func (d *Directory) SetName(name string) {

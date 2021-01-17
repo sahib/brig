@@ -8,18 +8,10 @@ import (
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/util"
 	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
 )
-
-func touch(path string) error {
-	fd, err := os.OpenFile(path, os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-
-	return fd.Close()
-}
 
 // InitOptions sum up the option that we can pass to Init()
 type InitOptions struct {
@@ -94,7 +86,7 @@ func Init(opts InitOptions) error {
 		}
 	}
 
-	if err := touch(filepath.Join(opts.BaseFolder, "remotes.yml")); err != nil {
+	if err := util.Touch(filepath.Join(opts.BaseFolder, "remotes.yml")); err != nil {
 		return e.Wrapf(err, "failed to touch remotes.yml")
 	}
 
