@@ -47,7 +47,22 @@ func listXattr(size uint32) []byte {
 	return resp
 }
 
+func isKnownAttribute(name string) bool {
+	reqSize := uint32(1024)
+	knownAttrs := bytes.Split(listXattr(reqSize), []byte{0})
+	for _, attr := range(knownAttrs) {
+		if string(attr) == name {
+			return true
+		}
+	}
+	return false
+}
+
 func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
+	if !isKnownAttribute(name) {
+		return nil, fuse.ErrNoXattr
+	}
+
 	info, err := cfs.Stat(path)
 	if err != nil {
 		return nil, errorize("getxattr", err)
