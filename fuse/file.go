@@ -165,9 +165,10 @@ func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 
 // Getxattr is called to get a single xattr (extended attribute) of a file.
 func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
-	defer logPanic("file: getxattr")
+	// defer logPanic("file: getxattr")
+	// log.Debugf("fuse-file-getxattr %v for atribute %v", fi.path, req.Name)
 
-	debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
+	// debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
 	xattrs, err := getXattr(fi.m.fs, req.Name, fi.path, req.Size)
 	if err != nil {
 		return err
