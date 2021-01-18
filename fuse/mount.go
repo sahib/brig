@@ -67,6 +67,7 @@ func NewMount(cfs *catfs.FS, mountpoint string, notifier Notifier, opts MountOpt
 		fuse.FSName("brigfs"),
 		fuse.Subtype("brig"),
 		fuse.AllowNonEmptyMount(),
+		fuse.MaxReadahead(128*1024), // kernel uses at max 128kB = 131072B
 	}
 
 	if opts.ReadOnly {
