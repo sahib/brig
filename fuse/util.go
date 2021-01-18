@@ -38,6 +38,7 @@ func listXattr(size uint32) []byte {
 	resp = append(resp, "user.brig.hash\x00"...)
 	resp = append(resp, "user.brig.content\x00"...)
 	resp = append(resp, "user.brig.pinned\x00"...)
+	resp = append(resp, "user.brig.explicitly_pinned\x00"...)
 
 	if uint32(len(resp)) > size {
 		resp = resp[:size]
@@ -65,7 +66,7 @@ func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
 		} else {
 			resp = []byte("no")
 		}
-	case "user.brig.explicit":
+	case "user.brig.explicitly_pinned":
 		if info.IsExplicit {
 			resp = []byte("yes")
 		} else {
