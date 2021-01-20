@@ -71,7 +71,7 @@ func (hd *Handle) loadData(path string) error {
 func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
-	// defer logPanic("handle: read")
+	defer logPanic("handle: read")
 
 	// log.WithFields(log.Fields{
 	// "path":   hd.fd.Path(),
