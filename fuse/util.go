@@ -3,6 +3,7 @@
 package fuse
 
 import (
+	"bytes"
 	"time"
 
 	"bazil.org/fuse"
@@ -26,7 +27,7 @@ func errorize(name string, err error) error {
 }
 
 // logPanic logs any panics by being called in a defer.
-// A rather inconvinient behaviour of fuse is to not report panics.
+// A rather inconvenient behaviour of fuse is to not report panics.
 func logPanic(name string) {
 	if err := recover(); err != nil {
 		log.Errorf("bug: %s panicked: %v", name, err)
