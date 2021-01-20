@@ -75,11 +75,12 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 	defer hd.mu.Unlock()
 	defer logPanic("handle: read")
 
-	// log.WithFields(log.Fields{
-	// "path":   hd.fd.Path(),
-	// "offset": req.Offset,
-	// "size":   req.Size,
-	// }).Debugf("fuse: handle: read")
+	log.Debugf(
+		"fuse-Read: %s (off: %d size: %d)",
+		hd.fd.Path(),
+		req.Offset,
+		req.Size,
+	)
 
 	// if we have writers we can supply response from the write data buffer
 	if hd.writers != 0 {
@@ -120,7 +121,7 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 	defer logPanic("handle: write")
 
 	log.Debugf(
-		"fuse-write: %s (off: %d size: %d)",
+		"fuse-Write: %s (off: %d size: %d)",
 		hd.fd.Path(),
 		req.Offset,
 		len(req.Data),
