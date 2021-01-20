@@ -113,6 +113,7 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 	if req.Flags.IsReadOnly() {
 		// we don't need to track read-only handles
 		// and no need to set handle `data`
+		resp.Flags |= fuse.OpenKeepCache
 		return fi.hd, nil
 	}
 
@@ -129,6 +130,7 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 		return nil, errorize(fi.path, ErrTooManyWriters)
 	}
 	fi.hd.writers++
+	resp.Flags |= fuse.OpenKeepCache
 	return fi.hd, nil
 }
 
