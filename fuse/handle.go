@@ -36,6 +36,7 @@ func (hd *Handle) loadData(path string) error {
 	log.Debug("fuse: loadData for ", path)
 	hd.data = nil
 	hd.wasModified = false
+	start := time.Now()
 	// rewind to start
 	newOff, err := hd.fd.Seek(0, io.SeekStart)
 	if err != nil {
@@ -64,6 +65,7 @@ func (hd *Handle) loadData(path string) error {
 		}
 	}
 	hd.data = data
+	log.Infof("fuse: loadData buffered `%s` %d bytes with troughput %.2f MB/s", path, len(hd.data), float64(len(hd.data))/time.Since(start).Seconds()/1.0e6)
 	return nil
 }
 
@@ -155,10 +157,12 @@ func (hd *Handle) flush() error {
 	if !hd.wasModified {
 		return nil
 	}
+	start := time.Now()
 	r := bytes.NewReader(hd.data)
 	if err := hd.m.fs.Stage(hd.fd.Path(), r); err != nil {
 		return errorize("handle-flush", err)
 	}
+	log.Infof("fuse: Staged `%s` %d bytes with troughput %.2f MB/s", hd.fd.Path(), len(hd.data), float64(len(hd.data))/time.Since(start).Seconds()/1.0e6)
 	hd.wasModified = false
 
 	notifyChange(hd.m, 500*time.Millisecond)
