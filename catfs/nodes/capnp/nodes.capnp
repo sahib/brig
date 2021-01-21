@@ -38,6 +38,11 @@ struct File $Go.doc("A leaf node in the MDAG") {
     cachedSize @1 :Int64;
     parent     @2 :Text;
     key        @3 :Data;
+
+    # This indicates that the stream associated with this
+    # file is not encoded by brig, but raw. We should not
+    # attempt to decode it.
+    isRaw      @4 :Bool;
 }
 
 struct Ghost $Go.doc("Ghost indicates that a certain node was at this path once") {

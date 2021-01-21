@@ -19,6 +19,7 @@ type File struct {
 	cachedSize int64 // Negative indicates that it is unknown
 	parent     string
 	key        []byte
+	isRaw      bool
 }
 
 // NewEmptyFile returns a newly created file under `parent`, named `name`.
@@ -80,6 +81,7 @@ func (f *File) setFileAttrs(seg *capnp.Segment) (*capnp_model.File, error) {
 
 	capFile.SetSize(f.size)
 	capFile.SetCachedSize(f.cachedSize)
+	capFile.SetIsRaw(f.isRaw)
 	return &capFile, nil
 }
 
@@ -115,6 +117,7 @@ func (f *File) readFileAttrs(capFile capnp_model.File) error {
 		return err
 	}
 
+	f.isRaw = capFile.IsRaw()
 	f.nodeType = NodeTypeFile
 	f.size = capFile.Size()
 	f.cachedSize = capFile.CachedSize()
@@ -139,6 +142,9 @@ func (f *File) SetModTime(t time.Time) {
 
 // SetName set the name of the file.
 func (f *File) SetName(n string) { f.name = n }
+
+// SetIsRaw sets the isRaw attribute
+func (f *File) SetIsRaw(isRaw bool) { f.isRaw = isRaw }
 
 // SetKey updates the key to a new value, taking ownership of the value.
 func (f *File) SetKey(k []byte) { f.key = k }
@@ -221,13 +227,23 @@ func (f *File) SetBackend(lkr Linker, backend h.Hash) {
 }
 
 func (f *File) String() string {
-	return fmt.Sprintf("<file %s:%s:%d>", f.Path(), f.TreeHash(), f.Inode())
+	return fmt.Sprintf(
+		"<file %s:%s:%d raw:%v>",
+		f.Path(),
+		f.TreeHash(),
+		f.Inode(),
+		f.IsRaw(),
+	)
 }
 
 // Path will return the absolute path of the file.
 func (f *File) Path() string {
 	return prefixSlash(path.Join(f.parent, f.name))
 }
+
+// IsRaw returns if the file is associated with a raw stream.
+// raw streams should not be decoded.
+func (f *File) IsRaw() bool { return f.isRaw }
 
 ////////////////// HIERARCHY INTERFACE //////////////////
 

@@ -79,6 +79,8 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
+	// TODO: not sure if that makes sense...
+	// we should just read whatever the underlying stream thinks it has.
 	n, err := io.ReadFull(hdl.layer, buf)
 	isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
 	if err != nil && !isEOF {

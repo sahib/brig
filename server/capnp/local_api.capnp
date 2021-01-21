@@ -20,6 +20,7 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     user        @11 :Text;
     backendHash @12 :Data;
     key         @13 :Data;
+    isRaw       @14 :Bool;
 }
 
 struct Commit $Go.doc("Single log entry") {

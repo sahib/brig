@@ -510,6 +510,7 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("Pinned", pinState)
 	printPair("Explicit", explicitState)
 	printPair("Cached", cachedState)
+	printPair("IsRaw", yesify(info.IsRaw))
 	printPair("ModTime", info.ModTime.Format(time.RFC3339))
 	printPair("Tree Hash", info.TreeHash.B58String())
 	printPair("Content Hash", info.ContentHash.B58String())

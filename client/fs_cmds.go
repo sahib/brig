@@ -22,6 +22,7 @@ type StatInfo struct {
 	CachedSize  int64
 	Inode       uint64
 	IsDir       bool
+	IsRaw       bool
 	Depth       int
 	ModTime     time.Time
 	IsPinned    bool
@@ -88,6 +89,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.CachedSize = capInfo.CachedSize()
 	info.Inode = capInfo.Inode()
 	info.IsDir = capInfo.IsDir()
+	info.IsRaw = capInfo.IsRaw()
 	info.IsPinned = capInfo.IsPinned()
 	info.IsExplicit = capInfo.IsExplicit()
 	info.Depth = int(capInfo.Depth())

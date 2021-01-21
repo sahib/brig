@@ -117,6 +117,10 @@ type StatInfo struct {
 	// IsExplicit is true when the user pinned this node on purpose
 	IsExplicit bool
 
+	// IsRaw indicates if the stream associated with the file (if any)
+	// was encoded by brig or can be consumed from ipfs directly.
+	IsRaw bool
+
 	// Key is the encryption key for the file.
 	Key []byte
 }
@@ -215,6 +219,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 	}
 
 	var isDir bool
+	var isRaw bool
 	var key []byte
 
 	switch nd.Type() {
@@ -224,6 +229,8 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 			key = make([]byte, len(file.Key()))
 			copy(key, file.Key())
 		}
+
+		isRaw = file.IsRaw()
 	case n.NodeTypeDirectory:
 		isDir = true
 	case n.NodeTypeGhost:
@@ -244,6 +251,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		Depth:       n.Depth(nd),
 		IsPinned:    isPinned,
 		IsExplicit:  isExplicit,
+		IsRaw:       isRaw,
 		ContentHash: nd.ContentHash().Clone(),
 		BackendHash: nd.BackendHash().Clone(),
 		TreeHash:    nd.TreeHash().Clone(),
@@ -1011,6 +1019,9 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
+	// TODO: figure out if we should encrypt the file.
+	isRaw := false
+
 	backendHash, err := fs.bk.Add(stream)
 	if err != nil {
 		return err
@@ -1029,7 +1040,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	newFile, err := c.StageWithFullInfo(
+	newFile, err := c.Stage(
 		fs.lkr,
 		path,
 		contentHash,
@@ -1038,6 +1049,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		cachedSize,
 		key,
 		time.Now(),
+		isRaw,
 	)
 
 	if err != nil {
