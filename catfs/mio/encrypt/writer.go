@@ -37,7 +37,7 @@ type Writer struct {
 	maxBlockSize int64
 
 	// Used encryption algorithm
-	cipher uint16
+	flags Flags
 }
 
 // GoodDecBufferSize returns a buffer size that is suitable for decryption.
@@ -51,16 +51,14 @@ func (w *Writer) GoodEncBufferSize() int64 {
 }
 
 func (w *Writer) emitHeaderIfNeeded() error {
-	if !w.headerWritten {
-		w.headerWritten = true
-		header := GenerateHeader(w.key, w.maxBlockSize, w.cipher)
-
-		if _, err := w.Writer.Write(header); err != nil {
-			return err
-		}
+	if w.headerWritten {
+		return nil
 	}
 
-	return nil
+	w.headerWritten = true
+	header := GenerateHeader(w.key, w.maxBlockSize, w.flags)
+	_, err := w.Writer.Write(header)
+	return err
 }
 
 func (w *Writer) Write(p []byte) (int, error) {
@@ -173,29 +171,33 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 	return n, nil
 }
 
-// NewWriter calls NewWriterWithTypeAndBlockSize with a sane default cipher type
+// NewWriter calls NewWriterWithFlagsAndBlockSize with a sane default cipher type
 // and a sane default max block size.
 func NewWriter(w io.Writer, key []byte) (*Writer, error) {
-	return NewWriterWithType(w, key, defaultCipherType)
+	return NewWriterWithFlags(
+		w,
+		key,
+		DefaultFlags,
+	)
 }
 
-// NewWriterWithType calls NewWriterWithTypeAndBlockSize with a a sane default maxblocksize.
-func NewWriterWithType(w io.Writer, key []byte, cipherType uint16) (*Writer, error) {
-	return NewWriterWithTypeAndBlockSize(w, key, cipherType, defaultMaxBlockSize)
+// NewWriterWithFlags calls NewWriterWithFlagsAndBlockSize with a a sane default maxblocksize.
+func NewWriterWithFlags(w io.Writer, key []byte, flags Flags) (*Writer, error) {
+	return NewWriterWithFlagsAndBlockSize(w, key, flags, defaultMaxBlockSize)
 }
 
-// NewWriterWithTypeAndBlockSize returns a new Writer which encrypts data with a
+// NewWriterWithFlagsAndBlockSize returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-func NewWriterWithTypeAndBlockSize(w io.Writer, key []byte, cipherType uint16, maxBlockSize int64) (*Writer, error) {
+func NewWriterWithFlagsAndBlockSize(w io.Writer, key []byte, flags Flags, maxBlockSize int64) (*Writer, error) {
 	ew := &Writer{
 		Writer:       w,
 		rbuf:         &bytes.Buffer{},
 		maxBlockSize: maxBlockSize,
-		cipher:       cipherType,
+		flags:        flags,
 	}
 
-	if err := ew.initAeadCommon(key, cipherType, ew.maxBlockSize); err != nil {
+	if err := ew.initAeadCommon(key, flags, ew.maxBlockSize); err != nil {
 		return nil, err
 	}
 

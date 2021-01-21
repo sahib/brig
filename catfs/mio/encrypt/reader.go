@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-// Reader decrypts and encrypted datastream from Reader.
+// Reader decrypts and encrypted stream from Reader.
 type Reader struct {
 	// Underlying reader
 	io.Reader
@@ -66,21 +66,40 @@ func (r *Reader) readHeaderIfNotDone() error {
 	}
 
 	if info.Version != 1 {
-		return fmt.Errorf("This implementation does not support versions != 1")
+		return fmt.Errorf("this implementation does not support versions != 1")
 	}
 
-	if uint32(len(r.key)) != info.Keylen {
-		return fmt.Errorf("Key length differs: file=%d, user=%d", info.Keylen, len(r.key))
+	if uint32(len(r.key)) != info.KeyLen {
+		return fmt.Errorf(
+			"key length differs: file=%d, user=%d",
+			info.KeyLen,
+			len(r.key),
+		)
 	}
 
 	r.info = info
-	if err := r.initAeadCommon(r.key, info.Cipher, int64(r.info.Blocklen)); err != nil {
+	if err := r.initAeadCommon(
+		r.key,
+		info.CipherBit,
+		int64(r.info.BlockLen),
+	); err != nil {
 		return err
 	}
 
 	r.lastEncSeekPos += headerSize
-	r.decBuf = make([]byte, 0, r.info.Blocklen)
+	r.decBuf = make([]byte, 0, r.info.BlockLen)
 	return nil
+}
+
+// Flags will return the flags stored in the header of the encrypted stream.
+// If the header was not read yet, it will attempt to read it.
+func (r *Reader) Flags() (Flags, error) {
+	// Make sure we have the info needed to parse the header:
+	if err := r.readHeaderIfNotDone(); err != nil {
+		return 0, err
+	}
+
+	return r.info.Flags, nil
 }
 
 // Read from source and decrypt.
@@ -88,7 +107,6 @@ func (r *Reader) readHeaderIfNotDone() error {
 // This method always decrypts one block to optimize for continuous reads. If
 // dest is too small to hold the block, the decrypted text is cached for the
 // next read.
-
 func (r *Reader) Read(dest []byte) (int, error) {
 	// Make sure we have the info needed to parse the header:
 	if err := r.readHeaderIfNotDone(); err != nil {
@@ -139,7 +157,7 @@ func (r *Reader) readBlock() (int, error) {
 	readBlockNum := binary.LittleEndian.Uint64(r.nonce)
 
 	// Check the block number:
-	currBlockNum := uint64(r.lastDecSeekPos / int64(r.info.Blocklen))
+	currBlockNum := uint64(r.lastDecSeekPos / int64(r.info.BlockLen))
 	if currBlockNum != readBlockNum {
 		return 0, fmt.Errorf(
 			"bad block number; as %d, should be %d", readBlockNum, currBlockNum,
@@ -147,7 +165,7 @@ func (r *Reader) readBlock() (int, error) {
 	}
 
 	// Read the *whole* block from the raw stream
-	N := int(r.info.Blocklen) + r.aead.Overhead()
+	N := int(r.info.BlockLen) + r.aead.Overhead()
 	n, err := io.ReadAtLeast(r.Reader, r.encBuf[:N], N)
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		return 0, err
@@ -170,15 +188,11 @@ func (r *Reader) readBlock() (int, error) {
 //
 // Note that the seek offset is relative to the decrypted data,
 // not to the underlying, encrypted stream.
-//
-// Mixing SEEK_CUR and SEEK_SET might not a good idea,
-// since a seek might involve reading a whole encrypted block.
-// Therefore relative seek offset
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Check if seeking is supported:
 	seeker, ok := r.Reader.(io.Seeker)
 	if !ok {
-		return 0, fmt.Errorf("Seek is not supported by underlying datastream")
+		return 0, fmt.Errorf("seek is not supported by underlying stream")
 	}
 
 	if err := r.readHeaderIfNotDone(); err != nil {
@@ -191,7 +205,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	// Constants and assumption on the stream below:
 	blockHeaderSize := int64(r.aead.NonceSize())
 	blockOverhead := blockHeaderSize + int64(r.aead.Overhead())
-	totalBlockSize := blockOverhead + int64(r.info.Blocklen)
+	totalBlockSize := blockOverhead + int64(r.info.BlockLen)
 
 	// absolute Offset in the decrypted stream
 	absOffsetDec := int64(0)
@@ -225,7 +239,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		encRest := encLen % totalBlockSize
 		decBlocks := encLen / totalBlockSize
 
-		endOffsetDec := decBlocks * int64(r.info.Blocklen)
+		endOffsetDec := decBlocks * int64(r.info.BlockLen)
 		if encRest > 0 {
 			endOffsetDec += encRest - blockOverhead
 		}
@@ -256,11 +270,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	// Convert decrypted offset to encrypted offset
-	absOffsetEnc := headerSize + ((absOffsetDec / int64(r.info.Blocklen)) * totalBlockSize)
+	absOffsetEnc := headerSize + ((absOffsetDec / int64(r.info.BlockLen)) * totalBlockSize)
 
 	// Check if we're still in the same block as last time:
 	blockNum := absOffsetEnc / totalBlockSize
-	lastBlockNum := r.lastDecSeekPos / int64(r.info.Blocklen)
+	lastBlockNum := r.lastDecSeekPos / int64(r.info.BlockLen)
 
 	r.lastDecSeekPos = absOffsetDec
 
@@ -279,8 +293,11 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 		}
 	}
 
-	// Reslice the backlog, so Read() does not return skipped data.
-	if _, err := r.backlog.Seek(absOffsetDec%int64(r.info.Blocklen), io.SeekStart); err != nil {
+	// reslice the backlog, so Read() does not return skipped data.
+	if _, err := r.backlog.Seek(
+		absOffsetDec%int64(r.info.BlockLen),
+		io.SeekStart,
+	); err != nil {
 		return 0, err
 	}
 
