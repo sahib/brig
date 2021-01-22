@@ -342,6 +342,11 @@ func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 		l.limit = newPos
 	}
 
+	if l.pos == newPos {
+		// very likely it sequent read/write request
+		// no need to seek since we already pointing to the right position
+		return l.pos, nil
+	}
 	l.pos = newPos
 
 	// Silence EOF:
