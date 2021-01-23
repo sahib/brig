@@ -136,6 +136,12 @@ struct FsTabEntry {
     offline  @5 :Bool;
 }
 
+struct Hint {
+    path            @0 :Text;
+    encryptionAlgo  @1 :Text;
+    compressionAlgo @2 :Text;
+}
+
 interface FS {
     stage             @0   (localPath :Text, repoPath :Text);
     list              @1   (root :Text, maxDepth :Int32) -> (entries :List(StatInfo));
@@ -203,6 +209,11 @@ interface Repo {
     gatewayUserRm    @16 (name :Text);
     gatewayUserList  @17 () -> (users :List(User.User));
     debugProfilePort @18 () -> (port :Int32);
+
+    hintSet          @19 (path :Text, hint :Hint) -> ();
+    hintRemove       @20 (path :Text) -> ();
+    hintList         @21 () -> (hints :List(Hint));
+
 }
 
 interface Net {

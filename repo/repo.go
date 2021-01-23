@@ -9,6 +9,7 @@ import (
 	"github.com/sahib/brig/catfs"
 	fserr "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -48,8 +49,27 @@ type Repository struct {
 	// Remotes gives access to all known remotes
 	Remotes *RemoteList
 
+	// Hints are streaming settings
+	Hints *hints.HintManager
+
 	// channel to control the auto gc loop
 	autoGCControl chan bool
+}
+
+func loadHintManager(hintsPath string) (*hints.HintManager, error) {
+	hintsFd, err := os.Open(hintsPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, e.Wrap(err, "failed to open hints.yml")
+	}
+
+	if os.IsNotExist(err) {
+		// No such file yet, create it.
+		return hints.NewManager(nil)
+	}
+
+	defer hintsFd.Close()
+
+	return hints.NewManager(hintsFd)
 }
 
 // Open will open the repository at `baseFolder`
@@ -74,11 +94,17 @@ func Open(baseFolder string) (*Repository, error) {
 		return nil, err
 	}
 
+	hintsMgr, err := loadHintManager(filepath.Join(baseFolder, "hints.yml"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Repository{
 		BaseFolder:    baseFolder,
 		Immutables:    immutables,
 		Config:        cfg,
 		Remotes:       remotes,
+		Hints:         hintsMgr,
 		fsMap:         make(map[string]*catfs.FS),
 		autoGCControl: make(chan bool, 1),
 	}, nil
@@ -123,7 +149,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return nil, err
 	}
 
-	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, isReadOnly, fsCfg)
+	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, isReadOnly, fsCfg, rp.Hints)
 	if err != nil {
 		return nil, err
 	}

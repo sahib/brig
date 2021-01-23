@@ -1469,6 +1469,34 @@ EXAMPLES:
    go tool pprof -web "http://localhost:$(brig d p)/debug/pprof/profile?seconds=30"
 `,
 	},
+	"hints": {
+		Usage:       "Print stuff",
+		Description: "TODO",
+	},
+	"hints.set": {
+		Usage:       "Print stuff",
+		Description: "TODO",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "compression,c",
+				Usage: "What compression algorithm to use for this hint",
+				Value: "guess",
+			},
+			cli.StringFlag{
+				Name:  "encryption,e",
+				Usage: "What encryption algorithm to use for this hint",
+				Value: "aes256gcm",
+			},
+		},
+	},
+	"hints.list": {
+		Usage:       "Print stuff",
+		Description: "TODO",
+	},
+	"hints.remove": {
+		Usage:       "Print stuff",
+		Description: "TODO",
+	},
 	"bug": {
 		Usage: "Print a template for bug reports.",
 		Flags: []cli.Flag{

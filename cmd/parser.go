@@ -447,6 +447,26 @@ func RunCmdline(args []string) int {
 				},
 			},
 		}, {
+			Name:     "hints",
+			Aliases:  []string{"hi"},
+			Category: repoGroup,
+			Action:   withDaemon(handleRepoHintsList, true),
+			Subcommands: []cli.Command{
+				{
+					Name:    "list",
+					Aliases: []string{"ls"},
+					Action:  withDaemon(handleRepoHintsList, true),
+				}, {
+					Name:    "set",
+					Aliases: []string{"s"},
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRepoHintsSet, true)),
+				}, {
+					Name:    "remove",
+					Aliases: []string{"rm"},
+					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRepoHintsRemove, true)),
+				},
+			},
+		}, {
 			Name:     "gateway",
 			Aliases:  []string{"gw"},
 			Category: repoGroup,

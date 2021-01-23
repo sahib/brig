@@ -8,6 +8,7 @@ import (
 	"github.com/sahib/brig/fuse"
 	gwdb "github.com/sahib/brig/gateway/db"
 	gwcapnp "github.com/sahib/brig/gateway/db/capnp"
+	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/server/capnp"
 	"github.com/sahib/brig/version"
 	log "github.com/sirupsen/logrus"
@@ -458,4 +459,85 @@ func (rh *repoHandler) DebugProfilePort(call capnp.Repo_debugProfilePort) error 
 	server.Ack(call.Options)
 	call.Results.SetPort(int32(rh.base.pprofPort))
 	return nil
+}
+
+func (rh *repoHandler) HintSet(call capnp.Repo_hintSet) error {
+	server.Ack(call.Options)
+
+	capHint, err := call.Params.Hint()
+	if err != nil {
+		return err
+	}
+
+	compressionAlgo, err := capHint.CompressionAlgo()
+	if err != nil {
+		return err
+	}
+
+	encryptionAlgo, err := capHint.EncryptionAlgo()
+	if err != nil {
+		return err
+	}
+
+	path, err := capHint.Path()
+	if err != nil {
+		return err
+	}
+
+	return rh.base.repo.Hints.Set(path, hints.Hint{
+		CompressionAlgo: hints.CompressionHint(compressionAlgo),
+		EncryptionAlgo:  hints.EncryptionHint(encryptionAlgo),
+	})
+}
+
+func (rh *repoHandler) HintRemove(call capnp.Repo_hintRemove) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return rh.base.repo.Hints.Remove(path)
+}
+
+func (rh *repoHandler) HintList(call capnp.Repo_hintList) error {
+	server.Ack(call.Options)
+
+	hints := rh.base.repo.Hints.List()
+
+	seg := call.Results.Segment()
+	capnpHints, err := capnp.NewHint_List(seg, int32(len(hints)))
+	if err != nil {
+		return err
+	}
+
+	capIdx := 0
+
+	for path, hint := range hints {
+		capHint, err := capnp.NewHint(seg)
+		if err != nil {
+			return err
+		}
+
+		if err := capHint.SetPath(path); err != nil {
+			return err
+		}
+
+		if err := capHint.SetCompressionAlgo(string(hint.CompressionAlgo)); err != nil {
+			return err
+		}
+
+		if err := capHint.SetEncryptionAlgo(string(hint.EncryptionAlgo)); err != nil {
+			return err
+		}
+
+		if err := capnpHints.Set(capIdx, capHint); err != nil {
+			return err
+		}
+
+		capIdx++
+	}
+
+	return call.Results.SetHints(capnpHints)
 }

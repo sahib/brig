@@ -1,12 +1,18 @@
 package hints
 
 import (
+	"errors"
 	"io"
 	"strings"
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/util/trie"
 	"github.com/sahib/config"
+)
+
+var (
+	ErrNoSuchHint  = errors.New("no such hint at this path")
+	ErrInvalidHint = errors.New("invalid hint")
 )
 
 type nothing struct{}
@@ -90,6 +96,10 @@ func Default() Hint {
 	}
 }
 
+func (h Hint) IsValid() bool {
+	return h.EncryptionAlgo.IsValid() && h.CompressionAlgo.IsValid()
+}
+
 var (
 	defaults = config.DefaultMapping{
 		"hints": config.DefaultMapping{
@@ -162,9 +172,11 @@ func NewManager(yamlReader io.Reader) (*HintManager, error) {
 	}, nil
 }
 
+// Lookup will give a hint for path. If there is no such hint,
+// we return the default.
 func (hm *HintManager) Lookup(path string) Hint {
 	node := hm.root.LookupDeepest(path)
-	if node == nil {
+	if node == nil || node.Data == nil {
 		// This can happen only if the root node
 		// does not have any data.
 		return Default()
@@ -173,8 +185,38 @@ func (hm *HintManager) Lookup(path string) Hint {
 	return node.Data.(Hint)
 }
 
-func (hm *HintManager) Remember(path string, hint Hint) {
+func (hm *HintManager) Set(path string, hint Hint) error {
+	if !hint.IsValid() {
+		return ErrInvalidHint
+	}
+
 	hm.root.InsertWithData(path, hint)
+	return nil
+}
+
+func (hm *HintManager) Remove(path string) error {
+	nd := hm.root.Lookup(path)
+	if nd == nil || nd.Data == nil {
+		return ErrNoSuchHint
+	}
+
+	nd.Remove()
+	return nil
+}
+
+func (hm *HintManager) List() map[string]Hint {
+	hints := make(map[string]Hint)
+
+	hm.root.Walk(true, func(node *trie.Node) bool {
+		if node.Data == nil {
+			return true
+		}
+
+		hints[node.Path()] = node.Data.(Hint)
+		return true
+	})
+
+	return hints
 }
 
 func (hm *HintManager) Save(w io.Writer) error {
@@ -184,19 +226,11 @@ func (hm *HintManager) Save(w io.Writer) error {
 	}
 
 	hintMapping := emptyCfg.Section("hints")
-
-	hm.root.Walk(true, func(node *trie.Node) bool {
-		if node.Data == nil {
-			return true
-		}
-
-		hint := node.Data.(Hint)
-		path := node.Path()
+	for path, hint := range hm.List() {
 		hintMapping.SetString(path+".path", path)
 		hintMapping.SetString(path+".compression_algo", string(hint.CompressionAlgo))
 		hintMapping.SetString(path+".encryption_algo", string(hint.EncryptionAlgo))
-		return true
-	})
+	}
 
 	return emptyCfg.Save(config.NewYamlEncoder(w))
 }

@@ -1174,3 +1174,44 @@ func handleRepoUnpack(ctx *cli.Context) error {
 		!ctx.Bool("no-remove"),
 	)
 }
+
+func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+	hint := client.Hint{
+		Path:            path,
+		EncryptionAlgo:  ctx.String("encryption"),
+		CompressionAlgo: ctx.String("compression"),
+	}
+
+	return ctl.HintSet(path, hint)
+}
+
+func handleRepoHintsList(ctx *cli.Context, ctl *client.Client) error {
+	hints, err := ctl.HintList()
+	if err != nil {
+		return err
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintln(tabW, "PATH\tENCRYPTION\tCOMPRESSION\t")
+
+	for _, hint := range hints {
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t\n",
+			hint.Path,
+			hint.EncryptionAlgo,
+			hint.CompressionAlgo,
+		)
+	}
+
+	return tabW.Flush()
+}
+
+func handleRepoHintsRemove(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.HintRemove(ctx.Args().First())
+}

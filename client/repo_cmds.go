@@ -560,3 +560,94 @@ func (ctl *Client) DebugProfilePort() (int, error) {
 
 	return int(result.Port()), nil
 }
+
+type Hint struct {
+	// Path is the path the hint applies to (recursively)
+	Path string
+
+	// CompressionAlgo can be an algorithm or "guess"
+	// to let brig choose a suitable one.
+	CompressionAlgo string
+
+	// EncryptionAlgo must be a valid encryption algorithm.
+	EncryptionAlgo string
+}
+
+func (ctl *Client) HintSet(path string, hint Hint) error {
+	call := ctl.api.HintSet(ctl.ctx, func(p capnp.Repo_hintSet_Params) error {
+		capHint, err := capnp.NewHint(p.Segment())
+		if err != nil {
+			return err
+		}
+
+		if err := capHint.SetPath(path); err != nil {
+			return err
+		}
+
+		if err := capHint.SetCompressionAlgo(string(hint.CompressionAlgo)); err != nil {
+			return err
+		}
+
+		if err := capHint.SetEncryptionAlgo(string(hint.EncryptionAlgo)); err != nil {
+			return err
+		}
+
+		return p.SetHint(capHint)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (ctl *Client) HintRemove(path string) error {
+	call := ctl.api.HintRemove(ctl.ctx, func(p capnp.Repo_hintRemove_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func (ctl *Client) HintList() ([]Hint, error) {
+	call := ctl.api.HintList(ctl.ctx, func(p capnp.Repo_hintList_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capHints, err := result.Hints()
+	if err != nil {
+		return nil, err
+	}
+
+	hints := []Hint{}
+
+	for idx := 0; idx < capHints.Len(); idx++ {
+		capHint := capHints.At(idx)
+		path, err := capHint.Path()
+		if err != nil {
+			return nil, err
+		}
+
+		compressionAlgo, err := capHint.CompressionAlgo()
+		if err != nil {
+			return nil, err
+		}
+
+		encryptionAlgo, err := capHint.EncryptionAlgo()
+		if err != nil {
+			return nil, err
+		}
+
+		hints = append(hints, Hint{
+			Path:            path,
+			EncryptionAlgo:  encryptionAlgo,
+			CompressionAlgo: compressionAlgo,
+		})
+	}
+
+	return hints, nil
+}
