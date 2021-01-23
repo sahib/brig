@@ -34,23 +34,18 @@ func logPanic(name string) {
 	}
 }
 
-func listXattr(size uint32) []byte {
+func listXattr() []byte {
 	resp := []byte{}
 	resp = append(resp, "user.brig.hash\x00"...)
 	resp = append(resp, "user.brig.content\x00"...)
 	resp = append(resp, "user.brig.pinned\x00"...)
 	resp = append(resp, "user.brig.explicitly_pinned\x00"...)
 
-	if uint32(len(resp)) > size {
-		resp = resp[:size]
-	}
-
 	return resp
 }
 
 func isKnownAttribute(name string) bool {
-	reqSize := uint32(1024)
-	knownAttrs := bytes.Split(listXattr(reqSize), []byte{0})
+	knownAttrs := bytes.Split(listXattr(), []byte{0})
 	for _, attr := range knownAttrs {
 		if string(attr) == name {
 			return true
@@ -92,11 +87,8 @@ func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
 		return nil, fuse.ErrNoXattr
 	}
 
-	// Truncate if less bytes were requested for some reason:
-	if uint32(len(resp)) > size {
-		resp = resp[:size]
-	}
-
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
 	return resp, nil
 }
 

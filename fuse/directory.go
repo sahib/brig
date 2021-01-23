@@ -211,12 +211,14 @@ func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, r
 	return nil
 }
 
-// Listxattr is called to list all xattrs of this file.
+// Listxattr is called to list all xattrs of this dir
 func (dir *Directory) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	defer logPanic("dir: listxattr")
 
 	debugLog("exec dir listxattr")
-	resp.Xattr = listXattr(req.Size)
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	resp.Xattr = listXattr()
 	return nil
 }
 

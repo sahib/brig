@@ -164,7 +164,9 @@ func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp 
 	defer logPanic("file: listxattr")
 	log.Debugf("fuse-file-listxattr: %v", fi.path)
 
-	resp.Xattr = listXattr(req.Size)
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	resp.Xattr = listXattr()
 	return nil
 }
 
