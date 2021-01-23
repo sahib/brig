@@ -49,7 +49,7 @@ func withDummyFSReadOnly(t *testing.T, readOnly bool, fn func(fs *FS)) {
 
 	fsCfg := cfg.Section("fs")
 
-	fs, err := NewFilesystem(backend, dbPath, owner, readOnly, fsCfg)
+	fs, err := NewFilesystem(backend, dbPath, owner, readOnly, fsCfg, nil)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}

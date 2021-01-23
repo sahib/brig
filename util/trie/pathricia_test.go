@@ -1,6 +1,10 @@
 package trie
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestPathriciaInsertTrieLinux(t *testing.T) {
 	tests := []struct {
@@ -131,6 +135,21 @@ func TestPathriciaRemoveLinux(t *testing.T) {
 			t.Errorf("Length differs, got: %d != expected: %d\n", trie.Length, test.length)
 		}
 	}
+}
+
+func TestLookupDeepest(t *testing.T) {
+	paths := []string{
+		"/a/b/c",
+	}
+
+	trie := NewNode()
+	for _, path := range paths {
+		trie.Insert(path)
+	}
+
+	n := trie.LookupDeepest("/a/b/c/d/e")
+	require.NotNil(t, n)
+	require.Equal(t, "/a/b/c", n.Path())
 }
 
 func TestWalk(t *testing.T) {

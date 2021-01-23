@@ -89,7 +89,6 @@ func (n *Node) InsertWithData(path string, data interface{}) *Node {
 				Parent: curr,
 				Name:   name,
 				Depth:  uint16(curr.Depth + 1),
-				Data:   data,
 			}
 
 			curr.Children[name] = child
@@ -134,6 +133,31 @@ func (n *Node) Lookup(path string) *Node {
 	return curr
 }
 
+// LookupDeepest looks up the deepest known node that can be found
+// by traversing along `path`. In other words: if there is no node
+// at `path` then dirname(`path`) is tried and so on.
+// This is implemented more efficient though.
+func (n *Node) LookupDeepest(path string) *Node {
+	curr := n
+	if n == nil {
+		return nil
+	}
+
+	if path == "/" {
+		return n.Root()
+	}
+
+	for _, name := range SplitPath(path) {
+		child, ok := curr.Children[name]
+		if !ok {
+			return curr
+		}
+
+		curr = child
+	}
+	return curr
+}
+
 // Remove removes the receiver and all of it's children.
 // The removed node's parent is returned.
 func (n *Node) Remove() *Node {
@@ -162,7 +186,7 @@ func (n *Node) Remove() *Node {
 	return parent
 }
 
-// Walk iterates over all (including intermediate )nodes in the trie.
+// Walk iterates over all (including intermediate) nodes in the trie.
 // Depending on dfs the nodes are visited in depth-first or breadth-first.
 // The supplied callback is called once for each visited node.
 func (n *Node) Walk(dfs bool, visit func(*Node) bool) {

@@ -27,6 +27,7 @@ import (
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/catfs/vcs"
+	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/util"
 	h "github.com/sahib/brig/util/hashlib"
 )
@@ -320,9 +321,24 @@ func (fs *FS) doGcRun() {
 	}
 }
 
+// HintFetcher is the API for looking up hints.
+type HintFetcher interface {
+	// Lookup should return stream hints for the path.
+	// Hints are recursive, so we iterate until the root path
+	// to find the correct hint.
+	Lookup(path string) hints.Hint
+}
+
 // NewFilesystem creates a new CATFS filesystem.
 // This filesystem stores all its data in a Merkle DAG and is fully versioned.
-func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool, fsCfg *config.Config) (*FS, error) {
+func NewFilesystem(
+	backend FsBackend,
+	dbPath string,
+	owner string,
+	readOnly bool,
+	fsCfg *config.Config,
+	hintFetcher HintFetcher,
+) (*FS, error) {
 	kv, err := db.NewBadgerDatabase(dbPath)
 	if err != nil {
 		return nil, err
