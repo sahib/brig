@@ -51,7 +51,7 @@ func listXattr(size uint32) []byte {
 func isKnownAttribute(name string) bool {
 	reqSize := uint32(1024)
 	knownAttrs := bytes.Split(listXattr(reqSize), []byte{0})
-	for _, attr := range(knownAttrs) {
+	for _, attr := range knownAttrs {
 		if string(attr) == name {
 			return true
 		}
