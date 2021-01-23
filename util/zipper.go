@@ -7,19 +7,63 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
+
+type archiveEntry struct {
+	path string
+	size int64
+}
+
+func addToTar(root string, entry archiveEntry, tw *tar.Writer) error {
+	relPath := entry.path
+	if len(entry.path) > len(root) {
+		relPath = entry.path[len(root):]
+		relPath = strings.TrimLeftFunc(relPath, func(r rune) bool {
+			return r == filepath.Separator
+		})
+	}
+
+	hdr := &tar.Header{
+		Name: relPath,
+		Mode: 0600,
+		Size: entry.size,
+	}
+
+	if err := tw.WriteHeader(hdr); err != nil {
+		return err
+	}
+
+	fd, err := os.Open(entry.path) // #nosec
+	if err != nil {
+		return err
+	}
+
+	defer Closer(fd)
+
+	_, err = io.Copy(tw, fd)
+	return err
+}
 
 // Tar packs all files in the directory pointed to by `root` and writes
 // a gzipped and tarred version of it to `w`.
 // The name of the archiv is set to `archiveName`.
 func Tar(root, archiveName string, w io.Writer) error {
+	root = filepath.Clean(root)
+
 	gzw := gzip.NewWriter(w)
 	gzw.Name = fmt.Sprintf(archiveName)
-	gzw.Comment = ""
 	gzw.ModTime = time.Now()
+	defer gzw.Close()
 
 	tw := tar.NewWriter(gzw)
+	defer tw.Close()
+
+	// First complete the walk to have a consistent set of files.
+	// If we e.g. place the .tar file in the same directory, we
+	// might iterate over itself, which will be unfortunate.
+	entries := []archiveEntry{}
 	walker := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -29,26 +73,10 @@ func Tar(root, archiveName string, w io.Writer) error {
 			return nil
 		}
 
-		hdr := &tar.Header{
-			Name: path[len(root):],
-			Mode: 0600,
-			Size: info.Size(),
-		}
-
-		if werr := tw.WriteHeader(hdr); err != nil {
-			return werr
-		}
-
-		fd, err := os.Open(path) // #nosec
-		if err != nil {
-			return err
-		}
-
-		defer Closer(fd)
-
-		if _, err := io.Copy(tw, fd); err != nil {
-			return err
-		}
+		entries = append(entries, archiveEntry{
+			path: path,
+			size: info.Size(),
+		})
 
 		return nil
 	}
@@ -57,11 +85,13 @@ func Tar(root, archiveName string, w io.Writer) error {
 		return err
 	}
 
-	if err := tw.Close(); err != nil {
-		return err
+	for _, entry := range entries {
+		if err := addToTar(root, entry, tw); err != nil {
+			return err
+		}
 	}
 
-	return gzw.Close()
+	return nil
 }
 
 // Untar reads .tar data (from Tar()) from `r` and writes all files packed in it to `root`.

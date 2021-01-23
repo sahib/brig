@@ -44,20 +44,14 @@ func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
 	err = repo.Init(repo.InitOptions{
 		BaseFolder:  repoPath,
 		Owner:       name,
-		Password:    "no-pass",
 		BackendName: "mock",
 		DaemonURL:   daemonURL,
 	})
 	require.Nil(t, err, stringify(err))
 
-	passwordFn := func() (string, error) {
-		return "no-pass", nil
-	}
-
 	srv, err := server.BootServer(
 		repoPath,
 		daemonURL,
-		passwordFn,
 		true,
 	)
 	require.Nil(t, err, stringify(err))

@@ -8,29 +8,22 @@ import (
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/util"
 	"github.com/sahib/config"
 	log "github.com/sirupsen/logrus"
 )
-
-func touch(path string) error {
-	fd, err := os.OpenFile(path, os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-
-	return fd.Close()
-}
 
 // InitOptions sum up the option that we can pass to Init()
 type InitOptions struct {
 	// BaseFolder is where the repository is located.
 	BaseFolder string
+
 	// Owner is the owner id of the repository.
 	Owner string
-	// Password is the password used to lock the repository.
-	Password string
+
 	// BackendName says what backend we should use.
 	BackendName string
+
 	// DaemonURL is the URL that will be used for the brig daemon.
 	DaemonURL string
 }
@@ -67,7 +60,6 @@ func Init(opts InitOptions) error {
 		return err
 	}
 
-	// The basefolder has to exist:
 	info, err := os.Stat(opts.BaseFolder)
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(opts.BaseFolder, 0700); err != nil {
@@ -83,51 +75,46 @@ func Init(opts InitOptions) error {
 			log.Warningf("`%s` is a directory and exists", opts.BaseFolder)
 		}
 	} else {
-		return fmt.Errorf("`%s` is a file (should be a directory)", opts.BaseFolder)
+		return fmt.Errorf("`%s` is not a directory", opts.BaseFolder)
 	}
 
 	// Create (empty) folders:
-	for _, emptyFolder := range []string{"metadata", "data"} {
+	for _, emptyFolder := range []string{"metadata", "keyring"} {
 		absFolder := filepath.Join(opts.BaseFolder, emptyFolder)
 		if err := os.Mkdir(absFolder, 0700); err != nil {
-			return e.Wrapf(err, "Failed to create dir: %v (repo exists?)", absFolder)
+			return e.Wrapf(err, "failed to create dir: %v (repo exists?)", absFolder)
 		}
 	}
 
-	if err := touch(filepath.Join(opts.BaseFolder, "remotes.yml")); err != nil {
-		return e.Wrapf(err, "Failed touch remotes.yml")
+	if err := util.Touch(filepath.Join(opts.BaseFolder, "remotes.yml")); err != nil {
+		return e.Wrapf(err, "failed to touch remotes.yml")
 	}
 
-	if err := touch(filepath.Join(opts.BaseFolder, "INIT_TAG")); err != nil {
-		return e.Wrapf(err, "Failed touch INIT_TAG")
+	err = ioutil.WriteFile(
+		filepath.Join(opts.BaseFolder, "README.md"),
+		[]byte(repoReadmeTxt),
+		0600,
+	)
+	if err != nil {
+		return e.Wrap(err, "failed to write README.md")
 	}
 
-	ownerPath := filepath.Join(opts.BaseFolder, "OWNER")
-	if err := ioutil.WriteFile(
-		ownerPath,
-		[]byte(opts.Owner),
-		0644,
-	); err != nil {
+	immutables, err := config.Open(nil, immutableDefaultsV0, config.StrictnessPanic)
+	if err != nil {
 		return err
 	}
 
-	backendNamePath := filepath.Join(opts.BaseFolder, "BACKEND")
-	if err := ioutil.WriteFile(
-		backendNamePath,
-		[]byte(opts.BackendName),
-		0644,
-	); err != nil {
+	if err := immutables.SetString("owner", opts.Owner); err != nil {
 		return err
 	}
 
-	// For future use: If we ever need to migrate the repo.
-	versionPath := filepath.Join(opts.BaseFolder, "VERSION")
-	if err := ioutil.WriteFile(
-		versionPath,
-		[]byte("1"),
-		0644,
-	); err != nil {
+	if err := immutables.SetString("backend", opts.BackendName); err != nil {
 		return err
+	}
+
+	immutablePath := filepath.Join(opts.BaseFolder, "immutable.yml")
+	if err := config.ToYamlFile(immutablePath, immutables); err != nil {
+		return e.Wrap(err, "failed to setup immutables config")
 	}
 
 	// Create a default config, only with the default keys applied:
@@ -142,57 +129,14 @@ func Init(opts InitOptions) error {
 
 	configPath := filepath.Join(opts.BaseFolder, "config.yml")
 	if err := config.ToYamlFile(configPath, cfg); err != nil {
-		return e.Wrap(err, "Failed to setup default config")
-	}
-
-	dataFolder := filepath.Join(opts.BaseFolder, "data", opts.BackendName)
-	if err := os.MkdirAll(dataFolder, 0700); err != nil {
-		return e.Wrap(err, "Failed to setup dirs for backend")
+		return e.Wrap(err, "failed to setup default config")
 	}
 
 	// Create initial key pair:
-	if err := createKeyPair(opts.Owner, opts.BaseFolder, 2048); err != nil {
-		return e.Wrap(err, "Failed to setup gpg keys")
+	keyringFolder := filepath.Join(opts.BaseFolder, "keyring")
+	if err := createKeyPair(opts.Owner, keyringFolder, 2048); err != nil {
+		return e.Wrap(err, "failed to setup gpg keys")
 	}
 
-	passwdFile := filepath.Join(opts.BaseFolder, "passwd")
-	if err := ioutil.WriteFile(
-		passwdFile,
-		[]byte(opts.Owner),
-		0644,
-	); err != nil {
-		return err
-	}
-
-	// passwd is used to verify the user password,
-	// so it needs to be locked only once on init and
-	// kept out otherwise from the locking machinery.
-	return lockFile(
-		passwdFile,
-		keyFromPassword(opts.Owner, opts.Password),
-	)
-}
-
-// OverwriteConfigKey allows to overwrite a single key/val pair in the config,
-// without requiring a running daemon or an opened repository.
-// It is not performant and should be use with care.
-func OverwriteConfigKey(repoPath string, key string, val interface{}) error {
-	configPath := filepath.Join(repoPath, "config.yml")
-	cfg, err := defaults.OpenMigratedConfig(configPath)
-	if err != nil {
-		return e.Wrapf(err, "failed to set ipfs port")
-	}
-
-	if err := cfg.Set(key, val); err != nil {
-		return err
-	}
-
-	fd, err := os.OpenFile(configPath, os.O_WRONLY|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer fd.Close()
-
-	return cfg.Save(config.NewYamlEncoder(fd))
+	return nil
 }

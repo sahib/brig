@@ -136,7 +136,7 @@ func (mb *MemFsBackend) IsCached(hash h.Hash) (bool, error) {
 func (mb *MemFsBackend) CachedSize(hash h.Hash) (int64, error) {
 	data, ok := mb.data[hash.B58String()]
 	if !ok {
-		return -1, nil // negative indicates unkonwn size
+		return -1, nil // negative indicates unknown size
 	}
 	return int64(len(data)), nil
 }

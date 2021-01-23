@@ -48,7 +48,7 @@ func (hdl *requestHandler) FetchStore(call capnp.Sync_fetchStore) error {
 		return errors.New("refusing export")
 	}
 
-	fs, err := hdl.rp.FS(hdl.rp.Owner, hdl.bk)
+	fs, err := hdl.rp.FS(hdl.rp.Immutables.Owner(), hdl.bk)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (hdl *requestHandler) FetchPatch(call capnp.Sync_fetchPatch) error {
 		return err
 	}
 
-	fs, err := hdl.rp.FS(hdl.rp.Owner, hdl.bk)
+	fs, err := hdl.rp.FS(hdl.rp.Immutables.Owner(), hdl.bk)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (hdl *requestHandler) FetchPatches(call capnp.Sync_fetchPatches) error {
 		return err
 	}
 
-	fs, err := hdl.rp.FS(hdl.rp.Owner, hdl.bk)
+	fs, err := hdl.rp.FS(hdl.rp.Immutables.Owner(), hdl.bk)
 	if err != nil {
 		return err
 	}

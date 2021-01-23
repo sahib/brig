@@ -3,14 +3,10 @@ package server
 import (
 	"context"
 	"net"
-	"path/filepath"
 	"runtime/debug"
 
-	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/fuse"
-	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/util"
-	"github.com/sahib/brig/util/pwutil"
 	"github.com/sahib/brig/util/server"
 	log "github.com/sirupsen/logrus"
 )
@@ -33,23 +29,6 @@ func (sv *Server) Close() error {
 	return sv.baseServer.Close()
 }
 
-func readPasswordFromHelper(basePath string, passwordFn func() (string, error)) (string, error) {
-	configPath := filepath.Join(basePath, "config.yml")
-	cfg, err := defaults.OpenMigratedConfig(configPath)
-	if err != nil {
-		return "", err
-	}
-
-	passwordCmd := cfg.String("repo.password_command")
-	if passwordCmd == "" {
-		log.Infof("reading password via client logic")
-		return passwordFn()
-	}
-
-	log.Infof("password was read from the password helper")
-	return pwutil.ReadPasswordFromHelper(basePath, passwordCmd)
-}
-
 func listenerFromServerURL(s string) (net.Listener, error) {
 	scheme, addr, err := util.URLToSchemeAndAddr(s)
 	if err != nil {
@@ -67,7 +46,6 @@ func applyFstabInitially(base *base) error {
 func BootServer(
 	basePath string,
 	serverURL string,
-	passwordFn func() (string, error),
 	logToStdout bool,
 ) (*Server, error) {
 	defer func() {
@@ -82,30 +60,13 @@ func BootServer(
 	}()
 
 	log.Infof("starting daemon for %s at %s", basePath, serverURL)
-
-	password, err := readPasswordFromHelper(basePath, passwordFn)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := repo.CheckPassword(basePath, password); err != nil {
-		return nil, err
-	}
-
-	log.Infof("password is valid")
 	if err := increaseMaxOpenFds(); err != nil {
 		log.Warningf("failed to increase number of open fds")
 	}
 
 	ctx := context.Background()
 	quitCh := make(chan struct{})
-	base := newBase(
-		ctx,
-		basePath,
-		password,
-		quitCh,
-	)
-
+	base := newBase(ctx, basePath, quitCh)
 	lst, err := listenerFromServerURL(serverURL)
 	if err != nil {
 		return nil, err
