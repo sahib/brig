@@ -80,7 +80,7 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 	)
 
 	// Offset seems to be always provided from the start (i.e. 0)
-	n, err := hd.WriteAt(req.Data, req.Offset)
+	n, err := hd.writeAt(req.Data, req.Offset)
 	resp.Size = n
 	if err != nil {
 		return errorize("handle-write-io", err)
@@ -98,7 +98,7 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 // Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
 // Main idea is not bother with Seek pointer, since underlying `overlay` works
 // with intervals in memory and we do not need to `Seek` the backend which is very time expensive.
-func (hd *Handle) WriteAt(buf []byte, off int64) (n int, err error) {
+func (hd *Handle) writeAt(buf []byte, off int64) (n int, err error) {
 	n, err = hd.fd.WriteAt(buf, off)
 	if n != len(buf) || err != nil {
 		log.Errorf("fuse: were not able to save %d bytes at offset %d", len(buf), off)
