@@ -64,10 +64,12 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 const maxInt = int(^uint(0) >> 1)
 
 // Write is called to write a block of data at a certain offset.
+// Note: do not assume that Write requests come in `fifo` order from the OS level!!!
+// I.e. during `cp largeFile /brig-fuse-mount/newFile`
+// the kernel might occasionally send write requests with blocks out of order!!!
+// In other words stream-like optimizations are not possible .
 func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
 	start := time.Now()
-	// Note: even when underlying process makes consequent writes,
-	// the kernel might send blocks out of order!!!
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
 	defer logPanic("handle: write")
