@@ -61,8 +61,6 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 	return nil
 }
 
-const maxInt = int(^uint(0) >> 1)
-
 // Write is called to write a block of data at a certain offset.
 // Note: do not assume that Write requests come in `fifo` order from the OS level!!!
 // I.e. during `cp largeFile /brig-fuse-mount/newFile`
