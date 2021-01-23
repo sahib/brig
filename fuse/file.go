@@ -56,11 +56,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 			attr.Mode = os.ModeSymlink | filePerm
 		}
 	}
-	if fi.hd != nil && fi.hd.writers > 0 {
-		attr.Size = uint64(len(fi.hd.data))
-	} else {
-		attr.Size = info.Size
-	}
+	attr.Size = info.Size
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
 
@@ -105,31 +101,12 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 
 	fi.mu.Lock()
 	if fi.hd == nil {
-		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1}
+		hd := Handle{fd: fd, m: fi.m, wasModified: false, currentFileReadOffset: -1}
 		fi.hd = &hd
 	}
 	fi.hd.fd = fd
 	fi.mu.Unlock()
-	if req.Flags.IsReadOnly() {
-		// we don't need to track read-only handles
-		// and no need to set handle `data`
-		resp.Flags |= fuse.OpenKeepCache
-		return fi.hd, nil
-	}
 
-	// for writers we need to copy file data to the handle `data`
-	fi.hd.mu.Lock()
-	defer fi.hd.mu.Unlock()
-	if fi.hd.writers == 0 {
-		err = fi.hd.loadData(fi.path)
-		if err != nil {
-			return nil, errorize("file-open-loadData", err)
-		}
-	}
-	if fi.hd.writers == (^uint(0)) { // checks against writers overflow
-		return nil, errorize(fi.path, ErrTooManyWriters)
-	}
-	fi.hd.writers++
 	resp.Flags |= fuse.OpenKeepCache
 	return fi.hd, nil
 }

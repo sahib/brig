@@ -3,7 +3,6 @@
 package fuse
 
 import (
-	"bytes"
 	"io"
 	"sync"
 	"syscall"
@@ -13,60 +12,17 @@ import (
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
-	"bazil.org/fuse/fuseutil"
 	"github.com/sahib/brig/catfs"
 	log "github.com/sirupsen/logrus"
 )
 
 // Handle is an open Entry.
 type Handle struct {
-	mu sync.Mutex
-	fd *catfs.Handle
-	m  *Mount
-	// number of write-capable handles currently open
-	writers uint
-	// only valid if writers > 0, data used as a buffer for write operations
-	data                  []byte
+	mu                    sync.Mutex
+	fd                    *catfs.Handle
+	m                     *Mount
 	wasModified           bool
 	currentFileReadOffset int64
-}
-
-func (hd *Handle) loadData(path string) error {
-	// Reads the whole file into the memory buffer
-	log.Debug("fuse: loadData for ", path)
-	hd.data = nil
-	hd.wasModified = false
-	start := time.Now()
-	// rewind to start
-	newOff, err := hd.fd.Seek(0, io.SeekStart)
-	if err != nil {
-		return errorize("handle-loadData-seek", err)
-	}
-	if newOff != 0 {
-		log.Warningf("seek offset differs (want %d, got %d)", 0, newOff)
-		return errorize("handle-loadData-seek", err)
-	}
-	// TODO make large buffer, right now there is a problem
-	// with the underlying Read(buf) which  seems to be
-	// limitedStream with the default size of 64kB.
-	// so there is no way to read file faster than in 64kB chunks
-	var bufSize int = 64 * 1024
-	buf := make([]byte, bufSize)
-	var data []byte
-	for {
-		n, err := hd.fd.Read(buf)
-		isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
-		if err != nil && !isEOF {
-			return errorize("file-loadData", err)
-		}
-		data = append(data, buf[:n]...)
-		if isEOF && n == 0 {
-			break
-		}
-	}
-	hd.data = data
-	log.Infof("fuse: loadData buffered `%s` %d bytes with troughput %.2f MB/s", path, len(hd.data), float64(len(hd.data))/time.Since(start).Seconds()/1.0e6)
-	return nil
 }
 
 // Read is called to read a block of data at a certain offset.
@@ -82,13 +38,6 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 		req.Size,
 	)
 
-	// if we have writers we can supply response from the write data buffer
-	if hd.writers != 0 {
-		fuseutil.HandleRead(req, resp, hd.data)
-		return nil
-	}
-
-	// otherwise we will read from the brig file system directly
 	newOff := hd.currentFileReadOffset
 	if req.Offset != hd.currentFileReadOffset {
 		var err error
@@ -116,6 +65,9 @@ const maxInt = int(^uint(0) >> 1)
 
 // Write is called to write a block of data at a certain offset.
 func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	start := time.Now()
+	// Note: even when underlying process makes consequent writes,
+	// the kernel might send blocks out of order!!!
 	hd.mu.Lock()
 	defer hd.mu.Unlock()
 	defer logPanic("handle: write")
@@ -127,19 +79,31 @@ func (hd *Handle) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.
 		len(req.Data),
 	)
 
-	// expand the buffer if necessary
-	newLen := req.Offset + int64(len(req.Data))
-	if newLen > int64(maxInt) {
-		return fuse.Errno(syscall.EFBIG)
-	}
-	if newLen := int(newLen); newLen > len(hd.data) {
-		hd.data = append(hd.data, make([]byte, newLen-len(hd.data))...)
-	}
-
-	n := copy(hd.data[req.Offset:], req.Data)
-	hd.wasModified = true
+	// Offset seems to be always provided from the start (i.e. 0)
+	n, err := hd.WriteAt(req.Data, req.Offset)
 	resp.Size = n
+	if err != nil {
+		return errorize("handle-write-io", err)
+	}
+	if n != len(req.Data) {
+		log.Panicf("written amount %d is not equal to requested %d", n, len(req.Data))
+		return err
+	}
+	log.Infof("fuse: Write time %v for %d bytes", time.Since(start), n)
+	hd.wasModified = true
 	return nil
+}
+
+// Writes data from `buf` at offset `off` counted from the start (0 offset).
+// Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
+// Main idea is not bother with Seek pointer, since underlying `overlay` works
+// with intervals in memory and we do not need to `Seek` the backend which is very time expensive.
+func (hd *Handle) WriteAt(buf []byte, off int64) (n int, err error) {
+	n, err = hd.fd.WriteAt(buf, off)
+	if n != len(buf) || err != nil {
+		log.Errorf("fuse: were not able to save %d bytes at offset %d", len(buf), off)
+	}
+	return n, err
 }
 
 // Flush is called to make sure all written contents get synced to disk.
@@ -159,11 +123,10 @@ func (hd *Handle) flush() error {
 		return nil
 	}
 	start := time.Now()
-	r := bytes.NewReader(hd.data)
-	if err := hd.m.fs.Stage(hd.fd.Path(), r); err != nil {
+	if err := hd.fd.Flush(); err != nil {
 		return errorize("handle-flush", err)
 	}
-	log.Infof("fuse: Staged `%s` %d bytes with troughput %.2f MB/s", hd.fd.Path(), len(hd.data), float64(len(hd.data))/time.Since(start).Seconds()/1.0e6)
+	log.Infof("fuse: Flashed `%s` in %v", hd.fd.Path(), time.Since(start))
 	hd.wasModified = false
 
 	notifyChange(hd.m, 500*time.Millisecond)
@@ -185,13 +148,6 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 		return errorize("handle-release", err)
 	}
 
-	hd.mu.Lock()
-	defer hd.mu.Unlock()
-
-	hd.writers--
-	if hd.writers == 0 {
-		hd.data = nil
-	}
 	return nil
 }
 
@@ -199,20 +155,9 @@ func (hd *Handle) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 func (hd *Handle) truncate(size uint64) error {
 	log.Debugf("fuse-truncate: %v to size %d", hd.fd.Path(), size)
 	defer logPanic("handle: truncate")
+	err := hd.fd.Truncate(size)
 
-	if size > uint64(maxInt) {
-		return fuse.Errno(syscall.EFBIG)
-	}
-	newLen := int(size)
-	switch {
-	case newLen > len(hd.data):
-		hd.data = append(hd.data, make([]byte, newLen-len(hd.data))...)
-		hd.wasModified = true
-	case newLen < len(hd.data):
-		hd.data = hd.data[:newLen]
-		hd.wasModified = true
-	}
-	return nil
+	return err
 }
 
 // Poll checks that the handle is ready for I/O or not
