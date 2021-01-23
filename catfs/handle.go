@@ -144,6 +144,29 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	return n, nil
 }
 
+// Writes data from `buf` at offset `off` counted from the start (0 offset).
+// Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
+func (hdl *Handle) WriteAt(buf []byte, off int64) (n int, err error) {
+	hdl.lock.Lock()
+	defer hdl.lock.Unlock()
+
+	if hdl.readOnly {
+		return 0, ErrReadOnly
+	}
+
+	if hdl.isClosed {
+		return 0, ErrIsClosed
+	}
+
+	if err := hdl.initStreamIfNeeded(); err != nil {
+		return 0, err
+	}
+
+	hdl.wasModified = true
+	n, err = hdl.layer.WriteAt(buf, off)
+	return n, err
+}
+
 // Seek will jump to the `offset` relative to `whence`.
 // There next read and write operation will start from this point.
 func (hdl *Handle) Seek(offset int64, whence int) (int64, error) {
