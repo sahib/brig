@@ -228,6 +228,24 @@ func (l *Layer) Write(buf []byte) (int, error) {
 	return len(buf), nil
 }
 
+// Writes data from `buf` at offset `off` counted from the start (0 offset).
+// Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
+func (l *Layer) WriteAt(buf []byte, off int64) (n int, err error) {
+	// Copy the buffer, since we cannot rely on it being valid forever.
+	modBuf := make([]byte, len(buf))
+	copy(modBuf, buf)
+
+	l.index.Add(&Modification{off, modBuf})
+	end := off + int64(len(buf))
+	if l.limit >= 0 && end > l.limit {
+		l.limit = end
+	}
+
+	n = len(buf)
+	err = nil
+	return n, nil
+}
+
 // hasGaps checks if overlays occludes all bytes between `start` and `end`
 func hasGaps(overlays []Interval, start, end int64) bool {
 	diff := end - start
@@ -342,6 +360,11 @@ func (l *Layer) Seek(offset int64, whence int) (int64, error) {
 		l.limit = newPos
 	}
 
+	if l.pos == newPos {
+		// very likely it sequent read/write request
+		// no need to seek since we already pointing to the right position
+		return l.pos, nil
+	}
 	l.pos = newPos
 
 	// Silence EOF:
