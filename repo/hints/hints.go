@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/util/trie"
@@ -89,6 +90,7 @@ type Hint struct {
 	EncryptionAlgo EncryptionHint
 }
 
+// Default returns the default stream settings
 func Default() Hint {
 	return Hint{
 		EncryptionAlgo:  EncryptionAES256GCM,
@@ -127,6 +129,7 @@ var (
 )
 
 type HintManager struct {
+	mu   sync.Mutex
 	root *trie.Node
 }
 
@@ -175,6 +178,9 @@ func NewManager(yamlReader io.Reader) (*HintManager, error) {
 // Lookup will give a hint for path. If there is no such hint,
 // we return the default.
 func (hm *HintManager) Lookup(path string) Hint {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
 	node := hm.root.LookupDeepest(path)
 	if node == nil || node.Data == nil {
 		// This can happen only if the root node
@@ -186,6 +192,9 @@ func (hm *HintManager) Lookup(path string) Hint {
 }
 
 func (hm *HintManager) Set(path string, hint Hint) error {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
 	if !hint.IsValid() {
 		return ErrInvalidHint
 	}
@@ -195,6 +204,9 @@ func (hm *HintManager) Set(path string, hint Hint) error {
 }
 
 func (hm *HintManager) Remove(path string) error {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
 	nd := hm.root.Lookup(path)
 	if nd == nil || nd.Data == nil {
 		return ErrNoSuchHint
@@ -205,6 +217,14 @@ func (hm *HintManager) Remove(path string) error {
 }
 
 func (hm *HintManager) List() map[string]Hint {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
+	return hm.list()
+}
+
+// list() is used both by Save() and List()
+func (hm *HintManager) list() map[string]Hint {
 	hints := make(map[string]Hint)
 
 	hm.root.Walk(true, func(node *trie.Node) bool {
@@ -220,13 +240,16 @@ func (hm *HintManager) List() map[string]Hint {
 }
 
 func (hm *HintManager) Save(w io.Writer) error {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
 	emptyCfg, err := config.Open(nil, defaults, config.StrictnessWarn)
 	if err != nil {
 		return err
 	}
 
 	hintMapping := emptyCfg.Section("hints")
-	for path, hint := range hm.List() {
+	for path, hint := range hm.list() {
 		hintMapping.SetString(path+".path", path)
 		hintMapping.SetString(path+".compression_algo", string(hint.CompressionAlgo))
 		hintMapping.SetString(path+".encryption_algo", string(hint.EncryptionAlgo))

@@ -484,10 +484,16 @@ func (rh *repoHandler) HintSet(call capnp.Repo_hintSet) error {
 		return err
 	}
 
-	return rh.base.repo.Hints.Set(path, hints.Hint{
+	if err := rh.base.repo.Hints.Set(path, hints.Hint{
 		CompressionAlgo: hints.CompressionHint(compressionAlgo),
 		EncryptionAlgo:  hints.EncryptionHint(encryptionAlgo),
-	})
+	}); err != nil {
+		return err
+	}
+
+	// Make sure the hints are immediately written to disk.
+	// At time of writing this is the place where hints are changed.
+	return rh.base.repo.SaveHints()
 }
 
 func (rh *repoHandler) HintRemove(call capnp.Repo_hintRemove) error {

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"sort"
+
 	gwdb "github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/server/capnp"
 	h "github.com/sahib/brig/util/hashlib"
@@ -648,6 +650,11 @@ func (ctl *Client) HintList() ([]Hint, error) {
 			CompressionAlgo: compressionAlgo,
 		})
 	}
+
+	// Sort for display convenience:
+	sort.Slice(hints, func(i, j int) bool {
+		return hints[i].Path < hints[j].Path
+	})
 
 	return hints, nil
 }

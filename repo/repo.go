@@ -195,3 +195,17 @@ func (rp *Repository) SaveConfig() error {
 	configPath := filepath.Join(rp.BaseFolder, "config.yml")
 	return config.ToYamlFile(configPath, rp.Config)
 }
+
+// SaveHints dumps the hints settings to disk.
+// You should call this whenever Hints are changed.
+func (rp *Repository) SaveHints() error {
+	hintsPath := filepath.Join(rp.BaseFolder, "hints.yml")
+	fd, err := os.OpenFile(hintsPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+
+	defer fd.Close()
+
+	return rp.Hints.Save(fd)
+}
