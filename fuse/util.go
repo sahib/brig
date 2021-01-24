@@ -3,7 +3,6 @@
 package fuse
 
 import (
-	"bytes"
 	"time"
 
 	"bazil.org/fuse"
@@ -34,28 +33,45 @@ func logPanic(name string) {
 	}
 }
 
+type xattrGetter func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error)
+
+var xattrMap = map[string]xattrGetter{
+	"user.brig.hash.content": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+		return []byte(info.ContentHash.B58String()), nil
+	},
+	"user.brig.hash.tree": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+		return []byte(info.TreeHash.B58String()), nil
+	},
+	"user.brig.hash.backend": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+		return []byte(info.BackendHash.B58String()), nil
+	},
+	"user.brig.pinned": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+		if info.IsPinned {
+			return []byte("yes"), nil
+		}
+		return []byte("no"), nil
+	},
+	"user.brig.explicitly_pinned": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+		if info.IsExplicit {
+			return []byte("yes"), nil
+		}
+		return []byte("no"), nil
+	},
+}
+
 func listXattr() []byte {
 	resp := []byte{}
-	resp = append(resp, "user.brig.hash\x00"...)
-	resp = append(resp, "user.brig.content\x00"...)
-	resp = append(resp, "user.brig.pinned\x00"...)
-	resp = append(resp, "user.brig.explicitly_pinned\x00"...)
+	for k, _ := range xattrMap {
+		resp = append(resp, k...)
+		resp = append(resp, '\x00')
+	}
 
 	return resp
 }
 
-func isKnownAttribute(name string) bool {
-	knownAttrs := bytes.Split(listXattr(), []byte{0})
-	for _, attr := range knownAttrs {
-		if string(attr) == name {
-			return true
-		}
-	}
-	return false
-}
-
-func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
-	if !isKnownAttribute(name) {
+func getXattr(cfs *catfs.FS, name, path string) ([]byte, error) {
+	handler, ok := xattrMap[name]
+	if !ok {
 		return nil, fuse.ErrNoXattr
 	}
 
@@ -64,32 +80,7 @@ func getXattr(cfs *catfs.FS, name, path string, size uint32) ([]byte, error) {
 		return nil, errorize("getxattr", err)
 	}
 
-	resp := []byte{}
-
-	switch name {
-	case "user.brig.hash":
-		resp = []byte(info.TreeHash.B58String())
-	case "user.brig.content":
-		resp = []byte(info.ContentHash.B58String())
-	case "user.brig.pinned":
-		if info.IsPinned {
-			resp = []byte("yes")
-		} else {
-			resp = []byte("no")
-		}
-	case "user.brig.explicitly_pinned":
-		if info.IsExplicit {
-			resp = []byte("yes")
-		} else {
-			resp = []byte("no")
-		}
-	default:
-		return nil, fuse.ErrNoXattr
-	}
-
-	// Do not worry about req.Size
-	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
-	return resp, nil
+	return handler(cfs, info)
 }
 
 func notifyChange(m *Mount, d time.Duration) {

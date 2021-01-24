@@ -150,7 +150,10 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 	// log.Debugf("fuse-file-getxattr %v for atribute %v", fi.path, req.Name)
 
 	// debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
-	xattrs, err := getXattr(fi.m.fs, req.Name, fi.path, req.Size)
+
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	xattrs, err := getXattr(fi.m.fs, req.Name, fi.path)
 	if err != nil {
 		return err
 	}

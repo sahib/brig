@@ -202,7 +202,10 @@ func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, r
 	defer logPanic("dir: getxattr")
 
 	debugLog("exec dir getxattr: %v: %v", dir.path, req.Name)
-	xattrs, err := getXattr(dir.m.fs, req.Name, dir.path, req.Size)
+
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	xattrs, err := getXattr(dir.m.fs, req.Name, dir.path)
 	if err != nil {
 		return err
 	}
