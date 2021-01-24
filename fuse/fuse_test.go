@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/sahib/brig/catfs"
@@ -335,6 +336,55 @@ func TestRead(t *testing.T) {
 				checkFuseFileMatchToCatFS(ctx, t, control, fuseFilePath, catfsFilePath)
 			})
 		}
+	})
+}
+
+func TestFileXattr(t *testing.T) {
+	withMount(t, MountOptions{}, func(ctx context.Context, control *spawntest.Control, mount *mountInfo) {
+		size := int64(4)
+		helloData := testutil.CreateDummyBuf(size)
+
+		// Add a simple file:
+		catfsFilePath := fmt.Sprintf("/hello_from_catfs_%d", size)
+		req := catfsPayload{Path: catfsFilePath, Data: helloData}
+		require.NoError(t, control.JSON("/catfsStage").Call(ctx, req, &nothing{}))
+		checkCatfsFileContent(ctx, t, control, catfsFilePath, helloData)
+
+		fuseFilePath := filepath.Join(mount.Dir, catfsFilePath)
+
+		// no let's see all the extended attributes list
+		response := make([]byte, 1024*4) // large buffer to fit everything
+		sz, err := syscall.Listxattr(fuseFilePath, response)
+		require.NoError(t, err)
+		response = response[:sz]
+		receivedAttrs := bytes.Split(response, []byte{0})
+		// every response should belong to valid attributes
+		for _, attr := range receivedAttrs {
+			if len(attr) == 0 {
+				// protecting against empty chunk after split delimiter
+				continue
+			}
+			_, ok := xattrMap[string(attr)]
+			require.Truef(t, ok, "Invalid extended attribute '%s'", attr)
+		}
+		// every valid attribute should be in received Attrs list
+		for attr, _ := range xattrMap {
+			require.Containsf(t, receivedAttrs, []uint8(attr), "Received attributes are missing '%s'", attr)
+		}
+		// now let's check some attributes values
+		// Note hashes are hard without direct access to catfs
+		// which is accessed in different process
+		response = make([]byte, 64) // large buffer to fit everything
+		sz, err = syscall.Getxattr(fuseFilePath, "user.brig.pinned", response)
+		require.NoError(t, err)
+		response = response[:sz]
+		require.Equal(t, "yes", string(response))
+
+		response = make([]byte, 64) // large buffer to fit everything
+		sz, err = syscall.Getxattr(fuseFilePath, "user.brig.explicitly_pinned", response)
+		require.NoError(t, err)
+		response = response[:sz]
+		require.Equal(t, "no", string(response))
 	})
 }
 
