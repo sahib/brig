@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
 var (
@@ -25,6 +26,9 @@ var (
 	// ErrUnsupportedVersion is returned when we don't have a reader that
 	// understands that format.
 	ErrUnsupportedVersion = errors.New("version of this format is not supported")
+
+	// MagicNumber is the magic number in front of a compressed stream
+	MagicNumber = []byte("elchwald")
 )
 
 const (
@@ -82,12 +86,8 @@ func makeHeader(algo AlgorithmType, version byte) []byte {
 	binary.LittleEndian.PutUint16(versionField, uint16(version))
 
 	suffix := append(versionField, algoField...)
-	return append([]byte("elchwald"), suffix...)
+	return append(MagicNumber, suffix...)
 }
-
-var (
-	MagicNumber = []byte("elchwald")
-)
 
 func readHeader(bheader []byte) (*header, error) {
 	if len(bheader) < 10 {
@@ -95,6 +95,7 @@ func readHeader(bheader []byte) (*header, error) {
 	}
 
 	if !bytes.Equal(bheader[:len(MagicNumber)], MagicNumber) {
+		fmt.Println("GOT", bheader[:len(MagicNumber)])
 		return nil, ErrBadMagicNumber
 	}
 

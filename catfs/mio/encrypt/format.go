@@ -36,7 +36,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sahib/brig/catfs/mio/compress"
 	chacha "golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/sha3"
 )
@@ -200,16 +199,11 @@ func cipherTypeBitFromFlags(flags Flags) (Flags, error) {
 // ParseHeader parses the header of the format file. Returns the flags, key
 // and block length. If parsing fails, an error is returned.
 func ParseHeader(header, key []byte) (*HeaderInfo, error) {
-	// TODO: document assumption that len(MagicNumber) == len(compress.MagicNumber)
 	if len(header) < len(MagicNumber) {
 		return nil, ErrSmallHeader
 	}
 
 	if bytes.Compare(header[:len(MagicNumber)], MagicNumber) != 0 {
-		if bytes.Compare(header[:len(compress.MagicNumber)], compress.MagicNumber) == 0 {
-			return nil, ErrIsCompressionMagic
-		}
-
 		return nil, ErrBadMagic
 	}
 

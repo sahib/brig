@@ -7,26 +7,31 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
+var testKey = []byte("01234567890ABCDE01234567890ABCDE")
 
-func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType) {
+func testWriteAndRead(
+	t *testing.T,
+	raw []byte,
+	hint hints.Hint,
+) {
 	rawBuf := &bytes.Buffer{}
 	if _, err := rawBuf.Write(raw); err != nil {
 		t.Errorf("Huh, buf-write failed?")
 		return
 	}
 
-	encStream, err := NewInStream(
+	encStream, isRaw, err := NewInStream(
 		rawBuf,
-		"",
-		TestKey,
-		hints.Default(),
+		gofakeit.Name(),
+		testKey,
+		hint,
 	)
 	if err != nil {
 		t.Errorf("creating encryption stream failed: %v", err)
@@ -49,15 +54,15 @@ func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType)
 		Closer:   ioutil.NopCloser(nil),
 	}
 
-	decStream, err := NewOutStream(r, false, TestKey)
+	decStream, err := NewOutStream(r, isRaw, testKey)
 	if err != nil {
-		t.Errorf("Creating decryption stream failed: %v", err)
+		t.Errorf("creating decryption stream failed: %v", err)
 		return
 	}
 
 	decrypted := &bytes.Buffer{}
 	if _, err = io.Copy(decrypted, decStream); err != nil {
-		t.Errorf("Reading decrypted data failed: %v", err)
+		t.Errorf("reading decrypted data failed: %v", err)
 		return
 	}
 
@@ -74,23 +79,29 @@ func TestWriteAndRead(t *testing.T) {
 
 	s64k := int64(64 * 1024)
 	sizes := []int64{
-		0, 1, 10, s64k, s64k - 1, s64k + 1,
-		s64k * 2, s64k * 1024,
+		0,
+		1,
+		10,
+		s64k,
+		s64k - 1,
+		s64k + 1,
+		s64k * 2,
+		s64k * 1024,
 	}
 
 	for _, size := range sizes {
 		regularData := testutil.CreateDummyBuf(size)
 		randomData := testutil.CreateRandomDummyBuf(size, 42)
 
-		for algo := range compress.AlgoMap {
-			prefix := fmt.Sprintf("%s-size%d-", algo, size)
+		for _, hint := range hints.AllPossibleHints() {
+			prefix := fmt.Sprintf("%s-size-%d-", hint, size)
 			t.Run(prefix+"regular", func(t *testing.T) {
 				t.Parallel()
-				testWriteAndRead(t, regularData, algo)
+				testWriteAndRead(t, regularData, hint)
 			})
 			t.Run(prefix+"random", func(t *testing.T) {
 				t.Parallel()
-				testWriteAndRead(t, randomData, algo)
+				testWriteAndRead(t, randomData, hint)
 			})
 		}
 	}
@@ -171,86 +182,6 @@ func TestLimitedStream(t *testing.T) {
 	require.Equal(t, buf.Bytes(), testData)
 }
 
-func benchThroughputOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.Reader, wfn func(io.Writer) io.WriteCloser) {
-	b.Run("read", func(b *testing.B) {
-		benchThroughputReadOp(b, size, rfn, wfn)
-	})
-
-	b.Run("write", func(b *testing.B) {
-		benchThroughputWriteOp(b, size, rfn, wfn)
-	})
-}
-
-func benchThroughputReadOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.Reader, wfn func(io.Writer) io.WriteCloser) {
-	var data []byte
-	buf := &bytes.Buffer{}
-
-	w := wfn(buf)
-	_, err := io.Copy(w, bytes.NewReader(testutil.CreateDummyBuf(size)))
-	if err != nil {
-		b.Fatalf("data preparation failed: %v", err)
-	}
-
-	if err := w.Close(); err != nil {
-		b.Fatalf("failed to close writer: %v", err)
-	}
-
-	data = buf.Bytes()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, err := testutil.DumbCopy(ioutil.Discard, rfn(bytes.NewReader(data)), false, false)
-		if err != nil {
-			b.Fatalf("copy failed: %v", err)
-		}
-	}
-}
-
-func benchThroughputWriteOp(b *testing.B, size int64, rfn func(io.ReadSeeker) io.Reader, wfn func(io.Writer) io.WriteCloser) {
-	data := testutil.CreateDummyBuf(size)
-
-	read := int64(0)
-
-	for i := 0; i < b.N; i++ {
-		w := wfn(ioutil.Discard)
-		n, err := io.Copy(w, bytes.NewReader(data))
-		if err != nil {
-			b.Fatalf("data preparation failed: %v", err)
-		}
-
-		read += n
-
-		if err := w.Close(); err != nil {
-			b.Fatalf("failed to close writer: %v", err)
-		}
-	}
-}
-
-type dummyWriter struct{ w io.Writer }
-
-func (df *dummyWriter) Write(data []byte) (int, error) { return df.w.Write(data) }
-func (df *dummyWriter) Close() error                   { return nil }
-
-type combinedClosers struct {
-	cls []io.WriteCloser
-}
-
-func combineClosers(cls ...io.WriteCloser) io.WriteCloser {
-	return &combinedClosers{cls}
-}
-
-func (cc *combinedClosers) Write(data []byte) (int, error) {
-	return cc.cls[len(cc.cls)-1].Write(data)
-}
-
-func (cc *combinedClosers) Close() error {
-	for i := len(cc.cls) - 1; i >= 0; i-- {
-		cc.cls[i].Close()
-	}
-
-	return nil
-}
-
 func TestLimitStreamSize(t *testing.T) {
 	// Size taken from a dummy file that showed this bug:
 	data := testutil.CreateDummyBuf(6041)
@@ -290,10 +221,10 @@ func TestLimitStreamSize(t *testing.T) {
 func TestStreamSizeBySeek(t *testing.T) {
 	buf := &bytes.Buffer{}
 	data := testutil.CreateDummyBuf(6041 * 1024)
-	encStream, err := NewInStream(
+	encStream, isRaw, err := NewInStream(
 		bytes.NewReader(data),
 		"",
-		TestKey,
+		testKey,
 		hints.Default(),
 	)
 	require.Nil(t, err)
@@ -303,8 +234,8 @@ func TestStreamSizeBySeek(t *testing.T) {
 
 	stream, err := NewOutStream(
 		bytes.NewReader(buf.Bytes()),
-		false,
-		TestKey,
+		isRaw,
+		testKey,
 	)
 	require.Nil(t, err)
 

@@ -9,6 +9,7 @@ require (
 	github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
 	github.com/bkaradzic/go-lz4 v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/brianvoe/gofakeit/v6 v6.0.0
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e

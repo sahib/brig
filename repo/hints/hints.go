@@ -2,6 +2,7 @@ package hints
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -134,6 +135,27 @@ func (h Hint) EncryptFlags() encrypt.Flags {
 
 func (h Hint) IsRaw() bool {
 	return h.EncryptionAlgo == EncryptionNone && h.CompressionAlgo == CompressionNone
+}
+
+func (h Hint) String() string {
+	return fmt.Sprintf("enc-%s-zip-%s", h.EncryptionAlgo, h.CompressionAlgo)
+}
+
+// AllPossibleHints returns all possible valid hint combination.
+// Useful for testing, but might be useful for cmdline purposes too.
+func AllPossibleHints() []Hint {
+	hints := []Hint{}
+
+	for compressionHint := range compressionHintMap {
+		for encryptionHint := range encryptionHintMap {
+			hints = append(hints, Hint{
+				CompressionAlgo: compressionHint,
+				EncryptionAlgo:  encryptionHint,
+			})
+		}
+	}
+
+	return hints
 }
 
 var (

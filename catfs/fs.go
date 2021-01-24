@@ -1006,7 +1006,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		hint = fs.hintFetcher.Lookup(path)
 	}
 
-	stream, err := mio.NewInStream(sizeReader, path, key, hint)
+	stream, isRaw, err := mio.NewInStream(sizeReader, path, key, hint)
 	if err != nil {
 		return err
 	}
@@ -1039,7 +1039,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		cachedSize,
 		key,
 		time.Now(),
-		hint.IsRaw(),
+		isRaw,
 	)
 
 	if err != nil {

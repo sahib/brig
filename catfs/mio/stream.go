@@ -1,6 +1,7 @@
 package mio
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -50,23 +51,50 @@ func NewOutStream(r io.ReadSeeker, isRaw bool, key []byte) (Stream, error) {
 		return s, nil
 	}
 
-	// At this point we're sure that there must be some magic number
+	// At this point we're sure that there must be a magic number.
 	// We can use it to decide what readers we should build.
-	rEnc, err := encrypt.NewReader(r, key)
+
+	magicNumber, headerReader, err := util.PeekHeader(r, 8)
 	if err != nil {
+		// First read on the stream, errors will bubble up here.
 		return nil, err
 	}
 
-	// NOTE: this involves reading the header:
-	// Additional case here is that we might have compression,
-	// but no encryption enabled. In that case parsing of the header
-	// will fail and ErrIsCompressionMagic is returned.
-	flags, err := rEnc.Flags()
-	if err != nil && err != encrypt.ErrIsCompressionMagic {
-		return nil, err
+	// make sure that the header is prefixed to the stream again:
+	// compress + encrypt reader expect the magic number there.
+	s.Reader = headerReader
+	s.Seeker = headerReader
+	s.WriterTo = dumbWriterTo{r: headerReader}
+
+	// NOTE: Assumption here is that our own magic numbers
+	//       are always 8 bytes long. Since we control it,
+	//       that's reasonable.
+	if len(magicNumber) != 8 {
+		return nil, fmt.Errorf("bad magic number")
 	}
 
-	if err == nil {
+	var isEncrypted bool
+
+	switch mn := string(magicNumber); mn {
+	case string(encrypt.MagicNumber):
+		isEncrypted = true
+	case string(compress.MagicNumber):
+		// Not encrypted, but decompress needed.
+	default:
+		return nil, fmt.Errorf("unknown magic number '%s'", mn)
+	}
+
+	if isEncrypted {
+		rEnc, err := encrypt.NewReader(s, key)
+		if err != nil {
+			return nil, err
+		}
+
+		flags, err := rEnc.Flags()
+		if err != nil {
+			return nil, err
+		}
+
 		s.Reader = rEnc
 		s.Seeker = rEnc
 		s.WriterTo = rEnc
@@ -116,13 +144,17 @@ func guessCompression(path string, r io.Reader, hint *hints.Hint) (io.Reader, er
 // The data is read from `r`, encrypted with `key` and encoded based on the
 // settings given by `hint`. `path` is only used to better guess the compression
 // algorithm - if desired by `hint`. `path` can be empty.
-func NewInStream(r io.Reader, path string, key []byte, hint hints.Hint) (io.ReadCloser, error) {
+//
+// It returns a reader that will produce the encoded stream.
+// If no actual encoding will be done, the second return param will be true
+func NewInStream(r io.Reader, path string, key []byte, hint hints.Hint) (io.ReadCloser, bool, error) {
 	var err error
 
 	if hint.CompressionAlgo == hints.CompressionGuess {
+		// replace "guess" to an actual compression algorithm.
 		r, err = guessCompression(path, r, &hint)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 
@@ -138,7 +170,7 @@ func NewInStream(r io.Reader, path string, key []byte, hint hints.Hint) (io.Read
 	if hint.EncryptionAlgo != hints.EncryptionNone {
 		wEnc, err := encrypt.NewWriter(w, key, hint.EncryptFlags())
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		closers = append(closers, wEnc)
@@ -149,7 +181,7 @@ func NewInStream(r io.Reader, path string, key []byte, hint hints.Hint) (io.Read
 	if hint.CompressionAlgo != hints.CompressionNone {
 		wZip, err := compress.NewWriter(w, hint.CompressionAlgo.ToCompressAlgorithmType())
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		closers = append(closers, wZip)
@@ -173,7 +205,7 @@ func NewInStream(r io.Reader, path string, key []byte, hint hints.Hint) (io.Read
 		}
 	}()
 
-	return pr, nil
+	return pr, hint.IsRaw(), nil
 }
 
 // limitedStream is a small wrapper around Stream,
