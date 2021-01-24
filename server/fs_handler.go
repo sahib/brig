@@ -470,6 +470,8 @@ func (fh *fsHandler) GarbageCollect(call capnp.FS_garbageCollect) error {
 }
 
 func (fh *fsHandler) Touch(call capnp.FS_touch) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -486,6 +488,8 @@ func (fh *fsHandler) Touch(call capnp.FS_touch) error {
 }
 
 func (fh *fsHandler) Exists(call capnp.FS_exists) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -509,6 +513,8 @@ func (fh *fsHandler) Exists(call capnp.FS_exists) error {
 }
 
 func (fh *fsHandler) Undelete(call capnp.FS_undelete) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -520,6 +526,8 @@ func (fh *fsHandler) Undelete(call capnp.FS_undelete) error {
 }
 
 func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
+	server.Ack(call.Options)
+
 	root, err := call.Params.Root()
 	if err != nil {
 		return err
@@ -556,6 +564,8 @@ func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
 }
 
 func (fh *fsHandler) IsCached(call capnp.FS_isCached) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -569,5 +579,25 @@ func (fh *fsHandler) IsCached(call capnp.FS_isCached) error {
 
 		call.Results.SetIsCached(isCached)
 		return nil
+	})
+}
+
+func (fh *fsHandler) RecodeStream(call capnp.FS_recodeStream) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		stream, err := fs.Cat(path)
+		if err != nil {
+			return err
+		}
+
+		defer stream.Close()
+
+		return fs.Stage(path, stream)
 	})
 }

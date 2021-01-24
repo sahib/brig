@@ -775,6 +775,10 @@ EXAMPLES:
 				Name:  "stdin,i",
 				Usage: "Read data from stdin.",
 			},
+			cli.BoolFlag{
+				Name:  "recode,r",
+				Usage: "Recode the stream (useful if you changed hints).",
+			},
 		},
 		Description: `Read a local file (given by »local-path«) and try to read
    it. This is the conceptual equivalent of »git add«. The stream will be encrypted

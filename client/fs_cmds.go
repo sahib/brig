@@ -480,3 +480,12 @@ func (cl *Client) IsCached(path string) (bool, error) {
 
 	return result.IsCached(), nil
 }
+
+func (cl *Client) RecodeStream(path string) error {
+	call := cl.api.RecodeStream(cl.ctx, func(p capnp.FS_recodeStream_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}

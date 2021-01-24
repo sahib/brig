@@ -27,8 +27,14 @@ import (
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	localPath := ctx.Args().Get(0)
+	if ctx.Bool("recode") {
+		// local path is actually a repo path here.
+		return ctl.RecodeStream(localPath)
+	}
+
 	readFromStdin := ctx.Bool("stdin")
 	repoPath := filepath.Base(localPath)
+
 	if len(ctx.Args()) > 1 {
 		repoPath = ctx.Args().Get(1)
 		if localPath == "-" {

@@ -165,6 +165,7 @@ interface FS {
     # note: stageFromStream is slower than regular stage.
     # currently only used for `brig stage --stdin`.
     stageFromStream   @18  (repoPath :Text) -> (stream :StageStream);
+    recodeStream      @19  (path :Text) -> ();
 
     interface StageStream {
         sendChunk @0 (chunk :Data) -> ();
