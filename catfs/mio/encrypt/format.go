@@ -58,6 +58,15 @@ const (
 	// This can be a good choice if your CPU does not support the AES-NI instruction set.
 	FlagEncryptChaCha20
 
+	// reserve some flags for more encryption types.
+	// no particular reason, just want to have enc-type flags to be in line.
+	flagReserved1
+	flagReserved2
+	flagReserved3
+	flagReserved4
+	flagReserved5
+	flagReserved6
+
 	// FlagCompressedInside indicates that the encrypted data was also compressed.
 	// This can be used to decide at runtime what streaming is needed.
 	FlagCompressedInside
