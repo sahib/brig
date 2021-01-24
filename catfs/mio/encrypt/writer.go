@@ -173,23 +173,14 @@ func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
 
 // NewWriter calls NewWriterWithFlagsAndBlockSize with a sane default cipher type
 // and a sane default max block size.
-func NewWriter(w io.Writer, key []byte) (*Writer, error) {
-	return NewWriterWithFlags(
-		w,
-		key,
-		DefaultFlags,
-	)
-}
-
-// NewWriterWithFlags calls NewWriterWithFlagsAndBlockSize with a a sane default maxblocksize.
-func NewWriterWithFlags(w io.Writer, key []byte, flags Flags) (*Writer, error) {
-	return NewWriterWithFlagsAndBlockSize(w, key, flags, defaultMaxBlockSize)
+func NewWriter(w io.Writer, key []byte, flags Flags) (*Writer, error) {
+	return NewWriterWithBlockSize(w, key, flags, defaultMaxBlockSize)
 }
 
 // NewWriterWithFlagsAndBlockSize returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
-func NewWriterWithFlagsAndBlockSize(w io.Writer, key []byte, flags Flags, maxBlockSize int64) (*Writer, error) {
+func NewWriterWithBlockSize(w io.Writer, key []byte, flags Flags, maxBlockSize int64) (*Writer, error) {
 	ew := &Writer{
 		Writer:       w,
 		rbuf:         &bytes.Buffer{},
@@ -197,7 +188,12 @@ func NewWriterWithFlagsAndBlockSize(w io.Writer, key []byte, flags Flags, maxBlo
 		flags:        flags,
 	}
 
-	if err := ew.initAeadCommon(key, flags, ew.maxBlockSize); err != nil {
+	cipherBit, err := cipherTypeBitFromFlags(flags)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ew.initAeadCommon(key, cipherBit, ew.maxBlockSize); err != nil {
 		return nil, err
 	}
 

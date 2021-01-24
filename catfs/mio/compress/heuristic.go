@@ -58,7 +58,7 @@ func isCompressible(mimetype string) bool {
 // and tries to guess a suitable compression algorithm.
 func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	if len(header) < HeaderSizeThreshold {
-		return AlgoNone, nil
+		return AlgoUnknown, nil
 	}
 
 	mime := guessMime(path, header)
@@ -70,7 +70,7 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	compressible := isCompressible(mime)
 
 	if !compressible {
-		return AlgoNone, nil
+		return AlgoUnknown, nil
 	}
 
 	// text like files probably deserve some thorough compression:

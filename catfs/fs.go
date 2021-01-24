@@ -24,7 +24,6 @@ import (
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
-	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/catfs/vcs"
 	"github.com/sahib/brig/repo/hints"
@@ -35,6 +34,14 @@ import (
 const (
 	abiVersion = 1
 )
+
+// HintFetcher is the API for looking up hints.
+type HintFetcher interface {
+	// Lookup should return stream hints for the path.
+	// Hints are recursive, so we iterate until the root path
+	// to find the correct hint.
+	Lookup(path string) hints.Hint
+}
 
 // FS (short for Filesystem) is the central API entry for everything related to
 // paths.  It exposes a POSIX-like interface where path are mapped to the
@@ -77,6 +84,9 @@ type FS struct {
 	// wether this fs is read only and cannot be changed.
 	// It can be change by applying patches though.
 	readOnly bool
+
+	// interface to load stream hints
+	hintFetcher HintFetcher
 }
 
 // ErrReadOnly is returned when a file system was created in read only mode
@@ -321,14 +331,6 @@ func (fs *FS) doGcRun() {
 	}
 }
 
-// HintFetcher is the API for looking up hints.
-type HintFetcher interface {
-	// Lookup should return stream hints for the path.
-	// Hints are recursive, so we iterate until the root path
-	// to find the correct hint.
-	Lookup(path string) hints.Hint
-}
-
 // NewFilesystem creates a new CATFS filesystem.
 // This filesystem stores all its data in a Merkle DAG and is fully versioned.
 func NewFilesystem(
@@ -373,6 +375,7 @@ func NewFilesystem(
 		autoCommitControl: make(chan bool, 1),
 		repinControl:      make(chan string, 1),
 		pinner:            pinCache,
+		hintFetcher:       hintFetcher,
 	}
 
 	// Start the garbage collection background task.
@@ -984,44 +987,13 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return ErrReadOnly
 	}
 
-	// We might not be able to read the header for some reason.
-	// It's not critical currently, so fall back to the normal reader.
-	baseReader := r
-
 	// NOTE: fs.mu is not locked here since I/O can be done in parallel.
 	//       If you need locking, you can do it at the bottom of this method.
-
-	compressAlgo, err := compress.AlgoFromString(
-		fs.cfg.String("compress.default_algo"),
-	)
-
-	if err != nil {
-		log.WithError(err).Warnf("failed to read default compression, using default")
-		compressAlgo = compress.AlgoNone
-	} else {
-		// Keep the header of the file in memory, so we can do some guessing
-		// of e.g. the compression algorithm we should use.
-		headerReader := util.NewHeaderReader(r, 2048)
-		headerBuf, err := headerReader.Peek()
-		if err != nil {
-			log.WithError(err).Warnf("failed to peek stream header")
-			return err
-		}
-
-		baseReader = headerReader
-
-		compressAlgo, err = compress.GuessAlgorithm(path, headerBuf)
-		if err != nil {
-			log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
-		}
-
-		log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
-	}
 
 	// Branch off a part of the stream and pipe it through
 	// a hash writer to compute the hash while reading the stream:
 	hashWriter := h.NewHashWriter()
-	hashReader := io.TeeReader(baseReader, hashWriter)
+	hashReader := io.TeeReader(r, hashWriter)
 
 	// Do the same with the size.
 	// This actually measures the size of the stream and is
@@ -1029,14 +1001,15 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	sizeAcc := &util.SizeAccumulator{}
 	sizeReader := io.TeeReader(hashReader, sizeAcc)
 
-	stream, err := mio.NewInStream(sizeReader, key, compressAlgo)
+	hint := hints.Default()
+	if fs.hintFetcher != nil {
+		hint = fs.hintFetcher.Lookup(path)
+	}
 
+	stream, err := mio.NewInStream(sizeReader, path, key, hint)
 	if err != nil {
 		return err
 	}
-
-	// TODO: figure out if we should encrypt the file.
-	isRaw := false
 
 	backendHash, err := fs.bk.Add(stream)
 	if err != nil {
@@ -1056,6 +1029,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
+	// Remember the metadata:
 	newFile, err := c.Stage(
 		fs.lkr,
 		path,
@@ -1065,7 +1039,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		cachedSize,
 		key,
 		time.Now(),
-		isRaw,
+		hint.IsRaw(),
 	)
 
 	if err != nil {
@@ -1112,7 +1086,12 @@ func (fs *FS) getTarableEntries(root string, filter func(node *StatInfo) bool) (
 			return ie.ErrBadNode
 		}
 
-		stream, err := fs.catHash(file.BackendHash(), file.Key(), file.Size())
+		stream, err := fs.catHash(
+			file.BackendHash(),
+			file.Key(),
+			file.Size(),
+			file.IsRaw(),
+		)
 		if err != nil {
 			return e.Wrapf(err, "failed to open stream for %s", file.Path())
 		}
@@ -1211,21 +1190,22 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 	size := file.Size()
 	backendHash := file.BackendHash().Clone()
 	key := make([]byte, len(file.Key()))
+	isRaw := file.IsRaw()
 	copy(key, file.Key())
 
 	fs.mu.Unlock()
 
-	return fs.catHash(backendHash, key, size)
+	return fs.catHash(backendHash, key, size, isRaw)
 }
 
 // NOTE: This method can be called without locking fs.mu!
-func (fs *FS) catHash(backendHash h.Hash, key []byte, size uint64) (mio.Stream, error) {
+func (fs *FS) catHash(backendHash h.Hash, key []byte, size uint64, isRaw bool) (mio.Stream, error) {
 	rawStream, err := fs.bk.Cat(backendHash)
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := mio.NewOutStream(rawStream, key)
+	stream, err := mio.NewOutStream(rawStream, isRaw, key)
 	if err != nil {
 		return nil, err
 	}

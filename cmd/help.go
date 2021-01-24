@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sahib/brig/repo/hints"
 	"github.com/toqueteos/webbrowser"
 	"github.com/urfave/cli"
 )
@@ -1425,6 +1426,10 @@ EXAMPLES:
 				Usage: "What key to use for encryption (base58 encoded)",
 				Value: "4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9krzUw",
 			},
+			cli.BoolFlag{
+				Name:  "raw",
+				Usage: "Specify if this is a raw stream",
+			},
 		},
 	},
 	"debug.encode-stream": {
@@ -1434,6 +1439,16 @@ EXAMPLES:
 				Name:  "key",
 				Usage: "What key to use for encryption (base58 encoded)",
 				Value: "4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9krzUw",
+			},
+			cli.StringFlag{
+				Name:  "encryption",
+				Usage: "What encryption type to use",
+				Value: hints.EncryptionAES256GCM,
+			},
+			cli.StringFlag{
+				Name:  "compression,c",
+				Usage: "What compression algorithm to use",
+				Value: hints.CompressionGuess,
 			},
 		},
 	},

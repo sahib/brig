@@ -8,20 +8,12 @@ import (
 	"testing"
 
 	"github.com/sahib/brig/catfs/mio/compress"
-	"github.com/sahib/brig/catfs/mio/encrypt"
-	"github.com/sahib/brig/catfs/mio/overlay"
+	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/stretchr/testify/require"
 )
 
 var TestKey = []byte("01234567890ABCDE01234567890ABCDE")
-
-type wrapReader struct {
-	io.Reader
-	io.Seeker
-	io.Closer
-	io.WriterTo
-}
 
 func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType) {
 	rawBuf := &bytes.Buffer{}
@@ -30,29 +22,34 @@ func testWriteAndRead(t *testing.T, raw []byte, algoType compress.AlgorithmType)
 		return
 	}
 
-	encStream, err := NewInStream(rawBuf, TestKey, algoType)
+	encStream, err := NewInStream(
+		rawBuf,
+		"",
+		TestKey,
+		hints.Default(),
+	)
 	if err != nil {
-		t.Errorf("Creating encryption stream failed: %v", err)
+		t.Errorf("creating encryption stream failed: %v", err)
 		return
 	}
 
 	encrypted := &bytes.Buffer{}
 	if _, err = io.Copy(encrypted, encStream); err != nil {
-		t.Errorf("Reading encrypted data failed: %v", err)
+		t.Errorf("reading encrypted data failed: %v", err)
 		return
 	}
 
 	// Fake a close method:
 	br := bytes.NewReader(encrypted.Bytes())
 
-	r := wrapReader{
+	r := stream{
 		Reader:   br,
 		Seeker:   br,
 		WriterTo: br,
 		Closer:   ioutil.NopCloser(nil),
 	}
 
-	decStream, err := NewOutStream(r, TestKey)
+	decStream, err := NewOutStream(r, false, TestKey)
 	if err != nil {
 		t.Errorf("Creating decryption stream failed: %v", err)
 		return
@@ -254,124 +251,6 @@ func (cc *combinedClosers) Close() error {
 	return nil
 }
 
-func BenchmarkThroughputReader(b *testing.B) {
-	size := int64(1024 * 1024)
-
-	b.Run("baseline", func(b *testing.B) {
-		benchThroughputOp(
-			b, size,
-			func(r io.ReadSeeker) io.Reader {
-				return r
-			},
-			func(w io.Writer) io.WriteCloser {
-				return &dummyWriter{w}
-			},
-		)
-	})
-
-	b.Run("layer", func(b *testing.B) {
-		benchThroughputOp(
-			b, size,
-			func(r io.ReadSeeker) io.Reader {
-				layer := overlay.NewLayer(r)
-				layer.SetSize(1024 * 1024)
-				return layer
-			},
-			func(w io.Writer) io.WriteCloser {
-				// Put all the writes into an empty reader.
-				layer := overlay.NewLayer(bytes.NewReader(nil))
-				layer.SetSize(1024 * 1024)
-				return layer
-			},
-		)
-	})
-
-	b.Run("encrypt", func(b *testing.B) {
-		benchThroughputOp(
-			b, size,
-			func(r io.ReadSeeker) io.Reader {
-				key := make([]byte, 32)
-				renc, err := encrypt.NewReader(r, key)
-
-				if err != nil {
-					b.Fatalf("failed to setup enc reader: %v", err)
-				}
-
-				return renc
-			},
-			func(w io.Writer) io.WriteCloser {
-				key := make([]byte, 32)
-				wenc, err := encrypt.NewWriter(w, key)
-				if err != nil {
-					b.Fatalf("failed to setup enc writer: %v", err)
-				}
-
-				return wenc
-			},
-		)
-	})
-
-	compressAlgos := []compress.AlgorithmType{
-		compress.AlgoLZ4,
-		compress.AlgoSnappy,
-		compress.AlgoNone,
-	}
-
-	for _, algo := range compressAlgos {
-		name := fmt.Sprintf("zip-%s", algo)
-		b.Run(name, func(b *testing.B) {
-			benchThroughputOp(
-				b, size,
-				func(r io.ReadSeeker) io.Reader {
-					return compress.NewReader(r)
-				},
-				func(w io.Writer) io.WriteCloser {
-					wzip, err := compress.NewWriter(w, algo)
-					if err != nil {
-						b.Fatalf("failed to setup zip writer: %v", err)
-					}
-
-					return wzip
-				},
-			)
-		})
-	}
-
-	for _, algo := range compressAlgos {
-		name := fmt.Sprintf("srm-%s", algo)
-		b.Run(name, func(b *testing.B) {
-			benchThroughputOp(
-				b, size,
-				func(r io.ReadSeeker) io.Reader {
-					key := make([]byte, 32)
-					stream, err := NewOutStream(r, key)
-					if err != nil {
-						b.Fatalf("failed to create out stream: %v", err)
-					}
-
-					return stream
-				},
-				func(w io.Writer) io.WriteCloser {
-					key := make([]byte, 32)
-
-					// Setup the writer part:
-					wEnc, err := encrypt.NewWriter(w, key)
-					if err != nil {
-						b.Fatalf("failed to setup wenc: %v", err)
-					}
-
-					wZip, err := compress.NewWriter(wEnc, algo)
-					if err != nil {
-						b.Fatalf("failed to setup wzip: %v", err)
-					}
-
-					return combineClosers(wEnc, wZip)
-				},
-			)
-		})
-	}
-}
-
 func TestLimitStreamSize(t *testing.T) {
 	// Size taken from a dummy file that showed this bug:
 	data := testutil.CreateDummyBuf(6041)
@@ -411,13 +290,22 @@ func TestLimitStreamSize(t *testing.T) {
 func TestStreamSizeBySeek(t *testing.T) {
 	buf := &bytes.Buffer{}
 	data := testutil.CreateDummyBuf(6041 * 1024)
-	encStream, err := NewInStream(bytes.NewReader(data), TestKey, compress.AlgoSnappy)
+	encStream, err := NewInStream(
+		bytes.NewReader(data),
+		"",
+		TestKey,
+		hints.Default(),
+	)
 	require.Nil(t, err)
 
 	_, err = io.Copy(buf, encStream)
 	require.Nil(t, err)
 
-	stream, err := NewOutStream(bytes.NewReader(buf.Bytes()), TestKey)
+	stream, err := NewOutStream(
+		bytes.NewReader(buf.Bytes()),
+		false,
+		TestKey,
+	)
 	require.Nil(t, err)
 
 	n, err := stream.Seek(0, io.SeekEnd)

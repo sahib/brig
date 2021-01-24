@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	e "github.com/pkg/errors"
+	"github.com/sahib/brig/catfs/mio/compress"
+	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util/trie"
 	"github.com/sahib/config"
 )
@@ -15,8 +17,6 @@ var (
 	ErrNoSuchHint  = errors.New("no such hint at this path")
 	ErrInvalidHint = errors.New("invalid hint")
 )
-
-type nothing struct{}
 
 type CompressionHint string
 
@@ -28,17 +28,34 @@ const (
 )
 
 var (
-	compressionHintMap = map[CompressionHint]nothing{
-		CompressionNone:   nothing{},
-		CompressionLZ4:    nothing{},
-		CompressionSnappy: nothing{},
-		CompressionGuess:  nothing{},
+	compressionHintMap = map[CompressionHint]compress.AlgorithmType{
+		CompressionNone:   compress.AlgoUnknown,
+		CompressionLZ4:    compress.AlgoLZ4,
+		CompressionSnappy: compress.AlgoSnappy,
+		CompressionGuess:  compress.AlgoUnknown,
 	}
 )
 
 func (ch CompressionHint) IsValid() bool {
 	_, ok := compressionHintMap[ch]
 	return ok
+}
+
+func (ch CompressionHint) ToCompressAlgorithmType() compress.AlgorithmType {
+	return compressionHintMap[ch]
+}
+
+func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) CompressionHint {
+	switch algo {
+	case compress.AlgoUnknown:
+		return CompressionNone
+	case compress.AlgoLZ4:
+		return CompressionLZ4
+	case compress.AlgoSnappy:
+		return CompressionSnappy
+	default:
+		return CompressionNone
+	}
 }
 
 func validCompressionHints() []string {
@@ -59,16 +76,20 @@ const (
 )
 
 var (
-	encryptionHintMap = map[EncryptionHint]nothing{
-		EncryptionNone:      nothing{},
-		EncryptionAES256GCM: nothing{},
-		EncryptionChaCha20:  nothing{},
+	encryptionHintMap = map[EncryptionHint]encrypt.Flags{
+		EncryptionNone:      encrypt.FlagEmpty,
+		EncryptionAES256GCM: encrypt.FlagEncryptAES256GCM,
+		EncryptionChaCha20:  encrypt.FlagEncryptChaCha20,
 	}
 )
 
 func (eh EncryptionHint) IsValid() bool {
 	_, ok := encryptionHintMap[eh]
 	return ok
+}
+
+func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
+	return encryptionHintMap[eh]
 }
 
 func validEncryptionHints() []string {
@@ -100,6 +121,19 @@ func Default() Hint {
 
 func (h Hint) IsValid() bool {
 	return h.EncryptionAlgo.IsValid() && h.CompressionAlgo.IsValid()
+}
+
+func (h Hint) EncryptFlags() encrypt.Flags {
+	flags := h.EncryptionAlgo.ToEncryptFlags()
+	if h.CompressionAlgo != CompressionNone {
+		flags |= encrypt.FlagCompressedInside
+	}
+
+	return flags
+}
+
+func (h Hint) IsRaw() bool {
+	return h.EncryptionAlgo == EncryptionNone && h.CompressionAlgo == CompressionNone
 }
 
 var (

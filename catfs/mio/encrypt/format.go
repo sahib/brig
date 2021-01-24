@@ -36,6 +36,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/sahib/brig/catfs/mio/compress"
 	chacha "golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/sha3"
 )
@@ -46,6 +47,9 @@ type Flags int32
 
 // Possible ciphers in Counter mode:
 const (
+	// FlagEmpty is invalid
+	FlagEmpty = Flags(0)
+
 	// FlagEncryptAES256GCM indicates the stream was encrypted with AES256 in GCM mode.
 	// This should be fast on modern CPUs.
 	FlagEncryptAES256GCM = Flags(1) << iota
@@ -57,10 +61,6 @@ const (
 	// FlagCompressedInside indicates that the encrypted data was also compressed.
 	// This can be used to decide at runtime what streaming is needed.
 	FlagCompressedInside
-)
-
-const (
-	DefaultFlags = FlagEncryptAES256GCM
 )
 
 // Other constants:
@@ -90,9 +90,6 @@ var (
 	}
 )
 
-// KeySize of the used cipher's key in bytes.
-var KeySize = chacha.KeySize
-
 ////////////////////
 // Header Parsing //
 ////////////////////
@@ -101,12 +98,10 @@ var KeySize = chacha.KeySize
 func GenerateHeader(key []byte, maxBlockSize int64, flags Flags) []byte {
 	// This is in big endian:
 	header := []byte{
-		// Brigs magic number (8 Byte):
+		// magic number (8 Byte):
 		0, 0, 0, 0, 0, 0, 0, 0,
-		// File format version (2 Byte):
-		0, 0,
-		// Cipher type (2 Byte):
-		0, 0,
+		// Flags (4 byte):
+		0, 0, 0, 0,
 		// Key length (4 Byte):
 		0, 0, 0, 0,
 		// Block length (4 Byte):
@@ -120,8 +115,8 @@ func GenerateHeader(key []byte, maxBlockSize int64, flags Flags) []byte {
 	copy(header[:len(MagicNumber)], MagicNumber)
 	binary.LittleEndian.PutUint32(header[8:12], uint32(flags))
 
-	// Encode key size:
-	binary.LittleEndian.PutUint32(header[12:16], uint32(KeySize))
+	// Encode key size (static at the moment):
+	binary.LittleEndian.PutUint32(header[12:16], uint32(32))
 
 	// Encode max block size:
 	binary.LittleEndian.PutUint32(header[16:20], uint32(maxBlockSize))
@@ -158,10 +153,11 @@ type HeaderInfo struct {
 }
 
 var (
-	ErrSmallHeader  = errors.New("header is too small")
-	ErrBadMagic     = errors.New("magic number missing")
-	ErrBadFlags     = errors.New("inconsistent header flags")
-	ErrBadHeaderMAC = errors.New("header mac differs from expected")
+	ErrSmallHeader        = errors.New("header is too small")
+	ErrBadMagic           = errors.New("magic number missing")
+	ErrBadFlags           = errors.New("inconsistent header flags")
+	ErrBadHeaderMAC       = errors.New("header mac differs from expected")
+	ErrIsCompressionMagic = errors.New("stream starts with compression magic number")
 )
 
 func cipherTypeBitFromFlags(flags Flags) (Flags, error) {
@@ -195,12 +191,21 @@ func cipherTypeBitFromFlags(flags Flags) (Flags, error) {
 // ParseHeader parses the header of the format file. Returns the flags, key
 // and block length. If parsing fails, an error is returned.
 func ParseHeader(header, key []byte) (*HeaderInfo, error) {
-	if len(header) < headerSize {
+	// TODO: document assumption that len(MagicNumber) == len(compress.MagicNumber)
+	if len(header) < len(MagicNumber) {
 		return nil, ErrSmallHeader
 	}
 
 	if bytes.Compare(header[:len(MagicNumber)], MagicNumber) != 0 {
+		if bytes.Compare(header[:len(compress.MagicNumber)], compress.MagicNumber) == 0 {
+			return nil, ErrIsCompressionMagic
+		}
+
 		return nil, ErrBadMagic
+	}
+
+	if len(header) < headerSize {
+		return nil, ErrSmallHeader
 	}
 
 	flags := Flags(binary.LittleEndian.Uint32(header[8:12]))
@@ -284,8 +289,8 @@ func (c *aeadCommon) initAeadCommon(key []byte, cipherBit Flags, maxBlockSize in
 
 // Encrypt is a utility function which encrypts the data from source with key
 // and writes the resulting encrypted data to dest.
-func Encrypt(key []byte, source io.Reader, dest io.Writer) (int64, error) {
-	layer, err := NewWriter(dest, key)
+func Encrypt(key []byte, source io.Reader, dest io.Writer, flags Flags) (int64, error) {
+	layer, err := NewWriter(dest, key, flags)
 	if err != nil {
 		return 0, err
 	}

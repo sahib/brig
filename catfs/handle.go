@@ -51,7 +51,11 @@ func (hdl *Handle) initStreamIfNeeded() error {
 	}
 
 	// Stack the mio stack on top:
-	hdl.stream, err = mio.NewOutStream(rawStream, hdl.file.Key())
+	hdl.stream, err = mio.NewOutStream(
+		rawStream,
+		hdl.file.IsRaw(),
+		hdl.file.Key(),
+	)
 	if err != nil {
 		return err
 	}

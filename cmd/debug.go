@@ -9,8 +9,8 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/mr-tron/base58"
 	"github.com/sahib/brig/catfs/mio"
-	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/client"
+	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/urfave/cli"
 )
@@ -65,7 +65,7 @@ func handleDebugDecodeStream(ctx *cli.Context) error {
 		return err
 	}
 
-	stream, err := mio.NewOutStream(fd, key)
+	stream, err := mio.NewOutStream(fd, ctx.Bool("raw"), key)
 	if err != nil {
 		return err
 	}
@@ -80,8 +80,16 @@ func handleDebugEncodeStream(ctx *cli.Context) error {
 		return err
 	}
 
-	algo := compress.AlgoSnappy
-	r, err := mio.NewInStream(os.Stdin, key, algo)
+	hint := hints.Hint{
+		EncryptionAlgo:  hints.EncryptionHint(ctx.String("encryption")),
+		CompressionAlgo: hints.CompressionHint(ctx.String("compression")),
+	}
+
+	if !hint.IsValid() {
+		return fmt.Errorf("invalid encryption or compression")
+	}
+
+	r, err := mio.NewInStream(os.Stdin, "", key, hint)
 	if err != nil {
 		return err
 	}

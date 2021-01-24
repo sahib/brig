@@ -272,7 +272,7 @@ func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
 
 	defer ipfsStream.Close()
 
-	stream, err := mio.NewOutStream(ipfsStream, info.Key)
+	stream, err := mio.NewOutStream(ipfsStream, info.IsRaw, info.Key)
 	if err != nil {
 		return err
 	}

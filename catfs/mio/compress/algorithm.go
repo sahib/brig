@@ -9,8 +9,44 @@ import (
 
 var (
 	// ErrBadAlgo is returned on a unsupported/unknown algorithm.
-	ErrBadAlgo = errors.New("Invalid algorithm type")
+	ErrBadAlgo = errors.New("invalid algorithm type")
 )
+
+const (
+	// AlgoUnknown represents an unknown algorithm.
+	// When trying to use it an error will occur.
+	AlgoUnknown = AlgorithmType(iota)
+
+	// AlgoSnappy represents the snappy compression algorithm:
+	// https://en.wikipedia.org/wiki/Snappy_(software)
+	AlgoSnappy
+
+	//AlgoLZ4 represents the lz4 compression algorithm:
+	// https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
+	AlgoLZ4
+)
+
+// AlgorithmType user defined type to store the algorithm type.
+type AlgorithmType byte
+
+// IsValid returns true if `at` is a valid algorithm type.
+func (at AlgorithmType) IsValid() bool {
+	switch at {
+	case AlgoSnappy, AlgoLZ4:
+		return true
+	}
+
+	return false
+}
+
+func (at AlgorithmType) String() string {
+	name, ok := algoToString[at]
+	if !ok {
+		return "unknown"
+	}
+
+	return name
+}
 
 // Algorithm is the common interface for all supported algorithms.
 type Algorithm interface {
@@ -18,39 +54,28 @@ type Algorithm interface {
 	Decode([]byte) ([]byte, error)
 }
 
-type noneAlgo struct{}
 type snappyAlgo struct{}
 type lz4Algo struct{}
 
 var (
 	// AlgoMap is a map of available algorithms.
 	AlgoMap = map[AlgorithmType]Algorithm{
-		AlgoNone:   noneAlgo{},
 		AlgoSnappy: snappyAlgo{},
 		AlgoLZ4:    lz4Algo{},
 	}
 
+	// TODO: still needded?
 	algoToString = map[AlgorithmType]string{
-		AlgoNone:   "none",
 		AlgoSnappy: "snappy",
 		AlgoLZ4:    "lz4",
 	}
 
+	// TODO: still needed?
 	stringToAlgo = map[string]AlgorithmType{
-		"none":   AlgoNone,
 		"snappy": AlgoSnappy,
 		"lz4":    AlgoLZ4,
 	}
 )
-
-// AlgoNone
-func (a noneAlgo) Encode(src []byte) ([]byte, error) {
-	return src, nil
-}
-
-func (a noneAlgo) Decode(src []byte) ([]byte, error) {
-	return src, nil
-}
 
 // AlgoSnappy
 func (a snappyAlgo) Encode(src []byte) ([]byte, error) {
