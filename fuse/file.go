@@ -34,6 +34,7 @@ type File struct {
 // Attr is called to get the stat(2) attributes of a file.
 func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 	defer logPanic("file: attr")
+	log.Debugf("fuse-file-attr: %v", fi.path)
 
 	info, err := fi.m.fs.Stat(fi.path)
 	if err != nil {
@@ -55,11 +56,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 			attr.Mode = os.ModeSymlink | filePerm
 		}
 	}
-	if fi.hd != nil && fi.hd.writers > 0 {
-		attr.Size = uint64(len(fi.hd.data))
-	} else {
-		attr.Size = info.Size
-	}
+	attr.Size = info.Size
 	attr.Mtime = info.ModTime
 	attr.Inode = info.Inode
 
@@ -83,6 +80,7 @@ func (fi *File) Attr(ctx context.Context, attr *fuse.Attr) error {
 func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 	defer logPanic("file: open")
 	debugLog("fuse-open: %s", fi.path)
+	log.Debugf("fuse-file-open: %v with request %v", fi.path, req)
 
 	// Check if the file is actually available locally.
 	if fi.m.options.Offline {
@@ -103,30 +101,13 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 
 	fi.mu.Lock()
 	if fi.hd == nil {
-		hd := Handle{fd: fd, m: fi.m, writers: 0, wasModified: false, currentFileReadOffset: -1}
+		hd := Handle{fd: fd, m: fi.m, wasModified: false, currentFileReadOffset: -1}
 		fi.hd = &hd
 	}
 	fi.hd.fd = fd
 	fi.mu.Unlock()
-	if req.Flags.IsReadOnly() {
-		// we don't need to track read-only handles
-		// and no need to set handle `data`
-		return fi.hd, nil
-	}
 
-	// for writers we need to copy file data to the handle `data`
-	fi.hd.mu.Lock()
-	defer fi.hd.mu.Unlock()
-	if fi.hd.writers == 0 {
-		err = fi.hd.loadData(fi.path)
-		if err != nil {
-			return nil, errorize("file-open-loadData", err)
-		}
-	}
-	if fi.hd.writers == (^uint(0)) { // checks against writers overflow
-		return nil, errorize(fi.path, ErrTooManyWriters)
-	}
-	fi.hd.writers++
+	resp.Flags |= fuse.OpenKeepCache
 	return fi.hd, nil
 }
 
@@ -135,11 +116,11 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 // file, the size change is noticed here before Open() is called.
 func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fuse.SetattrResponse) error {
 	defer logPanic("file: setattr")
+	log.Debugf("fuse-file-setattr: request %v", req)
 
 	// This is called when any attribute of the file changes,
 	// most importantly the file size. For example it is called when truncating
 	// the file to zero bytes with a size change of `0`.
-	debugLog("exec file setattr")
 	switch {
 	case req.Valid&fuse.SetattrSize != 0:
 		if err := fi.hd.truncate(req.Size); err != nil {
@@ -158,17 +139,21 @@ func (fi *File) Setattr(ctx context.Context, req *fuse.SetattrRequest, resp *fus
 // Currently, fsync is completely ignored.
 func (fi *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
 	defer logPanic("file: fsync")
+	log.Debugf("fuse-file-fsync: %v", fi.path)
 
-	debugLog("exec file fsync")
 	return nil
 }
 
 // Getxattr is called to get a single xattr (extended attribute) of a file.
 func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	defer logPanic("file: getxattr")
+	// log.Debugf("fuse-file-getxattr %v for atribute %v", fi.path, req.Name)
 
-	debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
-	xattrs, err := getXattr(fi.m.fs, req.Name, fi.path, req.Size)
+	// debugLog("exec file getxattr: %v: %v", fi.path, req.Name)
+
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	xattrs, err := getXattr(fi.m.fs, req.Name, fi.path)
 	if err != nil {
 		return err
 	}
@@ -180,15 +165,18 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 // Listxattr is called to list all xattrs of this file.
 func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	defer logPanic("file: listxattr")
+	log.Debugf("fuse-file-listxattr: %v", fi.path)
 
-	debugLog("exec file listxattr")
-	resp.Xattr = listXattr(req.Size)
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	resp.Xattr = listXattr()
 	return nil
 }
 
 // Readlink reads a symbolic link.
 // This call is triggered when OS tries to see where symlink points
 func (fi *File) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
+	log.Debugf("fuse-file-readlink: %v", fi.path)
 	info, err := fi.m.fs.Stat(fi.path)
 	if err != nil {
 		return "/brig/backend/ipfs/", err

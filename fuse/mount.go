@@ -67,6 +67,10 @@ func NewMount(cfs *catfs.FS, mountpoint string, notifier Notifier, opts MountOpt
 		fuse.FSName("brigfs"),
 		fuse.Subtype("brig"),
 		fuse.AllowNonEmptyMount(),
+		// enabling MaxReadahead double or even triple Read throughput 12MB/s -> 25 or 33 MB/s
+		fuse.MaxReadahead(128 * 1024), // kernel uses at max 128kB = 131072B
+		// enabling WritebackCache doubles write speed to buffer 12MB/s -> 24MB/s
+		fuse.WritebackCache(), // writes will happen in mach large blocks 128kB instead of 8kB
 	}
 
 	if opts.ReadOnly {
