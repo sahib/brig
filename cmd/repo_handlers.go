@@ -346,6 +346,8 @@ func switchToSyslog() {
 		UseColors: false,
 	})
 
+	// TODO: we should also forward panics (os.Stderr) to syslog.
+	// They don't come from the log obviously though.
 	log.SetOutput(
 		io.MultiWriter(
 			formatter.NewSyslogWrapper(wSyslog),
@@ -1177,6 +1179,13 @@ func handleRepoUnpack(ctx *cli.Context) error {
 
 func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
+
+	if !ctx.Bool("force") {
+		if _, err := ctl.Stat(path); err != nil {
+			return fmt.Errorf("no file or directory at »%s« (use --force to create anyways)", path)
+		}
+	}
+
 	hint := client.Hint{
 		Path:            path,
 		EncryptionAlgo:  ctx.String("encryption"),
@@ -1190,6 +1199,10 @@ func handleRepoHintsList(ctx *cli.Context, ctl *client.Client) error {
 	hints, err := ctl.HintList()
 	if err != nil {
 		return err
+	}
+
+	if len(ctx.Args()) != 0 {
+		return fmt.Errorf("extra arguments passed")
 	}
 
 	tabW := tabwriter.NewWriter(

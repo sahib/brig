@@ -1502,6 +1502,10 @@ EXAMPLES:
 				Usage: "What encryption algorithm to use for this hint",
 				Value: "aes256gcm",
 			},
+			cli.BoolFlag{
+				Name:  "force,f",
+				Usage: "Also create hint if there is no such file or directory",
+			},
 		},
 	},
 	"hints.list": {

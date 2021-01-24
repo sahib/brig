@@ -162,6 +162,14 @@ var (
 	}
 )
 
+func prefixSlash(path string) string {
+	if len(path) > 0 && path[0] != '/' {
+		path = "/" + path
+	}
+
+	return path
+}
+
 type HintManager struct {
 	mu   sync.Mutex
 	root *trie.Node
@@ -201,7 +209,7 @@ func NewManager(yamlReader io.Reader) (*HintManager, error) {
 		}
 
 		// Fill up a trie with each hint:
-		root.InsertWithData(hintPath, hint)
+		root.InsertWithData(prefixSlash(hintPath), hint)
 	}
 
 	return &HintManager{
@@ -215,6 +223,7 @@ func (hm *HintManager) Lookup(path string) Hint {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
 
+	path = prefixSlash(path)
 	node := hm.root.LookupDeepest(path)
 	if node == nil || node.Data == nil {
 		// This can happen only if the root node
@@ -229,6 +238,7 @@ func (hm *HintManager) Set(path string, hint Hint) error {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
 
+	path = prefixSlash(path)
 	if !hint.IsValid() {
 		return ErrInvalidHint
 	}
@@ -241,6 +251,7 @@ func (hm *HintManager) Remove(path string) error {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
 
+	path = prefixSlash(path)
 	nd := hm.root.Lookup(path)
 	if nd == nil || nd.Data == nil {
 		return ErrNoSuchHint
@@ -266,7 +277,8 @@ func (hm *HintManager) list() map[string]Hint {
 			return true
 		}
 
-		hints[node.Path()] = node.Data.(Hint)
+		path := prefixSlash(node.Path())
+		hints[path] = node.Data.(Hint)
 		return true
 	})
 
