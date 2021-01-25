@@ -575,7 +575,7 @@ type Hint struct {
 	EncryptionAlgo string
 }
 
-func (ctl *Client) HintSet(path string, hint Hint) error {
+func (ctl *Client) HintSet(path string, compressionAlgo, encryptionAlgo *string) error {
 	call := ctl.api.HintSet(ctl.ctx, func(p capnp.Repo_hintSet_Params) error {
 		capHint, err := capnp.NewHint(p.Segment())
 		if err != nil {
@@ -586,12 +586,16 @@ func (ctl *Client) HintSet(path string, hint Hint) error {
 			return err
 		}
 
-		if err := capHint.SetCompressionAlgo(string(hint.CompressionAlgo)); err != nil {
-			return err
+		if compressionAlgo != nil {
+			if err := capHint.SetCompressionAlgo(*compressionAlgo); err != nil {
+				return err
+			}
 		}
 
-		if err := capHint.SetEncryptionAlgo(string(hint.EncryptionAlgo)); err != nil {
-			return err
+		if encryptionAlgo != nil {
+			if err := capHint.SetEncryptionAlgo(*encryptionAlgo); err != nil {
+				return err
+			}
 		}
 
 		return p.SetHint(capHint)

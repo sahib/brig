@@ -1177,6 +1177,15 @@ func handleRepoUnpack(ctx *cli.Context) error {
 	)
 }
 
+func optionalStringParamAsPtr(ctx *cli.Context, name string) *string {
+	if !ctx.IsSet(name) {
+		return nil
+	}
+
+	v := ctx.String(name)
+	return &v
+}
+
 func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
 	path := ctx.Args().First()
 
@@ -1186,13 +1195,11 @@ func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	hint := client.Hint{
-		Path:            path,
-		EncryptionAlgo:  ctx.String("encryption"),
-		CompressionAlgo: ctx.String("compression"),
-	}
-
-	return ctl.HintSet(path, hint)
+	return ctl.HintSet(
+		path,
+		optionalStringParamAsPtr(ctx, "compression"),
+		optionalStringParamAsPtr(ctx, "encryption"),
+	)
 }
 
 func handleRepoHintsList(ctx *cli.Context, ctl *client.Client) error {

@@ -3,7 +3,6 @@ package trie
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -34,7 +33,11 @@ type Node struct {
 // SplitPath splits the path according to os.PathSeparator,
 // but omits a leading empty name on /unix/paths
 func SplitPath(path string) []string {
-	names := strings.Split(path, string(os.PathSeparator))
+	if strings.HasSuffix(path, "/") {
+		path = strings.TrimSuffix(path, "/")
+	}
+
+	names := strings.Split(path, string("/"))
 	if len(names) > 0 && names[0] == "" {
 		return names[1:]
 	}
@@ -58,6 +61,7 @@ func (n *Node) Root() *Node {
 	if n != nil && n.Parent != nil {
 		return n.Parent.Root()
 	}
+
 	return n
 }
 
@@ -70,7 +74,7 @@ func (n *Node) Insert(path string) *Node {
 // in the Node.Data field. If the node already exists, data will
 // be set anyways.
 func (n *Node) InsertWithData(path string, data interface{}) *Node {
-	curr := n
+	var curr *Node = n
 
 	// Empty node, create new one implicitly:
 	if curr == nil {

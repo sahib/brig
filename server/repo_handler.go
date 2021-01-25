@@ -469,25 +469,32 @@ func (rh *repoHandler) HintSet(call capnp.Repo_hintSet) error {
 		return err
 	}
 
-	compressionAlgo, err := capHint.CompressionAlgo()
-	if err != nil {
-		return err
-	}
-
-	encryptionAlgo, err := capHint.EncryptionAlgo()
-	if err != nil {
-		return err
-	}
-
 	path, err := capHint.Path()
 	if err != nil {
 		return err
 	}
 
-	if err := rh.base.repo.Hints.Set(path, hints.Hint{
-		CompressionAlgo: hints.CompressionHint(compressionAlgo),
-		EncryptionAlgo:  hints.EncryptionHint(encryptionAlgo),
-	}); err != nil {
+	newHint := rh.base.repo.Hints.Lookup(path)
+
+	if capHint.HasCompressionAlgo() {
+		compressionAlgo, err := capHint.CompressionAlgo()
+		if err != nil {
+			return err
+		}
+
+		newHint.CompressionAlgo = hints.CompressionHint(compressionAlgo)
+	}
+
+	if capHint.HasEncryptionAlgo() {
+		encryptionAlgo, err := capHint.EncryptionAlgo()
+		if err != nil {
+			return err
+		}
+
+		newHint.EncryptionAlgo = hints.EncryptionHint(encryptionAlgo)
+	}
+
+	if err := rh.base.repo.Hints.Set(path, newHint); err != nil {
 		return err
 	}
 
