@@ -89,7 +89,7 @@ func handleDebugEncodeStream(ctx *cli.Context) error {
 		return fmt.Errorf("invalid encryption or compression")
 	}
 
-	r, err := mio.NewInStream(os.Stdin, "", key, hint)
+	r, _, err := mio.NewInStream(os.Stdin, "", key, hint)
 	if err != nil {
 		return err
 	}

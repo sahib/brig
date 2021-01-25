@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 var (
@@ -95,7 +94,6 @@ func readHeader(bheader []byte) (*header, error) {
 	}
 
 	if !bytes.Equal(bheader[:len(MagicNumber)], MagicNumber) {
-		fmt.Println("GOT", bheader[:len(MagicNumber)])
 		return nil, ErrBadMagicNumber
 	}
 

@@ -61,7 +61,7 @@ var xattrMap = map[string]xattrGetter{
 
 func listXattr() []byte {
 	resp := []byte{}
-	for k, _ := range xattrMap {
+	for k := range xattrMap {
 		resp = append(resp, k...)
 		resp = append(resp, '\x00')
 	}

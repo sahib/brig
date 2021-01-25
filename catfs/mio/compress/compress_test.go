@@ -16,7 +16,7 @@ import (
 var (
 	TestOffsets      = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
 	TestSizes        = []int64{0, 1, 4096, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
-	CompressionAlgos = []AlgorithmType{AlgoLZ4}
+	CompressionAlgos = []AlgorithmType{AlgoLZ4, AlgoSnappy}
 )
 
 func openDest(t *testing.T, dest string) *os.File {
@@ -229,10 +229,10 @@ func testSeek(t *testing.T, size, offset int64, algo AlgorithmType, useReadFrom,
 }
 
 func TestReadItAllTwice(t *testing.T) {
-	for algo := range []AlgorithmType{AlgoNone, AlgoLZ4, AlgoSnappy} {
+	for _, algo := range []AlgorithmType{AlgoLZ4, AlgoSnappy} {
 		t.Run(fmt.Sprintf("%v", algo), func(t *testing.T) {
 			data := testutil.CreateDummyBuf(2 * 4096)
-			zipData, err := Pack(data, AlgoNone)
+			zipData, err := Pack(data, algo)
 			require.Nil(t, err)
 
 			r := bytes.NewReader(zipData)
@@ -256,7 +256,7 @@ func TestReadItAllTwice(t *testing.T) {
 // fuse will use Seek() to jump to each position.
 // when reading a complete file it will call seek before each read.
 func TestReadFuseLike(t *testing.T) {
-	algo := AlgorithmType(AlgoNone)
+	algo := AlgorithmType(AlgoSnappy)
 
 	for _, size := range TestSizes {
 		t.Run(fmt.Sprintf("%v", size), func(t *testing.T) {

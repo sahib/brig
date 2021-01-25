@@ -82,7 +82,7 @@ func makeDummyCatFS(dbPath string) (catfsFuseInfo, error) {
 		return catfsFuseInfo{}, err
 	}
 
-	cfs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg.Section("fs"))
+	cfs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg.Section("fs"), nil)
 	if err != nil {
 		log.Fatalf("Failed to create catfs filesystem: %v", err)
 		return catfsFuseInfo{}, err
@@ -368,7 +368,7 @@ func TestFileXattr(t *testing.T) {
 			require.Truef(t, ok, "Invalid extended attribute '%s'", attr)
 		}
 		// every valid attribute should be in received Attrs list
-		for attr, _ := range xattrMap {
+		for attr := range xattrMap {
 			require.Containsf(t, receivedAttrs, []uint8(attr), "Received attributes are missing '%s'", attr)
 		}
 		// now let's check some attributes values

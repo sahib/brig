@@ -18,6 +18,7 @@ import (
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/repo/hints"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/sahib/config"
@@ -161,7 +162,12 @@ func TestCat(t *testing.T) {
 		raw := []byte{1, 2, 3}
 		rinRaw := bytes.NewBuffer(raw)
 
-		rin, err := mio.NewInStream(rinRaw, TestKey, compress.AlgoSnappy)
+		rin, isRaw, err := mio.NewInStream(
+			rinRaw,
+			"",
+			TestKey,
+			hints.Default(),
+		)
 		require.Nil(t, err)
 
 		backendHash, err := fs.bk.Add(rin)
@@ -179,7 +185,7 @@ func TestCat(t *testing.T) {
 			int64(len(raw)),
 			TestKey,
 			time.Now(),
-			false,
+			isRaw,
 		)
 		require.Nil(t, err)
 

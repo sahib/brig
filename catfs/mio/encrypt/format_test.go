@@ -49,7 +49,7 @@ func encryptFile(key []byte, from, to string) (n int64, outErr error) {
 		}
 	}()
 
-	return Encrypt(key, fdFrom, fdTo)
+	return Encrypt(key, fdFrom, fdTo, FlagEncryptAES256GCM)
 }
 
 func decryptFile(key []byte, from, to string) (n int64, outErr error) {
@@ -197,7 +197,7 @@ func testSeek(t *testing.T, N int64, readFrom, writeTo bool) {
 		t.Logf("Testing seek for size %d", N)
 	}
 
-	enc, err := NewWriter(shared, TestKey)
+	enc, err := NewWriter(shared, TestKey, FlagEncryptAES256GCM)
 	if err != nil {
 		t.Errorf("Creating an encrypted writer failed: %v", err)
 		return
@@ -341,7 +341,7 @@ func TestEmptyFile(t *testing.T) {
 	src := bytes.NewReader(srcBuf)
 	dst := bytes.NewBuffer(dstBuf)
 
-	enc, err := NewWriter(tmpBuf, TestKey)
+	enc, err := NewWriter(tmpBuf, TestKey, FlagEncryptAES256GCM)
 	if err != nil {
 		t.Errorf("TestEmpyFile: creating writer failed: %v", err)
 		return
@@ -387,13 +387,23 @@ func TestEncryptedTheSame(t *testing.T) {
 	encOne := &bytes.Buffer{}
 	encTwo := &bytes.Buffer{}
 
-	n1, err := Encrypt(TestKey, bytes.NewReader(sourceData), encOne)
+	n1, err := Encrypt(
+		TestKey,
+		bytes.NewReader(sourceData),
+		encOne,
+		FlagEncryptAES256GCM,
+	)
 	if err != nil {
 		t.Errorf("TestEncryptedTheSame: Encrypting first failed: %v", err)
 		return
 	}
 
-	n2, err := Encrypt(TestKey, bytes.NewReader(sourceData), encTwo)
+	n2, err := Encrypt(
+		TestKey,
+		bytes.NewReader(sourceData),
+		encTwo,
+		FlagEncryptAES256GCM,
+	)
 	if err != nil {
 		t.Errorf("TestEncryptedTheSame: Encrypting second failed: %v", err)
 		return
@@ -430,13 +440,28 @@ func TestEncryptedByteSwaps(t *testing.T) {
 	encBuf3 := &bytes.Buffer{}
 
 	var err error
-	_, err = Encrypt(TestKey, bytes.NewReader(data1), encBuf1)
+	_, err = Encrypt(
+		TestKey,
+		bytes.NewReader(data1),
+		encBuf1,
+		FlagEncryptChaCha20,
+	)
 	require.Nil(t, err)
 
-	_, err = Encrypt(TestKey, bytes.NewReader(data2), encBuf2)
+	_, err = Encrypt(
+		TestKey,
+		bytes.NewReader(data2),
+		encBuf2,
+		FlagEncryptChaCha20,
+	)
 	require.Nil(t, err)
 
-	_, err = Encrypt(TestKey, bytes.NewReader(data3), encBuf3)
+	_, err = Encrypt(
+		TestKey,
+		bytes.NewReader(data3),
+		encBuf3,
+		FlagEncryptChaCha20,
+	)
 	require.Nil(t, err)
 
 	encData1 := encBuf1.Bytes()
