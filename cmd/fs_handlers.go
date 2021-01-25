@@ -27,11 +27,6 @@ import (
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	localPath := ctx.Args().Get(0)
-	if ctx.Bool("recode") {
-		// local path is actually a repo path here.
-		return ctl.RecodeStream(localPath)
-	}
-
 	readFromStdin := ctx.Bool("stdin")
 	repoPath := filepath.Base(localPath)
 
@@ -62,7 +57,12 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if !info.Mode().IsRegular() {
-		fmt.Printf("Not adding non-regular file: %s\n", absLocalPath)
+		fmt.Printf("not adding non-regular file: %s\n", absLocalPath)
+	}
+
+	if ctx.Bool("recode") {
+		// local path is actually a repo path here.
+		return ctl.RecodeStream(repoPath)
 	}
 
 	return ctl.Stage(absLocalPath, repoPath)
@@ -70,8 +70,6 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 
 func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
 	// First create all directories:
-	// (tbh: I'm not exactly sure what "lexical" order means in the docs of Walk,
-	//  i.e. breadth-first or depth first, so better be safe)
 	type stagePair struct {
 		local, repo string
 	}
@@ -142,8 +140,14 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 					return
 				}
 
-				if err := ctl.Stage(pair.local, pair.repo); err != nil {
-					fmt.Printf("failed to stage %s: %v\n", pair.local, err)
+				if ctx.Bool("recode") {
+					if err := ctl.RecodeStream(pair.repo); err != nil {
+						fmt.Printf("failed to recode %s: %v\n", pair.repo, err)
+					}
+				} else {
+					if err := ctl.Stage(pair.local, pair.repo); err != nil {
+						fmt.Printf("failed to stage %s: %v\n", pair.local, err)
+					}
 				}
 
 				// Notify the bar. The op time is used for the ETA.
