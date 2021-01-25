@@ -177,7 +177,7 @@ func NewWriter(w io.Writer, key []byte, flags Flags) (*Writer, error) {
 	return NewWriterWithBlockSize(w, key, flags, defaultMaxBlockSize)
 }
 
-// NewWriterWithFlagsAndBlockSize returns a new Writer which encrypts data with a
+// NewWriterWithBlockSize returns a new Writer which encrypts data with a
 // certain key. If `compressionFlag` is true, the compression
 // flag in the file header will also be true. Otherwise no compression is done.
 func NewWriterWithBlockSize(w io.Writer, key []byte, flags Flags, maxBlockSize int64) (*Writer, error) {

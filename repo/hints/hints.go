@@ -15,17 +15,29 @@ import (
 )
 
 var (
-	ErrNoSuchHint  = errors.New("no such hint at this path")
+	// ErrNoSuchHint is returned by Remove when there is no hint at this path.
+	ErrNoSuchHint = errors.New("no such hint at this path")
+
+	// ErrInvalidHint is returned upon setting an invalid hint.
 	ErrInvalidHint = errors.New("invalid hint")
 )
 
+// CompressionHint is an enumeration of possible compression types.
 type CompressionHint string
 
 const (
-	CompressionNone   = "none"
-	CompressionLZ4    = "lz4"
+	// CompressionNone leaves the stream as-is.
+	CompressionNone = "none"
+
+	// CompressionLZ4 compresses the stream in lz4 mode.
+	CompressionLZ4 = "lz4"
+
+	// CompressionSnappy  compresses the stream in snappy mode.
 	CompressionSnappy = "snappy"
-	CompressionGuess  = "guess"
+
+	// CompressionGuess tries to guess a suitable type by looking at
+	// different aspects of the stream.
+	CompressionGuess = "guess"
 )
 
 var (
@@ -37,15 +49,20 @@ var (
 	}
 )
 
+// IsValid returns true if `ch` is a valid compression hint.
 func (ch CompressionHint) IsValid() bool {
 	_, ok := compressionHintMap[ch]
 	return ok
 }
 
+// ToCompressAlgorithmType converts the hint to the enum used in compress
 func (ch CompressionHint) ToCompressAlgorithmType() compress.AlgorithmType {
 	return compressionHintMap[ch]
 }
 
+// CompressAlgorithmTypeToCompressionHint is a very aptly named function
+// that converts `algo` to a hint. This is not a perfect conversion, since
+// compress package doesn't know any "none" or "guess" algorithm.
 func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) CompressionHint {
 	switch algo {
 	case compress.AlgoUnknown:
@@ -68,12 +85,18 @@ func validCompressionHints() []string {
 	return s
 }
 
+// EncryptionHint is an enum of valid encryption types
 type EncryptionHint string
 
 const (
-	EncryptionNone      = "none"
+	// EncryptionNone disables all encryption on the stream.
+	EncryptionNone = "none"
+
+	// EncryptionAES256GCM uses AES256 in GCM mode.
 	EncryptionAES256GCM = "aes256gcm"
-	EncryptionChaCha20  = "chacha20"
+
+	// EncryptionChaCha20 uses ChaCha20 with Poly1305 as MAC.
+	EncryptionChaCha20 = "chacha20"
 )
 
 var (
@@ -84,11 +107,13 @@ var (
 	}
 )
 
+// IsValid checks if `eh` is a valid encryption type
 func (eh EncryptionHint) IsValid() bool {
 	_, ok := encryptionHintMap[eh]
 	return ok
 }
 
+// ToEncryptFlags returns flags suitable for passing to the encrypt.NewWriter.
 func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
 	return encryptionHintMap[eh]
 }
@@ -114,16 +139,21 @@ type Hint struct {
 
 // Default returns the default stream settings
 func Default() Hint {
+	// TODO: Make an educated guess here and use
+	// AES only when CPU supports AES-NI
 	return Hint{
 		EncryptionAlgo:  EncryptionAES256GCM,
 		CompressionAlgo: CompressionGuess,
 	}
 }
 
+// IsValid checks if all fields of the hint are valid.
 func (h Hint) IsValid() bool {
 	return h.EncryptionAlgo.IsValid() && h.CompressionAlgo.IsValid()
 }
 
+// EncryptFlags returns combined flags for encrypt.NewWriter.
+// If valid compression is set, then FlagCompressedInside is OR'd in.
 func (h Hint) EncryptFlags() encrypt.Flags {
 	flags := h.EncryptionAlgo.ToEncryptFlags()
 	if h.CompressionAlgo != CompressionNone {
@@ -133,6 +163,7 @@ func (h Hint) EncryptFlags() encrypt.Flags {
 	return flags
 }
 
+// IsRaw checks if the stream can be read directly from IPFS.
 func (h Hint) IsRaw() bool {
 	return h.EncryptionAlgo == EncryptionNone && h.CompressionAlgo == CompressionNone
 }
@@ -192,11 +223,17 @@ func prefixSlash(path string) string {
 	return path
 }
 
+// HintManager is a helper to store hints for certain paths.
 type HintManager struct {
 	mu   sync.Mutex
 	root *trie.Node
 }
 
+// NewManager reads a YAML file from `yamlReader`.
+// If the reader is nil, then an empty file is assumed.
+// There is always a root hint with the settings returned by Default()
+//
+// All methods are safe to call from several go routines.
 func NewManager(yamlReader io.Reader) (*HintManager, error) {
 	if yamlReader == nil {
 		// If no hint manager was loaded, then let's load one
@@ -240,7 +277,10 @@ func NewManager(yamlReader io.Reader) (*HintManager, error) {
 }
 
 // Lookup will give a hint for path. If there is no such hint,
-// we return the default.
+// we return the default. If we don't have a hint for `path` directly
+// the hint of the nearest parent is returned. If that also did not
+// work (for whatever reason) then the default is returned.
+// The returned hint is valid in any case.
 func (hm *HintManager) Lookup(path string) Hint {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
@@ -256,6 +296,7 @@ func (hm *HintManager) Lookup(path string) Hint {
 	return node.Data.(Hint)
 }
 
+// Set remembers a `hint` for `path`.
 func (hm *HintManager) Set(path string, hint Hint) error {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
@@ -269,6 +310,7 @@ func (hm *HintManager) Set(path string, hint Hint) error {
 	return nil
 }
 
+// Remove forgets a hint at `path`.
 func (hm *HintManager) Remove(path string) error {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
@@ -283,6 +325,7 @@ func (hm *HintManager) Remove(path string) error {
 	return nil
 }
 
+// List returns a map of all paths with their corresponding hints.
 func (hm *HintManager) List() map[string]Hint {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
@@ -307,6 +350,7 @@ func (hm *HintManager) list() map[string]Hint {
 	return hints
 }
 
+// Save writes a YAML representation of the hints to `w`.
 func (hm *HintManager) Save(w io.Writer) error {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()

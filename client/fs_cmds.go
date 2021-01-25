@@ -481,6 +481,8 @@ func (cl *Client) IsCached(path string) (bool, error) {
 	return result.IsCached(), nil
 }
 
+// RecodeStream takes the stream at `path` and, if it is a file, re-encodes
+// the stream with the current settings retrieved from the hint system.
 func (cl *Client) RecodeStream(path string) error {
 	call := cl.api.RecodeStream(cl.ctx, func(p capnp.FS_recodeStream_Params) error {
 		return p.SetPath(path)

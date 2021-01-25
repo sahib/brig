@@ -228,7 +228,7 @@ func (l *Layer) Write(buf []byte) (int, error) {
 	return len(buf), nil
 }
 
-// Writes data from `buf` at offset `off` counted from the start (0 offset).
+// WriteAt writes data from `buf` at offset `off` counted from the start (0 offset).
 // Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
 func (l *Layer) WriteAt(buf []byte, off int64) (n int, err error) {
 	// Copy the buffer, since we cannot rely on it being valid forever.

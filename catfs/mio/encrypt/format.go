@@ -157,15 +157,26 @@ type HeaderInfo struct {
 	// The last block may be smaller.
 	BlockLen uint32
 
+	// Flags control the encryption algorithm and other things.
 	Flags Flags
 }
 
 var (
-	ErrSmallHeader        = errors.New("header is too small")
-	ErrBadMagic           = errors.New("magic number missing")
-	ErrBadFlags           = errors.New("inconsistent header flags")
-	ErrBadHeaderMAC       = errors.New("header mac differs from expected")
-	ErrIsCompressionMagic = errors.New("stream starts with compression magic number")
+	// ErrSmallHeader is returned when the header is too small to parse.
+	// Usually happens when trying to decrypt a raw stream.
+	ErrSmallHeader = errors.New("header is too small")
+
+	// ErrBadMagic is returned when the stream does not start with the magic number.
+	// Usually happens when trying to decrypt a raw or compressed stream.
+	ErrBadMagic = errors.New("magic number missing")
+
+	// ErrBadFlags means that you passed an invalid flags combination
+	// or the stream was modified to have wrong flags.
+	ErrBadFlags = errors.New("inconsistent header flags")
+
+	// ErrBadHeaderMAC means that the header is not what the writer originally
+	// put into the stream. Usually means somebody or something changed it.
+	ErrBadHeaderMAC = errors.New("header mac differs from expected")
 )
 
 func cipherTypeBitFromFlags(flags Flags) (Flags, error) {

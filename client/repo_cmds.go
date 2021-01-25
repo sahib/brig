@@ -563,6 +563,7 @@ func (ctl *Client) DebugProfilePort() (int, error) {
 	return int(result.Port()), nil
 }
 
+// Hint is a container for configuring streams.
 type Hint struct {
 	// Path is the path the hint applies to (recursively)
 	Path string
@@ -575,6 +576,7 @@ type Hint struct {
 	EncryptionAlgo string
 }
 
+// HintSet remembers the given settings at `path` (and below)
 func (ctl *Client) HintSet(path string, compressionAlgo, encryptionAlgo *string) error {
 	call := ctl.api.HintSet(ctl.ctx, func(p capnp.Repo_hintSet_Params) error {
 		capHint, err := capnp.NewHint(p.Segment())
@@ -605,6 +607,7 @@ func (ctl *Client) HintSet(path string, compressionAlgo, encryptionAlgo *string)
 	return err
 }
 
+// HintRemove removes the hint at `path`.
 func (ctl *Client) HintRemove(path string) error {
 	call := ctl.api.HintRemove(ctl.ctx, func(p capnp.Repo_hintRemove_Params) error {
 		return p.SetPath(path)
@@ -614,6 +617,7 @@ func (ctl *Client) HintRemove(path string) error {
 	return err
 }
 
+// HintList lists all hints that are currently set.
 func (ctl *Client) HintList() ([]Hint, error) {
 	call := ctl.api.HintList(ctl.ctx, func(p capnp.Repo_hintList_Params) error {
 		return nil

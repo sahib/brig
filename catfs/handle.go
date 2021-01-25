@@ -150,7 +150,7 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	return n, nil
 }
 
-// Writes data from `buf` at offset `off` counted from the start (0 offset).
+// WriteAt writes data from `buf` at offset `off` counted from the start (0 offset).
 // Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
 func (hdl *Handle) WriteAt(buf []byte, off int64) (n int, err error) {
 	hdl.lock.Lock()

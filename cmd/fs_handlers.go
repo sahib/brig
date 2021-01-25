@@ -57,7 +57,7 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	}
 
 	if !info.Mode().IsRegular() {
-		fmt.Printf("not adding non-regular file: %s\n", absLocalPath)
+		return fmt.Errorf("not adding non-regular file: %s", absLocalPath)
 	}
 
 	if ctx.Bool("recode") {
