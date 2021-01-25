@@ -1447,12 +1447,12 @@ EXAMPLES:
 			cli.StringFlag{
 				Name:  "encryption",
 				Usage: "What encryption type to use",
-				Value: hints.EncryptionAES256GCM,
+				Value: string(hints.EncryptionAES256GCM),
 			},
 			cli.StringFlag{
 				Name:  "compression,c",
 				Usage: "What compression algorithm to use",
-				Value: hints.CompressionGuess,
+				Value: string(hints.CompressionGuess),
 			},
 		},
 	},

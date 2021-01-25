@@ -1,17 +1,22 @@
 package hints
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util/trie"
 	"github.com/sahib/config"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -27,17 +32,17 @@ type CompressionHint string
 
 const (
 	// CompressionNone leaves the stream as-is.
-	CompressionNone = "none"
+	CompressionNone = CompressionHint("none")
 
 	// CompressionLZ4 compresses the stream in lz4 mode.
-	CompressionLZ4 = "lz4"
+	CompressionLZ4 = CompressionHint("lz4")
 
 	// CompressionSnappy  compresses the stream in snappy mode.
-	CompressionSnappy = "snappy"
+	CompressionSnappy = CompressionHint("snappy")
 
 	// CompressionGuess tries to guess a suitable type by looking at
 	// different aspects of the stream.
-	CompressionGuess = "guess"
+	CompressionGuess = CompressionHint("guess")
 )
 
 var (
@@ -90,13 +95,13 @@ type EncryptionHint string
 
 const (
 	// EncryptionNone disables all encryption on the stream.
-	EncryptionNone = "none"
+	EncryptionNone = EncryptionHint("none")
 
 	// EncryptionAES256GCM uses AES256 in GCM mode.
-	EncryptionAES256GCM = "aes256gcm"
+	EncryptionAES256GCM = EncryptionHint("aes256gcm")
 
 	// EncryptionChaCha20 uses ChaCha20 with Poly1305 as MAC.
-	EncryptionChaCha20 = "chacha20"
+	EncryptionChaCha20 = EncryptionHint("chacha20")
 )
 
 var (
@@ -137,12 +142,42 @@ type Hint struct {
 	EncryptionAlgo EncryptionHint
 }
 
+// Small heuristic to decide if we should use ChaCha20
+// or AES for encryption as default.
+var (
+	cpuInfoOnce   sync.Once
+	cpuHasNoAESNI int32
+)
+
+func readProcCPUInfo() {
+	// can be extended with other operating systems later on.
+	switch runtime.GOOS {
+	case "linux":
+		data, err := ioutil.ReadFile("/proc/cpuinfo")
+		if err != nil {
+			log.WithError(err).Warnf("failed to read cpuinfo")
+			return
+		}
+
+		// Check if we don't have AES-NI. Most modern CPUs do,
+		// but on older ones ChaCha20 is quite fast.
+		if !bytes.Contains(data, []byte(" aes ")) {
+			atomic.StoreInt32(&cpuHasNoAESNI, 1)
+		}
+	}
+}
+
 // Default returns the default stream settings
 func Default() Hint {
-	// TODO: Make an educated guess here and use
-	// AES only when CPU supports AES-NI
+	cpuInfoOnce.Do(readProcCPUInfo)
+
+	encHint := EncryptionAES256GCM
+	if atomic.LoadInt32(&cpuHasNoAESNI) > 0 {
+		encHint = EncryptionChaCha20
+	}
+
 	return Hint{
-		EncryptionAlgo:  EncryptionAES256GCM,
+		EncryptionAlgo:  encHint,
 		CompressionAlgo: CompressionGuess,
 	}
 }
