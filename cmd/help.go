@@ -859,6 +859,7 @@ EXAMPLES:
    Inode: Internal inode. Also shown as inode in FUSE.
    IsPinned: »yes« if the file is pinned, »no« else.
    IsExplicit: »yes« if the file is pinned explicitly, »no« elsewise.
+   IsRaw: »no« if the file was encoded by brig (using encryption or compression).
    ModTime: Timestamp of last modification.
    ContentHash: Content hash of the file before encryption.
    BackendHash: Hash of the node in ipfs (ipfs cat <this hash>)

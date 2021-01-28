@@ -35,12 +35,15 @@ const (
 	abiVersion = 1
 )
 
-// HintFetcher is the API for looking up hints.
-type HintFetcher interface {
+// HintManager is the API for looking up hints.
+type HintManager interface {
 	// Lookup should return stream hints for the path.
 	// Hints are recursive, so we iterate until the root path
 	// to find the correct hint.
 	Lookup(path string) hints.Hint
+
+	// Set should remember `hint` for `path` and below.
+	Set(path string, hint hints.Hint) error
 }
 
 // FS (short for Filesystem) is the central API entry for everything related to
@@ -86,7 +89,7 @@ type FS struct {
 	readOnly bool
 
 	// interface to load stream hints
-	hintFetcher HintFetcher
+	hintManager HintManager
 }
 
 // ErrReadOnly is returned when a file system was created in read only mode
@@ -339,7 +342,7 @@ func NewFilesystem(
 	owner string,
 	readOnly bool,
 	fsCfg *config.Config,
-	hintFetcher HintFetcher,
+	hintManager HintManager,
 ) (*FS, error) {
 	kv, err := db.NewBadgerDatabase(dbPath)
 	if err != nil {
@@ -375,7 +378,7 @@ func NewFilesystem(
 		autoCommitControl: make(chan bool, 1),
 		repinControl:      make(chan string, 1),
 		pinner:            pinCache,
-		hintFetcher:       hintFetcher,
+		hintManager:       hintManager,
 	}
 
 	// Start the garbage collection background task.
@@ -1002,8 +1005,8 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	sizeReader := io.TeeReader(hashReader, sizeAcc)
 
 	hint := hints.Default()
-	if fs.hintFetcher != nil {
-		hint = fs.hintFetcher.Lookup(path)
+	if fs.hintManager != nil {
+		hint = fs.hintManager.Lookup(path)
 	}
 
 	stream, isRaw, err := mio.NewInStream(sizeReader, path, key, hint)
@@ -2111,4 +2114,9 @@ func (fs *FS) IsCached(path string) (bool, error) {
 	}
 
 	return cachedCount == totalCount, nil
+}
+
+func (fs *FS) Hints() HintManager {
+	// TODO: return a default Hint Manager that returns default in none set.
+	return fs.hintManager
 }
