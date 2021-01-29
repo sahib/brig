@@ -80,3 +80,82 @@ the available commands:
 Please refer to ``brig help <command>`` for more information about those. They
 work in most cases like their pendant. Also note that there is no ``brig cd``
 currently. All paths must be absolute.
+
+Hints - Configuring encryption & compression
+--------------------------------------------
+
+Often times you might want not encrypt all files. A typical use case would be
+to have a ``/public`` folder where you put in files to share with your friends.
+Probably there are some freely available files in there, you got from some
+corners of the internet (for example your excellent meme collection). Those
+files don't need encryption and probably not even compression. If you want to
+exclude the ``/public`` folder from both you can give ``brig`` a hint:
+
+.. code-block:: bash
+
+    # let's assume /public exists already:
+    $ brig hints set /public --compression none --encryption none
+    $ brig hints
+    PATH     ENCRYPTION  COMPRESSION
+    /        aes256gcm   guess
+    /public  none        none
+
+
+As you might notice, there is already one hint set by default for the root directory.
+If you want to change the global defaults, you can simply modify this one. Below you
+see the hint you just created. This however does not change any existing files. It just
+tells ``brig`` »next time you modify those files, please use those algorithms«. If you
+want to make sure the files are changed to use the algorithm you set, then you can
+use the ``stage --recode`` command:
+
+.. code-block:: bash
+
+    $ brig stage --recode /public
+
+
+If you do this, you can observe a small change when looking at the ``IsRaw``
+attribute of the file's info:
+
+.. code-block:: bash
+
+    # This was 'true' before the recode.
+    $ brig info --format '{{ .IsRaw }}' /public/cat-meme.png
+    false
+
+The ``IsRaw`` attribute tells you if you could download this file by its hash
+from an IPFS gateway. If its true, ``brig`` does not touch it at all. This is
+an useful attribute you want to share a file with your non-tech friends who
+prefer to click on a regular HTTP URL: You can just point them a [IPFS
+gateway](https://docs.ipfs.io/concepts/ipfs-gateway).
+
+Available encryption algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. todo:: Provide relative throughput numbers compare to none.
+
++----------------+----------------------------------------------------------------------------+
+| NAME           |   DESCRIPTION                                                              |
++================+============================================================================+
+| ``aes256-gcm`` | The default. AES with 256 bit key in GCM cipher mode. Fast on modern CPUs. |
++----------------+----------------------------------------------------------------------------+
+| ``chacha20``   | Streaming cipher with Poly1305 MAC. Good for old CPUs without AES-NI.      |
++----------------+----------------------------------------------------------------------------+
+| ``none``       | Disables encryption. Fast, but only good for public files.                 |
++----------------+----------------------------------------------------------------------------+
+
+Available compression algorithms
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. todo:: Provide relative throughput numbers compare to none.
+
++----------------+----------------------------------------------------------------------------+
+| NAME           |   DESCRIPTION                                                              |
++================+============================================================================+
+| ``snappy``     | High throughput, relative low compression rate.                            |
++----------------+----------------------------------------------------------------------------+
+| ``lz4``        | High throughput, slightly higher compression rate than snappy.             |
++----------------+----------------------------------------------------------------------------+
+| ``guess``      | Choose best algorithm based on file ending, size and mime type.            |
++----------------+----------------------------------------------------------------------------+
+| ``none``       | Disables compression.                                                      |
++----------------+----------------------------------------------------------------------------+

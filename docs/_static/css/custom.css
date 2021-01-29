@@ -55,3 +55,7 @@ pre {
 a.current {
     background-color: #00000011;
 }
+
+tbody {
+    text-align: left !important;
+}

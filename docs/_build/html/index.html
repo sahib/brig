@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>brig - decentralized &amp; secure synchronization &#8212; brig v0.4.1-beta
- documentation</title>
-    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>brig - decentralized &amp; secure synchronization &#8212; brig v0.5.3 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
-    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/js/jquery-1.11.0.min.js"></script>
+    <script src="_static/js/jquery-fix.js"></script>
+    <script src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script src="_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Installation" href="installation.html" />
@@ -39,8 +38,7 @@
         </button>
         <a class="navbar-brand" href="#">
           brig</a>
-        <span class="navbar-text navbar-version pull-left"><b>v0.4.1-beta
-</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>v0.5.3</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -83,7 +81,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#passwords">Passwords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#choosing-and-finding-names">Choosing and finding names</a></li>
 </ul>
 </li>
@@ -92,9 +89,16 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#locking-the-repository">Locking the repository.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#hints-configuring-encryption-compression">Hints - Configuring encryption &amp; compression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-encryption-algorithms">Available encryption algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-compression-algorithms">Available compression algorithms</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#remote-access">Remote access</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#making-mounts-permanent">Making mounts permanent</a></li>
 </ul>
 </li>
@@ -238,16 +242,16 @@ control. It is based on IPFS, written in Go and will feel familiar to
 a peer to peer alternative to <em>Dropbox.</em></p>
 <p><strong>Key feature highlights:</strong></p>
 <ul class="simple">
-<li>Encryption of data during storage and transport, plus optional compression on the fly.</li>
-<li>Simplified <code class="docutils literal notranslate"><span class="pre">git</span></code> version control only limited by your storage space.</li>
-<li>Synchronization algorithm that can handle moved files and empty directories and files.</li>
-<li>Your data does not need to be stored on the device you are currently using.</li>
-<li>FUSE filesystem that feels like a normal sync folder.</li>
-<li>No central server at all. Still, central architectures can be build with <code class="docutils literal notranslate"><span class="pre">brig</span></code>.</li>
-<li>Gateway and Web based UI to share normal HTTP/S links with other users.</li>
-<li>Auto-updating facility that will sync on any change.</li>
-<li>Completely free software under the terms of the <code class="docutils literal notranslate"><span class="pre">AGPL</span></code>.</li>
-<li>…</li>
+<li><p>Encryption of data during storage and transport, plus optional compression on the fly.</p></li>
+<li><p>Simplified <code class="docutils literal notranslate"><span class="pre">git</span></code> version control only limited by your storage space.</p></li>
+<li><p>Synchronization algorithm that can handle moved files and empty directories and files.</p></li>
+<li><p>Your data does not need to be stored on the device you are currently using.</p></li>
+<li><p>FUSE filesystem that feels like a normal sync folder.</p></li>
+<li><p>No central server at all. Still, central architectures can be build with <code class="docutils literal notranslate"><span class="pre">brig</span></code>.</p></li>
+<li><p>Gateway and Web based UI to share normal HTTP/S links with other users.</p></li>
+<li><p>Auto-updating facility that will sync on any change.</p></li>
+<li><p>Completely free software under the terms of the <code class="docutils literal notranslate"><span class="pre">AGPL</span></code>.</p></li>
+<li><p>…</p></li>
 </ul>
 <p>Please refer to the <a class="reference internal" href="features.html#features-page"><span class="std std-ref">Features</span></a> for more details. If you want a visual
 hint how <code class="docutils literal notranslate"><span class="pre">brig</span></code> looks on the commandline, refer to the <a class="reference internal" href="quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a>.</p>
@@ -266,8 +270,8 @@ least not at the moment.</p>
 <h2>I have questions!<a class="headerlink" href="#i-have-questions" title="Permalink to this headline">¶</a></h2>
 <p>Please ask in one of those places:</p>
 <ul class="simple">
-<li><a class="reference external" href="https://github.com/sahib/brig/issues">GitHub Issue Tracker</a>: All things like bug reports or feature requests.</li>
-<li>The matrix chat room <code class="docutils literal notranslate"><span class="pre">#brig</span></code> on <code class="docutils literal notranslate"><span class="pre">matrix.org</span></code>. Just <a class="reference external" href="https://matrix.org/docs/projects/try-matrix-now.html">pick a client</a> and join the room or click <a class="reference external" href="https://riot.im/app/#/room/#brig:matrix.org">this link</a> directly.</li>
+<li><p><a class="reference external" href="https://github.com/sahib/brig/issues">GitHub Issue Tracker</a>: All things like bug reports or feature requests.</p></li>
+<li><p>The matrix chat room <code class="docutils literal notranslate"><span class="pre">#brig</span></code> on <code class="docutils literal notranslate"><span class="pre">matrix.org</span></code>. Just <a class="reference external" href="https://matrix.org/docs/projects/try-matrix-now.html">pick a client</a> and join the room or click <a class="reference external" href="https://riot.im/app/#/room/#brig:matrix.org">this link</a> directly.</p></li>
 </ul>
 </div>
 <div class="section" id="current-status">
@@ -308,7 +312,6 @@ currently not guarantees that it will work.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#passwords">Passwords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#choosing-and-finding-names">Choosing and finding names</a></li>
 </ul>
 </li>
@@ -317,9 +320,16 @@ currently not guarantees that it will work.</p>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#locking-the-repository">Locking the repository.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#hints-configuring-encryption-compression">Hints - Configuring encryption &amp; compression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-encryption-algorithms">Available encryption algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-compression-algorithms">Available compression algorithms</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#remote-access">Remote access</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#making-mounts-permanent">Making mounts permanent</a></li>
 </ul>
 </li>
@@ -432,8 +442,8 @@ currently not guarantees that it will work.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018, Chris Pahl.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.<br/>
+        &copy; Copyright 2016-2020, Chris Pahl.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
     </p>
   </div>
 </footer>

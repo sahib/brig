@@ -56,6 +56,8 @@ you in the background without you noticing.
    to run a bit smoother. If you do not want those, please add
    ``--no-ipfs-optimization`` to the ``init`` command above.
 
+.. _about_names:
+
 Choosing and finding names
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

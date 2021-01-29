@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Installation &#8212; brig v0.4.1-beta
- documentation</title>
-    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Installation &#8212; brig v0.5.3 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
-    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/js/jquery-1.11.0.min.js"></script>
+    <script src="_static/js/jquery-fix.js"></script>
+    <script src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script src="_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Getting started" href="tutorial/intro.html" />
@@ -40,8 +39,7 @@
         </button>
         <a class="navbar-brand" href="index.html">
           brig</a>
-        <span class="navbar-text navbar-version pull-left"><b>v0.4.1-beta
-</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>v0.5.3</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -84,7 +82,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#passwords">Passwords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#choosing-and-finding-names">Choosing and finding names</a></li>
 </ul>
 </li>
@@ -93,9 +90,16 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#locking-the-repository">Locking the repository.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#hints-configuring-encryption-compression">Hints - Configuring encryption &amp; compression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-encryption-algorithms">Available encryption algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-compression-algorithms">Available compression algorithms</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#remote-access">Remote access</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#making-mounts-permanent">Making mounts permanent</a></li>
 </ul>
 </li>
@@ -244,8 +248,10 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorial/intro.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#locking-the-repository">Locking the repository.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#hints-configuring-encryption-compression">Hints - Configuring encryption &amp; compression</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html">Remotes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a></li>
@@ -276,7 +282,8 @@
 <p>We provide pre-compiled binaries on every release. <code class="docutils literal notranslate"><span class="pre">brig</span></code> comes to your computer
 as a single binary that includes everything you need. See here for the release list:</p>
 <blockquote>
-<div><a class="reference external" href="https://github.com/sahib/brig/releases">https://github.com/sahib/brig/releases</a></div></blockquote>
+<div><p><a class="reference external" href="https://github.com/sahib/brig/releases">https://github.com/sahib/brig/releases</a></p>
+</div></blockquote>
 <p>Just download the binary for you platform, unpack it and put in somewhere in your
 <code class="docutils literal notranslate"><span class="pre">$PATH</span></code> (for example <code class="docutils literal notranslate"><span class="pre">/usr/local/bin</span></code>).</p>
 <p>If you trust us well enough, you can also use this online installer to download
@@ -290,7 +297,7 @@ the latest stable <code class="docutils literal notranslate"><span class="pre">b
 <p>Some distributions can install <code class="docutils literal notranslate"><span class="pre">brig</span></code> directly via their package manager.
 Those are currently:</p>
 <ul class="simple">
-<li>Arch Linux (<a class="reference external" href="https://aur.archlinux.org/packages/brig-git">PKGBUILD</a>)</li>
+<li><p>Arch Linux (<a class="reference external" href="https://aur.archlinux.org/packages/brig-git">PKGBUILD</a>; builds <code class="docutils literal notranslate"><span class="pre">develop</span></code> branch)</p></li>
 </ul>
 </div>
 <div class="section" id="compiling-yourself">
@@ -305,8 +312,8 @@ two things: The programming language <em>Go</em> and the version control system
 <p>This is only required if you don’t already have <code class="docutils literal notranslate"><span class="pre">Go</span></code> installed.
 Please consult your package manager for that.</p>
 <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">brig</span></code> only works with a newer version of Go (&gt;= 1.10).
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">brig</span></code> only works with a newer version of Go (&gt;= 1.10).
 The version in your package manager might be too outdated,
 if you’re on e.g. Debian. Make sure it’s rather up to date!
 If it’s too old you can always use tools like <code class="docutils literal notranslate"><span class="pre">gvm</span></code> to get a more recent version.</p>
@@ -315,12 +322,12 @@ If it’s too old you can always use tools like <code class="docutils literal no
 set the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> environment variable to a place where you’d like to have
 your <code class="docutils literal notranslate"><span class="pre">.go</span></code> sources being placed. For example you can put this in your
 <code class="docutils literal notranslate"><span class="pre">.bashrc</span></code>:</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Place the go sources in a &quot;go&quot; directory inside your home directory:</span>
-<span class="n">export</span> <span class="n">GOPATH</span><span class="o">=~/</span><span class="n">go</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Place the go sources in a &quot;go&quot; directory inside your home directory:</span>
+<span class="nb">export</span> <span class="nv">GOPATH</span><span class="o">=</span>~/go
 <span class="c1"># This is needed for the go toolchain:</span>
-<span class="n">export</span> <span class="n">GOBIN</span><span class="o">=</span><span class="s2">&quot;$GOPATH/bin&quot;</span>
+<span class="nb">export</span> <span class="nv">GOBIN</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$GOPATH</span><span class="s2">/bin&quot;</span>
 <span class="c1"># Make sure that our shell finds the go binaries:</span>
-<span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;$GOPATH/bin:$PATH&quot;</span>
+<span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$GOPATH</span><span class="s2">/bin:</span><span class="nv">$PATH</span><span class="s2">&quot;</span>
 </pre></div>
 </div>
 <p>By choosing to have the <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code> in your home directory you’re not required
@@ -330,14 +337,15 @@ to have <code class="docutils literal notranslate"><span class="pre">sudo</span>
 <div class="section" id="step-1-compile-install-brig">
 <h2>Step 1: Compile &amp; Install <code class="docutils literal notranslate"><span class="pre">brig</span></code><a class="headerlink" href="#step-1-compile-install-brig" title="Permalink to this headline">¶</a></h2>
 <p>This step requires setting <code class="docutils literal notranslate"><span class="pre">GOPATH</span></code>, as discussed in the previous section.</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span>$ go get -d -v -u github.com/sahib/brig  # Download the sources.
-$ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
-$ make                                   # Build the software.
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ go get -d -v -u github.com/sahib/brig  <span class="c1"># Download the sources.</span>
+$ <span class="nb">cd</span> <span class="nv">$GOPATH</span>/src/github.com/sahib/brig   <span class="c1"># Go to the source directory.</span>
+$ ./scripts/install-task.sh              <span class="c1"># Install the build system.</span>
+$ task                                   <span class="c1"># Build the binary.</span>
 </pre></div>
 </div>
-<p>All dependencies of brig are downloaded for you during the first step.
-Execution might take a few minutes though because all of <code class="docutils literal notranslate"><span class="pre">brig</span></code> is being
-compiled during the <code class="docutils literal notranslate"><span class="pre">make</span></code> step.</p>
+<p>Execution might take a few minutes though because all of <code class="docutils literal notranslate"><span class="pre">brig</span></code> is being
+compiled during the <code class="docutils literal notranslate"><span class="pre">task</span></code> step - this also includes the download of all
+dependencies.</p>
 <p>If you cannot or want to install <code class="docutils literal notranslate"><span class="pre">git</span></code> for some reason, you can <a class="reference external" href="https://github.com/sahib/brig/archive/master.zip">manually
 download a zip</a> from GitHub
 and place its contents into <code class="docutils literal notranslate"><span class="pre">$GOPATH/src/github.com/sahib/brig</span></code>. In this
@@ -346,7 +354,7 @@ case, you can skip the <code class="docutils literal notranslate"><span class="p
 <div class="section" id="step-2-test-if-the-installation-is-working">
 <h2>Step 2: Test if the installation is working<a class="headerlink" href="#step-2-test-if-the-installation-is-working" title="Permalink to this headline">¶</a></h2>
 <p>If everything worked, there will be a <code class="docutils literal notranslate"><span class="pre">brig</span></code> binary in <code class="docutils literal notranslate"><span class="pre">$GOBIN</span></code>.</p>
-<div class="code bash highlight-default notranslate"><div class="highlight"><pre><span></span>$ brig help
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brig <span class="nb">help</span>
 </pre></div>
 </div>
 <p>If above command prints out documentation on how to use the program’s
@@ -358,7 +366,8 @@ commandline switches then the installation worked. Happy file shipping!</p>
 <p><code class="docutils literal notranslate"><span class="pre">brig</span></code> requires a running <em>IPFS</em> daemon. While <code class="docutils literal notranslate"><span class="pre">brig</span></code> has ways to do install a IPFS daemon for you,
 it is preferable to install it via your package manager or via the official way:</p>
 <blockquote>
-<div><a class="reference external" href="https://docs.ipfs.io/introduction/install">https://docs.ipfs.io/introduction/install</a></div></blockquote>
+<div><p><a class="reference external" href="https://docs.ipfs.io/introduction/install">https://docs.ipfs.io/introduction/install</a></p>
+</div></blockquote>
 <hr class="docutils" />
 <p>Continue with <a class="reference internal" href="tutorial/intro.html#getting-started"><span class="std std-ref">Getting started</span></a> or directly go to <a class="reference internal" href="quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a> if you
 just need a refresh on the details.</p>
@@ -383,8 +392,8 @@ just need a refresh on the details.</p>
       
     </p>
     <p>
-        &copy; Copyright 2018, Chris Pahl.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.<br/>
+        &copy; Copyright 2016-2020, Chris Pahl.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
     </p>
   </div>
 </footer>
