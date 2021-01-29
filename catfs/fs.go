@@ -46,6 +46,17 @@ type HintManager interface {
 	Set(path string, hint hints.Hint) error
 }
 
+// dummy hint manager that will always yield the default.
+type defaultHintManager struct{}
+
+func (dhm defaultHintManager) Lookup(path string) hints.Hint {
+	return hints.Default()
+}
+
+func (dhm defaultHintManager) Set(path string, hint hints.Hint) error {
+	return fmt.Errorf("no hint manager, cannot remember hints")
+}
+
 // FS (short for Filesystem) is the central API entry for everything related to
 // paths.  It exposes a POSIX-like interface where path are mapped to the
 // actual underlying hashes and the associated metadata.
@@ -362,6 +373,10 @@ func NewFilesystem(
 	pinCache, err := NewPinner(lkr, backend)
 	if err != nil {
 		return nil, err
+	}
+
+	if hintManager == nil {
+		hintManager = defaultHintManager{}
 	}
 
 	// NOTE: We do not need to validate fsCfg here.
@@ -1004,11 +1019,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	sizeAcc := &util.SizeAccumulator{}
 	sizeReader := io.TeeReader(hashReader, sizeAcc)
 
-	hint := hints.Default()
-	if fs.hintManager != nil {
-		hint = fs.hintManager.Lookup(path)
-	}
-
+	hint := fs.hintManager.Lookup(path)
 	stream, isRaw, err := mio.NewInStream(sizeReader, path, key, hint)
 	if err != nil {
 		return err
@@ -2117,6 +2128,5 @@ func (fs *FS) IsCached(path string) (bool, error) {
 }
 
 func (fs *FS) Hints() HintManager {
-	// TODO: return a default Hint Manager that returns default in none set.
 	return fs.hintManager
 }
