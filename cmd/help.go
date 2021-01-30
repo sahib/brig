@@ -29,6 +29,14 @@ var helpTexts = map[string]helpEntry{
 		ArgsUsage: "<username>",
 		Complete:  completeArgsUsage,
 		Flags: []cli.Flag{
+			// duplicate of global repo, because it is convenient to
+			// write »brig init --repo blah«.
+			cli.StringFlag{
+				Name:   "repo",
+				Usage:  "Path to the repository. Only has effect for new daemons.",
+				Value:  "",
+				EnvVar: "BRIG_PATH",
+			},
 			cli.StringFlag{
 				Name:  "backend,b",
 				Value: "httpipfs",
@@ -1490,12 +1498,35 @@ EXAMPLES:
 `,
 	},
 	"hints": {
-		Usage:       "Print stuff",
-		Description: "TODO",
+		Usage: "Manage hints for file or directories",
+		Description: `
+   Hints can be used to change the default behavior for brig.
+   You can for example use it to change the default encryption algorithm
+   for certain files. Hints are always associated to a path. If a hint is
+   set to a path where a directory is located, then all files in it inherit
+   this hint - except there is another hint somewhere lower in the hierarchy.
+
+   Note that hints are only applied on the next file change. Files that have
+   differing settings will not be affected by changing a hint. If you want
+   an immediate effect you should use »brig stage --recode <path>«.
+
+EXAMPLES:
+
+   $ brig mkdir /public
+   $ echo "meow" | brig stage --stdin /public/cat-meme.png
+   $ brig hints set /public --compression none --encryption none
+   $ brig hints
+   PATH     ENCRYPTION  COMPRESSION
+   /        aes256gcm   guess
+   /public  none        none
+   # If a file could be streamed by »ipfs cat« alone,
+   # then the »IsRaw« attribute is true.
+   $ brig info --format '{{ .IsRaw }}' /public/cat-meme.png
+`,
 	},
 	"hints.set": {
-		Usage:       "Print stuff",
-		Description: "TODO",
+		Usage:       "Set a hint for a file or directory",
+		Description: "See help of »brig hints«",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "compression,c",
@@ -1514,12 +1545,11 @@ EXAMPLES:
 		},
 	},
 	"hints.list": {
-		Usage:       "Print stuff",
-		Description: "TODO",
+		Usage:       "List all existing hints.",
+		Description: "See help of »brig hints«",
 	},
 	"hints.remove": {
-		Usage:       "Print stuff",
-		Description: "TODO",
+		Usage: "Remove an existing hint.",
 	},
 	"bug": {
 		Usage: "Print a template for bug reports.",

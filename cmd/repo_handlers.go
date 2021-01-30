@@ -108,7 +108,12 @@ func handleInit(ctx *cli.Context) error {
 
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
-	folder := ctx.GlobalString("repo")
+
+	folder := ctx.String("repo")
+	if folder == "" {
+		folder = ctx.GlobalString("repo")
+	}
+
 	if ctx.NArg() == 2 {
 		var err error
 		folder, err = filepath.Abs(ctx.Args().Get(1))
