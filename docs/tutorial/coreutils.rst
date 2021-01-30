@@ -131,7 +131,7 @@ gateway](https://docs.ipfs.io/concepts/ipfs-gateway).
 Available encryption algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: Provide relative throughput numbers compare to none.
+.. todo:: Provide relative throughput numbers compare to »none«.
 
 +----------------+----------------------------------------------------------------------------+
 | NAME           |   DESCRIPTION                                                              |
@@ -146,16 +146,16 @@ Available encryption algorithms
 Available compression algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: Provide relative throughput numbers compare to none.
+.. todo:: Provide relative throughput numbers compared to »none«.
 
 +----------------+----------------------------------------------------------------------------+
 | NAME           |   DESCRIPTION                                                              |
 +================+============================================================================+
-| ``snappy``     | High throughput, relative low compression rate.                            |
+| ``snappy``     | High throughput, relative low compression ratio.                           |
 +----------------+----------------------------------------------------------------------------+
-| ``lz4``        | High throughput, slightly higher compression rate than snappy.             |
+| ``lz4``        | High throughput, slightly higher compression ratio than snappy.            |
 +----------------+----------------------------------------------------------------------------+
-| ``guess``      | Choose best algorithm based on file ending, size and mime type.            |
+| ``guess``      | Chooses best algorithm based on file ending, size and mime type.           |
 +----------------+----------------------------------------------------------------------------+
 | ``none``       | Disables compression.                                                      |
 +----------------+----------------------------------------------------------------------------+

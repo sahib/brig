@@ -51,7 +51,7 @@ Truly Distributed
 FUSE filesystem
 ---------------
 
-* FUSE filesystem that acts your data is in a local directory.
+* FUSE filesystem mirrors your data to a local directory.
 * Allows your normal tools to work seamlessly with brig.
 * Mounts can be persisted to stay where they are.
 * Not high performance, but fast enough for daily usage.
