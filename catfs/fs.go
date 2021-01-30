@@ -2127,6 +2127,7 @@ func (fs *FS) IsCached(path string) (bool, error) {
 	return cachedCount == totalCount, nil
 }
 
+// Hints returns the hint manager passed to NewFilesystem
 func (fs *FS) Hints() HintManager {
 	return fs.hintManager
 }

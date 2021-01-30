@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"time"
 
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
@@ -582,6 +584,17 @@ func (fh *fsHandler) IsCached(call capnp.FS_isCached) error {
 	})
 }
 
+func recodeStream(fs *catfs.FS, path string) error {
+	stream, err := fs.Cat(path)
+	if err != nil {
+		return err
+	}
+
+	defer stream.Close()
+
+	return fs.Stage(path, stream)
+}
+
 func (fh *fsHandler) RecodeStream(call capnp.FS_recodeStream) error {
 	server.Ack(call.Options)
 
@@ -591,13 +604,47 @@ func (fh *fsHandler) RecodeStream(call capnp.FS_recodeStream) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		stream, err := fs.Cat(path)
+		log.Infof("PATH %s", url.Path)
+		// If it's a file the list will be just the file itself.
+		children, err := fs.List(url.Path, -1)
 		if err != nil {
-			return err
+			return e.Wrap(err, "failed to list")
 		}
 
-		defer stream.Close()
+		// channel serves as token giver to limit parallel workload:
+		sem := make(chan error, runtime.NumCPU()*2)
+		for idx := 0; idx < cap(sem); idx++ {
+			sem <- nil
+		}
 
-		return fs.Stage(path, stream)
+		for _, child := range children {
+			if child.IsDir {
+				continue
+			}
+
+			// Get next token:
+			if err := <-sem; err != nil {
+				return err
+			}
+
+			go func(path string) {
+				err := recodeStream(fs, path)
+				if err != nil {
+					log.WithError(err).Warnf("failed to recode %s", err)
+				}
+				sem <- err
+			}(child.Path)
+		}
+
+		// drain any errors possibly still left in the channel.
+		// This also make sure to wait until completion.
+		// Note we don't cancel running request.
+		for idx := 0; idx < cap(sem); idx++ {
+			if err := <-sem; err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 }

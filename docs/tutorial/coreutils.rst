@@ -155,7 +155,7 @@ Available compression algorithms
 +----------------+----------------------------------------------------------------------------+
 | ``lz4``        | High throughput, slightly higher compression ratio than snappy.            |
 +----------------+----------------------------------------------------------------------------+
-| ``guess``      | Chooses best algorithm based on file ending, size and mime type.           |
+| ``guess``      | Chooses suitable algorithm based on file ending, size and mime type.       |
 +----------------+----------------------------------------------------------------------------+
 | ``none``       | Disables compression.                                                      |
 +----------------+----------------------------------------------------------------------------+

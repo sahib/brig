@@ -41,22 +41,22 @@ type xattrHandler struct {
 }
 
 var xattrMap = map[string]xattrHandler{
-	"user.brig.hash.content": xattrHandler{
+	"user.brig.hash.content": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			return []byte(info.ContentHash.B58String()), nil
 		},
 	},
-	"user.brig.hash.tree": xattrHandler{
+	"user.brig.hash.tree": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			return []byte(info.TreeHash.B58String()), nil
 		},
 	},
-	"user.brig.hash.backend": xattrHandler{
+	"user.brig.hash.backend": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			return []byte(info.BackendHash.B58String()), nil
 		},
 	},
-	"user.brig.pinned": xattrHandler{
+	"user.brig.pinned": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			if info.IsPinned {
 				return []byte("yes"), nil
@@ -64,7 +64,7 @@ var xattrMap = map[string]xattrHandler{
 			return []byte("no"), nil
 		},
 	},
-	"user.brig.explicitly_pinned": xattrHandler{
+	"user.brig.explicitly_pinned": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			if info.IsExplicit {
 				return []byte("yes"), nil
@@ -72,7 +72,7 @@ var xattrMap = map[string]xattrHandler{
 			return []byte("no"), nil
 		},
 	},
-	"user.brig.hints.encryption": xattrHandler{
+	"user.brig.hints.encryption": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			return []byte(cfs.Hints().Lookup(info.Path).EncryptionAlgo), nil
 		},
@@ -86,7 +86,7 @@ var xattrMap = map[string]xattrHandler{
 			return cfs.Hints().Set(path, hint)
 		},
 	},
-	"user.brig.hints.compression": xattrHandler{
+	"user.brig.hints.compression": {
 		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
 			return []byte(cfs.Hints().Lookup(info.Path).CompressionAlgo), nil
 		},

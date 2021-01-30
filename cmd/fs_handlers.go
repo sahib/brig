@@ -26,6 +26,11 @@ import (
 )
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
+	if ctx.Bool("recode") {
+		repoPath := ctx.Args().Get(0)
+		return ctl.RecodeStream(repoPath)
+	}
+
 	localPath := ctx.Args().Get(0)
 	readFromStdin := ctx.Bool("stdin")
 	repoPath := filepath.Base(localPath)
@@ -58,11 +63,6 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 
 	if !info.Mode().IsRegular() {
 		return fmt.Errorf("not adding non-regular file: %s", absLocalPath)
-	}
-
-	if ctx.Bool("recode") {
-		// local path is actually a repo path here.
-		return ctl.RecodeStream(repoPath)
 	}
 
 	return ctl.Stage(absLocalPath, repoPath)
@@ -140,14 +140,8 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 					return
 				}
 
-				if ctx.Bool("recode") {
-					if err := ctl.RecodeStream(pair.repo); err != nil {
-						fmt.Printf("failed to recode %s: %v\n", pair.repo, err)
-					}
-				} else {
-					if err := ctl.Stage(pair.local, pair.repo); err != nil {
-						fmt.Printf("failed to stage %s: %v\n", pair.local, err)
-					}
+				if err := ctl.Stage(pair.local, pair.repo); err != nil {
+					fmt.Printf("failed to stage %s: %v\n", pair.local, err)
 				}
 
 				// Notify the bar. The op time is used for the ETA.

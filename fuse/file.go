@@ -159,6 +159,7 @@ func (fi *File) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *f
 	return nil
 }
 
+// Setxattr is called by the setxattr syscall.
 func (fi *File) Setxattr(ctx context.Context, req *fuse.SetxattrRequest) error {
 	defer logPanic("file: setxattr")
 
