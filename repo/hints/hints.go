@@ -235,13 +235,13 @@ var (
 					Docs:         "The path to apply the hints to. Recursive if directory.",
 				},
 				"compression_algo": config.DefaultEntry{
-					Default:      CompressionGuess,
+					Default:      string(Default().CompressionAlgo),
 					NeedsRestart: false,
 					Docs:         "Which compression algorithm to use.",
 					Validator:    config.EnumValidator(validCompressionHints()...),
 				},
 				"encryption_algo": config.DefaultEntry{
-					Default:      "guess",
+					Default:      string(Default().EncryptionAlgo),
 					NeedsRestart: false,
 					Docs:         "Which encryption algorithm to use.",
 					Validator:    config.EnumValidator(validEncryptionHints()...),
