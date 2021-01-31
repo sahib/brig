@@ -1200,11 +1200,19 @@ func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	return ctl.HintSet(
+	if err := ctl.HintSet(
 		path,
 		optionalStringParamAsPtr(ctx, "compression"),
 		optionalStringParamAsPtr(ctx, "encryption"),
-	)
+	); err != nil {
+		return err
+	}
+
+	if ctx.Bool("recode") {
+		return ctl.RecodeStream(path)
+	}
+
+	return nil
 }
 
 func handleRepoHintsList(ctx *cli.Context, ctl *client.Client) error {
@@ -1239,4 +1247,14 @@ func handleRepoHintsList(ctx *cli.Context, ctl *client.Client) error {
 
 func handleRepoHintsRemove(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.HintRemove(ctx.Args().First())
+}
+
+func handleRepoHintsRecode(ctx *cli.Context, ctl *client.Client) error {
+	repoPath := ctx.Args().Get(0)
+	if repoPath == "" {
+		repoPath = "/"
+
+	}
+
+	return ctl.RecodeStream(repoPath)
 }

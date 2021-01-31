@@ -26,11 +26,6 @@ import (
 )
 
 func handleStage(ctx *cli.Context, ctl *client.Client) error {
-	if ctx.Bool("recode") {
-		repoPath := ctx.Args().Get(0)
-		return ctl.RecodeStream(repoPath)
-	}
-
 	localPath := ctx.Args().Get(0)
 	readFromStdin := ctx.Bool("stdin")
 	repoPath := filepath.Base(localPath)

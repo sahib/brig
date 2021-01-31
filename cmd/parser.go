@@ -464,6 +464,10 @@ func RunCmdline(args []string) int {
 					Name:    "remove",
 					Aliases: []string{"rm"},
 					Action:  withArgCheck(needAtLeast(1), withDaemon(handleRepoHintsRemove, true)),
+				}, {
+					Name:    "recode",
+					Aliases: []string{"r"},
+					Action:  withDaemon(handleRepoHintsRecode, true),
 				},
 			},
 		}, {

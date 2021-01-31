@@ -782,10 +782,6 @@ EXAMPLES:
 				Name:  "stdin,i",
 				Usage: "Read data from stdin.",
 			},
-			cli.BoolFlag{
-				Name:  "recode,r",
-				Usage: "Recode the stream (useful if you changed hints).",
-			},
 		},
 		Description: `Read a local file (given by »local-path«) and try to read
    it. This is the conceptual equivalent of »git add«. The stream will be encrypted
@@ -1507,7 +1503,8 @@ EXAMPLES:
 
    Note that hints are only applied on the next file change. Files that have
    differing settings will not be affected by changing a hint. If you want
-   an immediate effect you should use »brig stage --recode <path>«.
+   an immediate effect you should use »brig hints set --recode <path>«, or,
+   if you want to do it a later point, »brig hints recode <path>«.
 
 EXAMPLES:
 
@@ -1526,6 +1523,7 @@ EXAMPLES:
 	"hints.set": {
 		Usage:       "Set a hint for a file or directory",
 		Description: "See help of »brig hints«",
+		ArgsUsage:   "<path>",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "compression,c",
@@ -1541,6 +1539,10 @@ EXAMPLES:
 				Name:  "force,f",
 				Usage: "Also create hint if there is no such file or directory",
 			},
+			cli.BoolFlag{
+				Name:  "recode,r",
+				Usage: "Recode the stream immediately.",
+			},
 		},
 	},
 	"hints.list": {
@@ -1548,7 +1550,12 @@ EXAMPLES:
 		Description: "See help of »brig hints«",
 	},
 	"hints.remove": {
-		Usage: "Remove an existing hint.",
+		ArgsUsage: "<path>",
+		Usage:     "Remove an existing hint.",
+	},
+	"hints.recode": {
+		ArgsUsage: "[<path>]",
+		Usage:     "Recode the streams in <path>. If no path given all files are recoded.",
 	},
 	"bug": {
 		Usage: "Print a template for bug reports.",
