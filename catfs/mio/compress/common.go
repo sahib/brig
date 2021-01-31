@@ -8,23 +8,26 @@ import (
 
 var (
 	// ErrBadIndex is returned on invalid compression index.
-	ErrBadIndex = errors.New("Broken compression index")
+	ErrBadIndex = errors.New("broken compression index")
 
 	// ErrHeaderTooSmall is returned if the header is less than 10 bytes.
 	// It usually indicates a broken file or a non-compressed file.
-	ErrHeaderTooSmall = errors.New("Header is less than 10 bytes")
+	ErrHeaderTooSmall = errors.New("header is less than 10 bytes")
 
 	// ErrBadMagicNumber is returned if the first 8 bytes of the stream is not
 	// the expected "elchwald".
-	ErrBadMagicNumber = errors.New("Bad magic number in compressed stream")
+	ErrBadMagicNumber = errors.New("bad magic number in compressed stream")
 
 	// ErrBadAlgorithm is returned when the algorithm was either not present
 	// or it had an invalid value
-	ErrBadAlgorithm = errors.New("Invalid algorithm")
+	ErrBadAlgorithm = errors.New("invalid algorithm")
 
 	// ErrUnsupportedVersion is returned when we don't have a reader that
 	// understands that format.
-	ErrUnsupportedVersion = errors.New("Version of this format is not supported")
+	ErrUnsupportedVersion = errors.New("version of this format is not supported")
+
+	// MagicNumber is the magic number in front of a compressed stream
+	MagicNumber = []byte("elchwald")
 )
 
 const (
@@ -34,41 +37,6 @@ const (
 	headerSize     = 12
 	currentVersion = 1
 )
-
-const (
-	// AlgoNone represents a ,,uncompressed'' algorithm.
-	AlgoNone = AlgorithmType(iota)
-
-	// AlgoSnappy represents the snappy compression algorithm:
-	// https://en.wikipedia.org/wiki/Snappy_(software)
-	AlgoSnappy
-
-	//AlgoLZ4 represents the lz4 compression algorithm:
-	// https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
-	AlgoLZ4
-)
-
-// AlgorithmType user defined type to store the algorithm type.
-type AlgorithmType byte
-
-// IsValid returns true if `at` is a valid algorithm type.
-func (at AlgorithmType) IsValid() bool {
-	switch at {
-	case AlgoNone, AlgoSnappy, AlgoLZ4:
-		return true
-	}
-
-	return false
-}
-
-func (at AlgorithmType) String() string {
-	name, ok := algoToString[at]
-	if !ok {
-		return "unknown"
-	}
-
-	return name
-}
 
 // record structure reprenents a offset mapping {uncompressed offset, compressedOffset}.
 // A chunk of maxChunkSize is defined by two records. The size of a specific
@@ -117,7 +85,7 @@ func makeHeader(algo AlgorithmType, version byte) []byte {
 	binary.LittleEndian.PutUint16(versionField, uint16(version))
 
 	suffix := append(versionField, algoField...)
-	return append([]byte("elchwald"), suffix...)
+	return append(MagicNumber, suffix...)
 }
 
 func readHeader(bheader []byte) (*header, error) {
@@ -125,7 +93,7 @@ func readHeader(bheader []byte) (*header, error) {
 		return nil, ErrHeaderTooSmall
 	}
 
-	if !bytes.Equal(bheader[:8], []byte("elchwald")) {
+	if !bytes.Equal(bheader[:len(MagicNumber)], MagicNumber) {
 		return nil, ErrBadMagicNumber
 	}
 

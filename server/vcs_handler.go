@@ -243,14 +243,14 @@ func (vcs *vcsHandler) History(call capnp.VCS_history) error {
 	})
 }
 
-func fillInfoLst(seg *cplib.Segment, infos []catfs.StatInfo) (*capnp.StatInfo_List, error) {
+func fillInfoLst(fs *catfs.FS, seg *cplib.Segment, infos []catfs.StatInfo) (*capnp.StatInfo_List, error) {
 	lst, err := capnp.NewStatInfo_List(seg, int32(len(infos)))
 	if err != nil {
 		return nil, err
 	}
 
 	for idx, info := range infos {
-		capInfo, err := statToCapnp(&info, seg)
+		capInfo, err := statToCapnp(fs, &info, seg)
 		if err != nil {
 			return nil, err
 		}
@@ -263,19 +263,19 @@ func fillInfoLst(seg *cplib.Segment, infos []catfs.StatInfo) (*capnp.StatInfo_Li
 	return &lst, nil
 }
 
-func fillDiffPairLst(seg *cplib.Segment, pairs []catfs.DiffPair) (*capnp.DiffPair_List, error) {
+func fillDiffPairLst(fs *catfs.FS, seg *cplib.Segment, pairs []catfs.DiffPair) (*capnp.DiffPair_List, error) {
 	capLst, err := capnp.NewDiffPair_List(seg, int32(len(pairs)))
 	if err != nil {
 		return nil, err
 	}
 
 	for idx, pair := range pairs {
-		capSrcInfo, err := statToCapnp(&pair.Src, seg)
+		capSrcInfo, err := statToCapnp(fs, &pair.Src, seg)
 		if err != nil {
 			return nil, err
 		}
 
-		capDstInfo, err := statToCapnp(&pair.Dst, seg)
+		capDstInfo, err := statToCapnp(fs, &pair.Dst, seg)
 		if err != nil {
 			return nil, err
 		}
@@ -301,13 +301,13 @@ func fillDiffPairLst(seg *cplib.Segment, pairs []catfs.DiffPair) (*capnp.DiffPai
 	return &capLst, nil
 }
 
-func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) {
+func diffToCapnpDiff(fs *catfs.FS, seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) {
 	capDiff, err := capnp.NewDiff(seg)
 	if err != nil {
 		return nil, err
 	}
 
-	addedLst, err := fillInfoLst(seg, diff.Added)
+	addedLst, err := fillInfoLst(fs, seg, diff.Added)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,7 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
-	removedLst, err := fillInfoLst(seg, diff.Removed)
+	removedLst, err := fillInfoLst(fs, seg, diff.Removed)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
-	missingLst, err := fillInfoLst(seg, diff.Missing)
+	missingLst, err := fillInfoLst(fs, seg, diff.Missing)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +334,7 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
-	ignoredLst, err := fillInfoLst(seg, diff.Ignored)
+	ignoredLst, err := fillInfoLst(fs, seg, diff.Ignored)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
-	mergedLst, err := fillDiffPairLst(seg, diff.Merged)
+	mergedLst, err := fillDiffPairLst(fs, seg, diff.Merged)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +352,7 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
-	movedLst, err := fillDiffPairLst(seg, diff.Moved)
+	movedLst, err := fillDiffPairLst(fs, seg, diff.Moved)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func diffToCapnpDiff(seg *cplib.Segment, diff *catfs.Diff) (*capnp.Diff, error) 
 		return nil, err
 	}
 
-	conflictLst, err := fillDiffPairLst(seg, diff.Conflict)
+	conflictLst, err := fillDiffPairLst(fs, seg, diff.Conflict)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +421,7 @@ func (vcs *vcsHandler) MakeDiff(call capnp.VCS_makeDiff) error {
 				return err
 			}
 
-			capDiff, err := diffToCapnpDiff(call.Results.Segment(), diff)
+			capDiff, err := diffToCapnpDiff(localFs, call.Results.Segment(), diff)
 			if err != nil {
 				return err
 			}
@@ -455,12 +455,14 @@ func (vcs *vcsHandler) Sync(call capnp.VCS_sync) error {
 		return err
 	}
 
-	capDiff, err := diffToCapnpDiff(call.Results.Segment(), diff)
-	if err != nil {
-		return err
-	}
+	return vcs.base.withCurrFs(func(localFs *catfs.FS) error {
+		capDiff, err := diffToCapnpDiff(localFs, call.Results.Segment(), diff)
+		if err != nil {
+			return err
+		}
 
-	return call.Results.SetDiff(*capDiff)
+		return call.Results.SetDiff(*capDiff)
+	})
 }
 
 func (vcs *vcsHandler) CommitInfo(call capnp.VCS_commitInfo) error {

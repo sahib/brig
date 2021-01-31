@@ -108,7 +108,12 @@ func handleInit(ctx *cli.Context) error {
 
 	owner := ctx.Args().First()
 	backend := ctx.String("backend")
-	folder := ctx.GlobalString("repo")
+
+	folder := ctx.String("repo")
+	if folder == "" {
+		folder = ctx.GlobalString("repo")
+	}
+
 	if ctx.NArg() == 2 {
 		var err error
 		folder, err = filepath.Abs(ctx.Args().Get(1))
@@ -346,6 +351,8 @@ func switchToSyslog() {
 		UseColors: false,
 	})
 
+	// TODO: we should also forward panics (os.Stderr) to syslog.
+	// They don't come from the log obviously though.
 	log.SetOutput(
 		io.MultiWriter(
 			formatter.NewSyslogWrapper(wSyslog),
@@ -1173,4 +1180,81 @@ func handleRepoUnpack(ctx *cli.Context) error {
 		string(pass),
 		!ctx.Bool("no-remove"),
 	)
+}
+
+func optionalStringParamAsPtr(ctx *cli.Context, name string) *string {
+	if !ctx.IsSet(name) {
+		return nil
+	}
+
+	v := ctx.String(name)
+	return &v
+}
+
+func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
+	path := ctx.Args().First()
+
+	if !ctx.Bool("force") {
+		if _, err := ctl.Stat(path); err != nil {
+			return fmt.Errorf("no file or directory at »%s« (use --force to create anyways)", path)
+		}
+	}
+
+	if err := ctl.HintSet(
+		path,
+		optionalStringParamAsPtr(ctx, "compression"),
+		optionalStringParamAsPtr(ctx, "encryption"),
+	); err != nil {
+		return err
+	}
+
+	if ctx.Bool("recode") {
+		return ctl.RecodeStream(path)
+	}
+
+	return nil
+}
+
+func handleRepoHintsList(ctx *cli.Context, ctl *client.Client) error {
+	hints, err := ctl.HintList()
+	if err != nil {
+		return err
+	}
+
+	if len(ctx.Args()) != 0 {
+		return fmt.Errorf("extra arguments passed")
+	}
+
+	tabW := tabwriter.NewWriter(
+		os.Stdout, 0, 0, 2, ' ',
+		tabwriter.StripEscape,
+	)
+
+	fmt.Fprintln(tabW, "PATH\tENCRYPTION\tCOMPRESSION\t")
+
+	for _, hint := range hints {
+		fmt.Fprintf(
+			tabW,
+			"%s\t%s\t%s\t\n",
+			hint.Path,
+			hint.EncryptionAlgo,
+			hint.CompressionAlgo,
+		)
+	}
+
+	return tabW.Flush()
+}
+
+func handleRepoHintsRemove(ctx *cli.Context, ctl *client.Client) error {
+	return ctl.HintRemove(ctx.Args().First())
+}
+
+func handleRepoHintsRecode(ctx *cli.Context, ctl *client.Client) error {
+	repoPath := ctx.Args().Get(0)
+	if repoPath == "" {
+		repoPath = "/"
+
+	}
+
+	return ctl.RecodeStream(repoPath)
 }

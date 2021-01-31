@@ -3,11 +3,13 @@
 package fuse
 
 import (
+	"fmt"
 	"time"
 
 	"bazil.org/fuse"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/repo/hints"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,35 +35,76 @@ func logPanic(name string) {
 	}
 }
 
-type xattrGetter func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error)
+type xattrHandler struct {
+	get func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error)
+	set func(cfs *catfs.FS, path string, value []byte) error
+}
 
-var xattrMap = map[string]xattrGetter{
-	"user.brig.hash.content": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
-		return []byte(info.ContentHash.B58String()), nil
+var xattrMap = map[string]xattrHandler{
+	"user.brig.hash.content": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			return []byte(info.ContentHash.B58String()), nil
+		},
 	},
-	"user.brig.hash.tree": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
-		return []byte(info.TreeHash.B58String()), nil
+	"user.brig.hash.tree": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			return []byte(info.TreeHash.B58String()), nil
+		},
 	},
-	"user.brig.hash.backend": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
-		return []byte(info.BackendHash.B58String()), nil
+	"user.brig.hash.backend": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			return []byte(info.BackendHash.B58String()), nil
+		},
 	},
-	"user.brig.pinned": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
-		if info.IsPinned {
-			return []byte("yes"), nil
-		}
-		return []byte("no"), nil
+	"user.brig.pinned": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			if info.IsPinned {
+				return []byte("yes"), nil
+			}
+			return []byte("no"), nil
+		},
 	},
-	"user.brig.explicitly_pinned": func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
-		if info.IsExplicit {
-			return []byte("yes"), nil
-		}
-		return []byte("no"), nil
+	"user.brig.explicitly_pinned": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			if info.IsExplicit {
+				return []byte("yes"), nil
+			}
+			return []byte("no"), nil
+		},
+	},
+	"user.brig.hints.encryption": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			return []byte(cfs.Hints().Lookup(info.Path).EncryptionAlgo), nil
+		},
+		set: func(cfs *catfs.FS, path string, val []byte) error {
+			hint := cfs.Hints().Lookup(path)
+			hint.EncryptionAlgo = hints.EncryptionHint(val)
+			if !hint.IsValid() {
+				return fmt.Errorf("bad encryption algorithm: %s", string(val))
+			}
+
+			return cfs.Hints().Set(path, hint)
+		},
+	},
+	"user.brig.hints.compression": {
+		get: func(cfs *catfs.FS, info *catfs.StatInfo) ([]byte, error) {
+			return []byte(cfs.Hints().Lookup(info.Path).CompressionAlgo), nil
+		},
+		set: func(cfs *catfs.FS, path string, val []byte) error {
+			hint := cfs.Hints().Lookup(path)
+			hint.CompressionAlgo = hints.CompressionHint(val)
+			if !hint.IsValid() {
+				return fmt.Errorf("bad compression algorithm: %s", string(val))
+			}
+
+			return cfs.Hints().Set(path, hint)
+		},
 	},
 }
 
 func listXattr() []byte {
 	resp := []byte{}
-	for k, _ := range xattrMap {
+	for k := range xattrMap {
 		resp = append(resp, k...)
 		resp = append(resp, '\x00')
 	}
@@ -71,7 +114,7 @@ func listXattr() []byte {
 
 func getXattr(cfs *catfs.FS, name, path string) ([]byte, error) {
 	handler, ok := xattrMap[name]
-	if !ok {
+	if !ok || handler.get == nil {
 		return nil, fuse.ErrNoXattr
 	}
 
@@ -80,7 +123,20 @@ func getXattr(cfs *catfs.FS, name, path string) ([]byte, error) {
 		return nil, errorize("getxattr", err)
 	}
 
-	return handler(cfs, info)
+	return handler.get(cfs, info)
+}
+
+func setXattr(cfs *catfs.FS, name, path string, val []byte) error {
+	handler, ok := xattrMap[name]
+	if !ok || handler.set == nil {
+		return fuse.ErrNoXattr
+	}
+
+	if err := handler.set(cfs, path, val); err != nil {
+		return fuse.EIO
+	}
+
+	return nil
 }
 
 func notifyChange(m *Mount, d time.Duration) {

@@ -85,16 +85,7 @@ func Undelete(lkr *c.Linker, root string) error {
 				}
 
 				// Stage that old state:
-				_, err := c.Stage(
-					lkr,
-					file.Path(),
-					file.ContentHash(),
-					file.BackendHash(),
-					file.Size(),
-					file.Key(),
-					file.ModTime(),
-				)
-
+				_, err := c.StageFromFileNode(lkr, file)
 				return err
 			}
 			return nil

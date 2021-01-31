@@ -18,6 +18,7 @@ import (
 	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/defaults"
+	"github.com/sahib/brig/repo/hints"
 	h "github.com/sahib/brig/util/hashlib"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/sahib/config"
@@ -49,7 +50,7 @@ func withDummyFSReadOnly(t *testing.T, readOnly bool, fn func(fs *FS)) {
 
 	fsCfg := cfg.Section("fs")
 
-	fs, err := NewFilesystem(backend, dbPath, owner, readOnly, fsCfg)
+	fs, err := NewFilesystem(backend, dbPath, owner, readOnly, fsCfg, nil)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}
@@ -161,7 +162,12 @@ func TestCat(t *testing.T) {
 		raw := []byte{1, 2, 3}
 		rinRaw := bytes.NewBuffer(raw)
 
-		rin, err := mio.NewInStream(rinRaw, TestKey, compress.AlgoSnappy)
+		rin, isRaw, err := mio.NewInStream(
+			rinRaw,
+			"",
+			TestKey,
+			hints.Default(),
+		)
 		require.Nil(t, err)
 
 		backendHash, err := fs.bk.Add(rin)
@@ -170,7 +176,17 @@ func TestCat(t *testing.T) {
 		contentHash := h.TestDummy(t, 23)
 
 		// Stage the file manually (without fs.Stage)
-		_, err = c.Stage(fs.lkr, "/x", contentHash, backendHash, uint64(len(raw)), TestKey, time.Now())
+		_, err = c.Stage(
+			fs.lkr,
+			"/x",
+			contentHash,
+			backendHash,
+			uint64(len(raw)),
+			int64(len(raw)),
+			TestKey,
+			time.Now(),
+			isRaw,
+		)
 		require.Nil(t, err)
 
 		// Cat the file again:

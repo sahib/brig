@@ -9,6 +9,7 @@ require (
 	github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
 	github.com/bkaradzic/go-lz4 v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/brianvoe/gofakeit/v6 v6.0.0
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
@@ -56,7 +57,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
 	golang.org/x/text v0.3.4

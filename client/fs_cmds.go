@@ -22,6 +22,7 @@ type StatInfo struct {
 	CachedSize  int64
 	Inode       uint64
 	IsDir       bool
+	IsRaw       bool
 	Depth       int
 	ModTime     time.Time
 	IsPinned    bool
@@ -30,6 +31,7 @@ type StatInfo struct {
 	ContentHash h.Hash
 	BackendHash h.Hash
 	Key         []byte
+	Hint        Hint
 }
 
 func convertHash(hashBytes []byte, err error) (h.Hash, error) {
@@ -82,12 +84,23 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 		return nil, err
 	}
 
+	capHint, err := capInfo.Hint()
+	if err != nil {
+		return nil, err
+	}
+
+	hint, err := convertCapHint(capHint)
+	if err != nil {
+		return nil, err
+	}
+
 	info.Path = path
 	info.User = user
 	info.Size = capInfo.Size()
 	info.CachedSize = capInfo.CachedSize()
 	info.Inode = capInfo.Inode()
 	info.IsDir = capInfo.IsDir()
+	info.IsRaw = capInfo.IsRaw()
 	info.IsPinned = capInfo.IsPinned()
 	info.IsExplicit = capInfo.IsExplicit()
 	info.Depth = int(capInfo.Depth())
@@ -96,6 +109,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.ContentHash = contentHash
 	info.BackendHash = backendHash
 	info.Key = key
+	info.Hint = *hint
 	return info, nil
 }
 
@@ -270,7 +284,7 @@ func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
 
 	defer ipfsStream.Close()
 
-	stream, err := mio.NewOutStream(ipfsStream, info.Key)
+	stream, err := mio.NewOutStream(ipfsStream, info.IsRaw, info.Key)
 	if err != nil {
 		return err
 	}
@@ -477,4 +491,15 @@ func (cl *Client) IsCached(path string) (bool, error) {
 	}
 
 	return result.IsCached(), nil
+}
+
+// RecodeStream takes the stream at `path` and, if it is a file, re-encodes
+// the stream with the current settings retrieved from the hint system.
+func (cl *Client) RecodeStream(path string) error {
+	call := cl.api.RecodeStream(cl.ctx, func(p capnp.FS_recodeStream_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
 }

@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Quickstart &#8212; brig v0.4.1-beta
- documentation</title>
-    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quickstart &#8212; brig v0.5.3 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="_static/language_data.js"></script>
-    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
-    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
-    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/js/jquery-1.11.0.min.js"></script>
+    <script src="_static/js/jquery-fix.js"></script>
+    <script src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script src="_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Frequently Asked Questions" href="faq.html" />
@@ -40,8 +39,7 @@
         </button>
         <a class="navbar-brand" href="index.html">
           brig</a>
-        <span class="navbar-text navbar-version pull-left"><b>v0.4.1-beta
-</b></span>
+        <span class="navbar-text navbar-version pull-left"><b>v0.5.3</b></span>
       </div>
 
         <div class="collapse navbar-collapse nav-collapse">
@@ -84,7 +82,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#passwords">Passwords</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#choosing-and-finding-names">Choosing and finding names</a></li>
 </ul>
 </li>
@@ -93,9 +90,16 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/init.html#using-several-repositories-in-parallel">Using several repositories in parallel</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#locking-the-repository">Locking the repository.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#hints-configuring-encryption-compression">Hints - Configuring encryption &amp; compression</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-encryption-algorithms">Available encryption algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/coreutils.html#available-compression-algorithms">Available compression algorithms</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#remote-access">Remote access</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/mounts.html#making-mounts-permanent">Making mounts permanent</a></li>
 </ul>
 </li>
@@ -239,8 +243,10 @@
 <li class="toctree-l1"><a class="reference internal" href="tutorial/intro.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html">Creating a repository</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#running-the-daemon-and-viewing-logs">Running the daemon and viewing logs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/init.html#locking-the-repository">Locking the repository.</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html">Adding &amp; Viewing files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#coreutils">Coreutils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/coreutils.html#hints-configuring-encryption-compression">Hints - Configuring encryption &amp; compression</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/mounts.html">Mounting repositories</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html">Remotes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial/remotes.html#syncing">Syncing</a></li>
@@ -278,8 +284,8 @@
     <div class="col-md-9 content">
       
   <div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">The examples below are slightly outdated and will be revisited at some point.
+<p class="admonition-title">Warning</p>
+<p>The examples below are slightly outdated and will be revisited at some point.
 All commands should still work, but the output might be a little different now.
 Please refer to the <a class="reference internal" href="tutorial/intro.html#getting-started"><span class="std std-ref">Getting started</span></a> guide for a more up-to-date version.</p>
 </div>
@@ -312,8 +318,8 @@ familiar for users that know the command line.</p>
 contains the file you gave to <code class="docutils literal notranslate"><span class="pre">brig</span></code>. This can be done via the built-in FUSE
 layer.</p>
 <script src="https://asciinema.org/a/166178.js" id="asciicast-166178" async></script><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Some built-in commands provided by brig are faster.
+<p class="admonition-title">Note</p>
+<p>Some built-in commands provided by brig are faster.
 <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">cp</span></code> for example only copies metadata, while the real <code class="docutils literal notranslate"><span class="pre">cp</span></code> will copy the whole file.</p>
 </div>
 <p>If you wish to always have the mount when <code class="docutils literal notranslate"><span class="pre">brig</span></code> is running, you should look
@@ -337,8 +343,8 @@ How do you get their fingerprint? In the best case by using a separate side chan
 like telephone, encrypted email or elsewhise. But <code class="docutils literal notranslate"><span class="pre">brig</span></code> can assist finding remotes
 via the <code class="docutils literal notranslate"><span class="pre">brig</span> <span class="pre">net</span> <span class="pre">locate</span></code> command.</p>
 <script src="https://asciinema.org/a/166182.js" id="asciicast-166182" async></script><div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">You should <strong>always</strong> verify the fingerprint is really the one of your buddy.
+<p class="admonition-title">Note</p>
+<p>You should <strong>always</strong> verify the fingerprint is really the one of your buddy.
 <code class="docutils literal notranslate"><span class="pre">brig</span></code> cannot do this for you.</p>
 </div>
 </div>
@@ -376,8 +382,8 @@ again from a peer that provides it (if possible).</p>
       
     </p>
     <p>
-        &copy; Copyright 2018, Chris Pahl.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.<br/>
+        &copy; Copyright 2016-2020, Chris Pahl.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.3.1.<br/>
     </p>
   </div>
 </footer>

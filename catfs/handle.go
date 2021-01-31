@@ -51,7 +51,11 @@ func (hdl *Handle) initStreamIfNeeded() error {
 	}
 
 	// Stack the mio stack on top:
-	hdl.stream, err = mio.NewOutStream(rawStream, hdl.file.Key())
+	hdl.stream, err = mio.NewOutStream(
+		rawStream,
+		hdl.file.IsRaw(),
+		hdl.file.Key(),
+	)
 	if err != nil {
 		return err
 	}
@@ -79,6 +83,8 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
+	// TODO: not sure if that makes sense...
+	// we should just read whatever the underlying stream thinks it has.
 	n, err := io.ReadFull(hdl.layer, buf)
 	isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
 	if err != nil && !isEOF {
@@ -144,7 +150,7 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 	return n, nil
 }
 
-// Writes data from `buf` at offset `off` counted from the start (0 offset).
+// WriteAt writes data from `buf` at offset `off` counted from the start (0 offset).
 // Mimics `WriteAt` from `io` package https://golang.org/pkg/io/#WriterAt
 func (hdl *Handle) WriteAt(buf []byte, off int64) (n int, err error) {
 	hdl.lock.Lock()

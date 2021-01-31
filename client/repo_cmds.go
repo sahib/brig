@@ -1,6 +1,8 @@
 package client
 
 import (
+	"sort"
+
 	gwdb "github.com/sahib/brig/gateway/db"
 	"github.com/sahib/brig/server/capnp"
 	h "github.com/sahib/brig/util/hashlib"
@@ -559,4 +561,116 @@ func (ctl *Client) DebugProfilePort() (int, error) {
 	}
 
 	return int(result.Port()), nil
+}
+
+// Hint is a container for configuring streams.
+type Hint struct {
+	// Path is the path the hint applies to (recursively)
+	Path string
+
+	// CompressionAlgo can be an algorithm or "guess"
+	// to let brig choose a suitable one.
+	CompressionAlgo string
+
+	// EncryptionAlgo must be a valid encryption algorithm.
+	EncryptionAlgo string
+}
+
+// HintSet remembers the given settings at `path` (and below)
+func (ctl *Client) HintSet(path string, compressionAlgo, encryptionAlgo *string) error {
+	call := ctl.api.HintSet(ctl.ctx, func(p capnp.Repo_hintSet_Params) error {
+		capHint, err := capnp.NewHint(p.Segment())
+		if err != nil {
+			return err
+		}
+
+		if err := capHint.SetPath(path); err != nil {
+			return err
+		}
+
+		if compressionAlgo != nil {
+			if err := capHint.SetCompressionAlgo(*compressionAlgo); err != nil {
+				return err
+			}
+		}
+
+		if encryptionAlgo != nil {
+			if err := capHint.SetEncryptionAlgo(*encryptionAlgo); err != nil {
+				return err
+			}
+		}
+
+		return p.SetHint(capHint)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+// HintRemove removes the hint at `path`.
+func (ctl *Client) HintRemove(path string) error {
+	call := ctl.api.HintRemove(ctl.ctx, func(p capnp.Repo_hintRemove_Params) error {
+		return p.SetPath(path)
+	})
+
+	_, err := call.Struct()
+	return err
+}
+
+func convertCapHint(capHint capnp.Hint) (*Hint, error) {
+	path, err := capHint.Path()
+	if err != nil {
+		return nil, err
+	}
+
+	compressionAlgo, err := capHint.CompressionAlgo()
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionAlgo, err := capHint.EncryptionAlgo()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Hint{
+		Path:            path,
+		EncryptionAlgo:  encryptionAlgo,
+		CompressionAlgo: compressionAlgo,
+	}, nil
+}
+
+// HintList lists all hints that are currently set.
+func (ctl *Client) HintList() ([]Hint, error) {
+	call := ctl.api.HintList(ctl.ctx, func(p capnp.Repo_hintList_Params) error {
+		return nil
+	})
+
+	result, err := call.Struct()
+	if err != nil {
+		return nil, err
+	}
+
+	capHints, err := result.Hints()
+	if err != nil {
+		return nil, err
+	}
+
+	hints := []Hint{}
+
+	for idx := 0; idx < capHints.Len(); idx++ {
+		hint, err := convertCapHint(capHints.At(idx))
+		if err != nil {
+			return nil, err
+		}
+
+		hints = append(hints, *hint)
+	}
+
+	// Sort for display convenience:
+	sort.Slice(hints, func(i, j int) bool {
+		return hints[i].Path < hints[j].Path
+	})
+
+	return hints, nil
 }

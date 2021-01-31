@@ -45,6 +45,7 @@ func withState(t *testing.T, fn func(state *testState)) {
 		testGwUser,
 		false,
 		cfg.Section("fs"),
+		nil,
 	)
 	require.Nil(t, err)
 

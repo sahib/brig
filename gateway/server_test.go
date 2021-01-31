@@ -36,6 +36,7 @@ func withBasicGateway(t *testing.T, fn func(gw *Gateway, fs *catfs.FS)) {
 		"ali",
 		false,
 		cfg.Section("fs"),
+		nil,
 	)
 
 	require.Nil(t, err)

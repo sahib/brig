@@ -17,7 +17,7 @@ var (
 		{
 			"1.txt",
 			testutil.CreateDummyBuf(HeaderSizeThreshold - 1),
-			AlgoNone,
+			AlgoUnknown,
 		}, {
 			"2.txt",
 			testutil.CreateDummyBuf(HeaderSizeThreshold),
@@ -28,14 +28,14 @@ var (
 				[]byte{0x4f, 0x67, 0x67, 0x53},
 				testutil.CreateDummyBuf(HeaderSizeThreshold)...,
 			),
-			AlgoNone,
+			AlgoUnknown,
 		}, {
 			"4.zip",
 			append(
 				[]byte{0x50, 0x4b, 0x3, 0x4},
 				testutil.CreateDummyBuf(HeaderSizeThreshold)...,
 			),
-			AlgoNone,
+			AlgoUnknown,
 		},
 	}
 )

@@ -10,7 +10,7 @@ import (
 )
 
 func tarAndEncrypt(dir string, key []byte, w io.Writer) error {
-	encw, err := encrypt.NewWriter(w, key)
+	encw, err := encrypt.NewWriter(w, key, encrypt.FlagCompressedInside|encrypt.FlagEncryptAES256GCM)
 	if err != nil {
 		return err
 	}

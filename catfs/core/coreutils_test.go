@@ -489,14 +489,34 @@ func TestStage(t *testing.T) {
 
 		contentHash1 := h.TestDummy(t, 1)
 		backendHash1 := h.TestDummy(t, 1)
-		file, err := Stage(lkr, "/photos/moose.png", contentHash1, backendHash1, 2, key, time.Now())
+		file, err := Stage(
+			lkr,
+			"/photos/moose.png",
+			contentHash1,
+			backendHash1,
+			2,
+			-1,
+			key,
+			time.Now(),
+			false,
+		)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}
 
 		contentHash2 := h.TestDummy(t, 2)
 		backendHash2 := h.TestDummy(t, 2)
-		file, err = Stage(lkr, "/photos/moose.png", contentHash2, backendHash2, 3, key, time.Now())
+		file, err = Stage(
+			lkr,
+			"/photos/moose.png",
+			contentHash2,
+			backendHash2,
+			3,
+			-1,
+			key,
+			time.Now(),
+			false,
+		)
 		if err != nil {
 			t.Fatalf("Adding of /photos/moose.png failed: %v", err)
 		}

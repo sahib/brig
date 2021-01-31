@@ -86,7 +86,7 @@ func main() {
 	}
 
 	fsPath := filepath.Join(dbPath, "metadata")
-	fs, err := catfs.NewFilesystem(bk, fsPath, "ali", false, cfg.Section("fs"))
+	fs, err := catfs.NewFilesystem(bk, fsPath, "ali", false, cfg.Section("fs"), nil)
 	if err != nil {
 		log.Fatalf("failed to open fs: %v", err)
 	}

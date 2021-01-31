@@ -356,20 +356,34 @@ func Move(lkr *Linker, nd n.ModNode, dstPath string) error {
 
 // StageFromFileNode is a convinience helper that will call Stage() with all necessary params from `f`.
 func StageFromFileNode(lkr *Linker, f *n.File) (*n.File, error) {
-	return StageWithFullInfo(lkr, f.Path(), f.ContentHash(), f.BackendHash(), f.Size(), f.CachedSize(), f.Key(), f.ModTime())
+	return Stage(
+		lkr,
+		f.Path(),
+		f.ContentHash(),
+		f.BackendHash(),
+		f.Size(),
+		f.CachedSize(),
+		f.Key(),
+		f.ModTime(),
+		f.IsRaw(),
+	)
 }
 
 // Stage adds a file to brigs DAG this is lesser version since it does not use cachedSize
 // Do not use it if you can, use StageWithFullInfo couple lines below!
 // TODO rename Stage calls everywhere (especially in tests) and then
 // rename Stage -> StageWithoutCacheSize, and StageWithFullInfo -> Stage
-func Stage(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, key []byte, modTime time.Time) (file *n.File, err error) {
-	cachedSize := int64(-1) // Negative indicates unknown
-	return StageWithFullInfo(lkr, repoPath, contentHash, backendHash, size, cachedSize, key, modTime)
-}
-
-// StageWithFullInfo adds a file to brigs DAG.
-func StageWithFullInfo(lkr *Linker, repoPath string, contentHash, backendHash h.Hash, size uint64, cachedSize int64, key []byte, modTime time.Time) (file *n.File, err error) {
+func Stage(
+	lkr *Linker,
+	repoPath string,
+	contentHash,
+	backendHash h.Hash,
+	size uint64,
+	cachedSize int64,
+	key []byte,
+	modTime time.Time,
+	isRaw bool,
+) (file *n.File, err error) {
 	node, lerr := lkr.LookupNode(repoPath)
 	if lerr != nil && !ie.IsNoSuchFileError(lerr) {
 		err = lerr
@@ -450,6 +464,7 @@ func StageWithFullInfo(lkr *Linker, repoPath string, contentHash, backendHash h.
 		file.SetBackend(lkr, backendHash)
 		file.SetKey(key)
 		file.SetUser(lkr.owner)
+		file.SetIsRaw(isRaw)
 
 		// Add it again when the hash was changed.
 		log.Debugf("adding %s (%v)", file.Path(), file.BackendHash())

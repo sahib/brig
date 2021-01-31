@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"time"
 
+	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
@@ -19,7 +21,7 @@ type fsHandler struct {
 	base *base
 }
 
-func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, error) {
+func statToCapnp(fs *catfs.FS, info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, error) {
 	capInfo, err := capnp.NewStatInfo(seg)
 	if err != nil {
 		return nil, err
@@ -58,10 +60,21 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 		return nil, err
 	}
 
+	hint := fs.Hints().Lookup(info.Path)
+	capHint, err := hintToCapnp(seg, info.Path, hint)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capInfo.SetHint(*capHint); err != nil {
+		return nil, err
+	}
+
 	capInfo.SetSize(info.Size)
 	capInfo.SetCachedSize(info.CachedSize)
 	capInfo.SetInode(info.Inode)
 	capInfo.SetIsDir(info.IsDir)
+	capInfo.SetIsRaw(info.IsRaw)
 	capInfo.SetDepth(int32(info.Depth))
 	capInfo.SetIsPinned(info.IsPinned)
 	capInfo.SetIsExplicit(info.IsExplicit)
@@ -99,7 +112,7 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 		}
 
 		for idx, entry := range entries {
-			capEntry, err := statToCapnp(entry, call.Results.Segment())
+			capEntry, err := statToCapnp(fs, entry, call.Results.Segment())
 			if err != nil {
 				return err
 			}
@@ -404,7 +417,7 @@ func (fh *fsHandler) Stat(call capnp.FS_stat) error {
 			return err
 		}
 
-		capInfo, err := statToCapnp(info, call.Results.Segment())
+		capInfo, err := statToCapnp(fs, info, call.Results.Segment())
 		if err != nil {
 			return err
 		}
@@ -469,6 +482,8 @@ func (fh *fsHandler) GarbageCollect(call capnp.FS_garbageCollect) error {
 }
 
 func (fh *fsHandler) Touch(call capnp.FS_touch) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -485,6 +500,8 @@ func (fh *fsHandler) Touch(call capnp.FS_touch) error {
 }
 
 func (fh *fsHandler) Exists(call capnp.FS_exists) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -508,6 +525,8 @@ func (fh *fsHandler) Exists(call capnp.FS_exists) error {
 }
 
 func (fh *fsHandler) Undelete(call capnp.FS_undelete) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -519,6 +538,8 @@ func (fh *fsHandler) Undelete(call capnp.FS_undelete) error {
 }
 
 func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
+	server.Ack(call.Options)
+
 	root, err := call.Params.Root()
 	if err != nil {
 		return err
@@ -540,7 +561,7 @@ func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
 		}
 
 		for idx, node := range nodes {
-			capEntry, err := statToCapnp(node, call.Results.Segment())
+			capEntry, err := statToCapnp(fs, node, call.Results.Segment())
 			if err != nil {
 				return err
 			}
@@ -555,6 +576,8 @@ func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
 }
 
 func (fh *fsHandler) IsCached(call capnp.FS_isCached) error {
+	server.Ack(call.Options)
+
 	path, err := call.Params.Path()
 	if err != nil {
 		return err
@@ -567,6 +590,70 @@ func (fh *fsHandler) IsCached(call capnp.FS_isCached) error {
 		}
 
 		call.Results.SetIsCached(isCached)
+		return nil
+	})
+}
+
+func recodeStream(fs *catfs.FS, path string) error {
+	stream, err := fs.Cat(path)
+	if err != nil {
+		return err
+	}
+
+	defer stream.Close()
+
+	return fs.Stage(path, stream)
+}
+
+func (fh *fsHandler) RecodeStream(call capnp.FS_recodeStream) error {
+	server.Ack(call.Options)
+
+	path, err := call.Params.Path()
+	if err != nil {
+		return err
+	}
+
+	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
+		// If it's a file the list will be just the file itself.
+		children, err := fs.List(url.Path, -1)
+		if err != nil {
+			return e.Wrap(err, "failed to list")
+		}
+
+		// channel serves as token giver to limit parallel workload:
+		sem := make(chan error, runtime.NumCPU()*2)
+		for idx := 0; idx < cap(sem); idx++ {
+			sem <- nil
+		}
+
+		for _, child := range children {
+			if child.IsDir {
+				continue
+			}
+
+			// Get next token:
+			if err := <-sem; err != nil {
+				return err
+			}
+
+			go func(path string) {
+				err := recodeStream(fs, path)
+				if err != nil {
+					log.WithError(err).Warnf("failed to recode %s", err)
+				}
+				sem <- err
+			}(child.Path)
+		}
+
+		// drain any errors possibly still left in the channel.
+		// This also make sure to wait until completion.
+		// Note we don't cancel running request.
+		for idx := 0; idx < cap(sem); idx++ {
+			if err := <-sem; err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 }

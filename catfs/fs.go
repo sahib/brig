@@ -24,9 +24,9 @@ import (
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
-	"github.com/sahib/brig/catfs/mio/compress"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/catfs/vcs"
+	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/util"
 	h "github.com/sahib/brig/util/hashlib"
 )
@@ -34,6 +34,28 @@ import (
 const (
 	abiVersion = 1
 )
+
+// HintManager is the API for looking up hints.
+type HintManager interface {
+	// Lookup should return stream hints for the path.
+	// Hints are recursive, so we iterate until the root path
+	// to find the correct hint.
+	Lookup(path string) hints.Hint
+
+	// Set should remember `hint` for `path` and below.
+	Set(path string, hint hints.Hint) error
+}
+
+// dummy hint manager that will always yield the default.
+type defaultHintManager struct{}
+
+func (dhm defaultHintManager) Lookup(path string) hints.Hint {
+	return hints.Default()
+}
+
+func (dhm defaultHintManager) Set(path string, hint hints.Hint) error {
+	return fmt.Errorf("no hint manager, cannot remember hints")
+}
 
 // FS (short for Filesystem) is the central API entry for everything related to
 // paths.  It exposes a POSIX-like interface where path are mapped to the
@@ -76,6 +98,9 @@ type FS struct {
 	// wether this fs is read only and cannot be changed.
 	// It can be change by applying patches though.
 	readOnly bool
+
+	// interface to load stream hints
+	hintManager HintManager
 }
 
 // ErrReadOnly is returned when a file system was created in read only mode
@@ -116,6 +141,10 @@ type StatInfo struct {
 	IsPinned bool
 	// IsExplicit is true when the user pinned this node on purpose
 	IsExplicit bool
+
+	// IsRaw indicates if the stream associated with the file (if any)
+	// was encoded by brig or can be consumed from ipfs directly.
+	IsRaw bool
 
 	// Key is the encryption key for the file.
 	Key []byte
@@ -215,6 +244,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 	}
 
 	var isDir bool
+	var isRaw bool
 	var key []byte
 
 	switch nd.Type() {
@@ -224,6 +254,8 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 			key = make([]byte, len(file.Key()))
 			copy(key, file.Key())
 		}
+
+		isRaw = file.IsRaw()
 	case n.NodeTypeDirectory:
 		isDir = true
 	case n.NodeTypeGhost:
@@ -244,6 +276,7 @@ func (fs *FS) nodeToStat(nd n.Node) *StatInfo {
 		Depth:       n.Depth(nd),
 		IsPinned:    isPinned,
 		IsExplicit:  isExplicit,
+		IsRaw:       isRaw,
 		ContentHash: nd.ContentHash().Clone(),
 		BackendHash: nd.BackendHash().Clone(),
 		TreeHash:    nd.TreeHash().Clone(),
@@ -314,7 +347,14 @@ func (fs *FS) doGcRun() {
 
 // NewFilesystem creates a new CATFS filesystem.
 // This filesystem stores all its data in a Merkle DAG and is fully versioned.
-func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool, fsCfg *config.Config) (*FS, error) {
+func NewFilesystem(
+	backend FsBackend,
+	dbPath string,
+	owner string,
+	readOnly bool,
+	fsCfg *config.Config,
+	hintManager HintManager,
+) (*FS, error) {
 	kv, err := db.NewBadgerDatabase(dbPath)
 	if err != nil {
 		return nil, err
@@ -335,6 +375,10 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 		return nil, err
 	}
 
+	if hintManager == nil {
+		hintManager = defaultHintManager{}
+	}
+
 	// NOTE: We do not need to validate fsCfg here.
 	// This is already done on the side of our config module.
 	// (we just need to convert a few keys to the vcs.SyncOptions enum later).
@@ -349,6 +393,7 @@ func NewFilesystem(backend FsBackend, dbPath string, owner string, readOnly bool
 		autoCommitControl: make(chan bool, 1),
 		repinControl:      make(chan string, 1),
 		pinner:            pinCache,
+		hintManager:       hintManager,
 	}
 
 	// Start the garbage collection background task.
@@ -960,44 +1005,13 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return ErrReadOnly
 	}
 
-	// We might not be able to read the header for some reason.
-	// It's not critical currently, so fall back to the normal reader.
-	baseReader := r
-
 	// NOTE: fs.mu is not locked here since I/O can be done in parallel.
 	//       If you need locking, you can do it at the bottom of this method.
-
-	compressAlgo, err := compress.AlgoFromString(
-		fs.cfg.String("compress.default_algo"),
-	)
-
-	if err != nil {
-		log.WithError(err).Warnf("failed to read default compression, using default")
-		compressAlgo = compress.AlgoNone
-	} else {
-		// Keep the header of the file in memory, so we can do some guessing
-		// of e.g. the compression algorithm we should use.
-		headerReader := util.NewHeaderReader(r, 2048)
-		headerBuf, err := headerReader.Peek()
-		if err != nil {
-			log.WithError(err).Warnf("failed to peek stream header")
-			return err
-		}
-
-		baseReader = headerReader
-
-		compressAlgo, err = compress.GuessAlgorithm(path, headerBuf)
-		if err != nil {
-			log.WithError(err).Warnf("failed to guess suitable zip algo for %s", path)
-		}
-
-		log.Debugf("Using '%s' compression for file %s", compressAlgo, path)
-	}
 
 	// Branch off a part of the stream and pipe it through
 	// a hash writer to compute the hash while reading the stream:
 	hashWriter := h.NewHashWriter()
-	hashReader := io.TeeReader(baseReader, hashWriter)
+	hashReader := io.TeeReader(r, hashWriter)
 
 	// Do the same with the size.
 	// This actually measures the size of the stream and is
@@ -1005,8 +1019,8 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 	sizeAcc := &util.SizeAccumulator{}
 	sizeReader := io.TeeReader(hashReader, sizeAcc)
 
-	stream, err := mio.NewInStream(sizeReader, key, compressAlgo)
-
+	hint := fs.hintManager.Lookup(path)
+	stream, isRaw, err := mio.NewInStream(sizeReader, path, key, hint)
 	if err != nil {
 		return err
 	}
@@ -1029,7 +1043,8 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		return err
 	}
 
-	newFile, err := c.StageWithFullInfo(
+	// Remember the metadata:
+	newFile, err := c.Stage(
 		fs.lkr,
 		path,
 		contentHash,
@@ -1038,6 +1053,7 @@ func (fs *FS) Stage(path string, r io.Reader) error {
 		cachedSize,
 		key,
 		time.Now(),
+		isRaw,
 	)
 
 	if err != nil {
@@ -1084,7 +1100,12 @@ func (fs *FS) getTarableEntries(root string, filter func(node *StatInfo) bool) (
 			return ie.ErrBadNode
 		}
 
-		stream, err := fs.catHash(file.BackendHash(), file.Key(), file.Size())
+		stream, err := fs.catHash(
+			file.BackendHash(),
+			file.Key(),
+			file.Size(),
+			file.IsRaw(),
+		)
 		if err != nil {
 			return e.Wrapf(err, "failed to open stream for %s", file.Path())
 		}
@@ -1183,21 +1204,22 @@ func (fs *FS) Cat(path string) (mio.Stream, error) {
 	size := file.Size()
 	backendHash := file.BackendHash().Clone()
 	key := make([]byte, len(file.Key()))
+	isRaw := file.IsRaw()
 	copy(key, file.Key())
 
 	fs.mu.Unlock()
 
-	return fs.catHash(backendHash, key, size)
+	return fs.catHash(backendHash, key, size, isRaw)
 }
 
 // NOTE: This method can be called without locking fs.mu!
-func (fs *FS) catHash(backendHash h.Hash, key []byte, size uint64) (mio.Stream, error) {
+func (fs *FS) catHash(backendHash h.Hash, key []byte, size uint64, isRaw bool) (mio.Stream, error) {
 	rawStream, err := fs.bk.Cat(backendHash)
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := mio.NewOutStream(rawStream, key)
+	stream, err := mio.NewOutStream(rawStream, isRaw, key)
 	if err != nil {
 		return nil, err
 	}
@@ -2103,4 +2125,9 @@ func (fs *FS) IsCached(path string) (bool, error) {
 	}
 
 	return cachedCount == totalCount, nil
+}
+
+// Hints returns the hint manager passed to NewFilesystem
+func (fs *FS) Hints() HintManager {
+	return fs.hintManager
 }

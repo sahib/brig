@@ -17,6 +17,8 @@ func DaemonDefaultURL() string {
 		// See "man 7 unix" - we use an abstract unix domain socket.
 		// This means there is no socket file on the file system.
 		// (other tools use unix:@/path, but Go does not support that notation)
+		// This also means that there are no user rights on the socket file.
+		// If you need this, specify the url in the config.
 		return "unix:/tmp/brig.socket?abstract=true"
 	default:
 		return "tcp://127.0.0.1:6666"
@@ -192,16 +194,6 @@ var DefaultsV0 = config.DefaultMapping{
   * ignore: Ignore the remote version completely and keep our version.
   * embrace: Take the remote version and replace ours with it.
 `,
-			},
-		},
-		"compress": config.DefaultMapping{
-			"default_algo": config.DefaultEntry{
-				Default:      "snappy",
-				NeedsRestart: false,
-				Docs:         "What compression algorithm to use by default.",
-				Validator: config.EnumValidator(
-					"snappy", "lz4", "none",
-				),
 			},
 		},
 		"pre_cache": config.DefaultMapping{

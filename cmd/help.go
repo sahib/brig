@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sahib/brig/repo/hints"
 	"github.com/toqueteos/webbrowser"
 	"github.com/urfave/cli"
 )
@@ -28,6 +29,14 @@ var helpTexts = map[string]helpEntry{
 		ArgsUsage: "<username>",
 		Complete:  completeArgsUsage,
 		Flags: []cli.Flag{
+			// duplicate of global repo, because it is convenient to
+			// write »brig init --repo blah«.
+			cli.StringFlag{
+				Name:   "repo",
+				Usage:  "Path to the repository. Only has effect for new daemons.",
+				Value:  "",
+				EnvVar: "BRIG_PATH",
+			},
 			cli.StringFlag{
 				Name:  "backend,b",
 				Value: "httpipfs",
@@ -74,9 +83,8 @@ var helpTexts = map[string]helpEntry{
 
 EXAMPLES:
 
-    # TODO: Allow --repo to also come after init.
     # Easiest way to create a repository at /tmp/brig
-    $ brig --repo /tmp/brig init ali@wonderland.org/rabbithole
+    $ brig init --repo /tmp/brig ali@wonderland.org/rabbithole
 
 `,
 	},
@@ -854,6 +862,7 @@ EXAMPLES:
    Inode: Internal inode. Also shown as inode in FUSE.
    IsPinned: »yes« if the file is pinned, »no« else.
    IsExplicit: »yes« if the file is pinned explicitly, »no« elsewise.
+   IsRaw: »no« if the file was encoded by brig (using encryption or compression).
    ModTime: Timestamp of last modification.
    ContentHash: Content hash of the file before encryption.
    BackendHash: Hash of the node in ipfs (ipfs cat <this hash>)
@@ -1425,6 +1434,10 @@ EXAMPLES:
 				Usage: "What key to use for encryption (base58 encoded)",
 				Value: "4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9krzUw",
 			},
+			cli.BoolFlag{
+				Name:  "raw",
+				Usage: "Specify if this is a raw stream",
+			},
 		},
 	},
 	"debug.encode-stream": {
@@ -1434,6 +1447,16 @@ EXAMPLES:
 				Name:  "key",
 				Usage: "What key to use for encryption (base58 encoded)",
 				Value: "4F7BsTMVPKFshM1MwLf6y23cid6fL3xMpazVoF9krzUw",
+			},
+			cli.StringFlag{
+				Name:  "encryption",
+				Usage: "What encryption type to use",
+				Value: string(hints.EncryptionAES256GCM),
+			},
+			cli.StringFlag{
+				Name:  "compression,c",
+				Usage: "What compression algorithm to use",
+				Value: string(hints.CompressionGuess),
 			},
 		},
 	},
@@ -1468,6 +1491,71 @@ EXAMPLES:
    # Show a graph with a cpu profile of the last 30s:
    go tool pprof -web "http://localhost:$(brig d p)/debug/pprof/profile?seconds=30"
 `,
+	},
+	"hints": {
+		Usage: "Manage hints for file or directories",
+		Description: `
+   Hints can be used to change the default behavior for brig.
+   You can for example use it to change the default encryption algorithm
+   for certain files. Hints are always associated to a path. If a hint is
+   set to a path where a directory is located, then all files in it inherit
+   this hint - except there is another hint somewhere lower in the hierarchy.
+
+   Note that hints are only applied on the next file change. Files that have
+   differing settings will not be affected by changing a hint. If you want
+   an immediate effect you should use »brig hints set --recode <path>«, or,
+   if you want to do it a later point, »brig hints recode <path>«.
+
+EXAMPLES:
+
+   $ brig mkdir /public
+   $ echo "meow" | brig stage --stdin /public/cat-meme.png
+   $ brig hints set /public --compression none --encryption none
+   $ brig hints
+   PATH     ENCRYPTION  COMPRESSION
+   /        aes256gcm   guess
+   /public  none        none
+   # If a file could be streamed by »ipfs cat« alone,
+   # then the »IsRaw« attribute is true.
+   $ brig info --format '{{ .IsRaw }}' /public/cat-meme.png
+`,
+	},
+	"hints.set": {
+		Usage:       "Set a hint for a file or directory",
+		Description: "See help of »brig hints«",
+		ArgsUsage:   "<path>",
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "compression,c",
+				Usage: "What compression algorithm to use for this hint",
+				Value: "guess",
+			},
+			cli.StringFlag{
+				Name:  "encryption,e",
+				Usage: "What encryption algorithm to use for this hint",
+				Value: "aes256gcm",
+			},
+			cli.BoolFlag{
+				Name:  "force,f",
+				Usage: "Also create hint if there is no such file or directory",
+			},
+			cli.BoolFlag{
+				Name:  "recode,r",
+				Usage: "Recode the stream immediately.",
+			},
+		},
+	},
+	"hints.list": {
+		Usage:       "List all existing hints.",
+		Description: "See help of »brig hints«",
+	},
+	"hints.remove": {
+		ArgsUsage: "<path>",
+		Usage:     "Remove an existing hint.",
+	},
+	"hints.recode": {
+		ArgsUsage: "[<path>]",
+		Usage:     "Recode the streams in <path>. If no path given all files are recoded.",
 	},
 	"bug": {
 		Usage: "Print a template for bug reports.",

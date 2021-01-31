@@ -5,6 +5,12 @@ using User = import "../../gateway/db/capnp/user.capnp";
 $Go.package("capnp");
 $Go.import("github.com/sahib/brig/server/capnp");
 
+struct Hint {
+    path            @0 :Text;
+    encryptionAlgo  @1 :Text;
+    compressionAlgo @2 :Text;
+}
+
 struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     path        @0  :Text;
     treeHash    @1  :Data;
@@ -20,6 +26,8 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     user        @11 :Text;
     backendHash @12 :Data;
     key         @13 :Data;
+    isRaw       @14 :Bool;
+    hint        @15 :Hint;
 }
 
 struct Commit $Go.doc("Single log entry") {
@@ -158,6 +166,7 @@ interface FS {
     # note: stageFromStream is slower than regular stage.
     # currently only used for `brig stage --stdin`.
     stageFromStream   @18  (repoPath :Text) -> (stream :StageStream);
+    recodeStream      @19  (path :Text) -> ();
 
     interface StageStream {
         sendChunk @0 (chunk :Data) -> ();
@@ -202,6 +211,11 @@ interface Repo {
     gatewayUserRm    @16 (name :Text);
     gatewayUserList  @17 () -> (users :List(User.User));
     debugProfilePort @18 () -> (port :Int32);
+
+    hintSet          @19 (path :Text, hint :Hint) -> ();
+    hintRemove       @20 (path :Text) -> ();
+    hintList         @21 () -> (hints :List(Hint));
+
 }
 
 interface Net {
