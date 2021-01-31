@@ -1525,23 +1525,21 @@ EXAMPLES:
 		Description: "See help of »brig hints«",
 		ArgsUsage:   "<path>",
 		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "recode,r",
+				Usage: "Recode the stream immediately.",
+			},
 			cli.StringFlag{
 				Name:  "compression,c",
 				Usage: "What compression algorithm to use for this hint",
-				Value: "guess",
 			},
 			cli.StringFlag{
 				Name:  "encryption,e",
 				Usage: "What encryption algorithm to use for this hint",
-				Value: "aes256gcm",
 			},
 			cli.BoolFlag{
 				Name:  "force,f",
 				Usage: "Also create hint if there is no such file or directory",
-			},
-			cli.BoolFlag{
-				Name:  "recode,r",
-				Usage: "Recode the stream immediately.",
 			},
 		},
 	},

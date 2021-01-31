@@ -1183,12 +1183,11 @@ func handleRepoUnpack(ctx *cli.Context) error {
 }
 
 func optionalStringParamAsPtr(ctx *cli.Context, name string) *string {
-	if !ctx.IsSet(name) {
-		return nil
+	if v := ctx.String(name); v != "" {
+		return &v
 	}
 
-	v := ctx.String(name)
-	return &v
+	return nil
 }
 
 func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
@@ -1200,11 +1199,18 @@ func handleRepoHintsSet(ctx *cli.Context, ctl *client.Client) error {
 		}
 	}
 
-	if err := ctl.HintSet(
-		path,
-		optionalStringParamAsPtr(ctx, "compression"),
-		optionalStringParamAsPtr(ctx, "encryption"),
-	); err != nil {
+	zipHint := optionalStringParamAsPtr(ctx, "compression")
+	encHint := optionalStringParamAsPtr(ctx, "encryption")
+
+	// TODO: There seems to be a bug in the cli library.
+	// When --recode comes directly after 'set' then
+	// all other arguments are part of 'ctx.Args()' and do not get
+	// parsed. This check at least catches this behavior.
+	if zipHint == nil && encHint == nil {
+		return fmt.Errorf("need at least one of --encryption or --compression")
+	}
+
+	if err := ctl.HintSet(path, zipHint, encHint); err != nil {
 		return err
 	}
 
