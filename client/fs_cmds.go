@@ -31,6 +31,7 @@ type StatInfo struct {
 	ContentHash h.Hash
 	BackendHash h.Hash
 	Key         []byte
+	Hint        Hint
 }
 
 func convertHash(hashBytes []byte, err error) (h.Hash, error) {
@@ -83,6 +84,16 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 		return nil, err
 	}
 
+	capHint, err := capInfo.Hint()
+	if err != nil {
+		return nil, err
+	}
+
+	hint, err := convertCapHint(capHint)
+	if err != nil {
+		return nil, err
+	}
+
 	info.Path = path
 	info.User = user
 	info.Size = capInfo.Size()
@@ -98,6 +109,7 @@ func convertCapStatInfo(capInfo *capnp.StatInfo) (*StatInfo, error) {
 	info.ContentHash = contentHash
 	info.BackendHash = backendHash
 	info.Key = key
+	info.Hint = *hint
 	return info, nil
 }
 

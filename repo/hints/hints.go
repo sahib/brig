@@ -163,7 +163,6 @@ func readProcCPUInfo() {
 		// but on older ones ChaCha20 is quite fast.
 		if !bytes.Contains(data, []byte(" aes ")) {
 			atomic.StoreInt32(&cpuHasNoAESNI, 1)
-			log.Infof("using chacha20 as default because CPU does not support AES-NI")
 		}
 	}
 }

@@ -280,6 +280,10 @@ func userPrefixMap(users []string) map[string]string {
 	return m
 }
 
+func formatHint(hint client.Hint) string {
+	return fmt.Sprintf("enc:%s-zip:%s", hint.EncryptionAlgo, hint.CompressionAlgo)
+}
+
 func handleList(ctx *cli.Context, ctl *client.Client) error {
 	maxDepth := ctx.Int("depth")
 	if ctx.Bool("recursive") {
@@ -329,7 +333,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			userColumn = "USER\t"
 		}
 
-		fmt.Fprintf(tabW, "SIZE\tBKEND\tMODTIME\t%sPATH\tPIN\tCACHED\n", userColumn)
+		fmt.Fprintf(tabW, "SIZE\tBKEND\tMODTIME\t%sPATH\tPIN\tCACHED\tHINT\n", userColumn)
 	}
 
 	for _, entry := range entries {
@@ -355,7 +359,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 
 		fmt.Fprintf(
 			tabW,
-			"%s\t%s\t%s\t%s%s\t%s\t%s\n",
+			"%s\t%s\t%s\t%s%s\t%s\t%s\t%s\n",
 			colorForSize(entry.Size)(humanize.Bytes(entry.Size)),
 			colorForSize(entry.Size)(humanize.Bytes(uint64(entry.CachedSize))),
 			entry.ModTime.Format("2006-01-02 15:04:05 MST"),
@@ -363,6 +367,7 @@ func handleList(ctx *cli.Context, ctl *client.Client) error {
 			coloredPath,
 			pinState,
 			cachedState,
+			formatHint(entry.Hint),
 		)
 	}
 
@@ -518,6 +523,7 @@ func handleShowFileOrDir(ctx *cli.Context, ctl *client.Client, path string) erro
 	printPair("ModTime", info.ModTime.Format(time.RFC3339))
 	printPair("Tree Hash", info.TreeHash.B58String())
 	printPair("Content Hash", info.ContentHash.B58String())
+	printPair("Hint", formatHint(info.Hint))
 
 	if !info.IsDir {
 		printPair("Backend Hash", info.BackendHash.B58String())

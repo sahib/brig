@@ -5,6 +5,12 @@ using User = import "../../gateway/db/capnp/user.capnp";
 $Go.package("capnp");
 $Go.import("github.com/sahib/brig/server/capnp");
 
+struct Hint {
+    path            @0 :Text;
+    encryptionAlgo  @1 :Text;
+    compressionAlgo @2 :Text;
+}
+
 struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     path        @0  :Text;
     treeHash    @1  :Data;
@@ -21,6 +27,7 @@ struct StatInfo $Go.doc("StatInfo is a stat-like description of any node") {
     backendHash @12 :Data;
     key         @13 :Data;
     isRaw       @14 :Bool;
+    hint        @15 :Hint;
 }
 
 struct Commit $Go.doc("Single log entry") {
@@ -134,12 +141,6 @@ struct FsTabEntry {
     root     @3 :Text;
     active   @4 :Bool;
     offline  @5 :Bool;
-}
-
-struct Hint {
-    path            @0 :Text;
-    encryptionAlgo  @1 :Text;
-    compressionAlgo @2 :Text;
 }
 
 interface FS {

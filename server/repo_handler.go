@@ -514,6 +514,27 @@ func (rh *repoHandler) HintRemove(call capnp.Repo_hintRemove) error {
 	return rh.base.repo.Hints.Remove(path)
 }
 
+func hintToCapnp(seg *capnplib.Segment, path string, hint hints.Hint) (*capnp.Hint, error) {
+	capHint, err := capnp.NewHint(seg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capHint.SetPath(path); err != nil {
+		return nil, err
+	}
+
+	if err := capHint.SetCompressionAlgo(string(hint.CompressionAlgo)); err != nil {
+		return nil, err
+	}
+
+	if err := capHint.SetEncryptionAlgo(string(hint.EncryptionAlgo)); err != nil {
+		return nil, err
+	}
+
+	return &capHint, nil
+}
+
 func (rh *repoHandler) HintList(call capnp.Repo_hintList) error {
 	server.Ack(call.Options)
 
@@ -528,24 +549,12 @@ func (rh *repoHandler) HintList(call capnp.Repo_hintList) error {
 	capIdx := 0
 
 	for path, hint := range hints {
-		capHint, err := capnp.NewHint(seg)
+		capHint, err := hintToCapnp(seg, path, hint)
 		if err != nil {
 			return err
 		}
 
-		if err := capHint.SetPath(path); err != nil {
-			return err
-		}
-
-		if err := capHint.SetCompressionAlgo(string(hint.CompressionAlgo)); err != nil {
-			return err
-		}
-
-		if err := capHint.SetEncryptionAlgo(string(hint.EncryptionAlgo)); err != nil {
-			return err
-		}
-
-		if err := capnpHints.Set(capIdx, capHint); err != nil {
+		if err := capnpHints.Set(capIdx, *capHint); err != nil {
 			return err
 		}
 

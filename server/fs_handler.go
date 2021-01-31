@@ -21,7 +21,7 @@ type fsHandler struct {
 	base *base
 }
 
-func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, error) {
+func statToCapnp(fs *catfs.FS, info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, error) {
 	capInfo, err := capnp.NewStatInfo(seg)
 	if err != nil {
 		return nil, err
@@ -57,6 +57,16 @@ func statToCapnp(info *catfs.StatInfo, seg *capnplib.Segment) (*capnp.StatInfo, 
 	}
 
 	if err := capInfo.SetModTime(string(modTime)); err != nil {
+		return nil, err
+	}
+
+	hint := fs.Hints().Lookup(info.Path)
+	capHint, err := hintToCapnp(seg, info.Path, hint)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := capInfo.SetHint(*capHint); err != nil {
 		return nil, err
 	}
 
@@ -102,7 +112,7 @@ func (fh *fsHandler) List(call capnp.FS_list) error {
 		}
 
 		for idx, entry := range entries {
-			capEntry, err := statToCapnp(entry, call.Results.Segment())
+			capEntry, err := statToCapnp(fs, entry, call.Results.Segment())
 			if err != nil {
 				return err
 			}
@@ -407,7 +417,7 @@ func (fh *fsHandler) Stat(call capnp.FS_stat) error {
 			return err
 		}
 
-		capInfo, err := statToCapnp(info, call.Results.Segment())
+		capInfo, err := statToCapnp(fs, info, call.Results.Segment())
 		if err != nil {
 			return err
 		}
@@ -551,7 +561,7 @@ func (fh *fsHandler) DeletedNodes(call capnp.FS_deletedNodes) error {
 		}
 
 		for idx, node := range nodes {
-			capEntry, err := statToCapnp(node, call.Results.Segment())
+			capEntry, err := statToCapnp(fs, node, call.Results.Segment())
 			if err != nil {
 				return err
 			}
@@ -604,7 +614,6 @@ func (fh *fsHandler) RecodeStream(call capnp.FS_recodeStream) error {
 	}
 
 	return fh.base.withFsFromPath(path, func(url *URL, fs *catfs.FS) error {
-		log.Infof("PATH %s", url.Path)
 		// If it's a file the list will be just the file itself.
 		children, err := fs.List(url.Path, -1)
 		if err != nil {

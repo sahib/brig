@@ -617,6 +617,29 @@ func (ctl *Client) HintRemove(path string) error {
 	return err
 }
 
+func convertCapHint(capHint capnp.Hint) (*Hint, error) {
+	path, err := capHint.Path()
+	if err != nil {
+		return nil, err
+	}
+
+	compressionAlgo, err := capHint.CompressionAlgo()
+	if err != nil {
+		return nil, err
+	}
+
+	encryptionAlgo, err := capHint.EncryptionAlgo()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Hint{
+		Path:            path,
+		EncryptionAlgo:  encryptionAlgo,
+		CompressionAlgo: compressionAlgo,
+	}, nil
+}
+
 // HintList lists all hints that are currently set.
 func (ctl *Client) HintList() ([]Hint, error) {
 	call := ctl.api.HintList(ctl.ctx, func(p capnp.Repo_hintList_Params) error {
@@ -636,27 +659,12 @@ func (ctl *Client) HintList() ([]Hint, error) {
 	hints := []Hint{}
 
 	for idx := 0; idx < capHints.Len(); idx++ {
-		capHint := capHints.At(idx)
-		path, err := capHint.Path()
+		hint, err := convertCapHint(capHints.At(idx))
 		if err != nil {
 			return nil, err
 		}
 
-		compressionAlgo, err := capHint.CompressionAlgo()
-		if err != nil {
-			return nil, err
-		}
-
-		encryptionAlgo, err := capHint.EncryptionAlgo()
-		if err != nil {
-			return nil, err
-		}
-
-		hints = append(hints, Hint{
-			Path:            path,
-			EncryptionAlgo:  encryptionAlgo,
-			CompressionAlgo: compressionAlgo,
-		})
+		hints = append(hints, *hint)
 	}
 
 	// Sort for display convenience:

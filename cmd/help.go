@@ -83,9 +83,8 @@ var helpTexts = map[string]helpEntry{
 
 EXAMPLES:
 
-    # TODO: Allow --repo to also come after init.
     # Easiest way to create a repository at /tmp/brig
-    $ brig --repo /tmp/brig init ali@wonderland.org/rabbithole
+    $ brig init --repo /tmp/brig ali@wonderland.org/rabbithole
 
 `,
 	},
