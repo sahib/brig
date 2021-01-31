@@ -23,6 +23,24 @@ func die(msg string) {
 	panic(msg)
 }
 
+func compressionHintsToBullets() string {
+	s := []string{}
+	for algo := range hints.CompressionHintMap {
+		s = append(s, fmt.Sprintf("   * %s", algo))
+	}
+
+	return strings.Join(s, "\n")
+}
+
+func encryptionHintsToBullets() string {
+	s := []string{}
+	for algo := range hints.EncryptionHintMap {
+		s = append(s, fmt.Sprintf("   * %s", algo))
+	}
+
+	return strings.Join(s, "\n")
+}
+
 var helpTexts = map[string]helpEntry{
 	"init": {
 		Usage:     "Initialize a new repository.",
@@ -1494,7 +1512,8 @@ EXAMPLES:
 	},
 	"hints": {
 		Usage: "Manage hints for file or directories",
-		Description: `
+		Description: fmt.Sprintf(`
+
    Hints can be used to change the default behavior for brig.
    You can for example use it to change the default encryption algorithm
    for certain files. Hints are always associated to a path. If a hint is
@@ -1505,6 +1524,14 @@ EXAMPLES:
    differing settings will not be affected by changing a hint. If you want
    an immediate effect you should use »brig hints set --recode <path>«, or,
    if you want to do it a later point, »brig hints recode <path>«.
+
+   The available compression algorithms are:
+
+%s
+
+   The available encryption algorithms are:
+
+%s
 
 EXAMPLES:
 
@@ -1518,7 +1545,7 @@ EXAMPLES:
    # If a file could be streamed by »ipfs cat« alone,
    # then the »IsRaw« attribute is true.
    $ brig info --format '{{ .IsRaw }}' /public/cat-meme.png
-`,
+`, compressionHintsToBullets(), encryptionHintsToBullets()),
 	},
 	"hints.set": {
 		Usage:       "Set a hint for a file or directory",

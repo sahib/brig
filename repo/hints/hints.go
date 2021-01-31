@@ -46,7 +46,7 @@ const (
 )
 
 var (
-	compressionHintMap = map[CompressionHint]compress.AlgorithmType{
+	CompressionHintMap = map[CompressionHint]compress.AlgorithmType{
 		CompressionNone:   compress.AlgoUnknown,
 		CompressionLZ4:    compress.AlgoLZ4,
 		CompressionSnappy: compress.AlgoSnappy,
@@ -56,13 +56,13 @@ var (
 
 // IsValid returns true if `ch` is a valid compression hint.
 func (ch CompressionHint) IsValid() bool {
-	_, ok := compressionHintMap[ch]
+	_, ok := CompressionHintMap[ch]
 	return ok
 }
 
 // ToCompressAlgorithmType converts the hint to the enum used in compress
 func (ch CompressionHint) ToCompressAlgorithmType() compress.AlgorithmType {
-	return compressionHintMap[ch]
+	return CompressionHintMap[ch]
 }
 
 // CompressAlgorithmTypeToCompressionHint is a very aptly named function
@@ -83,7 +83,7 @@ func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) Compres
 
 func validCompressionHints() []string {
 	s := []string{}
-	for h := range compressionHintMap {
+	for h := range CompressionHintMap {
 		s = append(s, string(h))
 	}
 
@@ -105,7 +105,7 @@ const (
 )
 
 var (
-	encryptionHintMap = map[EncryptionHint]encrypt.Flags{
+	EncryptionHintMap = map[EncryptionHint]encrypt.Flags{
 		EncryptionNone:      encrypt.FlagEmpty,
 		EncryptionAES256GCM: encrypt.FlagEncryptAES256GCM,
 		EncryptionChaCha20:  encrypt.FlagEncryptChaCha20,
@@ -114,18 +114,18 @@ var (
 
 // IsValid checks if `eh` is a valid encryption type
 func (eh EncryptionHint) IsValid() bool {
-	_, ok := encryptionHintMap[eh]
+	_, ok := EncryptionHintMap[eh]
 	return ok
 }
 
 // ToEncryptFlags returns flags suitable for passing to the encrypt.NewWriter.
 func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
-	return encryptionHintMap[eh]
+	return EncryptionHintMap[eh]
 }
 
 func validEncryptionHints() []string {
 	s := []string{}
-	for h := range encryptionHintMap {
+	for h := range EncryptionHintMap {
 		s = append(s, string(h))
 	}
 
@@ -212,8 +212,8 @@ func (h Hint) String() string {
 func AllPossibleHints() []Hint {
 	hints := []Hint{}
 
-	for compressionHint := range compressionHintMap {
-		for encryptionHint := range encryptionHintMap {
+	for compressionHint := range CompressionHintMap {
+		for encryptionHint := range EncryptionHintMap {
 			hints = append(hints, Hint{
 				CompressionAlgo: compressionHint,
 				EncryptionAlgo:  encryptionHint,
