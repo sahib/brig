@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -204,7 +205,7 @@ func (h Hint) IsRaw() bool {
 }
 
 func (h Hint) String() string {
-	return fmt.Sprintf("enc-%s-zip-%s", h.EncryptionAlgo, h.CompressionAlgo)
+	return fmt.Sprintf("enc:%s-zip:%s", h.EncryptionAlgo, h.CompressionAlgo)
 }
 
 // AllPossibleHints returns all possible valid hint combination.
@@ -220,6 +221,14 @@ func AllPossibleHints() []Hint {
 			})
 		}
 	}
+
+	sort.Slice(hints, func(i, j int) bool {
+		if hints[i].EncryptionAlgo != hints[j].EncryptionAlgo {
+			return hints[i].EncryptionAlgo < hints[j].EncryptionAlgo
+		}
+
+		return hints[i].CompressionAlgo < hints[j].CompressionAlgo
+	})
 
 	return hints
 }

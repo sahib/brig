@@ -1480,6 +1480,9 @@ EXAMPLES:
 			},
 		},
 	},
+	"debug.iobench": {
+		Usage: "Benchmark I/O on your system",
+	},
 	"debug.pprof-port": {
 		Usage: "Print the pprof port of the daemon.",
 		Description: `
