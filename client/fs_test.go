@@ -467,3 +467,47 @@ func TestSyncRemovedFile(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestHints(t *testing.T) {
+	withDaemon(t, "ali", func(ctl *Client) {
+		// Add hint for directory.
+
+		path := "/public/cat-meme.png"
+		expected := testutil.CreateDummyBuf(1024 * 1024)
+		require.NoError(t, ctl.Mkdir("/public", true))
+		require.NoError(t, ctl.StageFromReader(path, bytes.NewReader(expected)))
+
+		info, err := ctl.Stat(path)
+		require.NoError(t, err)
+
+		require.Equal(t, "guess", info.Hint.CompressionAlgo)
+		require.Equal(t, "aes256gcm", info.Hint.EncryptionAlgo)
+		require.Equal(t, false, info.IsRaw)
+
+		none := "none"
+		require.NoError(t, ctl.HintSet("/public", &none, &none))
+
+		info, err = ctl.Stat(path)
+		require.NoError(t, err)
+
+		require.Equal(t, "none", info.Hint.CompressionAlgo)
+		require.Equal(t, "none", info.Hint.EncryptionAlgo)
+		require.Equal(t, false, info.IsRaw)
+
+		require.NoError(t, ctl.RecodeStream("/public"))
+
+		info, err = ctl.Stat(path)
+		require.NoError(t, err)
+
+		require.Equal(t, "none", info.Hint.CompressionAlgo)
+		require.Equal(t, "none", info.Hint.EncryptionAlgo)
+		require.Equal(t, true, info.IsRaw)
+
+		// Make sure it did not scramble the data:
+		stream, err := ctl.Cat(path, true)
+		require.NoError(t, err)
+		got, err := ioutil.ReadAll(stream)
+		require.NoError(t, err)
+		require.Equal(t, expected, got)
+	})
+}
