@@ -24,18 +24,31 @@ func die(msg string) {
 }
 
 func compressionHintsToBullets() string {
+	d := hints.Default()
 	s := []string{}
-	for algo := range hints.CompressionHintMap {
-		s = append(s, fmt.Sprintf("   * %s", algo))
+
+	for _, algo := range hints.CompressionHints() {
+		suffix := ""
+		if d.CompressionAlgo == algo {
+			suffix = " (default)"
+		}
+
+		s = append(s, fmt.Sprintf("   * %s%s", algo, suffix))
 	}
 
 	return strings.Join(s, "\n")
 }
 
 func encryptionHintsToBullets() string {
+	d := hints.Default()
 	s := []string{}
-	for algo := range hints.EncryptionHintMap {
-		s = append(s, fmt.Sprintf("   * %s", algo))
+
+	for _, algo := range hints.EncryptionHints() {
+		suffix := ""
+		if d.EncryptionAlgo == algo {
+			suffix = " (default)"
+		}
+		s = append(s, fmt.Sprintf("   * %s%s", algo, suffix))
 	}
 
 	return strings.Join(s, "\n")

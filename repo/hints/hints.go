@@ -46,7 +46,7 @@ const (
 )
 
 var (
-	CompressionHintMap = map[CompressionHint]compress.AlgorithmType{
+	compressionHintMap = map[CompressionHint]compress.AlgorithmType{
 		CompressionNone:   compress.AlgoUnknown,
 		CompressionLZ4:    compress.AlgoLZ4,
 		CompressionSnappy: compress.AlgoSnappy,
@@ -56,13 +56,13 @@ var (
 
 // IsValid returns true if `ch` is a valid compression hint.
 func (ch CompressionHint) IsValid() bool {
-	_, ok := CompressionHintMap[ch]
+	_, ok := compressionHintMap[ch]
 	return ok
 }
 
 // ToCompressAlgorithmType converts the hint to the enum used in compress
 func (ch CompressionHint) ToCompressAlgorithmType() compress.AlgorithmType {
-	return CompressionHintMap[ch]
+	return compressionHintMap[ch]
 }
 
 // CompressAlgorithmTypeToCompressionHint is a very aptly named function
@@ -83,8 +83,19 @@ func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) Compres
 
 func validCompressionHints() []string {
 	s := []string{}
-	for h := range CompressionHintMap {
+	for h := range compressionHintMap {
 		s = append(s, string(h))
+	}
+
+	return s
+}
+
+// CompressionHints returns all possible compression hints.
+func CompressionHints() []CompressionHint {
+	s := []CompressionHint{}
+
+	for compressionHint := range compressionHintMap {
+		s = append(s, compressionHint)
 	}
 
 	return s
@@ -105,7 +116,7 @@ const (
 )
 
 var (
-	EncryptionHintMap = map[EncryptionHint]encrypt.Flags{
+	encryptionHintMap = map[EncryptionHint]encrypt.Flags{
 		EncryptionNone:      encrypt.FlagEmpty,
 		EncryptionAES256GCM: encrypt.FlagEncryptAES256GCM,
 		EncryptionChaCha20:  encrypt.FlagEncryptChaCha20,
@@ -114,18 +125,18 @@ var (
 
 // IsValid checks if `eh` is a valid encryption type
 func (eh EncryptionHint) IsValid() bool {
-	_, ok := EncryptionHintMap[eh]
+	_, ok := encryptionHintMap[eh]
 	return ok
 }
 
 // ToEncryptFlags returns flags suitable for passing to the encrypt.NewWriter.
 func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
-	return EncryptionHintMap[eh]
+	return encryptionHintMap[eh]
 }
 
 func validEncryptionHints() []string {
 	s := []string{}
-	for h := range EncryptionHintMap {
+	for h := range encryptionHintMap {
 		s = append(s, string(h))
 	}
 
@@ -207,13 +218,24 @@ func (h Hint) String() string {
 	return fmt.Sprintf("enc-%s-zip-%s", h.EncryptionAlgo, h.CompressionAlgo)
 }
 
+// EncryptionHints returns all possible encryption hints.
+func EncryptionHints() []EncryptionHint {
+	s := []EncryptionHint{}
+
+	for encryptionHint := range encryptionHintMap {
+		s = append(s, encryptionHint)
+	}
+
+	return s
+}
+
 // AllPossibleHints returns all possible valid hint combination.
 // Useful for testing, but might be useful for cmdline purposes too.
 func AllPossibleHints() []Hint {
 	hints := []Hint{}
 
-	for compressionHint := range CompressionHintMap {
-		for encryptionHint := range EncryptionHintMap {
+	for compressionHint := range compressionHintMap {
+		for encryptionHint := range encryptionHintMap {
 			hints = append(hints, Hint{
 				CompressionAlgo: compressionHint,
 				EncryptionAlgo:  encryptionHint,
