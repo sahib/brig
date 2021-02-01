@@ -169,7 +169,6 @@ func (fi *File) Setxattr(ctx context.Context, req *fuse.SetxattrRequest) error {
 // Listxattr is called to list all xattrs of this file.
 func (fi *File) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	defer logPanic("file: listxattr")
-	log.Debugf("fuse-file-listxattr: %v", fi.path)
 
 	// Do not worry about req.Size
 	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
@@ -197,6 +196,7 @@ var _ = fs.NodeListxattrer(&File{})
 var _ = fs.NodeOpener(&File{})
 var _ = fs.NodeSetattrer(&File{})
 var _ = fs.NodeReadlinker(&File{})
+var _ = fs.NodeSetxattrer(&File{})
 
 // Other interfaces are available, but currently not needed or make sense:
 // var _ = fs.NodeRenamer(&File{})
@@ -210,6 +210,5 @@ var _ = fs.NodeReadlinker(&File{})
 // var _ = fs.NodeLinker(&File{})
 // var _ = fs.NodeMkdirer(&File{})
 // var _ = fs.NodeMknoder(&File{})
-// var _ = fs.NodeSetxattrer(&File{})
 // var _ = fs.NodeStringLookuper(&File{})
 // var _ = fs.NodeSymlinker(&File{})
