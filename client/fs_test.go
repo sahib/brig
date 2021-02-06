@@ -1,18 +1,14 @@
-package client
+package client_test
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"sort"
 	"testing"
-	"time"
 
-	"github.com/sahib/brig/repo"
-	"github.com/sahib/brig/server"
+	"github.com/sahib/brig/client"
+	"github.com/sahib/brig/client/clienttest"
 	colorLog "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
@@ -34,75 +30,28 @@ func stringify(err error) string {
 	return err.Error()
 }
 
-func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
-	repoPath, err := ioutil.TempDir("", "brig-client-repo")
-	require.Nil(t, err)
-
-	defer os.RemoveAll(repoPath)
-
-	daemonURL := "unix:" + filepath.Join(repoPath, "brig.socket")
-	err = repo.Init(repo.InitOptions{
-		BaseFolder:  repoPath,
-		Owner:       name,
-		BackendName: "mock",
-		DaemonURL:   daemonURL,
-	})
-	require.Nil(t, err, stringify(err))
-
-	srv, err := server.BootServer(
-		repoPath,
-		daemonURL,
-		true,
+func withDaemon(t *testing.T, name string, fn func(ctl *client.Client)) {
+	require.NoError(
+		t,
+		clienttest.WithDaemon(name, func(ctl *client.Client) error {
+			fn(ctl)
+			return nil
+		}),
 	)
-	require.Nil(t, err, stringify(err))
-
-	go func() {
-		require.Nil(t, srv.Serve())
-	}()
-
-	time.Sleep(500 * time.Millisecond)
-
-	ctl, err := Dial(context.Background(), daemonURL)
-	require.Nil(t, err)
-
-	defer func() {
-		require.Nil(t, srv.Close())
-	}()
-
-	fn(ctl)
-
 }
 
-func withDaemonPair(t *testing.T, nameA, nameB string, fn func(ctlA, ctlB *Client)) {
-	withDaemon(t, nameA, func(ctlA *Client) {
-		withDaemon(t, nameB, func(ctlB *Client) {
-			aliWhoami, err := ctlA.Whoami()
-			require.Nil(t, err, stringify(err))
-
-			bobWhoami, err := ctlB.Whoami()
-			require.Nil(t, err, stringify(err))
-
-			// add bob to ali as remote
-			err = ctlA.RemoteAddOrUpdate(Remote{
-				Name:        nameB,
-				Fingerprint: bobWhoami.Fingerprint,
-			})
-			require.Nil(t, err, stringify(err))
-
-			// add ali to bob as remote
-			err = ctlB.RemoteAddOrUpdate(Remote{
-				Name:        nameA,
-				Fingerprint: aliWhoami.Fingerprint,
-			})
-			require.Nil(t, err, stringify(err))
-
+func withDaemonPair(t *testing.T, nameA, nameB string, fn func(ctlA, ctlB *client.Client)) {
+	require.NoError(
+		t,
+		clienttest.WithDaemonPair(nameA, nameB, func(ctlA, ctlB *client.Client) error {
 			fn(ctlA, ctlB)
-		})
-	})
+			return nil
+		}),
+	)
 }
 
 func TestStageAndCat(t *testing.T) {
-	withDaemon(t, "ali", func(ctl *Client) {
+	withDaemon(t, "ali", func(ctl *client.Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
 
@@ -125,7 +74,7 @@ func TestStageAndCat(t *testing.T) {
 }
 
 func TestStageAndCatStream(t *testing.T) {
-	withDaemon(t, "ali", func(ctl *Client) {
+	withDaemon(t, "ali", func(ctl *client.Client) {
 		const fileSize = 4 * 1024 * 1024
 		r := io.LimitReader(&testutil.TenReader{}, fileSize)
 		err := ctl.StageFromReader("/hello", r)
@@ -143,7 +92,7 @@ func TestStageAndCatStream(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
-	withDaemon(t, "ali", func(ctl *Client) {
+	withDaemon(t, "ali", func(ctl *client.Client) {
 		// Create something nested with -p...
 		require.Nil(t, ctl.Mkdir("/a/b/c", true))
 
@@ -180,7 +129,7 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestSyncBasic(t *testing.T) {
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		err := aliCtl.StageFromReader("/ali_file", bytes.NewReader([]byte{42}))
 		require.NoError(t, err)
 
@@ -205,7 +154,7 @@ func TestSyncBasic(t *testing.T) {
 	})
 }
 
-func pathsFromListing(l []StatInfo) []string {
+func pathsFromListing(l []client.StatInfo) []string {
 	result := []string{}
 	for _, entry := range l {
 		result = append(result, entry.Path)
@@ -215,7 +164,7 @@ func pathsFromListing(l []StatInfo) []string {
 }
 
 func TestSyncConflict(t *testing.T) {
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		// Create two files with the same content on both sides:
 		err := aliCtl.StageFromReader("/README", bytes.NewReader([]byte{42}))
 		require.Nil(t, err, stringify(err))
@@ -267,7 +216,7 @@ func TestSyncConflict(t *testing.T) {
 }
 
 func TestSyncSeveralTimes(t *testing.T) {
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		err := aliCtl.StageFromReader("/ali_file_1", bytes.NewReader([]byte{1}))
 		require.Nil(t, err, stringify(err))
 
@@ -314,18 +263,18 @@ func TestSyncSeveralTimes(t *testing.T) {
 }
 
 func TestSyncPartial(t *testing.T) {
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		aliWhoami, err := aliCtl.Whoami()
 		require.Nil(t, err, stringify(err))
 
 		bobWhoami, err := bobCtl.Whoami()
 		require.Nil(t, err, stringify(err))
 
-		require.Nil(t, aliCtl.RemoteSave([]Remote{
+		require.Nil(t, aliCtl.RemoteSave([]client.Remote{
 			{
 				Name:        "bob",
 				Fingerprint: bobWhoami.Fingerprint,
-				Folders: []RemoteFolder{
+				Folders: []client.RemoteFolder{
 					{
 						Folder: "/photos",
 					},
@@ -333,11 +282,11 @@ func TestSyncPartial(t *testing.T) {
 			},
 		}))
 
-		require.Nil(t, bobCtl.RemoteSave([]Remote{
+		require.Nil(t, bobCtl.RemoteSave([]client.Remote{
 			{
 				Name:        "ali",
 				Fingerprint: aliWhoami.Fingerprint,
-				Folders: []RemoteFolder{
+				Folders: []client.RemoteFolder{
 					{
 						Folder: "/photos",
 					},
@@ -408,7 +357,7 @@ func TestSyncPartial(t *testing.T) {
 }
 
 func TestSyncMovedFile(t *testing.T) {
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		require.NoError(t, aliCtl.StageFromReader("/ali-file", bytes.NewReader([]byte{1, 2, 3})))
 		require.NoError(t, bobCtl.StageFromReader("/bob-file", bytes.NewReader([]byte{4, 5, 6})))
 
@@ -436,7 +385,7 @@ func TestSyncMovedFile(t *testing.T) {
 // https://github.com/sahib/brig/issues/56
 func TestSyncRemovedFile(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		require.NoError(t, aliCtl.StageFromReader("/testfile", bytes.NewReader([]byte{1, 2, 3})))
 
 		// Bob should get the /testfile now.
@@ -469,7 +418,7 @@ func TestSyncRemovedFile(t *testing.T) {
 }
 
 func TestHints(t *testing.T) {
-	withDaemon(t, "ali", func(ctl *Client) {
+	withDaemon(t, "ali", func(ctl *client.Client) {
 		// Add hint for directory.
 
 		path := "/public/cat-meme.png"

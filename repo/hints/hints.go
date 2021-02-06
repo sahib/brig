@@ -53,6 +53,13 @@ var (
 		CompressionSnappy: compress.AlgoSnappy,
 		CompressionGuess:  compress.AlgoUnknown,
 	}
+
+	compressionSortMap = map[CompressionHint]int{
+		CompressionNone:   0,
+		CompressionLZ4:    1,
+		CompressionSnappy: 2,
+		CompressionGuess:  3,
+	}
 )
 
 // IsValid returns true if `ch` is a valid compression hint.
@@ -82,7 +89,7 @@ func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) Compres
 	}
 }
 
-func validCompressionHints() []string {
+func ValidCompressionHints() []string {
 	s := []string{}
 	for h := range compressionHintMap {
 		s = append(s, string(h))
@@ -111,6 +118,12 @@ var (
 		EncryptionAES256GCM: encrypt.FlagEncryptAES256GCM,
 		EncryptionChaCha20:  encrypt.FlagEncryptChaCha20,
 	}
+
+	encryptionSortMap = map[EncryptionHint]int{
+		EncryptionNone:      0,
+		EncryptionAES256GCM: 1,
+		EncryptionChaCha20:  2,
+	}
 )
 
 // IsValid checks if `eh` is a valid encryption type
@@ -124,7 +137,7 @@ func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
 	return encryptionHintMap[eh]
 }
 
-func validEncryptionHints() []string {
+func ValidEncryptionHints() []string {
 	s := []string{}
 	for h := range encryptionHintMap {
 		s = append(s, string(h))
@@ -208,6 +221,37 @@ func (h Hint) String() string {
 	return fmt.Sprintf("enc:%s-zip:%s", h.EncryptionAlgo, h.CompressionAlgo)
 }
 
+// Less returns false if `o` should be sorted before `h`.
+func (h Hint) Less(o Hint) bool {
+	// This sorts "none" always before any other hint type.
+	// Leverages the fact that the enum value of none is lower than all others.
+	encNumH, ok := encryptionSortMap[h.EncryptionAlgo]
+	if !ok {
+		encNumH = int(^uint(0) >> 1)
+	}
+
+	encNumO, ok := encryptionSortMap[o.EncryptionAlgo]
+	if !ok {
+		encNumO = int(^uint(0) >> 1)
+	}
+
+	if encNumH != encNumO {
+		return encNumH < encNumO
+	}
+
+	zipNumH, ok := compressionSortMap[h.CompressionAlgo]
+	if !ok {
+		zipNumH = int(^uint(0) >> 1)
+	}
+
+	zipNumO, ok := compressionSortMap[o.CompressionAlgo]
+	if !ok {
+		zipNumO = int(^uint(0) >> 1)
+	}
+
+	return zipNumH < zipNumO
+}
+
 // AllPossibleHints returns all possible valid hint combination.
 // Useful for testing, but might be useful for cmdline purposes too.
 func AllPossibleHints() []Hint {
@@ -223,11 +267,7 @@ func AllPossibleHints() []Hint {
 	}
 
 	sort.Slice(hints, func(i, j int) bool {
-		if hints[i].EncryptionAlgo != hints[j].EncryptionAlgo {
-			return hints[i].EncryptionAlgo < hints[j].EncryptionAlgo
-		}
-
-		return hints[i].CompressionAlgo < hints[j].CompressionAlgo
+		return hints[i].Less(hints[j])
 	})
 
 	return hints
@@ -246,13 +286,13 @@ var (
 					Default:      string(Default().CompressionAlgo),
 					NeedsRestart: false,
 					Docs:         "Which compression algorithm to use.",
-					Validator:    config.EnumValidator(validCompressionHints()...),
+					Validator:    config.EnumValidator(ValidCompressionHints()...),
 				},
 				"encryption_algo": config.DefaultEntry{
 					Default:      string(Default().EncryptionAlgo),
 					NeedsRestart: false,
 					Docs:         "Which encryption algorithm to use.",
-					Validator:    config.EnumValidator(validEncryptionHints()...),
+					Validator:    config.EnumValidator(ValidEncryptionHints()...),
 				},
 			},
 		},

@@ -13,6 +13,7 @@ import (
 
 // Server is the local api server used by the command client.
 type Server struct {
+	daemonURL  string
 	baseServer *server.Server
 	base       *base
 }
@@ -42,12 +43,17 @@ func applyFstabInitially(base *base) error {
 	return fuse.FsTabApply(base.repo.Config.Section("mounts"), base.mounts)
 }
 
+// RepoPath returns the repo path we're operating on
+func (sv *Server) RepoPath() string {
+	return sv.base.basePath
+}
+
+func (sv *Server) DaemonURL() string {
+	return sv.daemonURL
+}
+
 // BootServer will boot up the local server.
-func BootServer(
-	basePath string,
-	serverURL string,
-	logToStdout bool,
-) (*Server, error) {
+func BootServer(basePath string, serverURL string) (*Server, error) {
 	defer func() {
 		// If anything in the daemon goes fatally wrong and it blows up, we
 		// want to log the panic at least. Otherwise we'll have a hard time
@@ -95,6 +101,7 @@ func BootServer(
 	}
 
 	return &Server{
+		daemonURL:  serverURL,
 		baseServer: baseServer,
 		base:       base,
 	}, nil

@@ -1,4 +1,4 @@
-package client
+package client_test
 
 import (
 	"bytes"
@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sahib/brig/client"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPush(t *testing.T) {
-	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *Client) {
+	withDaemonPair(t, "ali", "bob", func(aliCtl, bobCtl *client.Client) {
 		require.Nil(t, aliCtl.StageFromReader("/ali-file", bytes.NewReader([]byte{1, 2, 3})))
 
 		err := aliCtl.Push("bob", true)

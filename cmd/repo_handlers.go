@@ -419,12 +419,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		log.SetOutput(os.Stdout)
 	}
 
-	server, err := server.BootServer(
-		repoPath,
-		daemonURL,
-		logToStdout,
-	)
-
+	server, err := server.BootServer(repoPath, daemonURL)
 	if err != nil {
 		return ExitCode{
 			UnknownError,

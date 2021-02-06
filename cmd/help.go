@@ -1482,6 +1482,34 @@ EXAMPLES:
 	},
 	"debug.iobench": {
 		Usage: "Benchmark I/O on your system",
+		Description: `
+TODO: write a tutorial on how to use this benchmark util.
+`,
+		Flags: []cli.Flag{
+			cli.StringSliceFlag{
+				Name:  "bench,b",
+				Usage: "Which benchmarks to be run (can be given multiple times)",
+			},
+			cli.StringFlag{
+				Name:  "size,s",
+				Usage: "How big the testdata should be",
+				Value: "256M",
+			},
+			cli.StringFlag{
+				Name:  "compression,c",
+				Usage: "What compression hint to specify ('*' for all)",
+				Value: "*",
+			},
+			cli.StringFlag{
+				Name:  "encryption,e",
+				Usage: "What encryption hint to specify ('*' for all)",
+				Value: "*",
+			},
+			cli.BoolFlag{
+				Name:  "random,r",
+				Usage: "Use random testdata instead of easily compressible",
+			},
+		},
 	},
 	"debug.pprof-port": {
 		Usage: "Print the pprof port of the daemon.",
