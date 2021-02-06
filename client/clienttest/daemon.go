@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func StartDaemon(name, backendName string) (*server.Server, error) {
+func StartDaemon(name, backendName, ipfsPath string) (*server.Server, error) {
 	repoPath, err := ioutil.TempDir("", "brig-client-repo")
 	if err != nil {
 		return nil, err
@@ -27,6 +27,12 @@ func StartDaemon(name, backendName string) (*server.Server, error) {
 		DaemonURL:   daemonURL,
 	}); err != nil {
 		return nil, err
+	}
+
+	if backendName == "httpipfs" {
+		if err := repo.OverwriteConfigKey(repoPath, "daemon.ipfs_path", ipfsPath); err != nil {
+			return nil, err
+		}
 	}
 
 	srv, err := server.BootServer(repoPath, daemonURL)
@@ -46,7 +52,7 @@ func StartDaemon(name, backendName string) (*server.Server, error) {
 }
 
 func WithDaemon(name string, fn func(ctl *client.Client) error) error {
-	srv, err := StartDaemon(name, "mock")
+	srv, err := StartDaemon(name, "mock", "")
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ import (
 	"github.com/sahib/brig/util"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
-	log "github.com/sirupsen/logrus"
+	==============================================================================log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -153,7 +153,7 @@ func handleInit(ctx *cli.Context) error {
 
 	if backend == "httpipfs" {
 		var err error
-		ipfsPath, err = setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, doExtraIpfsConfig, ipfsPath)
+		ipfsPath, _, err = setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, doExtraIpfsConfig, ipfsPath)
 		if err != nil {
 			return err
 		}
@@ -400,7 +400,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		ipfsPath = cfg.String("daemon.ipfs_path")
 	}
 
-	if _, err := setup.IPFS(
+	if _, _, err := setup.IPFS(
 		&logWriter{prefix: "ipfs"},
 		true,
 		true,

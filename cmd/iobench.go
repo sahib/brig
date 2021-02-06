@@ -13,10 +13,17 @@ import (
 
 var (
 	defaultBenchmarks = []string{
-		// TODO: define default benchmarks.
-		"null:null",
-		"null:mio",
-		"mio:null",
+		// TODO: define default benchmarks. (just all?)
+		"null:ten",
+		"null:random",
+		"mio-reader:ten",
+		"mio-reader:random",
+		"mio-writer:ten",
+		"mio-writer:random",
+		"brig-stage-mem:random",
+		"brig-cat-mem:random",
+		"brig-stage-ipfs:random",
+		"brig-cat-ipfs:random",
 	}
 )
 
@@ -36,16 +43,18 @@ func handleIOBench(ctx *cli.Context) error {
 
 	cfgs := []bench.Config{}
 	for _, benchmark := range benchmarks {
-		benchSplit := strings.Split(benchmark, ":")
-		if len(benchSplit) != 2 {
-			return fmt.Errorf("invalid benchmark »%s«", benchmark)
+		benchSplit := strings.SplitN(benchmark, ":", 2)
+
+		benchInput := "ten"
+		benchName := benchSplit[0]
+		if len(benchSplit) >= 2 {
+			benchInput = benchSplit[1]
 		}
 
 		cfgs = append(cfgs, bench.Config{
-			InputName:   benchSplit[0],
-			BenchName:   benchSplit[1],
+			BenchName:   benchName,
+			InputName:   benchInput,
 			Size:        size,
-			Random:      ctx.Bool("random"),
 			Encryption:  ctx.String("encryption"),
 			Compression: ctx.String("compression"),
 		})
@@ -92,7 +101,6 @@ func drawBar(name string, took, ref time.Duration, inputSize uint64) {
 		} else {
 			fmt.Printf(" ")
 		}
-
 	}
 
 	throughput := float64(inputSize) / (float64(took) / float64(time.Second)) / (1024 * 1024)

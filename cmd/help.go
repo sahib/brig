@@ -1505,10 +1505,6 @@ TODO: write a tutorial on how to use this benchmark util.
 				Usage: "What encryption hint to specify ('*' for all)",
 				Value: "*",
 			},
-			cli.BoolFlag{
-				Name:  "random,r",
-				Usage: "Use random testdata instead of easily compressible",
-			},
 		},
 	},
 	"debug.pprof-port": {

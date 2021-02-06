@@ -7,11 +7,14 @@ import (
 	"github.com/sahib/brig/repo/hints"
 )
 
+// TODO:
+// Output sysinfo at front:
+// CPU-model, num cores.
+
 type Config struct {
 	InputName   string `json:"input_name"`
 	BenchName   string `json:"bench_name"`
 	Size        uint64 `json:"size"`
-	Random      bool   `json:"random"`
 	Encryption  string
 	Compression string
 }
@@ -21,15 +24,6 @@ type Result struct {
 	Encryption  string        `json:"encryption"`
 	Compression string        `json:"compression"`
 	Took        time.Duration `json:"took"`
-}
-
-func withTiming(fn func() error) (time.Duration, error) {
-	start := time.Now()
-	if err := fn(); err != nil {
-		return time.Since(start), err
-	}
-
-	return time.Since(start), nil
 }
 
 // buildHints handles wildcards for compression and/or encryption.
@@ -82,7 +76,7 @@ func sortHints(hs []hints.Hint) []hints.Hint {
 }
 
 func benchmarkSingle(cfg Config, fn func(result Result)) error {
-	in, err := InputByName(cfg.InputName, cfg.Size, cfg.Random)
+	in, err := InputByName(cfg.InputName, cfg.Size)
 	if err != nil {
 		return err
 	}
@@ -98,11 +92,7 @@ func benchmarkSingle(cfg Config, fn func(result Result)) error {
 
 	for _, hint := range sortHints(buildHints(cfg)) {
 		supportsHints := out.SupportHints()
-		if supportsHints {
-			if err := out.SetHint(hint); err != nil {
-				return err
-			}
-		} else {
+		if !supportsHints {
 			// Indicate in output that nothing was encrypted or compressed.
 			hint.CompressionAlgo = hints.CompressionNone
 			hint.EncryptionAlgo = hint.EncryptionAlgo
@@ -113,10 +103,7 @@ func benchmarkSingle(cfg Config, fn func(result Result)) error {
 			return err
 		}
 
-		took, err := withTiming(func() error {
-			return out.Process(r)
-		})
-
+		took, err := out.Bench(hint, r)
 		if err != nil {
 			return err
 		}

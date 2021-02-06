@@ -13,38 +13,39 @@ type Input interface {
 	Close() error
 }
 
+func benchData(size uint64, isRandom bool) []byte {
+	if isRandom {
+		return testutil.CreateRandomDummyBuf(int64(size), 23)
+	}
+	return testutil.CreateDummyBuf(int64(size))
+}
+
 //////////
 
-type NullInput struct {
+type MemInput struct {
 	buf []byte
 }
 
-func NewNullInput(size uint64, isRandom bool) *NullInput {
-	var buf []byte
-
-	if isRandom {
-		buf = testutil.CreateRandomDummyBuf(int64(size), 23)
-	} else {
-		buf = testutil.CreateDummyBuf(int64(size))
-	}
-
-	return &NullInput{buf: buf}
+func NewMemInput(size uint64, isRandom bool) *MemInput {
+	return &MemInput{buf: benchData(size, isRandom)}
 }
 
-func (ni *NullInput) Reader() (io.Reader, error) {
+func (ni *MemInput) Reader() (io.Reader, error) {
 	return bytes.NewReader(ni.buf), nil
 }
 
-func (ni *NullInput) Close() error {
+func (ni *MemInput) Close() error {
 	return nil
 }
 
 //////////
 
-func InputByName(name string, size uint64, isRandom bool) (Input, error) {
+func InputByName(name string, size uint64) (Input, error) {
 	switch name {
-	case "null":
-		return NewNullInput(size, isRandom), nil
+	case "ten":
+		return NewMemInput(size, false), nil
+	case "random":
+		return NewMemInput(size, true), nil
 	default:
 		return nil, fmt.Errorf("no such input: %s", name)
 	}

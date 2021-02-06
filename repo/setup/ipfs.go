@@ -335,13 +335,17 @@ func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool)
 	return nil
 }
 
-func startIpfs(out io.Writer, ipfsPath string) error {
+func startIpfs(out io.Writer, ipfsPath string) (int, error) {
 	// We don't call Wait() on cmd, so the process will survive the
 	// exit of your process and gets reparented to init.
 	fmt.Fprintf(out, "-- IPFS_PATH='%s' ipfs daemon --enable-pubsub-experiment\n", ipfsPath)
 	cmd := exec.Command("ipfs", "daemon", "--enable-pubsub-experiment")
 	cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return -1, err
+	}
+
+	return cmd.Process.Pid, nil
 }
 
 func isCommandAvailable(name string) bool {
@@ -382,7 +386,9 @@ func dirExistsAndIsNotEmpty(dir string) bool {
 // Otherwise it will install IPFS (if it needs to), init a repo, set config and
 // bring up the daemon in a fashion that should work for most cases.
 // It will output log messages to `out`.
-func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPath string) (string, error) {
+func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPath string) (string, int, error) {
+	ipfsPID := -1
+
 	if ipfsPath == "" {
 		ipfsPath = guessIPFSRepo()
 		fmt.Fprintf(out, "-- Guessed IPFS repository as %s\n", ipfsPath)
@@ -398,7 +404,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 				fmt.Fprintf(out, "-- Please refer to »https://docs.ipfs.io/introduction/install«\n")
 				fmt.Fprintf(out, "-- to find out on how to install it manually. It is usually very easy.\n")
 				fmt.Fprintf(out, "-- Re-run »brig init« once you're done.\n")
-				return "", err
+				return "", -1, err
 			}
 		} else {
 			fmt.Fprintf(out, "-- »ipfs« command is available, but no repo found.\n")
@@ -410,7 +416,7 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 
 	apiAddr, err := GetAPIAddrForPath(ipfsPath)
 	if err != nil {
-		return "", err
+		return "", -1, err
 	}
 
 	fmt.Fprintf(out, "-- The API address of the repo is: %s\n", apiAddr)
@@ -418,8 +424,10 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 	if !isRunning(apiAddr) {
 		fmt.Fprintf(out, "-- IPFS Daemon does not seem to be running.\n")
 		fmt.Fprintf(out, "-- Will start one for you with the following command:\n")
-		if err := startIpfs(out, ipfsPath); err != nil {
-			return "", err
+
+		ipfsPID, err = startIpfs(out, ipfsPath)
+		if err != nil {
+			return "", -1, err
 		}
 
 		waitForRunningIPFS(out, apiAddr, 60)
@@ -434,9 +442,9 @@ func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPat
 
 		if err := configureIPFS(out, apiAddr, ipfsPath, setExtraConfig); err != nil {
 			fmt.Fprintf(out, "-- Failed to set defaults: %v\n", err)
-			return "", err
+			return "", -1, err
 		}
 	}
 
-	return ipfsPath, nil
+	return ipfsPath, ipfsPID, nil
 }
