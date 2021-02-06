@@ -1,10 +1,15 @@
 package bench
 
 import (
+	"io/ioutil"
+	"os"
 	"sort"
+	"strings"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/sahib/brig/repo/hints"
+	"github.com/sahib/brig/repo/setup"
 )
 
 // TODO:
@@ -75,7 +80,7 @@ func sortHints(hs []hints.Hint) []hints.Hint {
 	return hs
 }
 
-func benchmarkSingle(cfg Config, fn func(result Result)) error {
+func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error {
 	in, err := InputByName(cfg.InputName, cfg.Size)
 	if err != nil {
 		return err
@@ -83,7 +88,7 @@ func benchmarkSingle(cfg Config, fn func(result Result)) error {
 
 	defer in.Close()
 
-	out, err := BenchByName(cfg.BenchName)
+	out, err := BenchByName(cfg.BenchName, ipfsPath)
 	if err != nil {
 		return err
 	}
@@ -125,10 +130,60 @@ func benchmarkSingle(cfg Config, fn func(result Result)) error {
 	return nil
 }
 
-func Benchmark(cfgs []Config, fn func(result Result)) error {
+// IPFS is expensive to set-up, so let's do it only once.
+func ipfsIsNeeded(cfgs []Config) bool {
 	for _, cfg := range cfgs {
-		if err := benchmarkSingle(cfg, fn); err != nil {
+		if strings.Contains(strings.ToLower(cfg.BenchName), "ipfs") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func Benchmark(cfgs []Config, fn func(result Result)) error {
+	needsIPFS := ipfsIsNeeded(cfgs)
+
+	var (
+		ipfsPath string
+		ipfsPID  int
+	)
+
+	if needsIPFS {
+		var err error
+		log.Warnf("Setting up IPFS for the benchmarks...")
+
+		ipfsPath, err = ioutil.TempDir("", "brig-iobench-ipfs-repo-*")
+		if err != nil {
 			return err
+		}
+
+		_, ipfsPID, err = setup.IPFS(ioutil.Discard, true, true, true, ipfsPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, cfg := range cfgs {
+		if err := benchmarkSingle(cfg, fn, ipfsPath); err != nil {
+			return err
+		}
+	}
+
+	if needsIPFS {
+		if ipfsPath != "" {
+			os.RemoveAll(ipfsPath)
+		}
+
+		if ipfsPID > 0 {
+			proc, err := os.FindProcess(ipfsPID)
+			if err != nil {
+				log.WithError(err).Warnf("failed to get IPFS PID")
+			} else {
+				if err := proc.Kill(); err != nil {
+					log.WithError(err).Warnf("failed to kill IPFS PID")
+				}
+			}
 		}
 	}
 

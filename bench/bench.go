@@ -7,17 +7,15 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"os"
 	"time"
 
+	"github.com/sahib/brig/backend/httpipfs"
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/client/clienttest"
 	"github.com/sahib/brig/repo/hints"
-	"github.com/sahib/brig/repo/setup"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util/testutil"
-	log "github.com/sirupsen/logrus"
 )
 
 type Bench interface {
@@ -61,33 +59,17 @@ func (n NullBench) Close() error { return nil }
 //////////
 
 type serverCommon struct {
-	daemon   *server.Server
-	client   *client.Client
-	ipfsPath string
-	ipfsPID  int
+	daemon *server.Server
+	client *client.Client
 }
 
-func newServerCommon(useIPFS bool) (*serverCommon, error) {
-	common := &serverCommon{}
+func newServerCommon(ipfsPath string) (*serverCommon, error) {
 	backendName := "mock"
-	if useIPFS {
+	if ipfsPath != "" {
 		backendName = "httpipfs"
-		ipfsPath, err := ioutil.TempDir("", "brig-iobench-ipfs-repo-*")
-		if err != nil {
-			return nil, err
-		}
-
-		_, ipfsPID, err := setup.IPFS(ioutil.Discard, true, true, true, ipfsPath)
-		if err != nil {
-			return nil, err
-		}
-
-		common.ipfsPath = ipfsPath
-		common.ipfsPID = ipfsPID
-		fmt.Println("Starting IPFS", common.ipfsPID, "at", common.ipfsPath)
 	}
 
-	srv, err := clienttest.StartDaemon("ali", backendName, common.ipfsPath)
+	srv, err := clienttest.StartDaemon("ali", backendName, ipfsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -97,30 +79,15 @@ func newServerCommon(useIPFS bool) (*serverCommon, error) {
 		return nil, err
 	}
 
-	common.daemon = srv
-	common.client = ctl
-	return common, nil
+	return &serverCommon{
+		daemon: srv,
+		client: ctl,
+	}, nil
 }
 
 func (sc *serverCommon) Close() error {
 	sc.daemon.Close()
 	sc.client.Close()
-
-	if sc.ipfsPath != "" {
-		os.RemoveAll(sc.ipfsPath)
-	}
-
-	if sc.ipfsPID > 0 {
-		proc, err := os.FindProcess(sc.ipfsPID)
-		if err != nil {
-			log.WithError(err).Warnf("failed to get IPFS PID")
-		} else {
-			if err := proc.Kill(); err != nil {
-				log.WithError(err).Warnf("failed to kill IPFS PID")
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -128,8 +95,8 @@ type ServerStageBench struct {
 	common *serverCommon
 }
 
-func NewServerStageBench(useIPFS bool) (*ServerStageBench, error) {
-	common, err := newServerCommon(useIPFS)
+func NewServerStageBench(ipfsPath string) (*ServerStageBench, error) {
+	common, err := newServerCommon(ipfsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -157,15 +124,12 @@ func (s *ServerStageBench) Close() error {
 	return s.common.Close()
 }
 
-// TODO: ipfs add
-// TODO: fuse-write
-
 type ServerCatBench struct {
 	common *serverCommon
 }
 
-func NewServerCatBench(useIPFS bool) (*ServerCatBench, error) {
-	common, err := newServerCommon(useIPFS)
+func NewServerCatBench(ipfsPath string) (*ServerCatBench, error) {
+	common, err := newServerCommon(ipfsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -235,9 +199,7 @@ func (m *MioWriterBench) Close() error {
 
 //////////
 
-type MioReaderBench struct {
-	h hints.Hint
-}
+type MioReaderBench struct{}
 
 func NewMioReaderBench() *MioReaderBench {
 	return &MioReaderBench{}
@@ -265,7 +227,7 @@ func (m *MioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 	return withTiming(func() error {
 		outStream, err := mio.NewOutStream(
 			bytes.NewReader(streamData),
-			m.h.IsRaw(),
+			hint.IsRaw(),
 			dummyKey,
 		)
 
@@ -286,22 +248,75 @@ func (m *MioReaderBench) Close() error {
 
 //////////
 
-func BenchByName(name string) (Bench, error) {
+type IpfsAddOrCatBench struct {
+	ipfsPath string
+	isAdd    bool
+}
+
+func NewIpfsAddBench(ipfsPath string, isAdd bool) *IpfsAddOrCatBench {
+	return &IpfsAddOrCatBench{ipfsPath: ipfsPath, isAdd: isAdd}
+}
+
+func (ia *IpfsAddOrCatBench) SupportHints() bool { return false }
+
+func (ia *IpfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+	nd, err := httpipfs.NewNode(ia.ipfsPath, "")
+	if err != nil {
+		return 0, err
+	}
+
+	defer nd.Close()
+
+	if ia.isAdd {
+		return withTiming(func() error {
+			_, err := nd.Add(r)
+			return err
+		})
+	}
+
+	hash, err := nd.Add(r)
+	if err != nil {
+		return 0, err
+	}
+
+	return withTiming(func() error {
+		stream, err := nd.Cat(hash)
+		if err != nil {
+			return err
+		}
+
+		_, err = testutil.DumbCopy(ioutil.Discard, stream, false, false)
+		return err
+	})
+}
+
+func (ia *IpfsAddOrCatBench) Close() error {
+	return nil
+}
+
+//////////
+
+// TODO: fuse-{read,write}
+func BenchByName(name, ipfsPath string) (Bench, error) {
 	switch name {
 	case "null":
 		return NewNullBench(), nil
 	case "brig-stage-mem":
-		return NewServerStageBench(false)
+		return NewServerStageBench("")
 	case "brig-cat-mem":
-		return NewServerCatBench(false)
+		return NewServerCatBench("")
 	case "brig-stage-ipfs":
-		return NewServerStageBench(true)
+		return NewServerStageBench(ipfsPath)
 	case "brig-cat-ipfs":
-		return NewServerCatBench(true)
+		return NewServerCatBench(ipfsPath)
 	case "mio-writer":
 		return NewMioWriterBench(), nil
 	case "mio-reader":
 		return NewMioReaderBench(), nil
+	case "ipfs-add":
+		return NewIpfsAddBench(ipfsPath, true), nil
+	case "ipfs-cat":
+		return NewIpfsAddBench(ipfsPath, false), nil
 	default:
 		return nil, fmt.Errorf("no such bench: %s", name)
 	}

@@ -29,7 +29,7 @@ import (
 	"github.com/sahib/brig/util"
 	formatter "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/version"
-	==============================================================================log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
