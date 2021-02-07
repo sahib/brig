@@ -1,6 +1,7 @@
 package bench
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -21,10 +22,12 @@ type Config struct {
 }
 
 type Result struct {
+	Name        string        `json:"name"`
 	Config      Config        `json:"config"`
 	Encryption  string        `json:"encryption"`
 	Compression string        `json:"compression"`
 	Took        time.Duration `json:"took"`
+	Throughput  float64       `json:"throughput"`
 }
 
 // buildHints handles wildcards for compression and/or encryption.
@@ -109,11 +112,17 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 			return err
 		}
 
+		// NOTE: We take the configured size, we don't check what was
+		//       actually written. Should we change this?
+		throughput := (float64(cfg.Size) / 1000 / 1000) / (float64(took) / float64(time.Second))
+
 		fn(Result{
+			Name:        fmt.Sprintf("%s:%s_%s", cfg.BenchName, cfg.InputName, hint),
 			Encryption:  string(hint.EncryptionAlgo),
 			Compression: string(hint.CompressionAlgo),
 			Config:      cfg,
 			Took:        took,
+			Throughput:  throughput,
 		})
 
 		if !supportsHints {
@@ -147,7 +156,7 @@ func Benchmark(cfgs []Config, fn func(result Result)) error {
 
 	if needsIPFS {
 		var err error
-		log.Warnf("Setting up IPFS for the benchmarks...")
+		log.Infof("Setting up IPFS for the benchmarks...")
 
 		ipfsPath, err = ioutil.TempDir("", "brig-iobench-ipfs-repo-*")
 		if err != nil {

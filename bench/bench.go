@@ -42,15 +42,15 @@ func withTiming(fn func() error) (time.Duration, error) {
 
 //////////
 
-type NullBench struct{}
+type MemcpyBench struct{}
 
-func NewNullBench(_ string, _ bool) (Bench, error) {
-	return NullBench{}, nil
+func NewMemcpyBench(_ string, _ bool) (Bench, error) {
+	return MemcpyBench{}, nil
 }
 
-func (n NullBench) SupportHints() bool { return false }
+func (n MemcpyBench) SupportHints() bool { return false }
 
-func (n NullBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (n MemcpyBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	// NOTE: Use DumbCopy, since io.Copy would use the
 	// ReadFrom of ioutil.Discard. This is lightning fast.
 	// We want to measure actual time to copy in memory.
@@ -60,7 +60,7 @@ func (n NullBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	})
 }
 
-func (n NullBench) Close() error { return nil }
+func (n MemcpyBench) Close() error { return nil }
 
 //////////
 
@@ -164,10 +164,12 @@ func (s *ServerCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 			return err
 		}
 
-		defer stream.Close()
-
 		_, err = testutil.DumbCopy(ioutil.Discard, stream, false, false)
-		return err
+		if err != nil {
+			return err
+		}
+
+		return stream.Close()
 	})
 }
 
@@ -191,11 +193,12 @@ func (m *MioWriterBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 		return 0, err
 	}
 
-	defer stream.Close()
-
 	return withTiming(func() error {
 		_, err := testutil.DumbCopy(ioutil.Discard, stream, false, false)
-		return err
+		if err != nil {
+			return err
+		}
+		return stream.Close()
 	})
 }
 
@@ -230,6 +233,9 @@ func (m *MioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 		return 0, err
 	}
 
+	// TODO: Make util to assert that the number of written bytes
+	//       is equal to the input stream size. Maybe even check
+	//       them to be equal for safety reasons?
 	return withTiming(func() error {
 		outStream, err := mio.NewOutStream(
 			bytes.NewReader(streamData),
@@ -416,7 +422,7 @@ var (
 	// - If it's using ipfs, put it in the name.
 	// - If it's writing things, put that in the name too as "write".
 	benchMap = map[string]func(string, bool) (Bench, error){
-		"null":            NewNullBench,
+		"memcpy":          NewMemcpyBench,
 		"brig-write-mem":  NewServerStageBench,
 		"brig-read-mem":   NewServerCatBench,
 		"brig-write-ipfs": NewServerStageBench,

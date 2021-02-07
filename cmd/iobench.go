@@ -55,7 +55,7 @@ func handleIOBench(ctx *cli.Context) error {
 		printStats(run.Stats)
 	}
 
-	size, err := humanize.ParseBytes(ctx.String("size"))
+	inputSize, err := humanize.ParseBytes(ctx.String("size"))
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func handleIOBench(ctx *cli.Context) error {
 		cfgs = append(cfgs, bench.Config{
 			BenchName:   benchName,
 			InputName:   benchInput,
-			Size:        size,
+			Size:        inputSize,
 			Encryption:  ctx.String("encryption"),
 			Compression: ctx.String("compression"),
 		})
@@ -86,7 +86,7 @@ func handleIOBench(ctx *cli.Context) error {
 
 	err = bench.Benchmark(cfgs, func(result bench.Result) {
 		section := fmt.Sprintf(
-			"%s => %s",
+			"%s:%s",
 			result.Config.InputName,
 			result.Config.BenchName,
 		)
@@ -101,13 +101,16 @@ func handleIOBench(ctx *cli.Context) error {
 			lastSection = section
 		}
 
-		benchName := fmt.Sprintf("enc-%s:zip-%s", result.Encryption, result.Compression)
-
 		if !isJSON {
-			drawBar(benchName, result.Took, baselineTiming, size)
+			drawBar(
+				result.Name,
+				result.Took,
+				baselineTiming,
+				inputSize,
+				result.Throughput,
+			)
 		}
 
-		// TODO: calculate name, throughput etc. in bench package
 		run.Results = append(run.Results, result)
 	})
 
@@ -131,11 +134,11 @@ func drawHeading(heading string) {
 	fmt.Println()
 }
 
-func drawBar(name string, took, ref time.Duration, inputSize uint64) {
+func drawBar(name string, took, ref time.Duration, inputSize uint64, throughput float64) {
 	perc := float64(ref) / float64(took)
-	const cells = 78
+	const cells = 60
 
-	fmt.Printf("%-40s [", name)
+	fmt.Printf("%-50s [", name)
 	for idx := 0; idx < cells; idx++ {
 		if idx <= int(perc*cells) {
 			fmt.Printf("=")
@@ -144,13 +147,12 @@ func drawBar(name string, took, ref time.Duration, inputSize uint64) {
 		}
 	}
 
-	throughput := float64(inputSize) / (float64(took) / float64(time.Second)) / (1024 * 1024)
 	fmt.Printf(
-		"] %.2f MB/s (%.2f%%) %v for %.2f MB\n",
+		"] %-7.2f MB/s (%8.2f%%) %6v for %.2f MB\n",
 		throughput,
 		perc*100,
-		took,
-		float64(inputSize)/1024/1024,
+		took.Round(time.Millisecond),
+		float64(inputSize)/1000/1000,
 	)
 }
 
