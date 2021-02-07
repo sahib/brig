@@ -7,21 +7,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/repo/setup"
+	log "github.com/sirupsen/logrus"
 )
-
-// TODO:
-// Output sysinfo at front:
-// CPU-model, num cores.
 
 type Config struct {
 	InputName   string `json:"input_name"`
 	BenchName   string `json:"bench_name"`
 	Size        uint64 `json:"size"`
-	Encryption  string
-	Compression string
+	Encryption  string `json:"encryption"`
+	Compression string `json:"compression"`
 }
 
 type Result struct {

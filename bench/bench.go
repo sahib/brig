@@ -9,6 +9,8 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/xattr"
@@ -42,8 +44,8 @@ func withTiming(fn func() error) (time.Duration, error) {
 
 type NullBench struct{}
 
-func NewNullBench() NullBench {
-	return NullBench{}
+func NewNullBench(_ string, _ bool) (Bench, error) {
+	return NullBench{}, nil
 }
 
 func (n NullBench) SupportHints() bool { return false }
@@ -99,7 +101,7 @@ type ServerStageBench struct {
 	common *serverCommon
 }
 
-func NewServerStageBench(ipfsPath string) (*ServerStageBench, error) {
+func NewServerStageBench(ipfsPath string, _ bool) (Bench, error) {
 	common, err := newServerCommon(ipfsPath)
 	if err != nil {
 		return nil, err
@@ -132,7 +134,7 @@ type ServerCatBench struct {
 	common *serverCommon
 }
 
-func NewServerCatBench(ipfsPath string) (*ServerCatBench, error) {
+func NewServerCatBench(ipfsPath string, _ bool) (Bench, error) {
 	common, err := newServerCommon(ipfsPath)
 	if err != nil {
 		return nil, err
@@ -177,8 +179,8 @@ func (s *ServerCatBench) Close() error {
 
 type MioWriterBench struct{}
 
-func NewMioWriterBench() *MioWriterBench {
-	return &MioWriterBench{}
+func NewMioWriterBench(_ string, _ bool) (Bench, error) {
+	return &MioWriterBench{}, nil
 }
 
 func (m *MioWriterBench) SupportHints() bool { return true }
@@ -205,8 +207,8 @@ func (m *MioWriterBench) Close() error {
 
 type MioReaderBench struct{}
 
-func NewMioReaderBench() *MioReaderBench {
-	return &MioReaderBench{}
+func NewMioReaderBench(_ string, _ bool) (Bench, error) {
+	return &MioReaderBench{}, nil
 }
 
 func (m *MioReaderBench) SupportHints() bool { return true }
@@ -257,8 +259,8 @@ type IpfsAddOrCatBench struct {
 	isAdd    bool
 }
 
-func NewIpfsAddBench(ipfsPath string, isAdd bool) *IpfsAddOrCatBench {
-	return &IpfsAddOrCatBench{ipfsPath: ipfsPath, isAdd: isAdd}
+func NewIpfsAddBench(ipfsPath string, isAdd bool) (Bench, error) {
+	return &IpfsAddOrCatBench{ipfsPath: ipfsPath, isAdd: isAdd}, nil
 }
 
 func (ia *IpfsAddOrCatBench) SupportHints() bool { return false }
@@ -309,7 +311,7 @@ type FuseWriteOrReadBench struct {
 	proc   *os.Process
 }
 
-func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (*FuseWriteOrReadBench, error) {
+func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
 	tmpDir, err := ioutil.TempDir("", "brig-fuse-bench-*")
 	if err != nil {
 		return nil, err
@@ -327,6 +329,9 @@ func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (*FuseWriteOrReadBen
 	if err != nil {
 		return nil, err
 	}
+
+	// bit time to start things up:
+	time.Sleep(500 * time.Millisecond)
 
 	ctl, err := fusetest.Dial(unixSocket)
 	if err != nil {
@@ -346,28 +351,23 @@ func (fb *FuseWriteOrReadBench) SupportHints() bool { return true }
 
 func (fb *FuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	mountDir := filepath.Join(fb.tmpDir, "mount")
-	fmt.Println("MOUNT", mountDir)
-	// time.Sleep(100 * time.Minute)
-
 	testPath := filepath.Join(mountDir, fmt.Sprintf("/path_%d", rand.Int31()))
 
-	if err := xattr.Set(
-		mountDir,
-		"user.brig.hints.encryption",
-		[]byte(hint.EncryptionAlgo),
-	); err != nil {
+	const (
+		xattrEnc = "user.brig.hints.encryption"
+		xattrZip = "user.brig.hints.compression"
+	)
+
+	// Make sure hints are followed:
+	if err := xattr.Set(mountDir, xattrEnc, []byte(hint.EncryptionAlgo)); err != nil {
 		return 0, err
 	}
 
-	if err := xattr.Set(
-		mountDir,
-		"user.brig.hints.compression",
-		[]byte(hint.CompressionAlgo),
-	); err != nil {
+	if err := xattr.Set(mountDir, xattrZip, []byte(hint.CompressionAlgo)); err != nil {
 		return 0, err
 	}
 
-	return withTiming(func() error {
+	took, err := withTiming(func() error {
 		fd, err := os.OpenFile(testPath, os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
@@ -378,10 +378,31 @@ func (fb *FuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Durati
 		_, err = testutil.DumbCopy(fd, r, false, false)
 		return err
 	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	if fb.isWrite {
+		// test is done already, no need to read-back.
+		return took, nil
+	}
+
+	return withTiming(func() error {
+		fd, err := os.Open(testPath)
+		if err != nil {
+			return err
+		}
+
+		defer fd.Close()
+
+		_, err = testutil.DumbCopy(ioutil.Discard, fd, false, false)
+		return err
+	})
 }
 
 func (fb *FuseWriteOrReadBench) Close() error {
-	// TODO: send quit, make sure it's dead.
+	// TODO: make sure it's dead.
 	fb.ctl.QuitServer()
 	time.Sleep(time.Second)
 	fb.proc.Kill()
@@ -390,32 +411,61 @@ func (fb *FuseWriteOrReadBench) Close() error {
 
 //////////
 
-// TODO: factor out to a map, so we can derive all benchmarks from it.
+var (
+	// Convention:
+	// - If it's using ipfs, put it in the name.
+	// - If it's writing things, put that in the name too as "write".
+	benchMap = map[string]func(string, bool) (Bench, error){
+		"null":            NewNullBench,
+		"brig-write-mem":  NewServerStageBench,
+		"brig-read-mem":   NewServerCatBench,
+		"brig-write-ipfs": NewServerStageBench,
+		"brig-read-ipfs":  NewServerCatBench,
+		"mio-write":       NewMioWriterBench,
+		"mio-read":        NewMioReaderBench,
+		"ipfs-write":      NewIpfsAddBench,
+		"ipfs-read":       NewIpfsAddBench,
+		"fuse-write-mem":  NewFuseWriteOrReadBench,
+		"fuse-write-ipfs": NewFuseWriteOrReadBench,
+		"fuse-read-mem":   NewFuseWriteOrReadBench,
+		"fuse-read-ipfs":  NewFuseWriteOrReadBench,
+	}
+)
+
 func BenchByName(name, ipfsPath string) (Bench, error) {
-	switch name {
-	case "null":
-		return NewNullBench(), nil
-	case "brig-stage-mem":
-		return NewServerStageBench("")
-	case "brig-cat-mem":
-		return NewServerCatBench("")
-	case "brig-stage-ipfs":
-		return NewServerStageBench(ipfsPath)
-	case "brig-cat-ipfs":
-		return NewServerCatBench(ipfsPath)
-	case "mio-writer":
-		return NewMioWriterBench(), nil
-	case "mio-reader":
-		return NewMioReaderBench(), nil
-	case "ipfs-add":
-		return NewIpfsAddBench(ipfsPath, true), nil
-	case "ipfs-cat":
-		return NewIpfsAddBench(ipfsPath, false), nil
-	case "fuse-write-mem":
-		return NewFuseWriteOrReadBench("", true)
-	case "fuse-write-ipfs":
-		return NewFuseWriteOrReadBench(ipfsPath, true)
-	default:
+	newBench, ok := benchMap[name]
+	if !ok {
 		return nil, fmt.Errorf("no such bench: %s", name)
 	}
+
+	return newBench(ipfsPath, strings.Contains(name, "write"))
+}
+
+func BenchmarkNames() []string {
+	names := []string{}
+	for name := range benchMap {
+		names = append(names, name)
+	}
+
+	sort.Slice(names, func(i, j int) bool {
+		if names[i] == names[j] {
+			return false
+		}
+
+		specials := []string{
+			"null",
+			"mio",
+		}
+
+		for _, special := range specials {
+			v := strings.HasSuffix(names[i], special)
+			if v || strings.HasSuffix(names[j], special) {
+				return v
+			}
+		}
+
+		return names[i] < names[j]
+	})
+
+	return names
 }

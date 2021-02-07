@@ -1,23 +1,20 @@
 package hints
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"runtime"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/klauspost/cpuid/v2"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util/trie"
 	"github.com/sahib/config"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -174,27 +171,13 @@ var (
 	cpuHasNoAESNI int32
 )
 
-func readProcCPUInfo() {
-	// can be extended with other operating systems later on.
-	switch runtime.GOOS {
-	case "linux":
-		data, err := ioutil.ReadFile("/proc/cpuinfo")
-		if err != nil {
-			log.WithError(err).Warnf("failed to read cpuinfo")
-			return
-		}
-
-		// Check if we don't have AES-NI. Most modern CPUs do,
-		// but on older ones ChaCha20 is quite fast.
-		if !bytes.Contains(data, []byte(" aes ")) {
-			atomic.StoreInt32(&cpuHasNoAESNI, 1)
-		}
-	}
-}
-
 // Default returns the default stream settings
 func Default() Hint {
-	cpuInfoOnce.Do(readProcCPUInfo)
+	cpuInfoOnce.Do(func() {
+		if !cpuid.CPU.Supports(cpuid.AESNI) {
+			atomic.StoreInt32(&cpuHasNoAESNI, 1)
+		}
+	})
 
 	encHint := EncryptionAES256GCM
 	if atomic.LoadInt32(&cpuHasNoAESNI) > 0 {

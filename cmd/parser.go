@@ -545,6 +545,13 @@ func RunCmdline(args []string) int {
 				}, {
 					Name:   "iobench",
 					Action: handleIOBench,
+					Subcommands: []cli.Command{
+						{
+							Name:    "list",
+							Aliases: []string{"ls"},
+							Action:  handleIOBenchList,
+						},
+					},
 				}, {
 					Name:   "fusemock",
 					Action: handleDebugFuseMock,

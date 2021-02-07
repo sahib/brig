@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sort"
 
 	"github.com/sahib/brig/util/testutil"
 )
@@ -26,7 +27,7 @@ type MemInput struct {
 	buf []byte
 }
 
-func NewMemInput(size uint64, isRandom bool) *MemInput {
+func NewMemInput(size uint64, isRandom bool) Input {
 	return &MemInput{buf: benchData(size, isRandom)}
 }
 
@@ -40,13 +41,28 @@ func (ni *MemInput) Close() error {
 
 //////////
 
+var (
+	inputMap = map[string]func(size uint64) (Input, error){
+		"ten":    func(size uint64) (Input, error) { return NewMemInput(size, false), nil },
+		"random": func(size uint64) (Input, error) { return NewMemInput(size, true), nil },
+	}
+)
+
 func InputByName(name string, size uint64) (Input, error) {
-	switch name {
-	case "ten":
-		return NewMemInput(size, false), nil
-	case "random":
-		return NewMemInput(size, true), nil
-	default:
+	newInput, ok := inputMap[name]
+	if !ok {
 		return nil, fmt.Errorf("no such input: %s", name)
 	}
+
+	return newInput(size)
+}
+
+func InputNames() []string {
+	names := []string{}
+	for name := range inputMap {
+		names = append(names, name)
+	}
+
+	sort.Strings(names)
+	return names
 }

@@ -1555,6 +1555,10 @@ EXAMPLES:
 TODO: write a tutorial on how to use this benchmark util.
 `,
 		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "json,j",
+				Usage: "Output the benchmark results as parsable JSON",
+			},
 			cli.StringSliceFlag{
 				Name:  "bench,b",
 				Usage: "Which benchmarks to be run (can be given multiple times)",
@@ -1575,6 +1579,9 @@ TODO: write a tutorial on how to use this benchmark util.
 				Value: "*",
 			},
 		},
+	},
+	"debug.iobench.list": {
+		Usage: "Just list all benchmark names",
 	},
 	"debug.pprof-port": {
 		Usage: "Print the pprof port of the daemon.",

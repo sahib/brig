@@ -31,6 +31,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/ipfs/go-ipfs-api v0.2.0
 	github.com/ipfs/go-ipfs-util v0.0.2
+	github.com/klauspost/cpuid/v2 v2.0.3
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/libp2p/go-libp2p-core v0.8.0 // indirect
 	github.com/mattn/go-isatty v0.0.12
