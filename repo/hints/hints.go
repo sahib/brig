@@ -98,6 +98,17 @@ func ValidCompressionHints() []string {
 	return s
 }
 
+// CompressionHints returns all possible compression hints.
+func CompressionHints() []CompressionHint {
+	s := []CompressionHint{}
+
+	for compressionHint := range compressionHintMap {
+		s = append(s, compressionHint)
+	}
+
+	return s
+}
+
 // EncryptionHint is an enum of valid encryption types
 type EncryptionHint string
 
@@ -250,6 +261,17 @@ func (h Hint) Less(o Hint) bool {
 	}
 
 	return zipNumH < zipNumO
+}
+
+// EncryptionHints returns all possible encryption hints.
+func EncryptionHints() []EncryptionHint {
+	s := []EncryptionHint{}
+
+	for encryptionHint := range encryptionHintMap {
+		s = append(s, encryptionHint)
+	}
+
+	return s
 }
 
 // AllPossibleHints returns all possible valid hint combination.

@@ -197,34 +197,6 @@ func (dir *Directory) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	return fuseEnts, nil
 }
 
-// Getxattr is called to get a single xattr (extended attribute) of a file.
-func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
-	defer logPanic("dir: getxattr")
-
-	debugLog("exec dir getxattr: %v: %v", dir.path, req.Name)
-
-	// Do not worry about req.Size
-	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
-	xattrs, err := getXattr(dir.m.fs, req.Name, dir.path)
-	if err != nil {
-		return err
-	}
-
-	resp.Xattr = xattrs
-	return nil
-}
-
-// Listxattr is called to list all xattrs of this dir
-func (dir *Directory) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
-	defer logPanic("dir: listxattr")
-
-	debugLog("exec dir listxattr")
-	// Do not worry about req.Size
-	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
-	resp.Xattr = listXattr()
-	return nil
-}
-
 // Rename or move files or directories
 // TODO: fix info availability,
 //       somehow the info about moved item is not visible for a little while after move
@@ -254,3 +226,38 @@ func (dir *Directory) Rename(ctx context.Context, req *fuse.RenameRequest, newDi
 	notifyChange(dir.m, 100*time.Millisecond)
 	return nil
 }
+
+// Getxattr is called to get a single xattr (extended attribute) of a directory.
+func (dir *Directory) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	defer logPanic("dir: getxattr")
+
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	xattrs, err := getXattr(dir.m.fs, req.Name, dir.path)
+	if err != nil {
+		return err
+	}
+
+	resp.Xattr = xattrs
+	return nil
+}
+
+// Setxattr is called by the setxattr syscall.
+func (dir *Directory) Setxattr(ctx context.Context, req *fuse.SetxattrRequest) error {
+	defer logPanic("dir: setxattr")
+
+	return setXattr(dir.m.fs, req.Name, dir.path, req.Xattr)
+}
+
+// Listxattr is called to list all xattrs of this directory.
+func (dir *Directory) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	defer logPanic("dir: listxattr")
+
+	// Do not worry about req.Size
+	// fuse will cut it to allowed size and report to the caller that buffer need to be larger
+	resp.Xattr = listXattr()
+	return nil
+}
+
+var _ = fs.NodeGetxattrer(&Directory{})
+var _ = fs.NodeListxattrer(&Directory{})
