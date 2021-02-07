@@ -10,6 +10,7 @@ import (
 	"github.com/mr-tron/base58"
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/client"
+	"github.com/sahib/brig/fuse/fusetest"
 	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/urfave/cli"
@@ -130,4 +131,17 @@ func handleDebugTenSink(ctx *cli.Context) error {
 	}
 
 	return nil
+}
+
+func handleDebugFuseMock(ctx *cli.Context) error {
+	opts := fusetest.Options{
+		CatfsPath:     ctx.String("catfs-path"),
+		MountPath:     ctx.String("mount-path"),
+		IpfsPath:      ctx.String("ipfs-path"),
+		URL:           ctx.String("url"),
+		MountReadOnly: ctx.Bool("mount-ro"),
+		MountOffline:  ctx.Bool("mount-offline"),
+	}
+
+	return fusetest.Launch(opts)
 }

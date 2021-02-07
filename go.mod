@@ -42,6 +42,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/phogolabs/parcello v0.8.2
 	github.com/pkg/errors v0.9.1
+	github.com/pkg/xattr v0.4.3
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sahib/config v0.2.0

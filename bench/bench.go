@@ -7,12 +7,16 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/pkg/xattr"
 	"github.com/sahib/brig/backend/httpipfs"
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/client/clienttest"
+	"github.com/sahib/brig/fuse/fusetest"
 	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/brig/server"
 	"github.com/sahib/brig/util/testutil"
@@ -296,7 +300,97 @@ func (ia *IpfsAddOrCatBench) Close() error {
 
 //////////
 
-// TODO: fuse-{read,write}
+type FuseWriteOrReadBench struct {
+	ipfsPath string
+	isWrite  bool
+
+	tmpDir string
+	ctl    *fusetest.Client
+	proc   *os.Process
+}
+
+func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (*FuseWriteOrReadBench, error) {
+	tmpDir, err := ioutil.TempDir("", "brig-fuse-bench-*")
+	if err != nil {
+		return nil, err
+	}
+
+	unixSocket := "unix:" + filepath.Join(tmpDir, "socket")
+
+	proc, err := fusetest.LaunchAsProcess(fusetest.Options{
+		MountPath: filepath.Join(tmpDir, "mount"),
+		CatfsPath: filepath.Join(tmpDir, "catfs"),
+		IpfsPath:  ipfsPath,
+		URL:       unixSocket,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ctl, err := fusetest.Dial(unixSocket)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FuseWriteOrReadBench{
+		ipfsPath: ipfsPath,
+		isWrite:  isWrite,
+		tmpDir:   tmpDir,
+		proc:     proc,
+		ctl:      ctl,
+	}, nil
+}
+
+func (fb *FuseWriteOrReadBench) SupportHints() bool { return true }
+
+func (fb *FuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+	mountDir := filepath.Join(fb.tmpDir, "mount")
+	fmt.Println("MOUNT", mountDir)
+	// time.Sleep(100 * time.Minute)
+
+	testPath := filepath.Join(mountDir, fmt.Sprintf("/path_%d", rand.Int31()))
+
+	if err := xattr.Set(
+		mountDir,
+		"user.brig.hints.encryption",
+		[]byte(hint.EncryptionAlgo),
+	); err != nil {
+		return 0, err
+	}
+
+	if err := xattr.Set(
+		mountDir,
+		"user.brig.hints.compression",
+		[]byte(hint.CompressionAlgo),
+	); err != nil {
+		return 0, err
+	}
+
+	return withTiming(func() error {
+		fd, err := os.OpenFile(testPath, os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			return err
+		}
+
+		defer fd.Close()
+
+		_, err = testutil.DumbCopy(fd, r, false, false)
+		return err
+	})
+}
+
+func (fb *FuseWriteOrReadBench) Close() error {
+	// TODO: send quit, make sure it's dead.
+	fb.ctl.QuitServer()
+	time.Sleep(time.Second)
+	fb.proc.Kill()
+	return os.RemoveAll(fb.tmpDir)
+}
+
+//////////
+
+// TODO: factor out to a map, so we can derive all benchmarks from it.
 func BenchByName(name, ipfsPath string) (Bench, error) {
 	switch name {
 	case "null":
@@ -317,6 +411,10 @@ func BenchByName(name, ipfsPath string) (Bench, error) {
 		return NewIpfsAddBench(ipfsPath, true), nil
 	case "ipfs-cat":
 		return NewIpfsAddBench(ipfsPath, false), nil
+	case "fuse-write-mem":
+		return NewFuseWriteOrReadBench("", true)
+	case "fuse-write-ipfs":
+		return NewFuseWriteOrReadBench(ipfsPath, true)
 	default:
 		return nil, fmt.Errorf("no such bench: %s", name)
 	}

@@ -543,8 +543,11 @@ func RunCmdline(args []string) int {
 					Aliases: []string{"tsi"},
 					Action:  handleDebugTenSink,
 				}, {
-					Name:    "iobench",
-					Action:  handleIOBench,
+					Name:   "iobench",
+					Action: handleIOBench,
+				}, {
+					Name:   "fusemock",
+					Action: handleDebugFuseMock,
 				},
 			},
 		}, {

@@ -1480,6 +1480,44 @@ EXAMPLES:
 			},
 		},
 	},
+	"debug.fusemock": {
+		Usage:       "Start a fuse mock server (use only if you know what you do)",
+		Description: "Hint: You don't.",
+		Flags: []cli.Flag{
+			// NOTE: Changing things need to be also changed in fuse/fusetest.
+			//       We rely on the argument names there.
+			cli.StringFlag{
+				Name:     "mount-path,m",
+				Usage:    "Path to fuse mount",
+				Value:    "",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:     "catfs-path,c",
+				Usage:    "Where to store metadata",
+				Value:    "",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:  "url",
+				Usage: "What compression hint to specify ('*' for all)",
+				Value: "unix:/tmp/fuse-mock.socket",
+			},
+			cli.StringFlag{
+				Name:  "ipfs-path,i",
+				Usage: "Path to IPFS, if you want to use it. Empty for memory only.",
+				Value: "",
+			},
+			cli.BoolFlag{
+				Name:  "mount-offline,o",
+				Usage: "Mount offline",
+			},
+			cli.BoolFlag{
+				Name:  "mount-ro,r",
+				Usage: "Mount read-only",
+			},
+		},
+	},
 	"debug.iobench": {
 		Usage: "Benchmark I/O on your system",
 		Description: `
