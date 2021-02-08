@@ -9,10 +9,16 @@ import (
 	"github.com/sahib/brig/util/testutil"
 )
 
+type Verifier interface {
+	io.Writer
+	MissingBytes() int64
+}
+
 // Input generates input for a benchmark. It defines how the data looks that
 // is fed to the streaming system.
 type Input interface {
 	Reader() (io.Reader, error)
+	Verifier() (Verifier, error)
 	Close() error
 }
 
@@ -25,6 +31,31 @@ func benchData(size uint64, isRandom bool) []byte {
 
 //////////
 
+type memVerifier struct {
+	expect  []byte
+	counter int64
+}
+
+func (m *memVerifier) Write(buf []byte) (int, error) {
+	if int64(len(buf))+m.counter > int64(len(m.expect)) {
+		return -1, fmt.Errorf("verify: got too much data")
+	}
+
+	slice := m.expect[m.counter : m.counter+int64(len(buf))]
+	if !bytes.Equal(slice, buf) {
+		return -1, fmt.Errorf("verify: data differs in block at %d", m.counter)
+	}
+
+	m.counter += int64(len(buf))
+
+	// Just nod off the data and let GC do the rest.
+	return len(buf), nil
+}
+
+func (m *memVerifier) MissingBytes() int64 {
+	return int64(len(m.expect)) - m.counter
+}
+
 type memInput struct {
 	buf []byte
 }
@@ -35,6 +66,13 @@ func newMemInput(size uint64, isRandom bool) Input {
 
 func (ni *memInput) Reader() (io.Reader, error) {
 	return bytes.NewReader(ni.buf), nil
+}
+
+func (ni *memInput) Verifier() (Verifier, error) {
+	return &memVerifier{
+		expect:  ni.buf,
+		counter: 0,
+	}, nil
 }
 
 func (ni *memInput) Close() error {

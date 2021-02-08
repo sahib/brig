@@ -104,20 +104,45 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 			hint.EncryptionAlgo = hints.EncryptionNone
 		}
 
+		if hint.CompressionAlgo == hints.CompressionGuess {
+			// NOTE: We do not benchmark guessing here.
+			// Simply reason is that we do not know from the output
+			// which algorithm was actually used.
+			continue
+		}
+
 		r, err := in.Reader()
 		if err != nil {
 			return err
 		}
 
-		took, err := out.Bench(hint, r)
+		v, err := in.Verifier()
 		if err != nil {
 			return err
+		}
+
+		// TODO: Provide way of sampling, i.e. run benchmark several times
+		//       to outweigh outliers (also makes smaller buffers possible)
+		//       Needs to take care that things like ipfs do not save the same
+		//       data twice (-> faster)
+		took, err := out.Bench(hint, r, v)
+		if err != nil {
+			return err
+		}
+
+		// Most write-only benchmarks cannot be verified, since
+		// we modify the stream and the verifier checks that the stream
+		// is equal to the input. Most read tests involve the same logic
+		// as writing though, so the writer has to work for that.
+		if out.CanBeVerified() {
+			if missing := v.MissingBytes(); missing != 0 {
+				log.Warnf("not all or too much data received in verify: %d", missing)
+			}
 		}
 
 		// NOTE: We take the configured size, we don't check what was
 		//       actually written. Should we change this?
 		throughput := (float64(cfg.Size) / 1000 / 1000) / (float64(took) / float64(time.Second))
-
 		fn(Result{
 			Name:        fmt.Sprintf("%s:%s_%s", cfg.BenchName, cfg.InputName, hint),
 			Encryption:  string(hint.EncryptionAlgo),

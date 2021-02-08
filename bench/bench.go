@@ -30,9 +30,11 @@ type Bench interface {
 	// passing hint influences the benchmark result.
 	SupportHints() bool
 
+	CanBeVerified() bool
+
 	// Bench should read the input from `r` and apply `hint` if applicable.
 	// The time needed to process all of `r` should be returned.
-	Bench(hint hints.Hint, r io.Reader) (time.Duration, error)
+	Bench(hint hints.Hint, r io.Reader, w io.Writer) (time.Duration, error)
 
 	// Close should clean up the benchmark.
 	Close() error
@@ -58,12 +60,14 @@ func newMemcpyBench(_ string, _ bool) (Bench, error) {
 
 func (n memcpyBench) SupportHints() bool { return false }
 
-func (n memcpyBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (n memcpyBench) CanBeVerified() bool { return true }
+
+func (n memcpyBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	// NOTE: Use DumbCopy, since io.Copy would use the
 	// ReadFrom of ioutil.Discard. This is lightning fast.
 	// We want to measure actual time to copy in memory.
 	return withTiming(func() error {
-		_, err := testutil.DumbCopy(ioutil.Discard, r, false, false)
+		_, err := testutil.DumbCopy(verifier, r, false, false)
 		return err
 	})
 }
@@ -120,7 +124,9 @@ func newServerStageBench(ipfsPath string, _ bool) (Bench, error) {
 
 func (s *serverStageBench) SupportHints() bool { return true }
 
-func (s *serverStageBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (s *serverStageBench) CanBeVerified() bool { return false }
+
+func (s *serverStageBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
 
 	c := string(hint.CompressionAlgo)
@@ -153,7 +159,9 @@ func newServerCatBench(ipfsPath string, _ bool) (Bench, error) {
 
 func (s *serverCatBench) SupportHints() bool { return true }
 
-func (s *serverCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (s *serverCatBench) CanBeVerified() bool { return true }
+
+func (s *serverCatBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
 
 	c := string(hint.CompressionAlgo)
@@ -172,7 +180,7 @@ func (s *serverCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 			return err
 		}
 
-		_, err = testutil.DumbCopy(ioutil.Discard, stream, false, false)
+		_, err = testutil.DumbCopy(verifier, stream, false, false)
 		if err != nil {
 			return err
 		}
@@ -195,7 +203,9 @@ func newMioWriterBench(_ string, _ bool) (Bench, error) {
 
 func (m *mioWriterBench) SupportHints() bool { return true }
 
-func (m *mioWriterBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (m *mioWriterBench) CanBeVerified() bool { return false }
+
+func (m *mioWriterBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	stream, _, err := mio.NewInStream(r, "", dummyKey, hint)
 	if err != nil {
 		return 0, err
@@ -224,7 +234,9 @@ func newMioReaderBench(_ string, _ bool) (Bench, error) {
 
 func (m *mioReaderBench) SupportHints() bool { return true }
 
-func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (m *mioReaderBench) CanBeVerified() bool { return true }
+
+func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	// Produce a buffer with encoded data in the right size.
 	// This is not benched, only the reading of it is.
 	inStream, _, err := mio.NewInStream(r, "", dummyKey, hint)
@@ -241,9 +253,6 @@ func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 		return 0, err
 	}
 
-	// TODO: Make util to assert that the number of written bytes
-	//       is equal to the input stream size. Maybe even check
-	//       them to be equal for safety reasons?
 	return withTiming(func() error {
 		outStream, err := mio.NewOutStream(
 			bytes.NewReader(streamData),
@@ -257,7 +266,7 @@ func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 
 		defer outStream.Close()
 
-		_, err = testutil.DumbCopy(ioutil.Discard, outStream, false, false)
+		_, err = testutil.DumbCopy(verifier, outStream, false, false)
 		return err
 	})
 }
@@ -279,7 +288,9 @@ func newIPFSAddBench(ipfsPath string, isAdd bool) (Bench, error) {
 
 func (ia *ipfsAddOrCatBench) SupportHints() bool { return false }
 
-func (ia *ipfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (ia *ipfsAddOrCatBench) CanBeVerified() bool { return !ia.isAdd }
+
+func (ia *ipfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	nd, err := httpipfs.NewNode(ia.ipfsPath, "")
 	if err != nil {
 		return 0, err
@@ -305,7 +316,7 @@ func (ia *ipfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration,
 			return err
 		}
 
-		_, err = testutil.DumbCopy(ioutil.Discard, stream, false, false)
+		_, err = testutil.DumbCopy(verifier, stream, false, false)
 		return err
 	})
 }
@@ -363,7 +374,9 @@ func newFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
 
 func (fb *fuseWriteOrReadBench) SupportHints() bool { return true }
 
-func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (fb *fuseWriteOrReadBench) CanBeVerified() bool { return !fb.isWrite }
+
+func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
 	mountDir := filepath.Join(fb.tmpDir, "mount")
 	testPath := filepath.Join(mountDir, fmt.Sprintf("/path_%d", rand.Int31()))
 
@@ -402,7 +415,7 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Durati
 		return took, nil
 	}
 
-	return withTiming(func() error {
+	took, err = withTiming(func() error {
 		fd, err := os.Open(testPath)
 		if err != nil {
 			return err
@@ -410,9 +423,11 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Durati
 
 		defer fd.Close()
 
-		_, err = testutil.DumbCopy(ioutil.Discard, fd, false, false)
+		_, err = testutil.DumbCopy(verifier, fd, false, false)
 		return err
 	})
+
+	return took, err
 }
 
 func (fb *fuseWriteOrReadBench) Close() error {

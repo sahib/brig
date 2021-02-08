@@ -144,12 +144,12 @@ func drawBar(name string, took, ref time.Duration, inputSize uint64, throughput 
 	perc := float64(ref) / float64(took)
 
 	// take a guess on how big the bar may be.
-	var cells int
-	if barw := w - 40 - 40; barw < cells {
+	var cells int = 50
+	if barw := w - 80; barw < cells {
 		cells = barw
 	}
 
-	fmt.Printf("%-40s [", name)
+	fmt.Printf("%-45s [", name)
 	for idx := 0; idx < cells; idx++ {
 		if idx <= int(perc*float64(cells)) {
 			fmt.Printf("=")
