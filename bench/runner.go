@@ -99,7 +99,7 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 		if !supportsHints {
 			// Indicate in output that nothing was encrypted or compressed.
 			hint.CompressionAlgo = hints.CompressionNone
-			hint.EncryptionAlgo = hint.EncryptionAlgo
+			hint.EncryptionAlgo = hints.EncryptionNone
 		}
 
 		r, err := in.Reader()

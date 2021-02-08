@@ -11,7 +11,7 @@ import (
 
 func TestMain(t *testing.T) {
 	t.Skip("TODO: probably a bit too much for travis")
-	ipfsPath, err := IPFS(os.Stdout, true, true, true, "")
+	ipfsPath, _, err := IPFS(os.Stdout, true, true, true, "")
 	require.Nil(t, err)
 	fmt.Println(ipfsPath)
 }

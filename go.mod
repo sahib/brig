@@ -7,7 +7,6 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
-	github.com/apex/log v1.9.0
 	github.com/bkaradzic/go-lz4 v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/brianvoe/gofakeit/v6 v6.0.0
@@ -17,7 +16,7 @@ require (
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgraph-io/badger v1.6.2
-	github.com/dgraph-io/ristretto v0.0.3 // indirect
+	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
 	github.com/djherbis/buffer v1.1.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.10.0

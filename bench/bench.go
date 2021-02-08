@@ -459,7 +459,7 @@ func BenchmarkNames() []string {
 		}
 
 		specials := []string{
-			"null",
+			"memcpy",
 			"mio",
 		}
 
