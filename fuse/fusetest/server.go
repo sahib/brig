@@ -107,6 +107,7 @@ func serveHTTPServer(opts Options) error {
 	return nil
 }
 
+// Options can be specified to control the behavior of the fusetest server.
 type Options struct {
 	// MountPath is where the fuse mount will be available.
 	MountPath string
@@ -128,6 +129,7 @@ type Options struct {
 	MountOffline bool
 }
 
+// Launch will launch a fuse test server.
 func Launch(opts Options) error {
 	tmpDir, err := ioutil.TempDir("", "brig-debug-fuse-*")
 	if err != nil {

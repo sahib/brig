@@ -13,6 +13,7 @@ type Client struct {
 	httpClient *http.Client
 }
 
+// Dial returns a client suitable for controlling a fusetest server.
 func Dial(url string) (*Client, error) {
 	scheme, addr, err := util.URLToSchemeAndAddr(url)
 	if err != nil {
@@ -31,6 +32,8 @@ func Dial(url string) (*Client, error) {
 	}, nil
 }
 
+// QuitServer sends a command that tells the server to quit.
+// The request will block until the quit was carried out.
 func (ctl *Client) QuitServer() error {
 	req, err := http.NewRequest("GET", "/quit", nil)
 	if err != nil {

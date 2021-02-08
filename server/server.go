@@ -48,6 +48,7 @@ func (sv *Server) RepoPath() string {
 	return sv.base.basePath
 }
 
+// DaemonURL returns the url that can be used used to access the server.
 func (sv *Server) DaemonURL() string {
 	return sv.daemonURL
 }

@@ -86,6 +86,7 @@ func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) Compres
 	}
 }
 
+// ValidCompressionHints returns all valid compression hints.
 func ValidCompressionHints() []string {
 	s := []string{}
 	for h := range compressionHintMap {
@@ -145,6 +146,7 @@ func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
 	return encryptionHintMap[eh]
 }
 
+// ValidEncryptionHints returns all valid encryption hints.
 func ValidEncryptionHints() []string {
 	s := []string{}
 	for h := range encryptionHintMap {

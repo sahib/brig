@@ -13,6 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// StartDaemon starts a new daemon with user `name`, using backend defined by
+// `backendName` and, if the backend is IPFS, uses the IPFS repository at
+// `ipfsPath`.  The resulting server should be closed after use and the
+// temporary directory where all data resides should be removed.
 func StartDaemon(name, backendName, ipfsPath string) (*server.Server, error) {
 	repoPath, err := ioutil.TempDir("", "brig-client-repo")
 	if err != nil {
@@ -51,6 +55,7 @@ func StartDaemon(name, backendName, ipfsPath string) (*server.Server, error) {
 	return srv, nil
 }
 
+// WithDaemon calls `fn` with a readily setup daemon client. `name` is the user.
 func WithDaemon(name string, fn func(ctl *client.Client) error) error {
 	srv, err := StartDaemon(name, "mock", "")
 	if err != nil {
@@ -70,6 +75,8 @@ func WithDaemon(name string, fn func(ctl *client.Client) error) error {
 	return fn(ctl)
 }
 
+// WithDaemonPair calls `fn` with two readily setup daemon clients.
+// `nameA` and `nameB` are the respective names.
 func WithDaemonPair(nameA, nameB string, fn func(ctlA, ctlB *client.Client) error) error {
 	return WithDaemon(nameA, func(ctlA *client.Client) error {
 		return WithDaemon(nameB, func(ctlB *client.Client) error {

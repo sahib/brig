@@ -13,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Config define how the benchmarks are run.
 type Config struct {
 	InputName   string `json:"input_name"`
 	BenchName   string `json:"bench_name"`
@@ -21,6 +22,7 @@ type Config struct {
 	Compression string `json:"compression"`
 }
 
+// Result is the result of a single benchmark run.
 type Result struct {
 	Name        string        `json:"name"`
 	Config      Config        `json:"config"`
@@ -87,7 +89,7 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 
 	defer in.Close()
 
-	out, err := BenchByName(cfg.BenchName, ipfsPath)
+	out, err := ByName(cfg.BenchName, ipfsPath)
 	if err != nil {
 		return err
 	}
@@ -146,6 +148,7 @@ func ipfsIsNeeded(cfgs []Config) bool {
 	return false
 }
 
+// Benchmark runs the benchmarks specified by `cfgs` and call `fn` on each result.
 func Benchmark(cfgs []Config, fn func(result Result)) error {
 	needsIPFS := ipfsIsNeeded(cfgs)
 

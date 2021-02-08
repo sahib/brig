@@ -9,6 +9,8 @@ import (
 	"github.com/sahib/brig/util/testutil"
 )
 
+// Input generates input for a benchmark. It defines how the data looks that
+// is fed to the streaming system.
 type Input interface {
 	Reader() (io.Reader, error)
 	Close() error
@@ -23,19 +25,19 @@ func benchData(size uint64, isRandom bool) []byte {
 
 //////////
 
-type MemInput struct {
+type memInput struct {
 	buf []byte
 }
 
-func NewMemInput(size uint64, isRandom bool) Input {
-	return &MemInput{buf: benchData(size, isRandom)}
+func newMemInput(size uint64, isRandom bool) Input {
+	return &memInput{buf: benchData(size, isRandom)}
 }
 
-func (ni *MemInput) Reader() (io.Reader, error) {
+func (ni *memInput) Reader() (io.Reader, error) {
 	return bytes.NewReader(ni.buf), nil
 }
 
-func (ni *MemInput) Close() error {
+func (ni *memInput) Close() error {
 	return nil
 }
 
@@ -43,11 +45,13 @@ func (ni *MemInput) Close() error {
 
 var (
 	inputMap = map[string]func(size uint64) (Input, error){
-		"ten":    func(size uint64) (Input, error) { return NewMemInput(size, false), nil },
-		"random": func(size uint64) (Input, error) { return NewMemInput(size, true), nil },
+		"ten":    func(size uint64) (Input, error) { return newMemInput(size, false), nil },
+		"random": func(size uint64) (Input, error) { return newMemInput(size, true), nil },
 	}
 )
 
+// InputByName fetches the input by it's name and returns an input
+// that will produce data with `size` bytes.
 func InputByName(name string, size uint64) (Input, error) {
 	newInput, ok := inputMap[name]
 	if !ok {
@@ -57,6 +61,7 @@ func InputByName(name string, size uint64) (Input, error) {
 	return newInput(size)
 }
 
+// InputNames returns the sorted list of all possible inputs.
 func InputNames() []string {
 	names := []string{}
 	for name := range inputMap {

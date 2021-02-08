@@ -6,6 +6,7 @@ import (
 	"github.com/klauspost/cpuid/v2"
 )
 
+// Stats are system statistics that might influence the benchmark result.
 type Stats struct {
 	Time         time.Time `json:"time"`
 	CPUBrandName string    `json:"cpu_brand_name"`
@@ -13,6 +14,7 @@ type Stats struct {
 	HasAESNI     bool      `json:"has_aesni"`
 }
 
+// FetchStats returns the current statistics.
 func FetchStats() Stats {
 	return Stats{
 		Time:         time.Now(),

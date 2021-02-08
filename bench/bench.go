@@ -24,9 +24,17 @@ import (
 	"github.com/sahib/brig/util/testutil"
 )
 
+// Bench is the interface every benchmark needs to implement.
 type Bench interface {
+	// SupportHints should return true for benchmarks where
+	// passing hint influences the benchmark result.
 	SupportHints() bool
+
+	// Bench should read the input from `r` and apply `hint` if applicable.
+	// The time needed to process all of `r` should be returned.
 	Bench(hint hints.Hint, r io.Reader) (time.Duration, error)
+
+	// Close should clean up the benchmark.
 	Close() error
 }
 
@@ -42,15 +50,15 @@ func withTiming(fn func() error) (time.Duration, error) {
 
 //////////
 
-type MemcpyBench struct{}
+type memcpyBench struct{}
 
-func NewMemcpyBench(_ string, _ bool) (Bench, error) {
-	return MemcpyBench{}, nil
+func newMemcpyBench(_ string, _ bool) (Bench, error) {
+	return memcpyBench{}, nil
 }
 
-func (n MemcpyBench) SupportHints() bool { return false }
+func (n memcpyBench) SupportHints() bool { return false }
 
-func (n MemcpyBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (n memcpyBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	// NOTE: Use DumbCopy, since io.Copy would use the
 	// ReadFrom of ioutil.Discard. This is lightning fast.
 	// We want to measure actual time to copy in memory.
@@ -60,7 +68,7 @@ func (n MemcpyBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) 
 	})
 }
 
-func (n MemcpyBench) Close() error { return nil }
+func (n memcpyBench) Close() error { return nil }
 
 //////////
 
@@ -97,22 +105,22 @@ func (sc *serverCommon) Close() error {
 	return nil
 }
 
-type ServerStageBench struct {
+type serverStageBench struct {
 	common *serverCommon
 }
 
-func NewServerStageBench(ipfsPath string, _ bool) (Bench, error) {
+func newServerStageBench(ipfsPath string, _ bool) (Bench, error) {
 	common, err := newServerCommon(ipfsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ServerStageBench{common: common}, nil
+	return &serverStageBench{common: common}, nil
 }
 
-func (s *ServerStageBench) SupportHints() bool { return true }
+func (s *serverStageBench) SupportHints() bool { return true }
 
-func (s *ServerStageBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (s *serverStageBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
 
 	c := string(hint.CompressionAlgo)
@@ -126,26 +134,26 @@ func (s *ServerStageBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, e
 	})
 }
 
-func (s *ServerStageBench) Close() error {
+func (s *serverStageBench) Close() error {
 	return s.common.Close()
 }
 
-type ServerCatBench struct {
+type serverCatBench struct {
 	common *serverCommon
 }
 
-func NewServerCatBench(ipfsPath string, _ bool) (Bench, error) {
+func newServerCatBench(ipfsPath string, _ bool) (Bench, error) {
 	common, err := newServerCommon(ipfsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ServerCatBench{common: common}, nil
+	return &serverCatBench{common: common}, nil
 }
 
-func (s *ServerCatBench) SupportHints() bool { return true }
+func (s *serverCatBench) SupportHints() bool { return true }
 
-func (s *ServerCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (s *serverCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
 
 	c := string(hint.CompressionAlgo)
@@ -173,21 +181,21 @@ func (s *ServerCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 	})
 }
 
-func (s *ServerCatBench) Close() error {
+func (s *serverCatBench) Close() error {
 	return s.common.Close()
 }
 
 //////////
 
-type MioWriterBench struct{}
+type mioWriterBench struct{}
 
-func NewMioWriterBench(_ string, _ bool) (Bench, error) {
-	return &MioWriterBench{}, nil
+func newMioWriterBench(_ string, _ bool) (Bench, error) {
+	return &mioWriterBench{}, nil
 }
 
-func (m *MioWriterBench) SupportHints() bool { return true }
+func (m *mioWriterBench) SupportHints() bool { return true }
 
-func (m *MioWriterBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (m *mioWriterBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	stream, _, err := mio.NewInStream(r, "", dummyKey, hint)
 	if err != nil {
 		return 0, err
@@ -202,21 +210,21 @@ func (m *MioWriterBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 	})
 }
 
-func (m *MioWriterBench) Close() error {
+func (m *mioWriterBench) Close() error {
 	return nil
 }
 
 //////////
 
-type MioReaderBench struct{}
+type mioReaderBench struct{}
 
-func NewMioReaderBench(_ string, _ bool) (Bench, error) {
-	return &MioReaderBench{}, nil
+func newMioReaderBench(_ string, _ bool) (Bench, error) {
+	return &mioReaderBench{}, nil
 }
 
-func (m *MioReaderBench) SupportHints() bool { return true }
+func (m *mioReaderBench) SupportHints() bool { return true }
 
-func (m *MioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	// Produce a buffer with encoded data in the right size.
 	// This is not benched, only the reading of it is.
 	inStream, _, err := mio.NewInStream(r, "", dummyKey, hint)
@@ -254,24 +262,24 @@ func (m *MioReaderBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, err
 	})
 }
 
-func (m *MioReaderBench) Close() error {
+func (m *mioReaderBench) Close() error {
 	return nil
 }
 
 //////////
 
-type IpfsAddOrCatBench struct {
+type ipfsAddOrCatBench struct {
 	ipfsPath string
 	isAdd    bool
 }
 
-func NewIpfsAddBench(ipfsPath string, isAdd bool) (Bench, error) {
-	return &IpfsAddOrCatBench{ipfsPath: ipfsPath, isAdd: isAdd}, nil
+func newIPFSAddBench(ipfsPath string, isAdd bool) (Bench, error) {
+	return &ipfsAddOrCatBench{ipfsPath: ipfsPath, isAdd: isAdd}, nil
 }
 
-func (ia *IpfsAddOrCatBench) SupportHints() bool { return false }
+func (ia *ipfsAddOrCatBench) SupportHints() bool { return false }
 
-func (ia *IpfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (ia *ipfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	nd, err := httpipfs.NewNode(ia.ipfsPath, "")
 	if err != nil {
 		return 0, err
@@ -302,13 +310,13 @@ func (ia *IpfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader) (time.Duration,
 	})
 }
 
-func (ia *IpfsAddOrCatBench) Close() error {
+func (ia *ipfsAddOrCatBench) Close() error {
 	return nil
 }
 
 //////////
 
-type FuseWriteOrReadBench struct {
+type fuseWriteOrReadBench struct {
 	ipfsPath string
 	isWrite  bool
 
@@ -317,7 +325,7 @@ type FuseWriteOrReadBench struct {
 	proc   *os.Process
 }
 
-func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
+func newFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
 	tmpDir, err := ioutil.TempDir("", "brig-fuse-bench-*")
 	if err != nil {
 		return nil, err
@@ -344,7 +352,7 @@ func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
 		return nil, err
 	}
 
-	return &FuseWriteOrReadBench{
+	return &fuseWriteOrReadBench{
 		ipfsPath: ipfsPath,
 		isWrite:  isWrite,
 		tmpDir:   tmpDir,
@@ -353,9 +361,9 @@ func NewFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
 	}, nil
 }
 
-func (fb *FuseWriteOrReadBench) SupportHints() bool { return true }
+func (fb *fuseWriteOrReadBench) SupportHints() bool { return true }
 
-func (fb *FuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
+func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Duration, error) {
 	mountDir := filepath.Join(fb.tmpDir, "mount")
 	testPath := filepath.Join(mountDir, fmt.Sprintf("/path_%d", rand.Int31()))
 
@@ -407,7 +415,7 @@ func (fb *FuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader) (time.Durati
 	})
 }
 
-func (fb *FuseWriteOrReadBench) Close() error {
+func (fb *fuseWriteOrReadBench) Close() error {
 	// TODO: make sure it's dead.
 	fb.ctl.QuitServer()
 	time.Sleep(time.Second)
@@ -422,23 +430,25 @@ var (
 	// - If it's using ipfs, put it in the name.
 	// - If it's writing things, put that in the name too as "write".
 	benchMap = map[string]func(string, bool) (Bench, error){
-		"memcpy":          NewMemcpyBench,
-		"brig-write-mem":  NewServerStageBench,
-		"brig-read-mem":   NewServerCatBench,
-		"brig-write-ipfs": NewServerStageBench,
-		"brig-read-ipfs":  NewServerCatBench,
-		"mio-write":       NewMioWriterBench,
-		"mio-read":        NewMioReaderBench,
-		"ipfs-write":      NewIpfsAddBench,
-		"ipfs-read":       NewIpfsAddBench,
-		"fuse-write-mem":  NewFuseWriteOrReadBench,
-		"fuse-write-ipfs": NewFuseWriteOrReadBench,
-		"fuse-read-mem":   NewFuseWriteOrReadBench,
-		"fuse-read-ipfs":  NewFuseWriteOrReadBench,
+		"memcpy":          newMemcpyBench,
+		"brig-write-mem":  newServerStageBench,
+		"brig-read-mem":   newServerCatBench,
+		"brig-write-ipfs": newServerStageBench,
+		"brig-read-ipfs":  newServerCatBench,
+		"mio-write":       newMioWriterBench,
+		"mio-read":        newMioReaderBench,
+		"ipfs-write":      newIPFSAddBench,
+		"ipfs-read":       newIPFSAddBench,
+		"fuse-write-mem":  newFuseWriteOrReadBench,
+		"fuse-write-ipfs": newFuseWriteOrReadBench,
+		"fuse-read-mem":   newFuseWriteOrReadBench,
+		"fuse-read-ipfs":  newFuseWriteOrReadBench,
 	}
 )
 
-func BenchByName(name, ipfsPath string) (Bench, error) {
+// ByName returns the benchmark with this name, or an error
+// if none. If IPFS is used, it should be given as `ipfsPath`.
+func ByName(name, ipfsPath string) (Bench, error) {
 	newBench, ok := benchMap[name]
 	if !ok {
 		return nil, fmt.Errorf("no such bench: %s", name)
@@ -447,6 +457,8 @@ func BenchByName(name, ipfsPath string) (Bench, error) {
 	return newBench(ipfsPath, strings.Contains(name, "write"))
 }
 
+// BenchmarkNames returns all possible benchmark names
+// in an defined & stable sorting.
 func BenchmarkNames() []string {
 	names := []string{}
 	for name := range benchMap {
