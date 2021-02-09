@@ -61,6 +61,11 @@ func handleIOBench(ctx *cli.Context) error {
 		return err
 	}
 
+	samples := ctx.Int("samples")
+	if samples <= 0 {
+		return fmt.Errorf("samples must be at least 1")
+	}
+
 	log.SetLevel(log.WarnLevel)
 
 	cfgs := []bench.Config{}
@@ -77,6 +82,7 @@ func handleIOBench(ctx *cli.Context) error {
 			BenchName:   benchName,
 			InputName:   benchInput,
 			Size:        inputSize,
+			Samples:     samples,
 			Encryption:  ctx.String("encryption"),
 			Compression: ctx.String("compression"),
 		})

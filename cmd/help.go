@@ -1568,6 +1568,11 @@ TODO: write a tutorial on how to use this benchmark util.
 				Usage: "How big the testdata should be",
 				Value: "256M",
 			},
+			cli.IntFlag{
+				Name:  "samples,S",
+				Usage: "How many time to run each benchmark",
+				Value: 3,
+			},
 			cli.StringFlag{
 				Name:  "compression,c",
 				Usage: "What compression hint to specify ('*' for all)",

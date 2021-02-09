@@ -2,6 +2,7 @@ package bench
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"sort"
@@ -17,7 +18,7 @@ type Verifier interface {
 // Input generates input for a benchmark. It defines how the data looks that
 // is fed to the streaming system.
 type Input interface {
-	Reader() (io.Reader, error)
+	Reader(seed uint64) (io.Reader, error)
 	Verifier() (Verifier, error)
 	Close() error
 }
@@ -64,7 +65,12 @@ func newMemInput(size uint64, isRandom bool) Input {
 	return &memInput{buf: benchData(size, isRandom)}
 }
 
-func (ni *memInput) Reader() (io.Reader, error) {
+func (ni *memInput) Reader(seed uint64) (io.Reader, error) {
+	// Put a few bytes difference at the start to make the complete
+	// stream different than the last seed. This is here to avoid
+	// that consequent runs of a benchmark get speed ups because
+	// they can cache inputs.
+	binary.LittleEndian.PutUint64(ni.buf, seed)
 	return bytes.NewReader(ni.buf), nil
 }
 

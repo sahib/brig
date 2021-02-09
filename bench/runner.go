@@ -20,6 +20,7 @@ type Config struct {
 	Size        uint64 `json:"size"`
 	Encryption  string `json:"encryption"`
 	Compression string `json:"compression"`
+	Samples     int    `json:"samples"`
 }
 
 // Result is the result of a single benchmark run.
@@ -111,44 +112,48 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 			continue
 		}
 
-		r, err := in.Reader()
-		if err != nil {
-			return err
-		}
+		var tookSum time.Duration
 
-		v, err := in.Verifier()
-		if err != nil {
-			return err
-		}
+		for seed := uint64(0); seed < uint64(cfg.Samples); seed++ {
+			r, err := in.Reader(seed)
+			if err != nil {
+				return err
+			}
 
-		// TODO: Provide way of sampling, i.e. run benchmark several times
-		//       to outweigh outliers (also makes smaller buffers possible)
-		//       Needs to take care that things like ipfs do not save the same
-		//       data twice (-> faster)
-		took, err := out.Bench(hint, r, v)
-		if err != nil {
-			return err
-		}
+			v, err := in.Verifier()
+			if err != nil {
+				return err
+			}
 
-		// Most write-only benchmarks cannot be verified, since
-		// we modify the stream and the verifier checks that the stream
-		// is equal to the input. Most read tests involve the same logic
-		// as writing though, so the writer has to work for that.
-		if out.CanBeVerified() {
-			if missing := v.MissingBytes(); missing != 0 {
-				log.Warnf("not all or too much data received in verify: %d", missing)
+			took, err := out.Bench(hint, r, v)
+			if err != nil {
+				return err
+			}
+
+			tookSum += took
+
+			// Most write-only benchmarks cannot be verified, since
+			// we modify the stream and the verifier checks that the stream
+			// is equal to the input. Most read tests involve the same logic
+			// as writing though, so the writer has to work for that.
+			if out.CanBeVerified() {
+				if missing := v.MissingBytes(); missing != 0 {
+					log.Warnf("not all or too much data received in verify: %d", missing)
+				}
 			}
 		}
 
+		avgTook := tookSum / time.Duration(cfg.Samples)
+
 		// NOTE: We take the configured size, we don't check what was
 		//       actually written. Should we change this?
-		throughput := (float64(cfg.Size) / 1000 / 1000) / (float64(took) / float64(time.Second))
+		throughput := (float64(cfg.Size) / 1000 / 1000) / (float64(avgTook) / float64(time.Second))
 		fn(Result{
 			Name:        fmt.Sprintf("%s:%s_%s", cfg.BenchName, cfg.InputName, hint),
 			Encryption:  string(hint.EncryptionAlgo),
 			Compression: string(hint.CompressionAlgo),
 			Config:      cfg,
-			Took:        took,
+			Took:        avgTook,
 			Throughput:  throughput,
 		})
 

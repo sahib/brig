@@ -431,7 +431,6 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader, verifier io.
 }
 
 func (fb *fuseWriteOrReadBench) Close() error {
-	// TODO: make sure it's dead.
 	fb.ctl.QuitServer()
 	time.Sleep(time.Second)
 	fb.proc.Kill()
