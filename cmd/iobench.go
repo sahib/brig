@@ -11,7 +11,6 @@ import (
 	"github.com/sahib/brig/bench"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 func allBenchmarks() []string {
@@ -109,7 +108,7 @@ func handleIOBench(ctx *cli.Context) error {
 		}
 
 		if !isJSON {
-			drawBar(
+			drawBench(
 				result.Name,
 				result.Took,
 				baselineTiming,
@@ -141,38 +140,17 @@ func drawHeading(heading string) {
 	fmt.Println()
 }
 
-func drawBar(name string, took, ref time.Duration, inputSize uint64, throughput float64) {
-	w, _, err := terminal.GetSize(1)
-	if err != nil {
-		w = 100
-	}
-
-	perc := float64(ref) / float64(took)
-
-	// take a guess on how big the bar may be.
-	var cells int = 50
-	if barw := w - 80; barw < cells {
-		cells = barw
-	}
-
-	fmt.Printf("%-45s [", name)
-	for idx := 0; idx < cells; idx++ {
-		if idx <= int(perc*float64(cells)) {
-			fmt.Printf("=")
-		} else {
-			fmt.Printf("_")
-		}
-	}
-
+func drawBench(name string, took, ref time.Duration, inputSize uint64, throughput float64) {
 	fmt.Printf(
-		"] %-7.2fMB/s %15s %7.2f%%\n",
+		"%-45s %-9.2fMB/s %20s %8.2f%%\n",
+		name,
 		throughput,
 		fmt.Sprintf(
 			"%.2fMB/%v",
 			float64(inputSize)/1000/1000,
 			took.Round(time.Millisecond),
 		),
-		perc*100,
+		100*float64(ref)/float64(took),
 	)
 }
 
