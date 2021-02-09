@@ -152,9 +152,13 @@ func handleInit(ctx *cli.Context) error {
 	doExtraIpfsConfig := !ctx.Bool("no-ipfs-optimization")
 
 	if backend == "httpipfs" {
-		var err error
-		ipfsPath, _, err = setup.IPFS(os.Stdout, doIpfsSetup, doIpfsConfig, doExtraIpfsConfig, ipfsPath)
-		if err != nil {
+		if _, err := setup.IPFS(setup.Options{
+			LogWriter:        os.Stdout,
+			Setup:            doIpfsSetup,
+			SetDefaultConfig: doIpfsConfig,
+			SetExtraConfig:   doExtraIpfsConfig,
+			IpfsPath:         ipfsPath,
+		}); err != nil {
 			return err
 		}
 	}
@@ -400,13 +404,13 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 		ipfsPath = cfg.String("daemon.ipfs_path")
 	}
 
-	if _, _, err := setup.IPFS(
-		&logWriter{prefix: "ipfs"},
-		true,
-		true,
-		false,
-		ipfsPath,
-	); err != nil {
+	if _, err := setup.IPFS(setup.Options{
+		LogWriter:        &logWriter{prefix: "ipfs"},
+		Setup:            true,
+		SetDefaultConfig: true,
+		SetExtraConfig:   false,
+		IpfsPath:         ipfsPath,
+	}); err != nil {
 		return err
 	}
 

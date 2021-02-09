@@ -10,8 +10,15 @@ import (
 	"github.com/sahib/brig/util/testutil"
 )
 
+// Verifier is a io.Writer that should be used for benchmarks
+// that read encoded data. It verifies that the data is actually
+// correct in the sense that it is equal to the original input.
 type Verifier interface {
 	io.Writer
+
+	// MissingBytes returns the diff of bytes to the original input.
+	// This number can be negative when too much data was written.
+	// Only 0 is a valid value after the benchmark finished.
 	MissingBytes() int64
 }
 

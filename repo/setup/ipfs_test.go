@@ -11,9 +11,13 @@ import (
 
 func TestMain(t *testing.T) {
 	t.Skip("TODO: probably a bit too much for travis")
-	ipfsPath, _, err := IPFS(os.Stdout, true, true, true, "")
-	require.Nil(t, err)
-	fmt.Println(ipfsPath)
+	_, err := IPFS(Options{
+		LogWriter:        os.Stdout,
+		Setup:            true,
+		SetDefaultConfig: true,
+		SetExtraConfig:   true,
+	})
+	require.NoError(t, err)
 }
 
 func TestInstall(t *testing.T) {

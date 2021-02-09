@@ -181,40 +181,49 @@ func ipfsIsNeeded(cfgs []Config) bool {
 // Benchmark runs the benchmarks specified by `cfgs` and call `fn` on each result.
 func Benchmark(cfgs []Config, fn func(result Result)) error {
 	needsIPFS := ipfsIsNeeded(cfgs)
-
-	var (
-		ipfsPath string
-		ipfsPID  int
-	)
+	var result *setup.Result
 
 	if needsIPFS {
 		var err error
 		log.Infof("Setting up IPFS for the benchmarks...")
 
-		ipfsPath, err = ioutil.TempDir("", "brig-iobench-ipfs-repo-*")
+		ipfsPath, err := ioutil.TempDir("", "brig-iobench-ipfs-repo-*")
 		if err != nil {
 			return err
 		}
 
-		_, ipfsPID, err = setup.IPFS(ioutil.Discard, true, true, true, ipfsPath)
+		result, err = setup.IPFS(setup.Options{
+			LogWriter:        ioutil.Discard,
+			Setup:            true,
+			SetDefaultConfig: true,
+			SetExtraConfig:   true,
+			IpfsPath:         ipfsPath,
+			InitProfile:      "test",
+		})
+
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, cfg := range cfgs {
+		var ipfsPath string
+		if result != nil {
+			ipfsPath = result.IpfsPath
+		}
+
 		if err := benchmarkSingle(cfg, fn, ipfsPath); err != nil {
 			return err
 		}
 	}
 
 	if needsIPFS {
-		if ipfsPath != "" {
-			os.RemoveAll(ipfsPath)
+		if result.IpfsPath != "" {
+			os.RemoveAll(result.IpfsPath)
 		}
 
-		if ipfsPID > 0 {
-			proc, err := os.FindProcess(ipfsPID)
+		if result.PID > 0 {
+			proc, err := os.FindProcess(result.PID)
 			if err != nil {
 				log.WithError(err).Warnf("failed to get IPFS PID")
 			} else {
