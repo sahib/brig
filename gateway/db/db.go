@@ -9,8 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
+	badger "github.com/dgraph-io/badger/v3"
 	capnp "github.com/sahib/brig/gateway/db/capnp"
 	"github.com/sahib/brig/util"
 	log "github.com/sirupsen/logrus"
@@ -69,14 +68,10 @@ type UserDatabase struct {
 func NewUserDatabase(path string) (*UserDatabase, error) {
 	opts := badger.DefaultOptions(path).
 		WithValueDir(path).
-		WithTableLoadingMode(options.FileIO).
-		WithValueLogLoadingMode(options.FileIO).
-		WithMaxTableSize(1 << 20).
 		WithNumMemtables(1).
 		WithNumLevelZeroTables(1).
 		WithNumLevelZeroTablesStall(2).
 		WithSyncWrites(false).
-		WithEventLogging(false).
 		WithLogger(nil)
 
 	db, err := badger.Open(opts)
