@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"syscall"
@@ -26,17 +27,45 @@ import (
 	"github.com/sahib/brig/util/testutil"
 )
 
+// Run is a single benchmark run
+type Run struct {
+	Took             time.Duration
+	Allocs           int64
+	CompressionRatio float32
+}
+
+// Runs is a list of individual runs
+type Runs []Run
+
+// Average returns a fictional average run out of all runs
+func (runs Runs) Average() Run {
+	sum := Run{}
+	for _, run := range runs {
+		sum.Took += run.Took
+		sum.Allocs += run.Allocs
+		sum.CompressionRatio += run.CompressionRatio
+	}
+
+	return Run{
+		Took:             sum.Took / time.Duration(len(runs)),
+		Allocs:           sum.Allocs / int64(len(runs)),
+		CompressionRatio: sum.CompressionRatio / float32(len(runs)),
+	}
+}
+
 // Bench is the interface every benchmark needs to implement.
 type Bench interface {
 	// SupportHints should return true for benchmarks where
 	// passing hint influences the benchmark result.
 	SupportHints() bool
 
+	// CanBeVerified should return true when the test
+	// can use the verifier (i.e. is a read test)
 	CanBeVerified() bool
 
 	// Bench should read the input from `r` and apply `hint` if applicable.
 	// The time needed to process all of `r` should be returned.
-	Bench(hint hints.Hint, r io.Reader, w io.Writer) (time.Duration, error)
+	Bench(hint hints.Hint, size int64, r io.Reader, w io.Writer) (*Run, error)
 
 	// Close should clean up the benchmark.
 	Close() error
@@ -46,10 +75,19 @@ var (
 	dummyKey = make([]byte, 32)
 )
 
-func withTiming(fn func() error) (time.Duration, error) {
+func withRunStats(size int64, fn func() (int64, error)) (*Run, error) {
 	start := time.Now()
-	err := fn()
-	return time.Since(start), err
+
+	var memBefore, memAfter runtime.MemStats
+	runtime.ReadMemStats(&memBefore)
+	written, err := fn()
+	runtime.ReadMemStats(&memAfter)
+	took := time.Since(start)
+	return &Run{
+		Took:             took,
+		CompressionRatio: float32(written) / float32(size),
+		Allocs:           int64(memAfter.Mallocs) - int64(memBefore.Mallocs),
+	}, err
 }
 
 //////////
@@ -64,13 +102,13 @@ func (n memcpyBench) SupportHints() bool { return false }
 
 func (n memcpyBench) CanBeVerified() bool { return true }
 
-func (n memcpyBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (n memcpyBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	// NOTE: Use DumbCopy, since io.Copy would use the
 	// ReadFrom of ioutil.Discard. This is lightning fast.
 	// We want to measure actual time to copy in memory.
-	return withTiming(func() error {
-		_, err := testutil.DumbCopy(verifier, r, false, false)
-		return err
+
+	return withRunStats(size, func() (int64, error) {
+		return testutil.DumbCopy(verifier, r, false, false)
 	})
 }
 
@@ -128,17 +166,17 @@ func (s *serverStageBench) SupportHints() bool { return true }
 
 func (s *serverStageBench) CanBeVerified() bool { return false }
 
-func (s *serverStageBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (s *serverStageBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
 
 	c := string(hint.CompressionAlgo)
 	e := string(hint.EncryptionAlgo)
 	if err := s.common.client.HintSet(path, &c, &e); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return withTiming(func() error {
-		return s.common.client.StageFromReader(path, r)
+	return withRunStats(size, func() (int64, error) {
+		return size, s.common.client.StageFromReader(path, r)
 	})
 }
 
@@ -163,31 +201,27 @@ func (s *serverCatBench) SupportHints() bool { return true }
 
 func (s *serverCatBench) CanBeVerified() bool { return true }
 
-func (s *serverCatBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (s *serverCatBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
 
 	c := string(hint.CompressionAlgo)
 	e := string(hint.EncryptionAlgo)
 	if err := s.common.client.HintSet(path, &c, &e); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if err := s.common.client.StageFromReader(path, r); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return withTiming(func() error {
+	return withRunStats(size, func() (int64, error) {
 		stream, err := s.common.client.Cat(path, true)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
-		_, err = testutil.DumbCopy(verifier, stream, false, false)
-		if err != nil {
-			return err
-		}
-
-		return stream.Close()
+		defer stream.Close()
+		return testutil.DumbCopy(verifier, stream, false, false)
 	})
 }
 
@@ -207,18 +241,15 @@ func (m *mioWriterBench) SupportHints() bool { return true }
 
 func (m *mioWriterBench) CanBeVerified() bool { return false }
 
-func (m *mioWriterBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (m *mioWriterBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	stream, _, err := mio.NewInStream(r, "", dummyKey, hint)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return withTiming(func() error {
-		_, err := testutil.DumbCopy(ioutil.Discard, stream, false, false)
-		if err != nil {
-			return err
-		}
-		return stream.Close()
+	return withRunStats(size, func() (int64, error) {
+		defer stream.Close()
+		return testutil.DumbCopy(ioutil.Discard, stream, false, false)
 	})
 }
 
@@ -238,12 +269,12 @@ func (m *mioReaderBench) SupportHints() bool { return true }
 
 func (m *mioReaderBench) CanBeVerified() bool { return true }
 
-func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (m *mioReaderBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	// Produce a buffer with encoded data in the right size.
 	// This is not benched, only the reading of it is.
 	inStream, _, err := mio.NewInStream(r, "", dummyKey, hint)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	defer inStream.Close()
@@ -252,10 +283,10 @@ func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer)
 	// We do not want to count the encoding in the bench time.
 	streamData, err := ioutil.ReadAll(inStream)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return withTiming(func() error {
+	return withRunStats(size, func() (int64, error) {
 		outStream, err := mio.NewOutStream(
 			bytes.NewReader(streamData),
 			hint.IsRaw(),
@@ -263,13 +294,12 @@ func (m *mioReaderBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer)
 		)
 
 		if err != nil {
-			return err
+			return -1, err
 		}
 
 		defer outStream.Close()
 
-		_, err = testutil.DumbCopy(verifier, outStream, false, false)
-		return err
+		return testutil.DumbCopy(verifier, outStream, false, false)
 	})
 }
 
@@ -292,34 +322,33 @@ func (ia *ipfsAddOrCatBench) SupportHints() bool { return false }
 
 func (ia *ipfsAddOrCatBench) CanBeVerified() bool { return !ia.isAdd }
 
-func (ia *ipfsAddOrCatBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (ia *ipfsAddOrCatBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	nd, err := httpipfs.NewNode(ia.ipfsPath, "")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	defer nd.Close()
 
 	if ia.isAdd {
-		return withTiming(func() error {
+		return withRunStats(size, func() (int64, error) {
 			_, err := nd.Add(r)
-			return err
+			return size, err
 		})
 	}
 
 	hash, err := nd.Add(r)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return withTiming(func() error {
+	return withRunStats(size, func() (int64, error) {
 		stream, err := nd.Cat(hash)
 		if err != nil {
-			return err
+			return -1, err
 		}
 
-		_, err = testutil.DumbCopy(verifier, stream, false, false)
-		return err
+		return testutil.DumbCopy(verifier, stream, false, false)
 	})
 }
 
@@ -378,7 +407,7 @@ func (fb *fuseWriteOrReadBench) SupportHints() bool { return true }
 
 func (fb *fuseWriteOrReadBench) CanBeVerified() bool { return !fb.isWrite }
 
-func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader, verifier io.Writer) (time.Duration, error) {
+func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	mountDir := filepath.Join(fb.tmpDir, "mount")
 	testPath := filepath.Join(mountDir, fmt.Sprintf("/path_%d", rand.Int31()))
 
@@ -389,27 +418,26 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader, verifier io.
 
 	// Make sure hints are followed:
 	if err := xattr.Set(mountDir, xattrEnc, []byte(hint.EncryptionAlgo)); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if err := xattr.Set(mountDir, xattrZip, []byte(hint.CompressionAlgo)); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	took, err := withTiming(func() error {
+	took, err := withRunStats(size, func() (int64, error) {
 		fd, err := os.OpenFile(testPath, os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
-			return err
+			return -1, err
 		}
 
 		defer fd.Close()
 
-		_, err = testutil.DumbCopy(fd, r, false, false)
-		return err
+		return testutil.DumbCopy(fd, r, false, false)
 	})
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if fb.isWrite {
@@ -417,20 +445,19 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader, verifier io.
 		return took, nil
 	}
 
-	took, err = withTiming(func() error {
+	took, err = withRunStats(size, func() (int64, error) {
 		// NOTE: We have to use syscall.O_DIRECT here in order to
 		//       bypass the kernel page cache. The write above fills it with
 		//       data immediately, thus this read can yield 10x times higher
 		//       results (which you still might get in practice, if lucky)
 		fd, err := os.OpenFile(testPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
 		if err != nil {
-			return err
+			return -1, err
 		}
 
 		defer fd.Close()
 
-		_, err = testutil.DumbCopy(verifier, fd, false, false)
-		return err
+		return testutil.DumbCopy(verifier, fd, false, false)
 	})
 
 	return took, err

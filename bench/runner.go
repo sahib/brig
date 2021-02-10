@@ -25,12 +25,14 @@ type Config struct {
 
 // Result is the result of a single benchmark run.
 type Result struct {
-	Name        string        `json:"name"`
-	Config      Config        `json:"config"`
-	Encryption  string        `json:"encryption"`
-	Compression string        `json:"compression"`
-	Took        time.Duration `json:"took"`
-	Throughput  float64       `json:"throughput"`
+	Name            string        `json:"name"`
+	Config          Config        `json:"config"`
+	Encryption      string        `json:"encryption"`
+	Compression     string        `json:"compression"`
+	Took            time.Duration `json:"took"`
+	Throughput      float64       `json:"throughput"`
+	CompressionRate float32       `json:"compression_rate"`
+	Allocs          int64         `json:"allocs"`
 }
 
 // buildHints handles wildcards for compression and/or encryption.
@@ -112,7 +114,7 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 			continue
 		}
 
-		var tookSum time.Duration
+		var runs Runs
 
 		for seed := uint64(0); seed < uint64(cfg.Samples); seed++ {
 			r, err := in.Reader(seed)
@@ -125,12 +127,12 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 				return err
 			}
 
-			took, err := out.Bench(hint, r, v)
+			run, err := out.Bench(hint, in.Size(), r, v)
 			if err != nil {
 				return err
 			}
 
-			tookSum += took
+			runs = append(runs, *run)
 
 			// Most write-only benchmarks cannot be verified, since
 			// we modify the stream and the verifier checks that the stream
@@ -143,18 +145,17 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 			}
 		}
 
-		avgTook := tookSum / time.Duration(cfg.Samples)
-
-		// NOTE: We take the configured size, we don't check what was
-		//       actually written. Should we change this?
-		throughput := (float64(cfg.Size) / 1000 / 1000) / (float64(avgTook) / float64(time.Second))
+		avgRun := runs.Average()
+		throughput := (float64(cfg.Size) / 1000 / 1000) / (float64(avgRun.Took) / float64(time.Second))
 		fn(Result{
-			Name:        fmt.Sprintf("%s:%s_%s", cfg.BenchName, cfg.InputName, hint),
-			Encryption:  string(hint.EncryptionAlgo),
-			Compression: string(hint.CompressionAlgo),
-			Config:      cfg,
-			Took:        avgTook,
-			Throughput:  throughput,
+			Name:            fmt.Sprintf("%s:%s_%s", cfg.BenchName, cfg.InputName, hint),
+			Encryption:      string(hint.EncryptionAlgo),
+			Compression:     string(hint.CompressionAlgo),
+			Config:          cfg,
+			Took:            avgRun.Took,
+			Throughput:      throughput,
+			CompressionRate: avgRun.CompressionRatio,
+			Allocs:          avgRun.Allocs,
 		})
 
 		if !supportsHints {

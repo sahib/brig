@@ -26,6 +26,7 @@ type Verifier interface {
 // is fed to the streaming system.
 type Input interface {
 	Reader(seed uint64) (io.Reader, error)
+	Size() int64
 	Verifier() (Verifier, error)
 	Close() error
 }
@@ -86,6 +87,10 @@ func (ni *memInput) Verifier() (Verifier, error) {
 		expect:  ni.buf,
 		counter: 0,
 	}, nil
+}
+
+func (ni *memInput) Size() int64 {
+	return int64(len(ni.buf))
 }
 
 func (ni *memInput) Close() error {

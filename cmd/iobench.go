@@ -108,13 +108,7 @@ func handleIOBench(ctx *cli.Context) error {
 		}
 
 		if !isJSON {
-			drawBench(
-				result.Name,
-				result.Took,
-				baselineTiming,
-				inputSize,
-				result.Throughput,
-			)
+			drawBench(result, baselineTiming, inputSize)
 		}
 
 		run.Results = append(run.Results, result)
@@ -140,17 +134,19 @@ func drawHeading(heading string) {
 	fmt.Println()
 }
 
-func drawBench(name string, took, ref time.Duration, inputSize uint64, throughput float64) {
+func drawBench(result bench.Result, ref time.Duration, inputSize uint64) {
 	fmt.Printf(
-		"%-45s %-9.2fMB/s %20s %8.2f%%\n",
-		name,
-		throughput,
+		"%-45s %9.2f MB/s %20s %8.2f%% %6d allocs %8.2f%% zipped\n",
+		result.Name,
+		result.Throughput,
 		fmt.Sprintf(
 			"%.2fMB/%v",
 			float64(inputSize)/1000/1000,
-			took.Round(time.Millisecond),
+			result.Took.Round(time.Millisecond),
 		),
-		100*float64(ref)/float64(took),
+		100*float64(ref)/float64(result.Took),
+		result.Allocs,
+		result.CompressionRate*100,
 	)
 }
 
