@@ -1,5 +1,6 @@
 package bench
 
+// TODO: n_allocs, compression rate?
 import (
 	"bytes"
 	"context"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/pkg/xattr"
@@ -416,7 +418,11 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, r io.Reader, verifier io.
 	}
 
 	took, err = withTiming(func() error {
-		fd, err := os.Open(testPath)
+		// NOTE: We have to use syscall.O_DIRECT here in order to
+		//       bypass the kernel page cache. The write above fills it with
+		//       data immediately, thus this read can yield 10x times higher
+		//       results (which you still might get in practice, if lucky)
+		fd, err := os.OpenFile(testPath, os.O_RDONLY|syscall.O_DIRECT, 0600)
 		if err != nil {
 			return err
 		}
