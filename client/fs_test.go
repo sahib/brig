@@ -117,6 +117,7 @@ func TestStageAndCat(t *testing.T) {
 	withDaemon(t, "ali", func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
+		defer os.RemoveAll(path)
 
 		expected := testutil.CreateDummyBuf(2 * 1024 * 1024)
 		require.Nil(t, err, stringify(err))
