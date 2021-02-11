@@ -203,9 +203,9 @@ func (s *serverCatBench) CanBeVerified() bool { return true }
 
 func (s *serverCatBench) Bench(hint hints.Hint, size int64, r io.Reader, verifier io.Writer) (*Run, error) {
 	path := fmt.Sprintf("/path_%d", rand.Int31())
-
 	c := string(hint.CompressionAlgo)
 	e := string(hint.EncryptionAlgo)
+
 	if err := s.common.client.HintSet(path, &c, &e); err != nil {
 		return nil, err
 	}

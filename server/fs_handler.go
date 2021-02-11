@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"runtime"
@@ -11,7 +12,6 @@ import (
 	"github.com/sahib/brig/catfs"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/server/capnp"
-	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
 	capnplib "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/server"
@@ -207,7 +207,7 @@ func (fh *fsHandler) Cat(call capnp.FS_cat) error {
 			localAddr := conn.LocalAddr().String()
 
 			start := time.Now()
-			n, err := testutil.DumbCopy(conn, stream, false, false)
+			n, err := io.Copy(conn, stream)
 			if err != nil {
 				log.Warningf("I/O failed for path %s on %s: %v", path, localAddr, err)
 				return
