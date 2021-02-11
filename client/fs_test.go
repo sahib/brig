@@ -13,6 +13,7 @@ import (
 
 	"github.com/sahib/brig/repo"
 	"github.com/sahib/brig/server"
+	"github.com/sahib/brig/repo/hints"
 	colorLog "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
@@ -38,7 +39,18 @@ func withDaemon(t *testing.T, name string, fn func(ctl *Client)) {
 	repoPath, err := ioutil.TempDir("", "brig-client-repo")
 	require.Nil(t, err)
 
-	defer os.RemoveAll(repoPath)
+	defer func() {
+		// Somehow there is race condition between 
+		// srv.Close() from the defer at the very end 
+		// os.RemoveAll(repoPath).
+		// Theoretically, `go` should have closed server
+		// but in practice I see that repoPath is removed
+		// before server had a chance to close the DB
+		// and I see complains in log about DB.Close
+		// I introduce this time delay as a crude hack
+		time.Sleep(100 * time.Millisecond)
+		os.RemoveAll(repoPath)
+	}()
 
 	daemonURL := "unix:" + filepath.Join(repoPath, "brig.socket")
 	err = repo.Init(repo.InitOptions{
@@ -105,6 +117,7 @@ func TestStageAndCat(t *testing.T) {
 	withDaemon(t, "ali", func(ctl *Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
+		defer os.RemoveAll(path)
 
 		expected := testutil.CreateDummyBuf(2 * 1024 * 1024)
 		require.Nil(t, err, stringify(err))
@@ -480,8 +493,9 @@ func TestHints(t *testing.T) {
 		info, err := ctl.Stat(path)
 		require.NoError(t, err)
 
-		require.Equal(t, "guess", info.Hint.CompressionAlgo)
-		require.Equal(t, "aes256gcm", info.Hint.EncryptionAlgo)
+		defHints := hints.Default()
+		require.Equal(t, string(defHints.CompressionAlgo), info.Hint.CompressionAlgo)
+		require.Equal(t, string(defHints.EncryptionAlgo), info.Hint.EncryptionAlgo)
 		require.Equal(t, false, info.IsRaw)
 
 		none := "none"
