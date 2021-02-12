@@ -1,5 +1,6 @@
 package compress
 
+// TODO: rename to header.go
 import (
 	"bytes"
 	"encoding/binary"

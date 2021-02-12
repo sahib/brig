@@ -38,6 +38,9 @@ const (
 	// CompressionSnappy  compresses the stream in snappy mode.
 	CompressionSnappy = CompressionHint("snappy")
 
+	// CompressionZstd compresses the stream in zstd mode.
+	CompressionZstd = CompressionHint("zstd")
+
 	// CompressionGuess tries to guess a suitable type by looking at
 	// different aspects of the stream.
 	CompressionGuess = CompressionHint("guess")
@@ -48,6 +51,7 @@ var (
 		CompressionNone:   compress.AlgoUnknown,
 		CompressionLZ4:    compress.AlgoLZ4,
 		CompressionSnappy: compress.AlgoSnappy,
+		CompressionZstd:   compress.AlgoZstd,
 		CompressionGuess:  compress.AlgoUnknown,
 	}
 
@@ -55,7 +59,8 @@ var (
 		CompressionNone:   0,
 		CompressionLZ4:    1,
 		CompressionSnappy: 2,
-		CompressionGuess:  3,
+		CompressionZstd:   3,
+		CompressionGuess:  4,
 	}
 )
 
@@ -81,6 +86,8 @@ func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) Compres
 		return CompressionLZ4
 	case compress.AlgoSnappy:
 		return CompressionSnappy
+	case compress.AlgoZstd:
+		return CompressionZstd
 	default:
 		return CompressionNone
 	}

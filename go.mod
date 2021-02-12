@@ -7,7 +7,6 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
-	github.com/bkaradzic/go-lz4 v1.0.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/brianvoe/gofakeit/v6 v6.0.0
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
@@ -30,6 +29,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/ipfs/go-ipfs-api v0.2.0
 	github.com/ipfs/go-ipfs-util v0.0.2
+	github.com/klauspost/compress v1.11.7
 	github.com/klauspost/cpuid/v2 v2.0.3
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/libp2p/go-libp2p-core v0.8.0 // indirect
@@ -41,6 +41,7 @@ require (
 	github.com/nbutton23/zxcvbn-go v0.0.0-20201221231540-e56b841a3c88
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/phogolabs/parcello v0.8.2
+	github.com/pierrec/lz4/v4 v4.1.3
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/xattr v0.4.3
 	github.com/posener/wstest v0.0.0-20180217133618-28272a7ea048

@@ -35,7 +35,8 @@ type Reader struct {
 	// Holds algorithm interface.
 	algo Algorithm
 
-	decodeBuf *bytes.Buffer
+	rawBuf *bytes.Buffer
+	decBuf []byte
 }
 
 // Seek implements io.Seeker
@@ -143,7 +144,7 @@ func (r *Reader) parseTrailerIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
-	algo, err := AlgorithmFromType(header.algo)
+	algo, err := algorithmFromType(header.algo)
 	if err != nil {
 		return err
 	}
@@ -290,13 +291,14 @@ func (r *Reader) readZipChunk() ([]byte, error) {
 		return nil, err
 	}
 
-	r.decodeBuf.Reset()
-	_, err = io.CopyN(r.decodeBuf, r.rawR, chunkSize)
+	r.rawBuf.Reset()
+	_, err = io.CopyN(r.rawBuf, r.rawR, chunkSize)
 	if err != nil {
 		return nil, err
 	}
 
-	decData, err := r.algo.Decode(r.decodeBuf.Bytes())
+	// decData should be a slice of `r.decBuf` to avoid allocations.
+	decData, err := r.algo.Decode(r.decBuf, r.rawBuf.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -309,9 +311,12 @@ func (r *Reader) readZipChunk() ([]byte, error) {
 // is the purpose of this layer, a ReadSeeker is required as parameter. The used
 // compression algorithm is chosen based on trailer information.
 func NewReader(r io.ReadSeeker) *Reader {
+	// NOTE: chunkBuf will contain compressed data. We pre-allocate things
+	// and assume an average compression ratio of 50%.
 	return &Reader{
-		rawR:      r,
-		decodeBuf: &bytes.Buffer{},
-		chunkBuf:  chunkbuf.NewChunkBuffer([]byte{}),
+		rawR:     r,
+		rawBuf:   &bytes.Buffer{},
+		chunkBuf: chunkbuf.NewChunkBuffer(make([]byte, 0, maxChunkSize/2)),
+		decBuf:   make([]byte, maxChunkSize),
 	}
 }
