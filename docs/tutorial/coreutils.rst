@@ -131,31 +131,36 @@ gateway](https://docs.ipfs.io/concepts/ipfs-gateway).
 Available encryption algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: Provide relative throughput numbers compare to »none«.
+.. note::
 
-+----------------+----------------------------------------------------------------------------+
-| NAME           |   DESCRIPTION                                                              |
-+================+============================================================================+
-| ``aes256-gcm`` | The default. AES with 256 bit key in GCM cipher mode. Fast on modern CPUs. |
-+----------------+----------------------------------------------------------------------------+
-| ``chacha20``   | Streaming cipher with Poly1305 MAC. Good for old CPUs without AES-NI.      |
-+----------------+----------------------------------------------------------------------------+
-| ``none``       | Disables encryption. Fast, but only good for public files.                 |
-+----------------+----------------------------------------------------------------------------+
+    The ``THROUGHPUT`` shows the relative, average performance compared to ``none``.
+    Your mileage may vary. Those number should serve as rough guideline and were obtained by the built-in
+    ``briog debug iobench`` utility. If you want the details you can run the benchmarks yourselfs.
+
++----------------+----------------------------------------------------------------------------+----------------------------+
+| NAME           |   DESCRIPTION                                                              |  THROUGHPUT                |
++================+============================================================================+============================+
+| ``aes256-gcm`` | The default. AES with 256 bit key in GCM cipher mode. Fast on modern CPUs. | 20%                        |
++----------------+----------------------------------------------------------------------------+----------------------------+
+| ``chacha20``   | Streaming cipher with Poly1305 MAC. Good for old CPUs without AES-NI.      | 10%                        |
++----------------+----------------------------------------------------------------------------+----------------------------+
+| ``none``       | Disables encryption. Fast, but only good for public files.                 | 100%                       |
++----------------+----------------------------------------------------------------------------+----------------------------+
+
 
 Available compression algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: Provide relative throughput numbers compared to »none«.
-
-+----------------+----------------------------------------------------------------------------+
-| NAME           |   DESCRIPTION                                                              |
-+================+============================================================================+
-| ``snappy``     | High throughput, relative low compression ratio.                           |
-+----------------+----------------------------------------------------------------------------+
-| ``lz4``        | High throughput, slightly higher compression ratio than snappy.            |
-+----------------+----------------------------------------------------------------------------+
-| ``guess``      | Chooses suitable algorithm based on file ending, size and mime type.       |
-+----------------+----------------------------------------------------------------------------+
-| ``none``       | Disables compression.                                                      |
-+----------------+----------------------------------------------------------------------------+
++----------------+----------------------------------------------------------------------------+-------------------+
+| NAME           |   DESCRIPTION                                                              |   THROUGHPUT      |
++================+============================================================================+===================+
+| ``snappy``     | High throughput, relative low compression ratio.                           |   10%-60%         |
++----------------+----------------------------------------------------------------------------+-------------------+
+| ``lz4``        | Middle throughput, slightly higher compression ratio than snappy.          |   5%-20%          |
++----------------+----------------------------------------------------------------------------+-------------------+
+| ``zstd``       | Low throughput, highest compression ratio.                                 |   1%-25%          |
++----------------+----------------------------------------------------------------------------+-------------------+
+| ``guess``      | Chooses suitable algorithm based on file ending, size and mime type.       |   -               |
++----------------+----------------------------------------------------------------------------+-------------------+
+| ``none``       | Disables compression.                                                      |  100%             |
++----------------+----------------------------------------------------------------------------+-------------------+
