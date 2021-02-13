@@ -139,7 +139,6 @@ var (
 	}
 )
 
-// AlgoSnappy
 func (a snappyAlgo) Encode(dst, src []byte) ([]byte, error) {
 	return snappy.Encode(dst, src), nil
 }

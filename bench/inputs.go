@@ -31,11 +31,17 @@ type Input interface {
 	Close() error
 }
 
-func benchData(size uint64, isRandom bool) []byte {
-	if isRandom {
+func benchData(size uint64, name string) []byte {
+	switch name {
+	case "random":
 		return testutil.CreateRandomDummyBuf(int64(size), 23)
+	case "ten":
+		return testutil.CreateDummyBuf(int64(size))
+	case "mixed":
+		return testutil.CreateMixedDummyBuf(int64(size), 42)
+	default:
+		return nil
 	}
-	return testutil.CreateDummyBuf(int64(size))
 }
 
 //////////
@@ -69,8 +75,8 @@ type memInput struct {
 	buf []byte
 }
 
-func newMemInput(size uint64, isRandom bool) Input {
-	return &memInput{buf: benchData(size, isRandom)}
+func newMemInput(size uint64, name string) Input {
+	return &memInput{buf: benchData(size, name)}
 }
 
 func (ni *memInput) Reader(seed uint64) (io.Reader, error) {
@@ -101,8 +107,15 @@ func (ni *memInput) Close() error {
 
 var (
 	inputMap = map[string]func(size uint64) (Input, error){
-		"ten":    func(size uint64) (Input, error) { return newMemInput(size, false), nil },
-		"random": func(size uint64) (Input, error) { return newMemInput(size, true), nil },
+		"ten": func(size uint64) (Input, error) {
+			return newMemInput(size, "ten"), nil
+		},
+		"random": func(size uint64) (Input, error) {
+			return newMemInput(size, "random"), nil
+		},
+		"mixed": func(size uint64) (Input, error) {
+			return newMemInput(size, "mixed"), nil
+		},
 	}
 )
 

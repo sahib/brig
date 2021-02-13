@@ -36,6 +36,27 @@ func CreateRandomDummyBuf(size, seed int64) []byte {
 	return buf
 }
 
+// CreateMixedDummyBuf creates data that mixes hard to compress data
+// with streaks of easy to compress data. The ratio is approx 50%.
+func CreateMixedDummyBuf(size, seed int64) []byte {
+	const blockSize = 1024
+
+	buf := make([]byte, size)
+	src := rand.NewSource(seed)
+
+	for idx := int64(0); idx < size; idx++ {
+		blockOff := idx % 1024
+		pivot := src.Int63() % blockSize
+		if blockOff < pivot {
+			buf[idx] = byte(idx % 256)
+		} else {
+			buf[idx] = byte(src.Int63() % 256)
+		}
+	}
+
+	return buf
+}
+
 // CreateFile creates a temporary file in the systems tmp-folder.
 // The file will be `size` bytes big, filled with content from CreateDummyBuf.
 func CreateFile(size int64) string {
