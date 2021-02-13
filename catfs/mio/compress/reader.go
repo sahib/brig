@@ -1,7 +1,6 @@
 package compress
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"sort"
@@ -35,7 +34,11 @@ type Reader struct {
 	// Holds algorithm interface.
 	algo Algorithm
 
-	decodeBuf *bytes.Buffer
+	// buffer for reading in the raw stream for decoding.
+	rawBuf []byte
+
+	// buffer to hold one chunks so Read() can take chunks of it.
+	decBuf []byte
 }
 
 // Seek implements io.Seeker
@@ -143,11 +146,18 @@ func (r *Reader) parseTrailerIfNeeded() error {
 	r.trailer = &trailer{}
 	r.trailer.unmarshal(buf[:])
 
-	algo, err := AlgorithmFromType(header.algo)
+	algo, err := algorithmFromType(header.algo)
 	if err != nil {
 		return err
 	}
+
+	// Allocate the rawBuf depending on the algorithm that was used.
+	// Every compression algorithm might produce data that is bigger
+	// than the original data in edge cases. `rawBuf` has to be big
+	// enough to account for this edge case. We double check this
+	// during Read() to avoid overflows.
 	r.algo = algo
+	r.rawBuf = make([]byte, algo.MaxEncodeBufferSize())
 
 	// Seek and read index into buffer.
 	seekIdx := -(int64(r.trailer.indexSize) + trailerSize)
@@ -228,7 +238,6 @@ func (r *Reader) Read(p []byte) (int, error) {
 		return 0, err
 	}
 
-	// Handle stream using compression.
 	read := 0
 	for {
 		if r.chunkBuf.Len() != 0 {
@@ -284,24 +293,32 @@ func (r *Reader) fixZipChunk() (int64, error) {
 
 func (r *Reader) readZipChunk() ([]byte, error) {
 	// Get current position of the Reader; offset of the compressed file.
-	r.chunkBuf.Reset()
+	r.chunkBuf.Reset(nil)
 	chunkSize, err := r.fixZipChunk()
 	if err != nil {
 		return nil, err
 	}
 
-	r.decodeBuf.Reset()
-	_, err = io.CopyN(r.decodeBuf, r.rawR, chunkSize)
+	if len(r.rawBuf) < int(chunkSize) {
+		// NOTE: When len(r.rawBuf) is < chunkSize ErrShortBuffer is returned.
+		// This should only happen on malicious input with far too high chunkSize.
+		// r.rawBuf should be able to hold any compressed stream derived from any
+		// block with size maxChunkSize.
+		return nil, io.ErrShortBuffer
+	}
+
+	n, err := io.ReadFull(r.rawR, r.rawBuf[:int(chunkSize)])
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return nil, err
+	}
+
+	// decData should be a slice of `r.decBuf` to avoid allocations.
+	decData, err := r.algo.Decode(r.decBuf, r.rawBuf[:n])
 	if err != nil {
 		return nil, err
 	}
 
-	decData, err := r.algo.Decode(r.decodeBuf.Bytes())
-	if err != nil {
-		return nil, err
-	}
-
-	r.chunkBuf = chunkbuf.NewChunkBuffer(decData)
+	r.chunkBuf.Reset(decData)
 	return decData, nil
 }
 
@@ -310,8 +327,8 @@ func (r *Reader) readZipChunk() ([]byte, error) {
 // compression algorithm is chosen based on trailer information.
 func NewReader(r io.ReadSeeker) *Reader {
 	return &Reader{
-		rawR:      r,
-		decodeBuf: &bytes.Buffer{},
-		chunkBuf:  chunkbuf.NewChunkBuffer([]byte{}),
+		rawR:     r,
+		chunkBuf: chunkbuf.NewChunkBuffer([]byte{}),
+		decBuf:   make([]byte, maxChunkSize),
 	}
 }

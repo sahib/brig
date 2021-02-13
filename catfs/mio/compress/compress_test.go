@@ -16,7 +16,7 @@ import (
 var (
 	TestOffsets      = []int64{-1, -500, 0, 1, -C64K, -C32K, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
 	TestSizes        = []int64{0, 1, 4096, C64K - 1, C64K, C64K + 1, C32K - 1, C32K, C32K + 1, C64K - 5, C64K + 5, C32K - 5, C32K + 5}
-	CompressionAlgos = []AlgorithmType{AlgoLZ4, AlgoSnappy}
+	CompressionAlgos = []AlgorithmType{AlgoLZ4, AlgoSnappy, AlgoZstd}
 )
 
 func openDest(t *testing.T, dest string) *os.File {

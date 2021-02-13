@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"path"
 	"sync"
@@ -77,7 +76,6 @@ func NewMount(cfs *catfs.FS, mountpoint string, notifier Notifier, opts MountOpt
 		mountOptions = append(mountOptions, fuse.ReadOnly())
 	}
 
-	log.Debugf("PATH: %v", os.Getenv("PATH"))
 	conn, err := fuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return nil, e.Wrapf(err, "fuse-mount")

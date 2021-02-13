@@ -131,31 +131,47 @@ gateway](https://docs.ipfs.io/concepts/ipfs-gateway).
 Available encryption algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: Provide relative throughput numbers compare to »none«.
+.. note::
 
-+----------------+----------------------------------------------------------------------------+
-| NAME           |   DESCRIPTION                                                              |
-+================+============================================================================+
-| ``aes256-gcm`` | The default. AES with 256 bit key in GCM cipher mode. Fast on modern CPUs. |
-+----------------+----------------------------------------------------------------------------+
-| ``chacha20``   | Streaming cipher with Poly1305 MAC. Good for old CPUs without AES-NI.      |
-+----------------+----------------------------------------------------------------------------+
-| ``none``       | Disables encryption. Fast, but only good for public files.                 |
-+----------------+----------------------------------------------------------------------------+
+    The ``THROUGHPUT`` numbers shows the relative, average performance compared
+    to ``none``.  Your mileage may vary a lot. Those number should serve as
+    rough guideline and were obtained by the built-in ``briog debug iobench``
+    utility using the ``fuse-{read,write}-mem`` benchmark. If you want the
+    details you can run the benchmarks yourself. As you can see from the numbers,
+    the additional encoding by brig does not make things substantially slower.
+
+    If you wonder how some benchmark are faster than ``none``: Compression
+    compacts the stream heavily (if the data is well compressible). Therefore
+    less bytes need to be transferred and encrpyted or decrypted. Quite surprisingly,
+    in some cases compression can make things faster.
+
+    Also note that this was measured without caching. If no data is modified
+    your operating system will likely cache data for you and speed up things.
+
++----------------+----------------------------------------------------------------------------+--------------------+-----------------+
+| NAME           |   DESCRIPTION                                                              |  READ THROUGHPUT   | WRITE THROGHPUT |
++================+============================================================================+====================+=================+
+| ``aes256-gcm`` | The default. AES with 256 bit key in GCM cipher mode. Fast on modern CPUs. | 80-85%             |  85-95%         |
++----------------+----------------------------------------------------------------------------+--------------------+-----------------+
+| ``chacha20``   | Streaming cipher with Poly1305 MAC. Good for old CPUs without AES-NI.      | 70-85%             |  80-90%         |
++----------------+----------------------------------------------------------------------------+--------------------+-----------------+
+| ``none``       | Disables encryption. Fast, but only good for public files.                 | 100%               |  100%           |
++----------------+----------------------------------------------------------------------------+--------------------+-----------------+
+
 
 Available compression algorithms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: Provide relative throughput numbers compared to »none«.
-
-+----------------+----------------------------------------------------------------------------+
-| NAME           |   DESCRIPTION                                                              |
-+================+============================================================================+
-| ``snappy``     | High throughput, relative low compression ratio.                           |
-+----------------+----------------------------------------------------------------------------+
-| ``lz4``        | High throughput, slightly higher compression ratio than snappy.            |
-+----------------+----------------------------------------------------------------------------+
-| ``guess``      | Chooses suitable algorithm based on file ending, size and mime type.       |
-+----------------+----------------------------------------------------------------------------+
-| ``none``       | Disables compression.                                                      |
-+----------------+----------------------------------------------------------------------------+
++----------------+----------------------------------------------------------------------------+-------------------+---------------------+
+| NAME           |   DESCRIPTION                                                              |   READ THROUGHPUT |  WRITE THROUGHPUT   |
++================+============================================================================+===================+=====================+
+| ``snappy``     | High throughput, relative low compression ratio.                           |   80-105%         | 95-130%             |
++----------------+----------------------------------------------------------------------------+-------------------+---------------------+
+| ``lz4``        | Middle throughput, slightly higher compression ratio than snappy.          |   77-93%          |  85-105%            |
++----------------+----------------------------------------------------------------------------+-------------------+---------------------+
+| ``zstd``       | Low throughput, highest compression ratio.                                 |   55-95%          |  35-100%            |
++----------------+----------------------------------------------------------------------------+-------------------+---------------------+
+| ``guess``      | Chooses suitable algorithm based on file ending, size and mime type.       |   ``-``           |  ``-``              |
++----------------+----------------------------------------------------------------------------+-------------------+---------------------+
+| ``none``       | Disables compression.                                                      |  100%             |  100%               |
++----------------+----------------------------------------------------------------------------+-------------------+---------------------+

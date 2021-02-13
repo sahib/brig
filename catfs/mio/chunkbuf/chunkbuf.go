@@ -26,10 +26,11 @@ func (c *ChunkBuffer) Write(p []byte) (int, error) {
 }
 
 // Reset resets the buffer like bytes.Buffer
-func (c *ChunkBuffer) Reset() {
+func (c *ChunkBuffer) Reset(data []byte) {
 	c.readOff = 0
 	c.writeOff = 0
-	c.size = 0
+	c.size = int64(len(data))
+	c.buf = data
 }
 
 // Len tells you the current size of the buffer contents

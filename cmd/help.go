@@ -1511,6 +1511,106 @@ EXAMPLES:
 			},
 		},
 	},
+	"debug.fusemock": {
+		Usage:       "Start a fuse mock server (use only if you know what you do)",
+		Description: "Hint: You don't.",
+		Flags: []cli.Flag{
+			// NOTE: Changing things need to be also changed in fuse/fusetest.
+			//       We rely on the argument names there.
+			cli.StringFlag{
+				Name:     "mount-path,m",
+				Usage:    "Path to fuse mount",
+				Value:    "",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:     "catfs-path,c",
+				Usage:    "Where to store metadata",
+				Value:    "",
+				Required: true,
+			},
+			cli.StringFlag{
+				Name:  "url",
+				Usage: "What compression hint to specify ('*' for all)",
+				Value: "unix:/tmp/fuse-mock.socket",
+			},
+			cli.StringFlag{
+				Name:  "ipfs-path,i",
+				Usage: "Path to IPFS, if you want to use it. Empty for memory only.",
+				Value: "",
+			},
+			cli.BoolFlag{
+				Name:  "mount-offline,o",
+				Usage: "Mount offline",
+			},
+			cli.BoolFlag{
+				Name:  "mount-ro,r",
+				Usage: "Mount read-only",
+			},
+		},
+	},
+	"debug.iobench": {
+		Usage: "Benchmark I/O on your system",
+		Description: `
+This is a benchmark utility for the streaming system at the heart of brig.  If
+invoked with no argument, it will attempt to do all possible benchmarks.  All
+benchmarks are run in /tmp under the assumption that a tmpfs is located there.
+If so, you might want to double check that you have enough memory. How much
+is enough depends on many factors, just try it out. :)
+
+Individual benchmarks can be selected using the '--bench' parameter. It can be
+specified several times. Check 'brig debug iobench ls' for a full list of
+possible benchmarks.
+
+Each benchmark is run '--sample' times and uses an artificial input with
+'--size' bytes. The input type can be selected by appending one of the
+following names to the benchmark names separated by a colon (':'):
+
+	* ten: easy to compress data.
+	* mixed: easy to compress data that is mixed with streaks of hard to
+	  compress data. The ratio of easy to hard is roughly 50%.
+	* random: Pseudo random data. Terrible to compress.
+
+By default each benchmark is run several times for each possible hint combination.
+If you do not want this, specify the desired algorithm using the '--compression'
+and '--encryption' parameters.
+
+If you want to parse the output of the benchmark, you can use '--json'.
+`,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "json,j",
+				Usage: "Output the benchmark results as parsable JSON",
+			},
+			cli.StringSliceFlag{
+				Name:  "bench,b",
+				Usage: "Which benchmarks to be run (can be given multiple times)",
+			},
+			cli.StringFlag{
+				Name:  "size,s",
+				Usage: "How big the testdata should be",
+				Value: "256M",
+			},
+			cli.IntFlag{
+				Name:  "samples,S",
+				Usage: "How many time to run each benchmark",
+				Value: 3,
+			},
+			cli.StringFlag{
+				Name:  "compression,c",
+				Usage: "What compression hint to specify ('*' for all)",
+				Value: "*",
+			},
+			cli.StringFlag{
+				Name:  "encryption,e",
+				Usage: "What encryption hint to specify ('*' for all)",
+				Value: "*",
+			},
+		},
+	},
+	"debug.iobench.list": {
+		Usage: "Just list all benchmark names",
+	},
 	"debug.pprof-port": {
 		Usage: "Print the pprof port of the daemon.",
 		Description: `
