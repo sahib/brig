@@ -141,15 +141,11 @@ func NewWriter(w io.Writer, algoType AlgorithmType) (*Writer, error) {
 		return nil, err
 	}
 
-	// TODO: adjust the max encoded size based on algo.
-	// TODO: Fetch this size from a pool (per algo?)
-	encBuf := make([]byte, algo.MaxEncodeBufferSize())
-
 	return &Writer{
 		rawW:     w,
 		algo:     algo,
 		algoType: algoType,
-		encBuf:   encBuf,
+		encBuf:   make([]byte, algo.MaxEncodeBufferSize()),
 		chunkBuf: &bytes.Buffer{},
 		trailer:  &trailer{},
 	}, nil

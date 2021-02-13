@@ -55,8 +55,19 @@ func (at AlgorithmType) String() string {
 
 // Algorithm is the common interface for all supported algorithms.
 type Algorithm interface {
+	// Encode should encode `src` into the buffer provided by `dst`.
+	// It should return a sub-slice of `dst`. `dst` should be big
+	// enough to hold `src`. Use MaxEncodeBufferSize() to be sure.
 	Encode(dst, src []byte) ([]byte, error)
+
+	// Decode decodes the data in `src` to `dst`, returning a subslice
+	// of `dst` to indicate the actual size.
 	Decode(dst, src []byte) ([]byte, error)
+
+	// MaxEncodeBufferSize should return the maximum size an encoded
+	// (i.e. compressed) buffer of input size maxChunkSize may have.
+	// This will be bigger than maxChunkSize since random data will
+	// be inflated by almost all algorithms.
 	MaxEncodeBufferSize() int
 }
 
