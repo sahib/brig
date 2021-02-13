@@ -2,11 +2,13 @@ package fusetest
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -77,7 +79,7 @@ func serveHTTPServer(opts Options) error {
 	srv := &http.Server{}
 
 	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 	// Properly exit when Ctrl-C is pressed.
 	// (including unmounting!)
@@ -94,17 +96,20 @@ func serveHTTPServer(opts Options) error {
 	// TODO: root for unmount.
 	router := mux.NewRouter()
 	router.HandleFunc("/quit", func(w http.ResponseWriter, r *http.Request) {
-		if err := srv.Shutdown(r.Context()); err != nil {
-			log.WithError(err).Warnf("failed to shutdown server")
-		}
+		go func() {
+			// Close the server in a few ms, just not in th request itself.
+			// Otherwise the client will block forever.
+			time.Sleep(100 * time.Millisecond)
+			if err := srv.Shutdown(r.Context()); err != nil {
+				log.WithError(err).Warnf("failed to shutdown server")
+			}
+		}()
 	}).Methods("GET")
 
 	srv.Handler = router
-	if err := srv.Serve(lst); err != nil {
-		return err
-	}
-
-	return nil
+	fmt.Println("serving...")
+	defer fmt.Println("serving done...")
+	return srv.Serve(lst)
 }
 
 // Options can be specified to control the behavior of the fusetest server.
@@ -166,7 +171,12 @@ func Launch(opts Options) error {
 	}
 
 	// make sure it gets closed, even when no unmount is happening.
-	defer m.Close()
+	defer func() {
+		fmt.Println("Closing mount")
+		if err := m.Close(); err != nil {
+			log.WithError(err).Error("fuse mount close failed")
+		}
+	}()
 
 	return serveHTTPServer(opts)
 }

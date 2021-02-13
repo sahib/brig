@@ -1,6 +1,5 @@
 package bench
 
-// TODO: n_allocs, compression rate?
 import (
 	"bytes"
 	"context"
@@ -175,6 +174,9 @@ func (s *serverStageBench) Bench(hint hints.Hint, size int64, r io.Reader, verif
 		return nil, err
 	}
 
+	// That's just for cleaning up after each test.
+	defer s.common.client.Remove(path)
+
 	return withRunStats(size, func() (int64, error) {
 		return size, s.common.client.StageFromReader(path, r)
 	})
@@ -213,6 +215,9 @@ func (s *serverCatBench) Bench(hint hints.Hint, size int64, r io.Reader, verifie
 	if err := s.common.client.StageFromReader(path, r); err != nil {
 		return nil, err
 	}
+
+	// That's just for cleaning up after each test.
+	defer s.common.client.Remove(path)
 
 	return withRunStats(size, func() (int64, error) {
 		stream, err := s.common.client.Cat(path, true)
@@ -465,9 +470,22 @@ func (fb *fuseWriteOrReadBench) Bench(hint hints.Hint, size int64, r io.Reader, 
 
 func (fb *fuseWriteOrReadBench) Close() error {
 	fb.ctl.QuitServer()
-	time.Sleep(time.Second)
-	fb.proc.Kill()
-	return os.RemoveAll(fb.tmpDir)
+	time.Sleep(2 * time.Second)
+	fb.proc.Signal(syscall.SIGTERM)
+
+	var lastError error
+	for retries := 0; retries < 10; retries++ {
+		if err := os.RemoveAll(fb.tmpDir); err != nil {
+			time.Sleep(200 * time.Millisecond)
+			lastError = err
+			continue
+		}
+
+		lastError = nil
+		break
+	}
+
+	return lastError
 }
 
 //////////

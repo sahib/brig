@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
+	"runtime"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/sahib/brig/repo/hints"
@@ -99,7 +102,19 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 
 	defer out.Close()
 
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT)
+	defer signal.Stop(sigCh)
+
 	for _, hint := range sortHints(buildHints(cfg)) {
+		select {
+		case <-sigCh:
+			fmt.Println("Interrupted")
+			return nil
+		default:
+			// just continue
+		}
+
 		supportsHints := out.SupportHints()
 		if !supportsHints {
 			// Indicate in output that nothing was encrypted or compressed.
@@ -115,6 +130,9 @@ func benchmarkSingle(cfg Config, fn func(result Result), ipfsPath string) error 
 		}
 
 		var runs Runs
+
+		// probably doesn't do much, just to clean any leftover memory.
+		runtime.GC()
 
 		for seed := uint64(0); seed < uint64(cfg.Samples); seed++ {
 			r, err := in.Reader(seed)

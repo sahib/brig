@@ -57,10 +57,10 @@ var (
 
 	compressionSortMap = map[CompressionHint]int{
 		CompressionNone:   0,
-		CompressionLZ4:    1,
-		CompressionSnappy: 2,
-		CompressionZstd:   3,
-		CompressionGuess:  4,
+		CompressionGuess:  1,
+		CompressionLZ4:    2,
+		CompressionSnappy: 3,
+		CompressionZstd:   4,
 	}
 )
 
