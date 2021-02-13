@@ -299,9 +299,15 @@ func (r *Reader) readZipChunk() ([]byte, error) {
 		return nil, err
 	}
 
-	// NOTE: When len(r.rawBuf) is < chunkSize ErrShortBuffer is returned.
-	// This should only happen on malicious input with far too high chunkSize.
-	n, err := io.ReadAtLeast(r.rawR, r.rawBuf[:chunkSize], int(chunkSize))
+	if len(r.rawBuf) < int(chunkSize) {
+		// NOTE: When len(r.rawBuf) is < chunkSize ErrShortBuffer is returned.
+		// This should only happen on malicious input with far too high chunkSize.
+		// r.rawBuf should be able to hold any compressed stream derived from any
+		// block with size maxChunkSize.
+		return nil, io.ErrShortBuffer
+	}
+
+	n, err := io.ReadFull(r.rawR, r.rawBuf[:int(chunkSize)])
 	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 		return nil, err
 	}

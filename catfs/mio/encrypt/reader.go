@@ -178,7 +178,7 @@ func (r *Reader) readBlock() (int, error) {
 		return 0, err
 	}
 
-	r.backlog = bytes.NewReader(r.decBuf)
+	r.backlog.Reset(r.decBuf)
 	r.isInitialRead = false
 
 	return len(r.decBuf), nil
