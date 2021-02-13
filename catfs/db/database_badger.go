@@ -26,8 +26,10 @@ type BadgerDatabase struct {
 // NewBadgerDatabase creates a new badger database.
 func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	opts := badger.DefaultOptions(path).
-		WithValueLogFileSize(10*1024*1024). //default is 2GB we should not need 2GB
-		WithMemTableSize(10*1024*1024).     //default is 64MB
+		WithValueLogFileSize(10 * 1024 * 1024). //default is 2GB we should not need 2GB
+		WithMemTableSize(10 * 1024 * 1024).     //default is 64MB
+		WithNumVersionsToKeep(1).               // it is default but it's better to force it
+		WithCompactL0OnClose(true).
 		WithSyncWrites(false).
 		WithLogger(nil)
 
