@@ -113,6 +113,11 @@ func Open(baseFolder string) (*Repository, error) {
 // Close will lock the repository, making this instance unusable.
 func (rp *Repository) Close() error {
 	rp.stopAutoGCLoop()
+	for owner, fs := range rp.fsMap {
+		log.Infof("closing FS for %s", owner)
+		fs.Close()
+	}
+
 	return nil
 }
 
