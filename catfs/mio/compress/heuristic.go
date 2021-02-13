@@ -68,7 +68,6 @@ func GuessAlgorithm(path string, header []byte) (AlgorithmType, error) {
 	}
 
 	compressible := isCompressible(mime)
-
 	if !compressible {
 		return AlgoUnknown, nil
 	}

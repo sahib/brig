@@ -62,7 +62,18 @@ func WithDaemon(name string, fn func(ctl *client.Client) error) error {
 		return err
 	}
 
-	defer os.RemoveAll(srv.RepoPath())
+	defer func() {
+		// Somehow there is race condition between
+		// srv.Close() from the defer at the very end
+		// os.RemoveAll(repoPath).
+		// Theoretically, `go` should have closed server
+		// but in practice I see that repoPath is removed
+		// before server had a chance to close the DB
+		// and I see complains in log about DB.Close
+		// I introduce this time delay as a crude hack
+		time.Sleep(100 * time.Millisecond)
+		os.RemoveAll(srv.RepoPath())
+	}()
 	defer srv.Close()
 
 	ctl, err := client.Dial(context.Background(), srv.DaemonURL())

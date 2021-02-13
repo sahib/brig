@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 
 	"github.com/sahib/brig/client"
 	"github.com/sahib/brig/client/clienttest"
+	"github.com/sahib/brig/repo/hints"
 	colorLog "github.com/sahib/brig/util/log"
 	"github.com/sahib/brig/util/testutil"
 	log "github.com/sirupsen/logrus"
@@ -54,6 +56,7 @@ func TestStageAndCat(t *testing.T) {
 	withDaemon(t, "ali", func(ctl *client.Client) {
 		fd, err := ioutil.TempFile("", "brig-dummy-data")
 		path := fd.Name()
+		defer os.RemoveAll(path)
 
 		expected := testutil.CreateDummyBuf(2 * 1024 * 1024)
 		require.Nil(t, err, stringify(err))
@@ -429,8 +432,9 @@ func TestHints(t *testing.T) {
 		info, err := ctl.Stat(path)
 		require.NoError(t, err)
 
-		require.Equal(t, "guess", info.Hint.CompressionAlgo)
-		require.Equal(t, "aes256gcm", info.Hint.EncryptionAlgo)
+		defHints := hints.Default()
+		require.Equal(t, string(defHints.CompressionAlgo), info.Hint.CompressionAlgo)
+		require.Equal(t, string(defHints.EncryptionAlgo), info.Hint.EncryptionAlgo)
 		require.Equal(t, false, info.IsRaw)
 
 		none := "none"
