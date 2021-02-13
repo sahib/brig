@@ -35,6 +35,8 @@ type Writer struct {
 
 	// Becomes true after the first write.
 	headerWritten bool
+
+	encBuf []byte
 }
 
 func (w *Writer) addRecordToIndex() {
@@ -50,7 +52,8 @@ func (w *Writer) flushBuffer(data []byte) error {
 	w.addRecordToIndex()
 
 	// Compress and flush the current chunk.
-	encData, err := w.algo.Encode(data)
+	// encData should be a slice of `w.encBuf`
+	encData, err := w.algo.Encode(w.encBuf, data)
 	if err != nil {
 		return err
 	}
@@ -133,14 +136,16 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 
 // NewWriter returns a WriteCloser with compression support.
 func NewWriter(w io.Writer, algoType AlgorithmType) (*Writer, error) {
-	algo, err := AlgorithmFromType(algoType)
+	algo, err := algorithmFromType(algoType)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Writer{
 		rawW:     w,
 		algo:     algo,
 		algoType: algoType,
+		encBuf:   make([]byte, algo.MaxEncodeBufferSize()),
 		chunkBuf: &bytes.Buffer{},
 		trailer:  &trailer{},
 	}, nil

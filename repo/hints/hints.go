@@ -1,22 +1,20 @@
 package hints
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 
+	"github.com/klauspost/cpuid/v2"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs/mio/compress"
 	"github.com/sahib/brig/catfs/mio/encrypt"
 	"github.com/sahib/brig/util/trie"
 	"github.com/sahib/config"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -40,6 +38,9 @@ const (
 	// CompressionSnappy  compresses the stream in snappy mode.
 	CompressionSnappy = CompressionHint("snappy")
 
+	// CompressionZstd compresses the stream in zstd mode.
+	CompressionZstd = CompressionHint("zstd")
+
 	// CompressionGuess tries to guess a suitable type by looking at
 	// different aspects of the stream.
 	CompressionGuess = CompressionHint("guess")
@@ -50,7 +51,16 @@ var (
 		CompressionNone:   compress.AlgoUnknown,
 		CompressionLZ4:    compress.AlgoLZ4,
 		CompressionSnappy: compress.AlgoSnappy,
+		CompressionZstd:   compress.AlgoZstd,
 		CompressionGuess:  compress.AlgoUnknown,
+	}
+
+	compressionSortMap = map[CompressionHint]int{
+		CompressionNone:   0,
+		CompressionGuess:  1,
+		CompressionLZ4:    2,
+		CompressionSnappy: 3,
+		CompressionZstd:   4,
 	}
 )
 
@@ -76,12 +86,15 @@ func CompressAlgorithmTypeToCompressionHint(algo compress.AlgorithmType) Compres
 		return CompressionLZ4
 	case compress.AlgoSnappy:
 		return CompressionSnappy
+	case compress.AlgoZstd:
+		return CompressionZstd
 	default:
 		return CompressionNone
 	}
 }
 
-func validCompressionHints() []string {
+// ValidCompressionHints returns all valid compression hints.
+func ValidCompressionHints() []string {
 	s := []string{}
 	for h := range compressionHintMap {
 		s = append(s, string(h))
@@ -121,6 +134,12 @@ var (
 		EncryptionAES256GCM: encrypt.FlagEncryptAES256GCM,
 		EncryptionChaCha20:  encrypt.FlagEncryptChaCha20,
 	}
+
+	encryptionSortMap = map[EncryptionHint]int{
+		EncryptionNone:      0,
+		EncryptionAES256GCM: 1,
+		EncryptionChaCha20:  2,
+	}
 )
 
 // IsValid checks if `eh` is a valid encryption type
@@ -134,7 +153,8 @@ func (eh EncryptionHint) ToEncryptFlags() encrypt.Flags {
 	return encryptionHintMap[eh]
 }
 
-func validEncryptionHints() []string {
+// ValidEncryptionHints returns all valid encryption hints.
+func ValidEncryptionHints() []string {
 	s := []string{}
 	for h := range encryptionHintMap {
 		s = append(s, string(h))
@@ -160,27 +180,13 @@ var (
 	cpuHasNoAESNI int32
 )
 
-func readProcCPUInfo() {
-	// can be extended with other operating systems later on.
-	switch runtime.GOOS {
-	case "linux":
-		data, err := ioutil.ReadFile("/proc/cpuinfo")
-		if err != nil {
-			log.WithError(err).Warnf("failed to read cpuinfo")
-			return
-		}
-
-		// Check if we don't have AES-NI. Most modern CPUs do,
-		// but on older ones ChaCha20 is quite fast.
-		if !bytes.Contains(data, []byte(" aes ")) {
-			atomic.StoreInt32(&cpuHasNoAESNI, 1)
-		}
-	}
-}
-
 // Default returns the default stream settings
 func Default() Hint {
-	cpuInfoOnce.Do(readProcCPUInfo)
+	cpuInfoOnce.Do(func() {
+		if !cpuid.CPU.Supports(cpuid.AESNI) {
+			atomic.StoreInt32(&cpuHasNoAESNI, 1)
+		}
+	})
 
 	encHint := EncryptionAES256GCM
 	if atomic.LoadInt32(&cpuHasNoAESNI) > 0 {
@@ -215,7 +221,38 @@ func (h Hint) IsRaw() bool {
 }
 
 func (h Hint) String() string {
-	return fmt.Sprintf("enc-%s-zip-%s", h.EncryptionAlgo, h.CompressionAlgo)
+	return fmt.Sprintf("enc:%s-zip:%s", h.EncryptionAlgo, h.CompressionAlgo)
+}
+
+// Less returns false if `o` should be sorted before `h`.
+func (h Hint) Less(o Hint) bool {
+	// This sorts "none" always before any other hint type.
+	// Leverages the fact that the enum value of none is lower than all others.
+	encNumH, ok := encryptionSortMap[h.EncryptionAlgo]
+	if !ok {
+		encNumH = int(^uint(0) >> 1)
+	}
+
+	encNumO, ok := encryptionSortMap[o.EncryptionAlgo]
+	if !ok {
+		encNumO = int(^uint(0) >> 1)
+	}
+
+	if encNumH != encNumO {
+		return encNumH < encNumO
+	}
+
+	zipNumH, ok := compressionSortMap[h.CompressionAlgo]
+	if !ok {
+		zipNumH = int(^uint(0) >> 1)
+	}
+
+	zipNumO, ok := compressionSortMap[o.CompressionAlgo]
+	if !ok {
+		zipNumO = int(^uint(0) >> 1)
+	}
+
+	return zipNumH < zipNumO
 }
 
 // EncryptionHints returns all possible encryption hints.
@@ -243,6 +280,10 @@ func AllPossibleHints() []Hint {
 		}
 	}
 
+	sort.Slice(hints, func(i, j int) bool {
+		return hints[i].Less(hints[j])
+	})
+
 	return hints
 }
 
@@ -259,13 +300,13 @@ var (
 					Default:      string(Default().CompressionAlgo),
 					NeedsRestart: false,
 					Docs:         "Which compression algorithm to use.",
-					Validator:    config.EnumValidator(validCompressionHints()...),
+					Validator:    config.EnumValidator(ValidCompressionHints()...),
 				},
 				"encryption_algo": config.DefaultEntry{
 					Default:      string(Default().EncryptionAlgo),
 					NeedsRestart: false,
 					Docs:         "Which encryption algorithm to use.",
-					Validator:    config.EnumValidator(validEncryptionHints()...),
+					Validator:    config.EnumValidator(ValidEncryptionHints()...),
 				},
 			},
 		},

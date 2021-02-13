@@ -11,9 +11,13 @@ import (
 
 func TestMain(t *testing.T) {
 	t.Skip("TODO: probably a bit too much for travis")
-	ipfsPath, err := IPFS(os.Stdout, true, true, true, "")
-	require.Nil(t, err)
-	fmt.Println(ipfsPath)
+	_, err := IPFS(Options{
+		LogWriter:        os.Stdout,
+		Setup:            true,
+		SetDefaultConfig: true,
+		SetExtraConfig:   true,
+	})
+	require.NoError(t, err)
 }
 
 func TestInstall(t *testing.T) {
@@ -27,5 +31,5 @@ func TestCommandAvailable(t *testing.T) {
 func TestRepoInit(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "ipfs-tmp-test-")
 	require.Nil(t, err)
-	require.Nil(t, initIPFS(os.Stdout, tmpDir))
+	require.Nil(t, initIPFS(os.Stdout, tmpDir, "test"))
 }

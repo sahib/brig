@@ -239,8 +239,12 @@ func ipfsSetConfigKey(out io.Writer, ipfsPath, key, value string) {
 	}
 }
 
-func initIPFS(out io.Writer, ipfsPath string) error {
+func initIPFS(out io.Writer, ipfsPath, profile string) error {
 	cmd := exec.Command("ipfs", "init")
+	if profile != "" {
+		cmd.Args = append(cmd.Args, "--profile", profile)
+	}
+
 	cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
 	if err := cmd.Run(); err != nil {
 		return err
@@ -335,13 +339,17 @@ func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool)
 	return nil
 }
 
-func startIpfs(out io.Writer, ipfsPath string) error {
+func startIpfs(out io.Writer, ipfsPath string) (int, error) {
 	// We don't call Wait() on cmd, so the process will survive the
 	// exit of your process and gets reparented to init.
 	fmt.Fprintf(out, "-- IPFS_PATH='%s' ipfs daemon --enable-pubsub-experiment\n", ipfsPath)
 	cmd := exec.Command("ipfs", "daemon", "--enable-pubsub-experiment")
 	cmd.Env = append(cmd.Env, "IPFS_PATH="+ipfsPath)
-	return cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return -1, err
+	}
+
+	return cmd.Process.Pid, nil
 }
 
 func isCommandAvailable(name string) bool {
@@ -377,66 +385,111 @@ func dirExistsAndIsNotEmpty(dir string) bool {
 	return len(names) > 0
 }
 
+// Options define how the IPFS setup will be carried out.
+type Options struct {
+	LogWriter io.Writer
+
+	// Setup, if true, will setup
+	Setup bool
+
+	// SetDefaultConfig sets, if true, configuration vital to brig.
+	SetDefaultConfig bool
+
+	// SetExtraConfig sets, if true, configuration that helps brig.
+	SetExtraConfig bool
+
+	// IpfsPath defines where the new repo should be generated (if needed).
+	// If empty we take a guess where the repo could be.
+	IpfsPath string
+
+	// InitProfile may be one of the profile names specified here:
+	// https://github.com/ipfs/go-ipfs/blob/master/docs/config.md
+	InitProfile string
+}
+
+// Result details how the setup went.
+type Result struct {
+	// IpfsPath is always set, even if we only guessed it.
+	IpfsPath string
+
+	// PID is the PID of the IPFS daemon if we started it.
+	// Otherwise it is set to -1.
+	PID int
+}
+
 // IPFS setups a IPFS repo at the standard place.
 // If there is already a repository and the daemon is running, it will do nothing.
 // Otherwise it will install IPFS (if it needs to), init a repo, set config and
 // bring up the daemon in a fashion that should work for most cases.
 // It will output log messages to `out`.
-func IPFS(out io.Writer, doSetup, setDefaultConfig, setExtraConfig bool, ipfsPath string) (string, error) {
-	if ipfsPath == "" {
-		ipfsPath = guessIPFSRepo()
-		fmt.Fprintf(out, "-- Guessed IPFS repository as %s\n", ipfsPath)
-	} else {
-		fmt.Fprintf(out, "-- IPFS repository is supposed to be at %s\n", ipfsPath)
+func IPFS(opts Options) (*Result, error) {
+	if opts.LogWriter == nil {
+		opts.LogWriter = os.Stdout
 	}
 
-	if !dirExistsAndIsNotEmpty(ipfsPath) && doSetup {
+	result := &Result{
+		PID: -1,
+	}
+
+	if opts.IpfsPath == "" {
+		opts.IpfsPath = guessIPFSRepo()
+		fmt.Fprintf(opts.LogWriter, "-- Guessed IPFS repository as %s\n", opts.IpfsPath)
+	} else {
+		fmt.Fprintf(opts.LogWriter, "-- IPFS repository is supposed to be at %s\n", opts.IpfsPath)
+	}
+
+	// Result should always have the result path set:
+	result.IpfsPath = opts.IpfsPath
+
+	if !dirExistsAndIsNotEmpty(opts.IpfsPath) && opts.Setup {
 		if !isCommandAvailable("ipfs") {
-			fmt.Fprintf(out, "-- There is no »ipfs« command available.\n")
-			if err := installIPFS(out); err != nil {
-				fmt.Fprintf(out, "-- Failed to install IPFS: %v", err)
-				fmt.Fprintf(out, "-- Please refer to »https://docs.ipfs.io/introduction/install«\n")
-				fmt.Fprintf(out, "-- to find out on how to install it manually. It is usually very easy.\n")
-				fmt.Fprintf(out, "-- Re-run »brig init« once you're done.\n")
-				return "", err
+			fmt.Fprintf(opts.LogWriter, "-- There is no »ipfs« command available.\n")
+			if err := installIPFS(opts.LogWriter); err != nil {
+				fmt.Fprintf(opts.LogWriter, "-- Failed to install IPFS: %v", err)
+				fmt.Fprintf(opts.LogWriter, "-- Please refer to »https://docs.ipfs.io/introduction/install«\n")
+				fmt.Fprintf(opts.LogWriter, "-- to find opts.LogWriter on how to install it manually. It is usually very easy.\n")
+				fmt.Fprintf(opts.LogWriter, "-- Re-run »brig init« once you're done.\n")
+				return nil, err
 			}
 		} else {
-			fmt.Fprintf(out, "-- »ipfs« command is available, but no repo found.\n")
+			fmt.Fprintf(opts.LogWriter, "-- »ipfs« command is available, but no repo found.\n")
 		}
 
-		fmt.Fprintf(out, "-- Creating new IPFS repository.\n")
-		initIPFS(out, ipfsPath)
+		fmt.Fprintf(opts.LogWriter, "-- Creating new IPFS repository.\n")
+		initIPFS(opts.LogWriter, opts.IpfsPath, opts.InitProfile)
 	}
 
-	apiAddr, err := GetAPIAddrForPath(ipfsPath)
+	apiAddr, err := GetAPIAddrForPath(opts.IpfsPath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	fmt.Fprintf(out, "-- The API address of the repo is: %s\n", apiAddr)
+	fmt.Fprintf(opts.LogWriter, "-- The API address of the repo is: %s\n", apiAddr)
 
 	if !isRunning(apiAddr) {
-		fmt.Fprintf(out, "-- IPFS Daemon does not seem to be running.\n")
-		fmt.Fprintf(out, "-- Will start one for you with the following command:\n")
-		if err := startIpfs(out, ipfsPath); err != nil {
-			return "", err
+		fmt.Fprintf(opts.LogWriter, "-- IPFS Daemon does not seem to be running.\n")
+		fmt.Fprintf(opts.LogWriter, "-- Will start one for you with the following command:\n")
+
+		result.PID, err = startIpfs(opts.LogWriter, opts.IpfsPath)
+		if err != nil {
+			return nil, err
 		}
 
-		waitForRunningIPFS(out, apiAddr, 60)
-		fmt.Fprintf(out, "-- Started IPFS as child of this process.\n")
+		waitForRunningIPFS(opts.LogWriter, apiAddr, 60)
+		fmt.Fprintf(opts.LogWriter, "-- Started IPFS as child of this process.\n")
 	} else {
-		fmt.Fprintf(out, "-- IPFS Daemon seems to be running. Let's go!\n")
+		fmt.Fprintf(opts.LogWriter, "-- IPFS Daemon seems to be running. Let's go!\n")
 	}
 
-	if setDefaultConfig {
-		fmt.Fprintf(out, "-- Will set some default settings for IPFS.\n")
-		fmt.Fprintf(out, "-- These are required for brig to work smoothly.\n")
+	if opts.SetDefaultConfig {
+		fmt.Fprintf(opts.LogWriter, "-- Will set some default settings for IPFS.\n")
+		fmt.Fprintf(opts.LogWriter, "-- These are required for brig to work smoothly.\n")
 
-		if err := configureIPFS(out, apiAddr, ipfsPath, setExtraConfig); err != nil {
-			fmt.Fprintf(out, "-- Failed to set defaults: %v\n", err)
-			return "", err
+		if err := configureIPFS(opts.LogWriter, apiAddr, opts.IpfsPath, opts.SetExtraConfig); err != nil {
+			fmt.Fprintf(opts.LogWriter, "-- Failed to set defaults: %v\n", err)
+			return nil, err
 		}
 	}
 
-	return ipfsPath, nil
+	return result, nil
 }
