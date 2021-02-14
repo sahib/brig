@@ -140,7 +140,7 @@ func RunCmdline(args []string) int {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:   "url,u",
-			Usage:  "URL on where to reach the brig daemon. Leave empty to allow guessing.",
+			Usage:  "URL on where to reach the brig daemon.",
 			EnvVar: "BRIG_URL",
 			Value:  defaults.DaemonDefaultURL(),
 		},

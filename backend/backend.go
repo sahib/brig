@@ -35,18 +35,6 @@ type Backend interface {
 	eventsBackend.Backend
 }
 
-// InitByName creates a new backend structure at `path` for the backend `name`
-func InitByName(name, path string, port int) error {
-	switch name {
-	case "httpipfs":
-		return httpipfs.Init(path)
-	case "mock":
-		return nil
-	}
-
-	return ErrNoSuchBackend
-}
-
 // ForwardLogByName will forward the logs of the backend `name` to `w`.
 func ForwardLogByName(name string, w io.Writer) error {
 	switch name {

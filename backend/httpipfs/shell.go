@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/blang/semver"
 	shell "github.com/ipfs/go-ipfs-api"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/patrickmn/go-cache"
 	"github.com/sahib/brig/repo/setup"
 	log "github.com/sirupsen/logrus"
@@ -74,8 +77,26 @@ func WithNoLogging() Option {
 	}
 }
 
+func toMultiAddr(ipfsPathOrURL string) (ma.Multiaddr, error) {
+	if !filepath.IsAbs(ipfsPathOrURL) {
+		// multiaddr always start with a slash,
+		// this branch affects only file paths.
+		var err error
+		ipfsPathOrURL, err = filepath.Abs(ipfsPathOrURL)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if _, err := os.Stat(ipfsPathOrURL); err == nil {
+		return setup.GetAPIAddrForPath(ipfsPathOrURL)
+	}
+
+	return ma.NewMultiaddr(ipfsPathOrURL)
+}
+
 // NewNode returns a new http based IPFS backend.
-func NewNode(ipfsPath, fingerprint string, opts ...Option) (*Node, error) {
+func NewNode(ipfsPathOrURL string, fingerprint string, opts ...Option) (*Node, error) {
 	nd := &Node{
 		allowNetOps: true,
 		fingerprint: fingerprint,
@@ -88,16 +109,16 @@ func NewNode(ipfsPath, fingerprint string, opts ...Option) (*Node, error) {
 		opt(nd)
 	}
 
-	addr, err := setup.GetAPIAddrForPath(ipfsPath)
+	m, err := toMultiAddr(ipfsPathOrURL)
 	if err != nil {
 		return nil, err
 	}
 
 	if !nd.quiet {
-		log.Infof("Connecting to IPFS HTTP API at %s", addr)
+		log.Infof("Connecting to IPFS HTTP API at %s", m.String())
 	}
 
-	nd.sh = shell.NewShell(addr)
+	nd.sh = shell.NewShell(m.String())
 
 	versionString, _, err := nd.sh.Version()
 	if err != nil && !nd.quiet {

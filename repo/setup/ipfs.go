@@ -21,6 +21,7 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	shell "github.com/ipfs/go-ipfs-api"
 	homedir "github.com/mitchellh/go-homedir"
+	ma "github.com/multiformats/go-multiaddr"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/util"
 	log "github.com/sirupsen/logrus"
@@ -47,11 +48,11 @@ func guessIPFSRepo() string {
 	return baseDir
 }
 
-func getAPIAddrFromConfig(baseDir string) (string, error) {
+func getAPIAddrFromConfig(baseDir string) (ma.Multiaddr, error) {
 	cfgPath := filepath.Join(baseDir, "config")
 	cfgData, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
-		return "", e.Wrap(err, "does the IPFS repository exist? full error")
+		return nil, e.Wrap(err, "does the IPFS repository exist? full error")
 	}
 
 	data := struct {
@@ -62,29 +63,36 @@ func getAPIAddrFromConfig(baseDir string) (string, error) {
 
 	r := bytes.NewReader(cfgData)
 	if err := json.NewDecoder(r).Decode(&data); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return data.Addresses.API, nil
+	return ma.NewMultiaddr(data.Addresses.API)
 }
 
 // GetAPIAddrForPath returns the API addr of the IPFS repo at `baseDir`.
-func GetAPIAddrForPath(baseDir string) (string, error) {
-	apiFile := filepath.Join(baseDir, defaultAPIFile)
+func GetAPIAddrForPath(ipfsPathOrURL string) (ma.Multiaddr, error) {
+	m, err := ma.NewMultiaddr(ipfsPathOrURL)
+	if err == nil {
+		return m, nil
+	}
+
+	// assume it's a path:
+	apiFile := filepath.Join(ipfsPathOrURL, defaultAPIFile)
 	if _, err := os.Stat(apiFile); err != nil {
-		return getAPIAddrFromConfig(baseDir)
+		return getAPIAddrFromConfig(ipfsPathOrURL)
 	}
 
-	api, err := ioutil.ReadFile(apiFile)
+	apiAddr, err := ioutil.ReadFile(apiFile)
 	if err != nil {
-		return getAPIAddrFromConfig(baseDir)
+		return getAPIAddrFromConfig(ipfsPathOrURL)
 	}
 
-	return string(api), nil
+	s := strings.TrimSpace(string(apiAddr))
+	return ma.NewMultiaddr(s)
 }
 
-func isRunning(apiAddr string) bool {
-	return shell.NewShell(apiAddr).IsUp()
+func isRunning(apiAddr ma.Multiaddr) bool {
+	return shell.NewShell(apiAddr.String()).IsUp()
 }
 
 func getLatestStableVersion() string {
@@ -292,8 +300,8 @@ func initIPFS(out io.Writer, ipfsPath, profile string) error {
 	return nil
 }
 
-func getIPFSVersion(apiAddr string) (semver.Version, error) {
-	vers, _, err := shell.NewShell(apiAddr).Version()
+func getIPFSVersion(apiAddr ma.Multiaddr) (semver.Version, error) {
+	vers, _, err := shell.NewShell(apiAddr.String()).Version()
 	if err != nil {
 		return semver.Version{}, err
 	}
@@ -301,16 +309,16 @@ func getIPFSVersion(apiAddr string) (semver.Version, error) {
 	return semver.Parse(vers)
 }
 
-func configureIPFS(out io.Writer, apiAddr, ipfsPath string, setExtraConfig bool) error {
+func configureIPFS(out io.Writer, apiAddr ma.Multiaddr, ipfsPath string, setExtraConfig bool) error {
 	version, err := getIPFSVersion(apiAddr)
 	if err != nil {
 		return err
 	}
 
 	fmt.Fprintf(out, "-- The IPFS version is »%s«.\n", version)
-	if version.LT(semver.MustParse("0.4.18")) {
+	if version.LT(semver.MustParse("0.7.0")) {
 		fmt.Fprintf(out, "-- The IPFS version »%s« is quite old. Please update.\n", version)
-		fmt.Fprintf(out, "-- We only test on newer versions (>= 0.4.18).\n")
+		fmt.Fprintf(out, "-- We only test on newer versions (>= 0.7.0).\n")
 	}
 
 	config := [][]string{
@@ -361,7 +369,7 @@ func isCommandAvailable(name string) bool {
 	return path != ""
 }
 
-func waitForRunningIPFS(out io.Writer, addr string, maxWaitTime time.Duration) {
+func waitForRunningIPFS(out io.Writer, addr ma.Multiaddr, maxWaitTime time.Duration) {
 	waitStart := time.Now()
 	for time.Since(waitStart) > maxWaitTime {
 		if isRunning(addr) {
