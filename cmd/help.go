@@ -83,7 +83,7 @@ var helpTexts = map[string]helpEntry{
 			},
 			cli.StringFlag{
 				Name:  "ipfs-path-or-multiaddr",
-				Usage: "Specify an explicit path or URL to an IPFS repository. Useful if you have more than one.",
+				Usage: "Specify a path to an ipfs repo (/tmp/ipfs-repo) or a multiaddr to a running ipfs daemon (/ip4/127.0.0.1/tcp/5002)",
 				Value: "",
 			},
 			cli.BoolFlag{
