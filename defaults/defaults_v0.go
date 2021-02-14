@@ -44,10 +44,10 @@ var DefaultsV0 = config.DefaultMapping{
 			Docs:         "URL of the daemon process.",
 			Validator:    urlValidator,
 		},
-		"ipfs_path": config.DefaultEntry{
+		"ipfs_path_or_url": config.DefaultEntry{
 			Default:      "",
 			NeedsRestart: true,
-			Docs:         "Path to the IPFS repository you want to use.",
+			Docs:         "URL or path to the IPFS repository you want to use.",
 		},
 		"enable_pprof": config.DefaultEntry{
 			Default:      true,

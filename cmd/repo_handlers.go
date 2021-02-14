@@ -101,6 +101,11 @@ Have a nice day.
 	return ctl.MakeCommit("added initial README.md")
 }
 
+func isMultiAddr(ipfsPathOrMultiaddr string) bool {
+	_, err := os.Stat(ipfsPathOrMultiaddr)
+	return err != nil
+}
+
 func handleInit(ctx *cli.Context) error {
 	if len(ctx.Args()) == 0 {
 		return fmt.Errorf("Please specify a name for the owner of this repository")
@@ -146,10 +151,20 @@ func handleInit(ctx *cli.Context) error {
 		return fmt.Errorf("`%s` already exists and is not empty; refusing to do init", folder)
 	}
 
-	ipfsPath := ctx.String("ipfs-path")
+	ipfsPathOrMultiaddr := ctx.String("ipfs-path-or-multiaddr")
 	doIpfsSetup := !ctx.Bool("no-ipfs-setup")
 	doIpfsConfig := !ctx.Bool("no-ipfs-config")
 	doExtraIpfsConfig := !ctx.Bool("no-ipfs-optimization")
+
+	ipfsRepoPath := ipfsPathOrMultiaddr
+	isMa := isMultiAddr(ipfsPathOrMultiaddr)
+	if isMa {
+		// NOTE: If we're connecting over a multiaddr,
+		//       then we should not setup an ipfs repo.
+		//       Assumption is that it exists already.
+		doIpfsSetup = false
+		ipfsRepoPath = ""
+	}
 
 	if backend == "httpipfs" {
 		if _, err := setup.IPFS(setup.Options{
@@ -157,7 +172,7 @@ func handleInit(ctx *cli.Context) error {
 			Setup:            doIpfsSetup,
 			SetDefaultConfig: doIpfsConfig,
 			SetExtraConfig:   doExtraIpfsConfig,
-			IpfsPath:         ipfsPath,
+			IpfsPath:         ipfsRepoPath,
 		}); err != nil {
 			return err
 		}
@@ -170,7 +185,7 @@ func handleInit(ctx *cli.Context) error {
 
 	if err := Init(
 		ctx,
-		ipfsPath,
+		ipfsPathOrMultiaddr,
 		repo.InitOptions{
 			BaseFolder:  folder,
 			Owner:       owner,
@@ -401,7 +416,7 @@ func handleDaemonLaunch(ctx *cli.Context) error {
 	if err != nil {
 		log.Warningf("failed to read config at %v: %v", repoPath, err)
 	} else {
-		ipfsPath = cfg.String("daemon.ipfs_path")
+		ipfsPath = cfg.String("daemon.ipfs_path_or_url")
 	}
 
 	if _, err := setup.IPFS(setup.Options{

@@ -334,7 +334,7 @@ func (rh *repoHandler) Version(call capnp.Repo_version) error {
 
 	rp := rh.base.repo
 	name := rp.Immutables.Backend()
-	ipfsPath := rp.Config.String("daemon.ipfs_path")
+	ipfsPath := rp.Config.String("daemon.ipfs_path_or_url")
 	bkVersion := backend.Version(name, ipfsPath)
 	if bkVersion == nil {
 		return fmt.Errorf("bug: invalid backend name: %v", name)
