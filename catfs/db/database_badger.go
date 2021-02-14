@@ -8,6 +8,7 @@ import (
 	"time"
 
 	badger "github.com/dgraph-io/badger/v3"
+	"github.com/dustin/go-humanize"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -20,6 +21,8 @@ type BadgerDatabase struct {
 	txn        *badger.Txn
 	refCount   int
 	haveWrites bool
+	gcNeededAt time.Time
+	needsGC    bool
 	gcTicker   *time.Ticker
 }
 
@@ -43,6 +46,7 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	bdb := &BadgerDatabase{
 		db:       db,
 		gcTicker: gcTicker,
+		needsGC:  true,
 	}
 
 	go func() {
@@ -51,15 +55,93 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 				return
 			}
 
-			if err := db.RunValueLogGC(0.5); err != nil {
-				if err != badger.ErrNoRewrite {
-					log.WithError(err).Warnf("badger gc failed")
-				}
+			err := bdb.runGC()
+			if err != nil {
+				log.WithError(err).Error("badger GC failed")
 			}
 		}
 	}()
 
 	return bdb, nil
+}
+
+func (bdb *BadgerDatabase) runGC() error {
+	opts := bdb.db.Opts()
+	// The logic is quite convoluted:
+	// It is not enough to ask for GC, badger DB needs to run some statistic
+	// after last modification in DB (about a minute), if we don't wait
+	// the GC call will be waisted in we might claim that there is nothing to GC.
+	// Also to do GC correctly we need to Close DB before calling GC
+	// (yep, badger is crazy in this regard).
+	// Then we reopen DB and mark cleanable with GC,
+	// then on Close() true GC happens (HDD space reclaimed),
+	// and we need to reopen again.
+	// Consequently we have a timer (to give time for stats update) and we needGC flag
+	// which indicates that some updates were done on DB so we do not trash
+	// underlying FS.
+	// TODO: to do it really correct we need a queue which holds last DB modification
+	// times. But it all become very convoluted since other processes mess with DB
+	// Or repinner always does something in background and updates DB.
+	if time.Now().Before(bdb.gcNeededAt) || !bdb.needsGC {
+		// we are waiting for timer but also for updates
+		// if there are no updated in DB, timer does not kick in
+		log.Debugf("badger DB in %s stats are not updated yet, no need for GC", opts.Dir)
+		return nil
+	}
+	bdb.mu.Lock()
+	defer bdb.mu.Unlock()
+	defer func() {
+		bdb.gcNeededAt = time.Now()
+		bdb.needsGC = false
+	}()
+	var errGC error
+	var beforeGC uint64 = 0
+	var total uint64 = 0
+	var err error
+	log.Infof("Performin GC for badger DB in %s", opts.Dir)
+	for errGC == nil {
+		// At the DB opening, a new vlog is created
+		// and its size added to vlog size even if it is empty
+		// The closing truncates vlog files so we get a better read of sizes
+		err = bdb.db.Close() // GC is claimed only on close :(
+		if err != nil {
+			log.Fatalf("Could not close DB in %s", opts.Dir)
+			return err
+		}
+		bdb.db, err = badger.Open(opts)
+		if err != nil {
+			log.Fatalf("Could not reopen DB in %s", opts.Dir)
+			return err
+		}
+		// Badger people use os.FileInfo to get total size of lsm and vlog files
+		// This is not actual but allocated of hdd size
+		lsm, vlog := bdb.db.Size() // values could be stale even after Close/Open cycle, badger updates it once per minute
+		// TODO: it might be simple just to count HDD allocation ourself as it done in badger internals
+		//       for now I leave it alone, since it mostly for info messages
+		newTotal := uint64(lsm) + uint64(vlog)
+		log.Debugf("DB sizes in %s: lsm %s and vlog %s, total %s", opts.Dir, humanize.Bytes(uint64(lsm)), humanize.Bytes(uint64(vlog)), humanize.Bytes(uint64(newTotal)))
+		if beforeGC == 0 {
+			beforeGC = newTotal
+		}
+		if total != 0 {
+
+			log.Infof("At this iteration DB size in %s decreased by %s", opts.Dir, humanize.Bytes(total-newTotal))
+		}
+		total = newTotal
+
+		if errGC = bdb.db.RunValueLogGC(0.5); errGC != nil {
+			if errGC == badger.ErrNoRewrite {
+				log.Debugf("badger DB in %s has nothing for GC",opts.Dir)
+			}
+			continue
+		}
+	}
+	if beforeGC > total {
+		log.Infof("Total DB size in %s decreased by %s", opts.Dir, humanize.Bytes(beforeGC-total))
+	} else {
+		log.Infof("Total DB size in %s was not changed", opts.Dir)
+	}
+	return nil
 }
 
 func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
@@ -318,6 +400,10 @@ func (db *BadgerDatabase) Flush() error {
 
 	db.txn = nil
 	db.haveWrites = false
+	if time.Now().After(db.gcNeededAt) && !db.needsGC {
+		db.gcNeededAt = time.Now().Add(120 * time.Second) // badger updates stats once per minute, we give ample time for stats to settle
+		db.needsGC = true
+	}
 	return nil
 }
 
