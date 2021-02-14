@@ -34,7 +34,11 @@ func StartDaemon(name, backendName, ipfsPath string) (*server.Server, error) {
 	}
 
 	if backendName == "httpipfs" {
-		if err := repo.OverwriteConfigKey(repoPath, "daemon.ipfs_path", ipfsPath); err != nil {
+		if err := repo.OverwriteConfigKey(
+			repoPath,
+			"daemon.ipfs_path_or_url",
+			ipfsPath,
+		); err != nil {
 			return nil, err
 		}
 	}

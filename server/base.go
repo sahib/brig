@@ -67,13 +67,13 @@ type base struct {
 }
 
 func repoIsInitialized(path string) error {
-	data, err := ioutil.ReadFile(filepath.Join(path, "OWNER")) // #nosec
+	data, err := ioutil.ReadFile(filepath.Join(path, "config.yml")) // #nosec
 	if err != nil {
 		return err
 	}
 
 	if len(data) == 0 {
-		return fmt.Errorf("OWNER is empty")
+		return fmt.Errorf("no config.yml")
 	}
 
 	return nil
@@ -181,7 +181,7 @@ func (b *base) loadBackend() error {
 
 	realBackend, err := backend.FromName(
 		backendName,
-		b.repo.Config.String("daemon.ipfs_path"),
+		b.repo.Config.String("daemon.ipfs_path_or_url"),
 		fingerprint.PubKeyID(),
 	)
 

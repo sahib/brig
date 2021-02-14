@@ -122,7 +122,7 @@ type Options struct {
 
 	// IpfsPath tells us which IPFS repo to use.
 	// If empty, use the mock backend.
-	IpfsPath string
+	IpfsPathOrMultiaddr string
 
 	// URL defines where the server can be reached.
 	URL string
@@ -150,8 +150,8 @@ func Launch(opts Options) error {
 	}
 
 	var backend catfs.FsBackend
-	if opts.IpfsPath != "" {
-		backend, err = httpipfs.NewNode(opts.IpfsPath, "")
+	if opts.IpfsPathOrMultiaddr != "" {
+		backend, err = httpipfs.NewNode(opts.IpfsPathOrMultiaddr, "")
 	} else {
 		backend = catfs.NewMemFsBackend()
 	}

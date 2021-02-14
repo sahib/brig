@@ -85,7 +85,7 @@ func guessRepoFolder(ctx *cli.Context) (string, error) {
 	var lastError error
 	for _, guessLocation := range guessLocations {
 		repoFolder := mustAbsPath(guessLocation)
-		if _, err := os.Stat(filepath.Join(repoFolder, "OWNER")); err != nil {
+		if _, err := os.Stat(filepath.Join(repoFolder, "config.yml")); err != nil {
 			lastError = err
 			continue
 		}
@@ -242,7 +242,7 @@ func startDaemon(ctx *cli.Context, repoPath, daemonURL string) (*client.Client, 
 		return ctl, nil
 	}
 
-	return nil, fmt.Errorf("Daemon could not be started or took to long. Wrong password maybe?")
+	return nil, fmt.Errorf("Daemon could not be started or took to long")
 }
 
 func isDaemonRunning(ctx *cli.Context) (bool, error) {

@@ -35,8 +35,8 @@ brig_bob() {
     fi
 }
 
-brig_ali init ali --ipfs-path /tmp/ali-ipfs
-brig_bob init bob --ipfs-path /tmp/bob-ipfs
+brig_ali init ali --ipfs-path-or-multiaddr /tmp/ali-ipfs
+brig_bob init bob --ipfs-path-or-multiaddr /tmp/bob-ipfs
 
 # Add them as remotes each
 if [ "$USE_SINGLE" = false ]; then
