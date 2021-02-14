@@ -246,12 +246,12 @@ func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
 		return err
 	}
 
-	ipfsPathOrURL, err := cl.ConfigGet("daemon.ipfs_path_or_url")
+	ipfsPathOrMultiaddr, err := cl.ConfigGet("daemon.ipfs_path_or_url")
 	if err != nil {
 		return err
 	}
 
-	if ipfsPathOrURL == "" {
+	if ipfsPathOrMultiaddr == "" {
 		return fmt.Errorf("no IPFS path or URL found - is this repo using IPFS?")
 	}
 
@@ -267,7 +267,7 @@ func (cl *Client) CatOnClient(path string, offline bool, w io.Writer) error {
 	}
 
 	nd, err := httpipfs.NewNode(
-		ipfsPathOrURL,
+		ipfsPathOrMultiaddr,
 		"",
 		httpipfs.WithNoLogging(),
 	)

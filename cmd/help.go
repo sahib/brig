@@ -82,7 +82,7 @@ var helpTexts = map[string]helpEntry{
 				Usage: "Do not display the super pretty logo on init.",
 			},
 			cli.StringFlag{
-				Name:  "ipfs-path-or-url",
+				Name:  "ipfs-path-or-multiaddr",
 				Usage: "Specify an explicit path or URL to an IPFS repository. Useful if you have more than one.",
 				Value: "",
 			},
@@ -1535,7 +1535,7 @@ EXAMPLES:
 				Value: "unix:/tmp/fuse-mock.socket",
 			},
 			cli.StringFlag{
-				Name:  "ipfs-path-or-url,i",
+				Name:  "ipfs-path-or-multiaddr,i",
 				Usage: "Path to IPFS, if you want to use it. Empty for memory only.",
 				Value: "",
 			},

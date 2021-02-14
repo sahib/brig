@@ -27,7 +27,7 @@ func LaunchAsProcess(opts Options) (*os.Process, error) {
 		"fusemock",
 		"--mount-path", opts.MountPath,
 		"--catfs-path", opts.CatfsPath,
-		"--ipfs-path-or-url", opts.IpfsPathOrURL,
+		"--ipfs-path-or-multiaddr", opts.IpfsPathOrMultiaddr,
 		"--url", opts.URL,
 	}
 

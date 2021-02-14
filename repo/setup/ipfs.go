@@ -70,21 +70,21 @@ func getAPIAddrFromConfig(baseDir string) (ma.Multiaddr, error) {
 }
 
 // GetAPIAddrForPath returns the API addr of the IPFS repo at `baseDir`.
-func GetAPIAddrForPath(ipfsPathOrURL string) (ma.Multiaddr, error) {
-	m, err := ma.NewMultiaddr(ipfsPathOrURL)
+func GetAPIAddrForPath(ipfsPathOrMultiaddr string) (ma.Multiaddr, error) {
+	m, err := ma.NewMultiaddr(ipfsPathOrMultiaddr)
 	if err == nil {
 		return m, nil
 	}
 
 	// assume it's a path:
-	apiFile := filepath.Join(ipfsPathOrURL, defaultAPIFile)
+	apiFile := filepath.Join(ipfsPathOrMultiaddr, defaultAPIFile)
 	if _, err := os.Stat(apiFile); err != nil {
-		return getAPIAddrFromConfig(ipfsPathOrURL)
+		return getAPIAddrFromConfig(ipfsPathOrMultiaddr)
 	}
 
 	apiAddr, err := ioutil.ReadFile(apiFile)
 	if err != nil {
-		return getAPIAddrFromConfig(ipfsPathOrURL)
+		return getAPIAddrFromConfig(ipfsPathOrMultiaddr)
 	}
 
 	s := strings.TrimSpace(string(apiAddr))

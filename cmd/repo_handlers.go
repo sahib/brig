@@ -101,8 +101,8 @@ Have a nice day.
 	return ctl.MakeCommit("added initial README.md")
 }
 
-func isMultiAddr(ipfsPathOrURL string) bool {
-	_, err := os.Stat(ipfsPathOrURL)
+func isMultiAddr(ipfsPathOrMultiaddr string) bool {
+	_, err := os.Stat(ipfsPathOrMultiaddr)
 	return err != nil
 }
 
@@ -151,13 +151,13 @@ func handleInit(ctx *cli.Context) error {
 		return fmt.Errorf("`%s` already exists and is not empty; refusing to do init", folder)
 	}
 
-	ipfsPathOrURL := ctx.String("ipfs-path-or-url")
+	ipfsPathOrMultiaddr := ctx.String("ipfs-path-or-multiaddr")
 	doIpfsSetup := !ctx.Bool("no-ipfs-setup")
 	doIpfsConfig := !ctx.Bool("no-ipfs-config")
 	doExtraIpfsConfig := !ctx.Bool("no-ipfs-optimization")
 
-	ipfsRepoPath := ipfsPathOrURL
-	isMa := isMultiAddr(ipfsPathOrURL)
+	ipfsRepoPath := ipfsPathOrMultiaddr
+	isMa := isMultiAddr(ipfsPathOrMultiaddr)
 	if isMa {
 		// NOTE: If we're connecting over a multiaddr,
 		//       then we should not setup an ipfs repo.
@@ -185,7 +185,7 @@ func handleInit(ctx *cli.Context) error {
 
 	if err := Init(
 		ctx,
-		ipfsPathOrURL,
+		ipfsPathOrMultiaddr,
 		repo.InitOptions{
 			BaseFolder:  folder,
 			Owner:       owner,

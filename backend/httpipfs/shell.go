@@ -77,26 +77,26 @@ func WithNoLogging() Option {
 	}
 }
 
-func toMultiAddr(ipfsPathOrURL string) (ma.Multiaddr, error) {
-	if !filepath.IsAbs(ipfsPathOrURL) {
+func toMultiAddr(ipfsPathOrMultiaddr string) (ma.Multiaddr, error) {
+	if !filepath.IsAbs(ipfsPathOrMultiaddr) {
 		// multiaddr always start with a slash,
 		// this branch affects only file paths.
 		var err error
-		ipfsPathOrURL, err = filepath.Abs(ipfsPathOrURL)
+		ipfsPathOrMultiaddr, err = filepath.Abs(ipfsPathOrMultiaddr)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if _, err := os.Stat(ipfsPathOrURL); err == nil {
-		return setup.GetAPIAddrForPath(ipfsPathOrURL)
+	if _, err := os.Stat(ipfsPathOrMultiaddr); err == nil {
+		return setup.GetAPIAddrForPath(ipfsPathOrMultiaddr)
 	}
 
-	return ma.NewMultiaddr(ipfsPathOrURL)
+	return ma.NewMultiaddr(ipfsPathOrMultiaddr)
 }
 
 // NewNode returns a new http based IPFS backend.
-func NewNode(ipfsPathOrURL string, fingerprint string, opts ...Option) (*Node, error) {
+func NewNode(ipfsPathOrMultiaddr string, fingerprint string, opts ...Option) (*Node, error) {
 	nd := &Node{
 		allowNetOps: true,
 		fingerprint: fingerprint,
@@ -109,7 +109,7 @@ func NewNode(ipfsPathOrURL string, fingerprint string, opts ...Option) (*Node, e
 		opt(nd)
 	}
 
-	m, err := toMultiAddr(ipfsPathOrURL)
+	m, err := toMultiAddr(ipfsPathOrMultiaddr)
 	if err != nil {
 		return nil, err
 	}

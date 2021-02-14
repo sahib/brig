@@ -7,7 +7,7 @@ import (
 )
 
 // Init creates a new brig repository at `basePath` with specified options.
-func Init(ctx *cli.Context, ipfsPathOrURL string, opts repo.InitOptions) error {
+func Init(ctx *cli.Context, ipfsPathOrMultiaddr string, opts repo.InitOptions) error {
 	if err := repo.Init(opts); err != nil {
 		return e.Wrapf(err, "repo-init")
 	}
@@ -17,6 +17,6 @@ func Init(ctx *cli.Context, ipfsPathOrURL string, opts repo.InitOptions) error {
 	return repo.OverwriteConfigKey(
 		opts.BaseFolder,
 		"daemon.ipfs_path_or_url",
-		ipfsPathOrURL,
+		ipfsPathOrMultiaddr,
 	)
 }

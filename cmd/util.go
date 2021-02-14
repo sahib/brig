@@ -242,7 +242,7 @@ func startDaemon(ctx *cli.Context, repoPath, daemonURL string) (*client.Client, 
 		return ctl, nil
 	}
 
-	return nil, fmt.Errorf("Daemon could not be started or took to long.")
+	return nil, fmt.Errorf("Daemon could not be started or took to long")
 }
 
 func isDaemonRunning(ctx *cli.Context) (bool, error) {

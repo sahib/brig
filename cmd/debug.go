@@ -135,12 +135,12 @@ func handleDebugTenSink(ctx *cli.Context) error {
 
 func handleDebugFuseMock(ctx *cli.Context) error {
 	opts := fusetest.Options{
-		CatfsPath:     ctx.String("catfs-path"),
-		MountPath:     ctx.String("mount-path"),
-		IpfsPathOrURL: ctx.String("ipfs-path-or-url"),
-		URL:           ctx.String("url"),
-		MountReadOnly: ctx.Bool("mount-ro"),
-		MountOffline:  ctx.Bool("mount-offline"),
+		CatfsPath:           ctx.String("catfs-path"),
+		MountPath:           ctx.String("mount-path"),
+		IpfsPathOrMultiaddr: ctx.String("ipfs-path-or-multiaddr"),
+		URL:                 ctx.String("url"),
+		MountReadOnly:       ctx.Bool("mount-ro"),
+		MountOffline:        ctx.Bool("mount-offline"),
 	}
 
 	return fusetest.Launch(opts)

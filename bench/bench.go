@@ -381,10 +381,10 @@ func newFuseWriteOrReadBench(ipfsPath string, isWrite bool) (Bench, error) {
 	unixSocket := "unix:" + filepath.Join(tmpDir, "socket")
 
 	proc, err := fusetest.LaunchAsProcess(fusetest.Options{
-		MountPath:     filepath.Join(tmpDir, "mount"),
-		CatfsPath:     filepath.Join(tmpDir, "catfs"),
-		IpfsPathOrURL: ipfsPath,
-		URL:           unixSocket,
+		MountPath:           filepath.Join(tmpDir, "mount"),
+		CatfsPath:           filepath.Join(tmpDir, "catfs"),
+		IpfsPathOrMultiaddr: ipfsPath,
+		URL:                 unixSocket,
 	})
 
 	if err != nil {
