@@ -98,7 +98,7 @@ func (bdb *BadgerDatabase) runGC() error {
 	var beforeGC uint64 = 0
 	var total uint64 = 0
 	var err error
-	log.Infof("Performin GC for badger DB in %s", opts.Dir)
+	log.Infof("Performing GC for badger DB in %s", opts.Dir)
 	for errGC == nil {
 		// At the DB opening, a new vlog is created
 		// and its size added to vlog size even if it is empty
