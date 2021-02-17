@@ -92,17 +92,27 @@ func (bdb *BadgerDatabase) runGC() error {
 	// After Close() the GC on a next run will have updated statistic
 	// Actually even Close() does not guaranteed success, it requires more than a minute
 	// to update stats after DB was modified. But eventually GC stats will be ready.
+	if bdb.txn != nil {
+		// someone still using DB, we will try to Close/Open next time
+		return nil
+	}
 	err := bdb.db.Close()
 	if err != nil {
-		log.Fatalf("Could not close DB in %s", opts.Dir)
+		// something prevent the Close, no worries we will try another time
+		log.Errorf("Could not close DB in %s", opts.Dir)
 		return err
 	}
-	bdb.db, err = badger.Open(opts)
-	if err != nil {
-		log.Fatalf("Could not reopen DB in %s", opts.Dir)
-		return err
+	var cnt=10
+	for cnt > 0 {
+		cnt--
+		bdb.db, err = badger.Open(opts)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
 	}
-	return nil
+	log.Fatalf("Could not reopen DB in %s", opts.Dir)
+	return err
 }
 
 func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
