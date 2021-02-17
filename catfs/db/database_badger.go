@@ -20,6 +20,7 @@ type BadgerDatabase struct {
 	txn        *badger.Txn
 	refCount   int
 	haveWrites bool
+	writeTimes []time.Time
 	gcTicker   *time.Ticker
 }
 
@@ -65,10 +66,28 @@ func (bdb *BadgerDatabase) runGC() error {
 	opts := bdb.db.Opts()
 	bdb.mu.Lock()
 	defer bdb.mu.Unlock()
+	log.Debugf("Performing GC for badger DB in %s", opts.Dir)
 	tStart := time.Now()
 	defer func() {
 		log.Debugf("GC collection on %s took %v", opts.Dir, time.Now().Sub(tStart))
 	}()
+	// we will go through array of write times to see if it is time to run GC
+	var gcStatsUpdateDelay = 5*time.Minute
+	var deadlineMet = false
+	n := 0
+	for _, t := range bdb.writeTimes {
+		if time.Now().Before(t.Add(gcStatsUpdateDelay)) {
+			bdb.writeTimes[n] = t
+			n++
+		} else {
+			deadlineMet = true
+		}
+	}
+	bdb.writeTimes = bdb.writeTimes[:n]
+	if !deadlineMet {
+		log.Debugf("DB in %s has no new stats for GC", opts.Dir)
+		return nil
+	}
 	// In large DB, GC will happen automatically, because compaction will find garbage
 	// but we are to small and compactors do not run (150 MB is small).
 	// So we need to run Flatten
@@ -77,7 +96,6 @@ func (bdb *BadgerDatabase) runGC() error {
 	// At this point, we hope that there is something for GC
 	var errGC error
 	var success = false
-	log.Debugf("Performing GC for badger DB in %s", opts.Dir)
 	for errGC == nil {
 		errGC = bdb.db.RunValueLogGC(0.5) // cleans DB online and it is safe to rerun on success
 		if errGC == nil && !success {
@@ -374,6 +392,9 @@ func (db *BadgerDatabase) Flush() error {
 	}
 
 	db.txn = nil
+	if db.haveWrites {
+		db.writeTimes = append(db.writeTimes, time.Now())
+	}
 	db.haveWrites = false
 	return nil
 }
