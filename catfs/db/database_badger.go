@@ -72,7 +72,7 @@ func (bdb *BadgerDatabase) runGC() error {
 		log.Debugf("GC collection on %s took %v", opts.Dir, time.Now().Sub(tStart))
 	}()
 	// we will go through array of write times to see if it is time to run GC
-	var gcStatsUpdateDelay = 5*time.Minute
+	var gcStatsUpdateDelay = 5 * time.Minute
 	var deadlineMet = false
 	n := 0
 	for _, t := range bdb.writeTimes {
@@ -124,7 +124,7 @@ func (bdb *BadgerDatabase) runGC() error {
 		log.Errorf("Could not close DB in %s", opts.Dir)
 		return err
 	}
-	var cnt=10
+	var cnt = 10
 	for cnt > 0 {
 		cnt--
 		bdb.db, err = badger.Open(opts)
