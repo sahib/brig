@@ -65,6 +65,10 @@ func (bdb *BadgerDatabase) runGC() error {
 	opts := bdb.db.Opts()
 	bdb.mu.Lock()
 	defer bdb.mu.Unlock()
+	tStart := time.Now()
+	defer func() {
+		log.Debugf("GC collection on %s took %v", opts.Dir, time.Now().Sub(tStart))
+	}()
 	// In large DB, GC will happen automatically, because compaction will find garbage
 	// but we are to small and compactors do not run (150 MB is small).
 	// So we need to run Flatten
