@@ -7,8 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
+	badger "github.com/dgraph-io/badger/v3"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -21,21 +20,18 @@ type BadgerDatabase struct {
 	txn        *badger.Txn
 	refCount   int
 	haveWrites bool
+	writeTimes []time.Time
 	gcTicker   *time.Ticker
 }
 
 // NewBadgerDatabase creates a new badger database.
 func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 	opts := badger.DefaultOptions(path).
-		WithValueDir(path).
-		WithTableLoadingMode(options.FileIO).
-		WithValueLogLoadingMode(options.FileIO).
-		WithMaxTableSize(1 << 20).
-		WithNumMemtables(1).
-		WithNumLevelZeroTables(1).
-		WithNumLevelZeroTablesStall(2).
+		WithValueLogFileSize(10 * 1024 * 1024). //default is 2GB we should not need 2GB
+		WithMemTableSize(10 * 1024 * 1024).     //default is 64MB
+		WithNumVersionsToKeep(1).               // it is default but it's better to force it
+		WithCompactL0OnClose(true).
 		WithSyncWrites(false).
-		WithEventLogging(false).
 		WithLogger(nil)
 
 	db, err := badger.Open(opts)
@@ -56,15 +52,96 @@ func NewBadgerDatabase(path string) (*BadgerDatabase, error) {
 				return
 			}
 
-			if err := db.RunValueLogGC(0.5); err != nil {
-				if err != badger.ErrNoRewrite {
-					log.WithError(err).Warnf("badger gc failed")
-				}
+			err := bdb.runGC()
+			if err != nil {
+				log.WithError(err).Error("badger GC failed")
 			}
 		}
 	}()
 
 	return bdb, nil
+}
+
+func (bdb *BadgerDatabase) runGC() error {
+	opts := bdb.db.Opts()
+	bdb.mu.Lock()
+	defer bdb.mu.Unlock()
+	log.Debugf("Performing GC for badger DB in %s", opts.Dir)
+	tStart := time.Now()
+	defer func() {
+		log.Debugf("GC collection on %s took %v", opts.Dir, time.Now().Sub(tStart))
+	}()
+	// we will go through array of write times to see if it is time to run GC
+	var gcStatsUpdateDelay = 5 * time.Minute
+	var deadlineMet = false
+	n := 0
+	for _, t := range bdb.writeTimes {
+		if time.Now().Before(t.Add(gcStatsUpdateDelay)) {
+			bdb.writeTimes[n] = t
+			n++
+		} else {
+			deadlineMet = true
+		}
+	}
+	bdb.writeTimes = bdb.writeTimes[:n]
+	if !deadlineMet {
+		log.Debugf("DB in %s has no new stats for GC", opts.Dir)
+		return nil
+	}
+	// In large DB, GC will happen automatically, because compaction will find garbage
+	// but we are to small and compactors do not run (150 MB is small).
+	// So we need to run Flatten
+	bdb.db.Flatten(5)
+	// Very likely Flatten will not do much because the hard coded priority is too small.
+	// At this point, we hope that there is something for GC
+	var errGC error
+	var success = false
+	for errGC == nil {
+		// cleans DB online and it is safe to rerun on success
+		errGC = bdb.db.RunValueLogGC(0.5)
+		if errGC == nil && !success {
+			success = true
+		}
+	}
+	if success {
+		log.Debugf("Cleaned some garbage for DB in %s", opts.Dir)
+		return nil
+	}
+	// Now we have a dilemma: we could trust badger GC mechanism and stop here.
+	// But unfortunately for our typical size (even as high as 150 MB)
+	// compaction, even with Flatten(), does not kick in.
+	// The only way to truly force compaction (to update stats for GC) is to close DB
+	// see Note in https://github.com/dgraph-io/badger/issues/767#issuecomment-485713746
+	// After Close() the GC on a next run will have updated statistic
+	// Actually even Close() does not guaranteed success, it requires more than a minute
+	// to update stats after DB was modified. But eventually GC stats will be ready.
+	if bdb.txn != nil {
+		// someone still using DB, we will try to Close/Open next time
+		return nil
+	}
+	var err error
+	for retries := 0; retries < 10; retries++ {
+		err = bdb.db.Close()
+		if err == nil {
+			continue
+		}
+		log.Errorf("Could not close DB in %s", opts.Dir)
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
+		log.Fatalf("Could not close DB in %s", opts.Dir)
+		return err
+	}
+	for retries := 0; retries < 10; retries++ {
+		bdb.db, err = badger.Open(opts)
+		if err == nil {
+			return nil
+		}
+		log.Errorf("Could not reopen DB in %s", opts.Dir)
+		time.Sleep(1 * time.Second)
+	}
+	log.Fatalf("Could not reopen DB in %s", opts.Dir)
+	return err
 }
 
 func (db *BadgerDatabase) view(fn func(txn *badger.Txn) error) error {
@@ -322,6 +399,9 @@ func (db *BadgerDatabase) Flush() error {
 	}
 
 	db.txn = nil
+	if db.haveWrites {
+		db.writeTimes = append(db.writeTimes, time.Now())
+	}
 	db.haveWrites = false
 	return nil
 }
