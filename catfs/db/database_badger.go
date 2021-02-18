@@ -97,7 +97,8 @@ func (bdb *BadgerDatabase) runGC() error {
 	var errGC error
 	var success = false
 	for errGC == nil {
-		errGC = bdb.db.RunValueLogGC(0.5) // cleans DB online and it is safe to rerun on success
+		// cleans DB online and it is safe to rerun on success
+		errGC = bdb.db.RunValueLogGC(0.5)
 		if errGC == nil && !success {
 			success = true
 		}
@@ -118,19 +119,25 @@ func (bdb *BadgerDatabase) runGC() error {
 		// someone still using DB, we will try to Close/Open next time
 		return nil
 	}
-	err := bdb.db.Close()
-	if err != nil {
-		// something prevent the Close, no worries we will try another time
+	var err error
+	for retries := 0; retries < 10; retries++ {
+		err = bdb.db.Close()
+		if err == nil {
+			continue
+		}
 		log.Errorf("Could not close DB in %s", opts.Dir)
+		time.Sleep(1 * time.Second)
+	}
+	if err != nil {
+		log.Fatalf("Could not close DB in %s", opts.Dir)
 		return err
 	}
-	var cnt = 10
-	for cnt > 0 {
-		cnt--
+	for retries := 0; retries < 10; retries++ {
 		bdb.db, err = badger.Open(opts)
 		if err == nil {
 			return nil
 		}
+		log.Errorf("Could not reopen DB in %s", opts.Dir)
 		time.Sleep(1 * time.Second)
 	}
 	log.Fatalf("Could not reopen DB in %s", opts.Dir)
