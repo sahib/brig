@@ -6,7 +6,9 @@ require (
 	bazil.org/fuse v0.0.0-20200524192727-fb710f7dfd05
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/allegro/bigcache v1.2.1
 	github.com/alokmenghrajani/gpgeez v0.0.0-20161206084504-1a06f1c582f9
+	github.com/apex/log v1.9.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/brianvoe/gofakeit/v6 v6.0.0
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
@@ -16,7 +18,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/dgraph-io/badger v1.6.2
 	github.com/dgraph-io/badger/v3 v3.2011.1
-	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d // indirect
+	github.com/dgraph-io/ristretto v0.0.4-0.20210122082011-bb5d392ed82d
 	github.com/djherbis/buffer v1.1.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.10.0

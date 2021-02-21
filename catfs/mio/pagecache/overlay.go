@@ -3,10 +3,8 @@ package overlay
 import (
 	"io"
 	"sync"
-)
 
-const (
-	PageSize = 64 * 1024
+	"github.com/sahib/brig/catfs/mio/pagecache/page"
 )
 
 type PageLayer struct {
@@ -71,11 +69,11 @@ func (l *PageLayer) WriteAt(buf []byte, off int64) (n int, err error) {
 	// If `buf` is large enough to span over several writes then we
 	// have to calculate the offset of the first page, so that new
 	// data is written to the correct place.
-	pageOff := off % PageSize
+	pageOff := off % page.Size
 
 	// Go over all pages this write affects.
-	pageLo := off / PageSize
-	pageHi := (off + int64(len(buf))) / PageSize
+	pageLo := off / page.Size
+	pageHi := (off + int64(len(buf))) / page.Size
 	for pageIdx := pageLo; pageIdx <= pageHi; pageIdx++ {
 		// Overlay the part of `buf` that affects this page
 		// and merge with any pre-existing writes.
@@ -89,7 +87,7 @@ func (l *PageLayer) WriteAt(buf []byte, off int64) (n int, err error) {
 		}
 
 		// starting from the second block the page offset will
-		// be always zero. That's only relevant for len(buf) > PageSize.
+		// be always zero. That's only relevant for len(buf) > page.Size.
 		pageOff = 0
 	}
 
@@ -106,7 +104,7 @@ func (l *PageLayer) WriteAt(buf []byte, off int64) (n int, err error) {
 var (
 	copyBufPool = &sync.Pool{
 		New: func() interface{} {
-			return make([]byte, PageSize)
+			return make([]byte, page.Size)
 		},
 	}
 )
@@ -123,7 +121,7 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 	}
 
 	// small helper for copying data to buf.
-	// we will never copy more than PageSize to buf.
+	// we will never copy more than page.Size to buf.
 	ib := &iobuf{dst: buf}
 
 	// l.rs might not be as long as l.length.
@@ -142,12 +140,12 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 
 	// Go over all pages this read may affect.
 	// We might return early due to io.EOF though.
-	pageLo := off / PageSize
-	pageHi := (off + int64(len(buf))) / PageSize
+	pageLo := off / page.Size
+	pageHi := (off + int64(len(buf))) / page.Size
 	for pageIdx := pageLo; pageIdx <= pageHi; pageIdx++ {
 		page, err := l.cache.Lookup(l.inode, int32(pageIdx))
 		switch err {
-		case ErrCacheMiss:
+		case page.ErrCacheMiss:
 			// we don't have this page cached.
 			// need to read it from zpr directly.
 			if err := l.ensureOffset(); err != nil {

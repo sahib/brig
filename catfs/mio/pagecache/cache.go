@@ -1,19 +1,14 @@
 package overlay
 
 import (
-	"errors"
+	"github.com/sahib/brig/catfs/mio/pagecache/page"
 )
-
-var (
-	// not a real error, do not pass to outside.
-	ErrCacheMiss = errors.New("cache miss")
-)
-
-//////
 
 type Cache interface {
-	Lookup(inode, page int32) (*Page, error)
-	Merge(inode, pageID int32, off int32, buf []byte) error
+	// TODO: Should have way to drop data for certain inode.
+	Evict(inode int32) error
+	Lookup(inode, page int32) (*page.Page, error)
+	Merge(inode, pageID, off int32, buf []byte) error
 	Close() error
 }
 
