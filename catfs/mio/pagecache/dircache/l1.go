@@ -1,89 +1,101 @@
 package dircache
 
 import (
-	"time"
+	"container/list"
+	"fmt"
 
-	"github.com/allegro/bigcache"
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
-	log "github.com/sirupsen/logrus"
 )
 
-// NOTE: We use the bigcache library here. I initially wanted to go with
-// ristretto, since I heard good things about it. It seems though that it does
-// not guarantee that keys are actually inserted into the cache and there is no
-// efficient way to figure out if the entry was inserted or not.
+// NOTE: We do not use one of the popular caching library here, since
+// none of them seem to fit our use-case. We require the following properties:
 //
-// This is however a crucial property we need from our cache. When the memory
-// cache evicts an item due to memory constraints then we need it to the
-// persistent cache of l2. Bigcache seems to be the only cache library offering
-// this. A little drawback is that it requires (de-)serialization of the
-// cached items. But we can implement this is in a not so costly way.
+// 1. We must notice when items get evicted (in order to write to l2)
+// 2. We must be able to set a max memory bound.
+// 3. We must avoid copying of pages due to performance reasons.
 //
-// One possible way could also be to use sync.Map and implement our own
-// eviction logic on top of that. Not sure if that's worth the trouble though.
+// The most popular libraries fail always one of the criterias:
+//
+// - fastcache: fails 1 and 3.
+// - ristretto: fails 1.
+// - bigcache: fails 3.
+//
+// Since we know what kind of data we cache, it is reasonable to implement
+// a very basic LRU cache for L1. Therefore we just use sync.Map here.
+// Oh, and the l1cache is not thread safe, but dircache.go does locking.
 
-type l1cache struct {
-	big *bigcache.BigCache
+type l1item struct {
+	Page *page.Page
+	Link *list.Element
 }
 
-func NewL1Cache(l2 *l2cache, maxMemoryMB int64) (*l1cache, error) {
-	// NOTE: bigcache requires setting an expiry time.
-	//       Just set it to the highest possible time to effectively disable it.
-	expiry := time.Duration(^uint64(0) >> 1)
+type l1cache struct {
+	m         map[pageKey]l1item
+	k         *list.List
+	l2        *l2cache
+	maxMemory int64
+}
 
-	cfg := bigcache.DefaultConfig(expiry)
-	cfg.CleanWindow = 0
-	cfg.HardMaxCacheSize = int(maxMemoryMB)
-
-	cfg.OnRemoveWithReason = func(key string, entry []byte, reason bigcache.RemoveReason) {
-		if reason == bigcache.Deleted {
-			// if we deleted on purpose we should not write to l2
-			// of course.
-			return
-		}
-
-		if err := l2.SetData(key, entry); err != nil {
-			log.WithError(err).Warnf("failed to move »%s« to l2", key)
-		}
-	}
-
-	big, err := bigcache.NewBigCache(cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func NewL1Cache(l2 *l2cache, maxMemory int64) (*l1cache, error) {
 	return &l1cache{
-		big: big,
+		maxMemory: maxMemory,
+		l2:        l2,
+		k:         list.New(),
 	}, nil
 }
 
 func (c *l1cache) Set(pk pageKey, p *page.Page) error {
-	// NOTE: Item should be written always.
-	//       If an item has to go, OnRemoveWithReason will be called.
-	return c.big.Set(pk.String(), p.AsBytes())
+	c.m[pk] = l1item{
+		Page: p,
+		Link: c.k.PushBack(pk),
+	}
+
+	maxPages := c.maxMemory / (page.Size + page.Meta)
+	if int64(len(c.m)) > maxPages {
+		oldPkIface := c.k.Remove(c.k.Front())
+		oldPk, ok := oldPkIface.(pageKey)
+		if !ok {
+			return fmt.Errorf("non-pagekey type stored in l1 keys: %T", oldPkIface)
+		}
+
+		oldItem, ok := c.m[oldPk]
+		delete(c.m, oldPk)
+		if !ok {
+			// c.m and c.k got out of sync.
+			// this is very likely a bug.
+			return fmt.Errorf("l1: key in key list, but not in map")
+		}
+
+		// move old page to more persistent cache layer:
+		return c.l2.Set(oldPk, oldItem.Page)
+	}
+
+	return nil
 }
 
 func (c *l1cache) Get(pk pageKey) (*page.Page, error) {
-	pdata, err := c.big.Get(pk.String())
-	if err != nil {
-		if err == bigcache.ErrEntryNotFound {
-			return nil, page.ErrCacheMiss
-		}
-
-		return nil, err
+	item, ok := c.m[pk]
+	if !ok {
+		return nil, page.ErrCacheMiss
 	}
 
-	return page.FromBytes(pdata)
+	// Sort recently fetched item to end of list:
+	c.k.MoveToBack(item.Link)
+	return item.Page, nil
 }
 
 func (c *l1cache) Del(pks []pageKey) error {
 	for _, pk := range pks {
-		c.big.Delete(pk.String())
+		delItem, ok := c.m[pk]
+		if ok {
+			c.k.Remove(delItem.Link)
+			delete(c.m, pk)
+		}
 	}
 
 	return nil
 }
 
 func (c *l1cache) Close() error {
-	return c.big.Reset()
+	return nil
 }

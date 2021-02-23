@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
+	"github.com/sahib/brig/util"
 )
 
 type PageLayer struct {
@@ -134,6 +135,8 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 		length: l.length,
 	}
 
+	pageOff := off % page.Size
+
 	// keep the copybuf around between GC runs.
 	copyBuf := copyBufPool.Get().([]byte)
 	defer copyBufPool.Put(copyBuf)
@@ -143,7 +146,7 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 	pageLo := off / page.Size
 	pageHi := (off + int64(len(buf))) / page.Size
 	for pageIdx := pageLo; pageIdx <= pageHi; pageIdx++ {
-		page, err := l.cache.Lookup(l.inode, int32(pageIdx))
+		p, err := l.cache.Lookup(l.inode, int32(pageIdx))
 		switch err {
 		case page.ErrCacheMiss:
 			// we don't have this page cached.
@@ -180,7 +183,13 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 			//   be for the next read and what the current position is.
 			//   For this we have l.{overlay,stream}Offset.
 
-			occludesStream := page.OccludesStream()
+			// check how many bytes we can read in total:
+			fullLen := util.Min64(
+				l.length,
+				l.overlayOffset+page.Size,
+			) - l.overlayOffset
+
+			occludesStream := p.OccludesStream(int32(pageOff), int32(fullLen))
 			if !occludesStream {
 				// only seek if we have to.
 				if err := l.ensureOffset(); err != nil {
@@ -188,7 +197,7 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 				}
 			}
 
-			pageReader := page.Reader(l.rs)
+			pageReader := page.Reader(l.rs, pageOff)
 			n, err := copyNBuffer(ib, pageReader, int64(ib.Left()), copyBuf)
 			if err != nil {
 				return ib.Len(), err
@@ -200,6 +209,8 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 			// some other error during cache lookup.
 			return ib.Len(), err
 		}
+
+		pageOff = 0
 	}
 
 	return ib.Len(), nil

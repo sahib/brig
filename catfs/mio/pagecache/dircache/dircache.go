@@ -2,6 +2,8 @@ package dircache
 
 import (
 	"fmt"
+	"path/filepath"
+	"sync"
 
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
 	log "github.com/sirupsen/logrus"
@@ -13,6 +15,7 @@ type Options struct {
 }
 
 type DirCache struct {
+	mu sync.Mutex
 	l1 *l1cache
 	l2 *l2cache
 }
@@ -23,9 +26,13 @@ type pageKey struct {
 }
 
 func (pk pageKey) String() string {
-	// TODO: encode as hex, but insert a / after the first two characters.
-	// this will help sharding.
-	return fmt.Sprintf("%d-%d", pk.inode, pk.pageIdx)
+	// NOTE: Could be implemented with less allocations, but effect is
+	// probably not noticeable. Only used in slow l2 cache anyways.
+	s := []byte(fmt.Sprintf("%08x-%08x", pk.inode, pk.pageIdx))
+
+	// Idea here is to split numbers 00-FF into own directories.
+	// This can yield better lookup performance, depending on the fs.
+	return filepath.Join(string(s[:2]), string(s[2:]))
 }
 
 func NewDirCache(opts Options) (*DirCache, error) {
@@ -46,6 +53,9 @@ func NewDirCache(opts Options) (*DirCache, error) {
 }
 
 func (dc *DirCache) Lookup(inode, pageIdx int32) (*page.Page, error) {
+	dc.mu.Lock()
+	defer dc.mu.Unlock()
+
 	return dc.get(pageKey{inode: inode, pageIdx: pageIdx})
 }
 
@@ -53,6 +63,7 @@ func (dc *DirCache) get(pk pageKey) (*page.Page, error) {
 	p, err := dc.l1.Get(pk)
 	if err != nil {
 		if err == page.ErrCacheMiss {
+			// TODO: attempt propagate to l1?
 			return dc.l2.Get(pk)
 		}
 
@@ -63,8 +74,11 @@ func (dc *DirCache) get(pk pageKey) (*page.Page, error) {
 }
 
 func (dc *DirCache) Merge(inode, pageIdx, off int32, write []byte) error {
+	dc.mu.Lock()
+	defer dc.mu.Unlock()
+
 	if len(write) == 0 {
-		// empty write deserve no extra computation.
+		// empty write deserves no extra computation.
 		return nil
 	}
 
@@ -79,27 +93,20 @@ func (dc *DirCache) Merge(inode, pageIdx, off int32, write []byte) error {
 	}
 
 	if p == nil {
-		// No cached page yet. Let's add an empty page.
-		var extents []page.Extent
-		if len(write) != page.Size {
-			extents = append(extents, page.Extent{
-				OffLo: off,
-				OffHi: off + int32(len(write)),
-			})
-		}
-
-		p = &page.Page{
-			Data:    make([]byte, page.Size),
-			Extents: extents,
-		}
+		// Page was not cached yet.
+		// Create an almost empty page.
+		p = page.New(off, write)
 	} else {
-		// TODO: Do merging magic.
+		p.AddExtent(off, write)
 	}
 
 	return dc.l1.Set(pk, p)
 }
 
 func (dc *DirCache) Evict(inode int32, size int64) error {
+	dc.mu.Lock()
+	defer dc.mu.Unlock()
+
 	pks := []pageKey{}
 	pageHi := int32(size / page.Size)
 	for pageIdx := int32(0); pageIdx <= pageHi; pageIdx++ {
@@ -118,6 +125,9 @@ func (dc *DirCache) Evict(inode int32, size int64) error {
 }
 
 func (dc *DirCache) Close() error {
+	dc.mu.Lock()
+	defer dc.mu.Unlock()
+
 	if err := dc.l1.Close(); err != nil {
 		log.WithError(err).Warnf("failed to reset l1 cache")
 	}

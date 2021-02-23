@@ -1,6 +1,7 @@
 package dircache
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,18 +18,26 @@ func NewL2Cache(dir string) (*l2cache, error) {
 		return nil, err
 	}
 
-	// TODO: Implement git-like sharding by pre-mkdiring
-	return &l2cache{
-		dir: dir,
-	}, nil
+	for idx := 0; idx < 256; idx++ {
+		shard := filepath.Join(dir, fmt.Sprintf("%x"))
+		if err := os.MkdirAll(shard, 0700); err != nil {
+			return nil, err
+		}
+	}
+
+	return &l2cache{dir: dir}, nil
 }
 
 func (c *l2cache) Set(pk pageKey, p *page.Page) error {
-	// TODO: possibly shard into different directories.
 	return c.SetData(pk.String(), p.AsBytes())
 }
 
 func (c *l2cache) SetData(key string, pdata []byte) error {
+	// TODO: Think about using snappy here.
+	//       That might speed up file io if data is well compressible,
+	//       with the cost of some extra cycles...
+	//       possible heuristic: if there's no compression for an inode,
+	//       assume that other blocks of this inode are not easy to compress.
 	path := filepath.Join(c.dir, key)
 	return ioutil.WriteFile(path, pdata, 0600)
 }
