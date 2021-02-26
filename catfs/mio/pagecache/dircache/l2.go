@@ -19,7 +19,7 @@ func NewL2Cache(dir string) (*l2cache, error) {
 	}
 
 	for idx := 0; idx < 256; idx++ {
-		shard := filepath.Join(dir, fmt.Sprintf("%x"))
+		shard := filepath.Join(dir, fmt.Sprintf("%02x", idx))
 		if err := os.MkdirAll(shard, 0700); err != nil {
 			return nil, err
 		}

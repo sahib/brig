@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -14,7 +14,7 @@ const (
 	// Last page might be smaller.
 	Size = 64 * 1024
 
-	// Ovherhead is the number of bytes we use
+	// Overhead is the number of bytes we use
 	// to store the extents of the page.
 	Meta = 6 * 1024
 
@@ -34,9 +34,14 @@ type Extent struct {
 }
 
 type Page struct {
-	// TODO: IDEA: use a fixed or max amount of extents.
+	// Extents is a list describing where
+	// `Data` contains valid data.
 	Extents []Extent
-	Data    []byte
+
+	// Data is the data hold by the page.
+	// It is allocated to Size+Meta bytes,
+	// even when no data was used.
+	Data []byte
 }
 
 func New(off int32, write []byte) *Page {
@@ -49,8 +54,9 @@ func New(off int32, write []byte) *Page {
 		})
 	}
 
-	// TODO: allocate from pool and more than size.
-	//       We can use this to make FromBytes and AsBytes efficient.
+	// NOTE: We allocate more than we actually need
+	// in order to implement AsBytes and FromBytes
+	// efficiently.
 	backing := make([]byte, Size+Meta)
 	return &Page{
 		Data:    backing[:Size],
@@ -108,38 +114,71 @@ func (p *Page) AsBytes() []byte {
 	return pdata
 }
 
+// AddExtent adds newly written data in `write` to the page
+// at `off` (relative to the page start!). off + len(write) may not
+// exceed the page size! This is a programmer error.
+//
+// Internally, the data is copied to the page buffer and we keep
+// note of the new data in an extent, possibly merging with existing
+// ones. This is a relatively fast operation.
 func (p *Page) AddExtent(off int32, write []byte) {
-	// TODO: merge magic.
-}
+	offPlusWrite := off + int32(len(write))
 
-func (p *Page) Reader(r io.Reader, pageOff int32) *pageReader {
-	return &pageReader{
-		page:       p,
-		pageOff:    pageOff,
-		underlying: r,
+	if offPlusWrite > int32(len(p.Data)) {
+		// TODO: panic here? This would mean that at least a part
+		//       of the data is written over the page bound
+		//       and would be lost, indicating a bug elsehwere.
+		panic(fmt.Sprintf("extent with write over page bound: %d", offPlusWrite))
 	}
-}
 
-type pageReader struct {
-	page       *Page
-	pageOff    int32
-	underlying io.Reader
-	seekOffset int
-}
+	// Copy the data to the requested part of the page.
+	// Everything after is maintaining the extents.
+	copy(p.Data[off:], write)
 
-func (pr *pageReader) Read(buf []byte) (int, error) {
-	// TODO: overlay the underlying stream with the specified
-	//       extents and write result to buf.
-	// TODO: increment seekOffset if we have to read from the underlying
-	//       stream. We should probably read all of the underlying page
-	//       if we have to. Otherwise next page might have to seek.
+	// base case: no extents yet:
+	if len(p.Extents) == 0 {
+		p.Extents = append(p.Extents, Extent{
+			OffLo: off,
+			OffHi: offPlusWrite,
+		})
+		return
+	}
 
-	// for _, ex := range pr.page.Extents {
-	// }
+	// Find out where to insert the new extent.
+	// Use binary search to find a range of extents
+	// that are affected by this write.
 
-	return 0, nil
-}
+	minExIdx := sort.Search(len(p.Extents), func(i int) bool {
+		return off <= p.Extents[i].OffHi
+	})
 
-func (pr *pageReader) SeekOffset() int {
-	return pr.seekOffset
+	maxExIdx := minExIdx + sort.Search(len(p.Extents[minExIdx:]), func(i int) bool {
+		return offPlusWrite <= p.Extents[i].OffLo
+	})
+
+	if minExIdx == maxExIdx {
+		// The write happens inside a single extent.
+		// Borders do not need to be adjusted.
+		return
+	}
+
+	if minExIdx > len(p.Extents) {
+		// This means that no extent was affected because we wrote beyond any
+		// existing extent. Append a new extent to the end of the list.
+
+		// TODO: Case to append new extent at end.
+		// Possibly join last index if adjacent?
+
+		p.Extents = append(p.Extents, Extent{
+			OffLo: off,
+			OffHi: offPlusWrite,
+		})
+		return
+	}
+
+	// Join all affected in the range to one single extent,
+	// and move rest of extents further and cut to new size:
+	p.Extents[minExIdx].OffHi = p.Extents[maxExIdx].OffHi
+	copy(p.Extents[minExIdx+1:], p.Extents[maxExIdx:])
+	p.Extents = p.Extents[:len(p.Extents)-(maxExIdx-minExIdx)]
 }

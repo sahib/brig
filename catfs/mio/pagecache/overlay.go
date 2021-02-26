@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"bytes"
 	"io"
 	"sync"
 
@@ -135,7 +136,7 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 		length: l.length,
 	}
 
-	pageOff := off % page.Size
+	pageOff := int32(off % page.Size)
 
 	// keep the copybuf around between GC runs.
 	copyBuf := copyBufPool.Get().([]byte)
@@ -189,27 +190,38 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 				l.overlayOffset+page.Size,
 			) - l.overlayOffset
 
-			occludesStream := p.OccludesStream(int32(pageOff), int32(fullLen))
+			occludesStream := p.OccludesStream(pageOff, int32(fullLen))
 			if !occludesStream {
 				// only seek if we have to.
 				if err := l.ensureOffset(); err != nil {
 					return ib.Len(), err
 				}
+
+				pageN, err := io.ReadFull(zpr, p.Data[pageOff:])
+				if err != nil {
+					// TODO: eof and so on?
+					return ib.Len(), err
+				}
+
+				p.AddExtent(pageOff, p.Data[pageOff:])
+
+				l.streamOffset += int64(pageN)
 			}
 
-			pageReader := page.Reader(l.rs, pageOff)
-			n, err := copyNBuffer(ib, pageReader, int64(ib.Left()), copyBuf)
+			r := bytes.NewReader(p.Data[pageOff:])
+			n, err := copyNBuffer(ib, r, int64(ib.Left()), copyBuf)
 			if err != nil {
 				return ib.Len(), err
 			}
 
 			l.overlayOffset += n
-			l.streamOffset += int64(pageReader.SeekOffset())
 		default:
 			// some other error during cache lookup.
 			return ib.Len(), err
 		}
 
+		// If read spans over several pages, the second
+		// page has to start at zero.
 		pageOff = 0
 	}
 

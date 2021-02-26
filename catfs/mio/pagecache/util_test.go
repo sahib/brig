@@ -69,28 +69,23 @@ func TestZeroPaddedReader(t *testing.T) {
 func TestIOBuf(t *testing.T) {
 	tcs := []struct {
 		name    string
-		max     int
 		srcSize int
 		dstSize int
 	}{
 		{
-			name:    "all-equal",
-			max:     1024,
+			name:    "src=dst",
 			srcSize: 1024,
 			dstSize: 1024,
 		}, {
-			name:    "src<max<dst",
-			max:     1024,
+			name:    "src<dst",
 			srcSize: 512,
 			dstSize: 2048,
 		}, {
-			name:    "max<src<dst",
-			max:     512,
-			srcSize: 1024,
-			dstSize: 2048,
+			name:    "src>dst",
+			srcSize: 2048,
+			dstSize: 512,
 		}, {
 			name:    "zero",
-			max:     0,
 			srcSize: 0,
 			dstSize: 0,
 		},
@@ -101,20 +96,18 @@ func TestIOBuf(t *testing.T) {
 			src := testutil.CreateDummyBuf(int64(tc.srcSize))
 			ib := &iobuf{
 				dst: make([]byte, tc.dstSize),
-				max: tc.max,
 			}
 
 			n, err := ib.Write(src)
 			require.NoError(t, err)
 			require.Equal(t, n, ib.Len())
 
-			if diff := tc.max - tc.srcSize; diff <= 0 {
-				require.Equal(t, n, tc.max)
-				require.Equal(t, 0, ib.Left(), "too many bytes left")
-			} else {
-				require.Equal(t, n, tc.srcSize)
-				require.Equal(t, diff, ib.Left(), "wrong number of bytes left")
+			min := tc.srcSize
+			if min > tc.dstSize {
+				min = tc.dstSize
 			}
+
+			require.Equal(t, n, min)
 		})
 	}
 }

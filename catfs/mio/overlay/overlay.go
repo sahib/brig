@@ -38,7 +38,6 @@ func (n *Modification) Range() (int64, int64) {
 // The overlapping parts are taken from `n` always.
 // Note: `i` shall not be used after calling Merge.
 func (n *Modification) Merge(i Interval) {
-	// Interracial merges are forbidden :-(
 	other, ok := i.(*Modification)
 	if !ok {
 		return

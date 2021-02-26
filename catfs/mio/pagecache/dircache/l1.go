@@ -2,11 +2,16 @@ package dircache
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
 )
 
+// L1 is a pure in-memory LRU cache which does no copying.
+// I did go for LRU because it's insanely simple and easy to implement
+// while still being quite effective.
+//
 // NOTE: We do not use one of the popular caching library here, since
 // none of them seem to fit our use-case. We require the following properties:
 //
@@ -52,6 +57,11 @@ func (c *l1cache) Set(pk pageKey, p *page.Page) error {
 
 	maxPages := c.maxMemory / (page.Size + page.Meta)
 	if int64(len(c.m)) > maxPages {
+		if c.l2 == nil {
+			// just in case l2 cache was not given:
+			return errors.New("cache is full")
+		}
+
 		oldPkIface := c.k.Remove(c.k.Front())
 		oldPk, ok := oldPkIface.(pageKey)
 		if !ok {

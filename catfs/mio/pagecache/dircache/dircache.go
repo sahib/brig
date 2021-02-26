@@ -36,6 +36,9 @@ func (pk pageKey) String() string {
 }
 
 func NewDirCache(opts Options) (*DirCache, error) {
+	// TODO: Support setting no l2 cache?
+	// TODO: No memory limit makes no sense. Just set more than you have.
+
 	l2, err := NewL2Cache(opts.SwapDirectory)
 	if err != nil {
 		return nil, err
