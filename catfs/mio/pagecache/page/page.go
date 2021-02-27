@@ -14,9 +14,10 @@ const (
 	// Last page might be smaller.
 	Size = 64 * 1024
 
-	// Overhead is the number of bytes we use
+	// Meta is the number of bytes we use
 	// to store the extents of the page.
-	Meta = 6 * 1024
+	// (4k is the typical page size on linux)
+	Meta = 4 * 1024
 
 	// Size needed to store a single extent.
 	ExtentSize = 8
@@ -30,7 +31,7 @@ var (
 // Extent marks a single write or
 // several writes that were joined to one.
 type Extent struct {
-	OffLo, OffHi int32
+	OffLo, OffHi uint32
 }
 
 type Page struct {
@@ -44,19 +45,18 @@ type Page struct {
 	Data []byte
 }
 
-func New(off int32, write []byte) *Page {
+func New(off uint32, write []byte) *Page {
 	var extents []Extent
 	if len(write) != Size {
 		// special rule: if write fully occludes
 		extents = append(extents, Extent{
 			OffLo: off,
-			OffHi: off + int32(len(write)),
+			OffHi: off + uint32(len(write)),
 		})
 	}
 
-	// NOTE: We allocate more than we actually need
-	// in order to implement AsBytes and FromBytes
-	// efficiently.
+	// NOTE: We allocate more than we actually need in order to implement
+	// AsBytes and FromBytes efficiently without further allocations.
 	backing := make([]byte, Size+Meta)
 	return &Page{
 		Data:    backing[:Size],
@@ -65,29 +65,44 @@ func New(off int32, write []byte) *Page {
 }
 
 func FromBytes(data []byte) (*Page, error) {
-	// TODO: Implement.
-	// 		 We need to avoid extra allocations here!
-	return nil, nil
-}
-
-// OccludesStream will tell you if the page's cached contents
-// fully occlude the underlying stream. Or in other words:
-// If true, we do not need to read from the underlying stream.
-func (p *Page) OccludesStream(pageOff int32, length int32) bool {
-	if len(p.Extents) == 0 {
-		return true
+	if len(data) < Size {
+		return nil, fmt.Errorf("page data smaller than mandatory size")
 	}
 
-	l := length
-	for _, extent := range p.Extents {
-		l -= int32(extent.OffHi - extent.OffLo)
+	p := Page{Data: data[:Size]}
+
+	extents := data[Size:]
+	for idx := 0; idx < len(extents); idx += ExtentSize {
+		if idx+ExtentSize > len(extents) {
+			// sanity check: do not read after extents.
+			continue
+		}
+
+		offLo := binary.LittleEndian.Uint32(extents[idx+0:])
+		offHi := binary.LittleEndian.Uint32(extents[idx+4:])
+		if offLo == 0 && offHi == 0 {
+			// empty writes are invalid and serve as sentinel value
+			// to tell us we read too far. No other extents to expect.
+			break
+		}
+
+		if offLo == offHi {
+			log.Warnf("page cache: loaded empty extent")
+			continue
+		}
+
+		if offLo > offHi {
+			log.Warnf("page cache: loaded invalid extent")
+			continue
+		}
+
+		p.Extents = append(p.Extents, Extent{
+			OffLo: offLo,
+			OffHi: offHi,
+		})
 	}
 
-	if l < 0 {
-		log.Warnf("bug: extents of inode sum up < 0")
-	}
-
-	return l == 0
+	return &p, nil
 }
 
 func (p *Page) AsBytes() []byte {
@@ -102,16 +117,78 @@ func (p *Page) AsBytes() []byte {
 	for idx, extent := range p.Extents {
 		off := idx * ExtentSize
 		if off > Meta+ExtentSize {
-			// TODO: What to do in this case?
-			// allocate more memory or error out?
-			break
+			// NOTE: This is an inefficient allocation. It will occur only when
+			// there are more than $(Meta/ExtentSize) distinct writes without a
+			// single read of this page (a non-occluding read will unify all
+			// extents). This is pretty unlikely to happen in normal
+			// circumstances. If that happens it's a weird use case, so
+			// allocate another 64 extents.
+			pdata = append(pdata, make([]byte, ExtentSize*64)...)
+			p.Data = pdata[:Size]
+			pmeta = pdata[Size:]
 		}
 
-		binary.LittleEndian.PutUint32(pmeta[off:off+4], uint32(extent.OffLo))
-		binary.LittleEndian.PutUint32(pmeta[off:off+4], uint32(extent.OffHi))
+		binary.LittleEndian.PutUint32(pmeta[off+0:], uint32(extent.OffLo))
+		binary.LittleEndian.PutUint32(pmeta[off+4:], uint32(extent.OffHi))
 	}
 
 	return pdata
+}
+
+// affectedExtentIdxs() returns the indices of extents
+// that would be affected when writing a new extent with
+// the offsets [lo, hi].
+//
+// Consider the following cases, where "-" are areas
+// with existing extents, "_" without and "|" denotes
+// the area where we want to write newly. First extent
+// is called E1, second E2 and so on.
+//
+// Case 1: => min=E2, max=E2 (does not hit any extent)
+//
+// ------__|--|___-------
+//
+// Case 2: => min=E2, max=E3 (partially hits an extent)
+//
+// ------__|-------|-----
+//
+// Case 3: => min=E2, max=E3 (fully inside one extent)
+//
+// ------________--|---|-
+//
+// Case 4: => min=len(extents), max=len(extents) (outside any extent)
+//
+// ------________--------  |-----|
+func (p *Page) affectedExtentIdxs(lo, hi uint32) (int, int) {
+	minExIdx := sort.Search(len(p.Extents), func(i int) bool {
+		return lo <= p.Extents[i].OffHi
+	})
+
+	maxExIdx := minExIdx + sort.Search(len(p.Extents[minExIdx:]), func(i int) bool {
+		return hi <= p.Extents[i].OffLo
+	})
+
+	return minExIdx, maxExIdx
+}
+
+// OccludesStream will tell you if the page's cached contents
+// fully occlude the underlying stream. Or in other words:
+// If true, we do not need to read from the underlying stream.
+func (p *Page) OccludesStream(pageOff, length uint32) bool {
+	l := length
+	minExIdx, maxExIdx := p.affectedExtentIdxs(pageOff, length)
+
+	for idx := minExIdx; idx < maxExIdx && l > 0; idx++ {
+		ex := p.Extents[idx]
+		if idx > minExIdx && p.Extents[idx-1].OffHi != ex.OffLo {
+			// non adjacent; there must be a gap.
+			return false
+		}
+
+		l -= ex.OffHi - ex.OffLo
+	}
+
+	return l <= 0
 }
 
 // AddExtent adds newly written data in `write` to the page
@@ -121,13 +198,11 @@ func (p *Page) AsBytes() []byte {
 // Internally, the data is copied to the page buffer and we keep
 // note of the new data in an extent, possibly merging with existing
 // ones. This is a relatively fast operation.
-func (p *Page) AddExtent(off int32, write []byte) {
-	offPlusWrite := off + int32(len(write))
+func (p *Page) AddExtent(off uint32, write []byte) {
+	offPlusWrite := off + uint32(len(write))
 
-	if offPlusWrite > int32(len(p.Data)) {
-		// TODO: panic here? This would mean that at least a part
-		//       of the data is written over the page bound
-		//       and would be lost, indicating a bug elsehwere.
+	if offPlusWrite > uint32(len(p.Data)) {
+		// this is a programmer error:
 		panic(fmt.Sprintf("extent with write over page bound: %d", offPlusWrite))
 	}
 
@@ -147,32 +222,26 @@ func (p *Page) AddExtent(off int32, write []byte) {
 	// Find out where to insert the new extent.
 	// Use binary search to find a range of extents
 	// that are affected by this write.
+	minExIdx, maxExIdx := p.affectedExtentIdxs(off, offPlusWrite)
 
-	minExIdx := sort.Search(len(p.Extents), func(i int) bool {
-		return off <= p.Extents[i].OffHi
-	})
-
-	maxExIdx := minExIdx + sort.Search(len(p.Extents[minExIdx:]), func(i int) bool {
-		return offPlusWrite <= p.Extents[i].OffLo
-	})
-
-	if minExIdx == maxExIdx {
-		// The write happens inside a single extent.
-		// Borders do not need to be adjusted.
-		return
-	}
-
-	if minExIdx > len(p.Extents) {
+	if minExIdx >= len(p.Extents) {
 		// This means that no extent was affected because we wrote beyond any
 		// existing extent. Append a new extent to the end of the list.
-
-		// TODO: Case to append new extent at end.
-		// Possibly join last index if adjacent?
-
 		p.Extents = append(p.Extents, Extent{
 			OffLo: off,
 			OffHi: offPlusWrite,
 		})
+		return
+	}
+
+	if minExIdx == maxExIdx {
+		p.Extents = append(p.Extents, Extent{})
+		copy(p.Extents[minExIdx+1:], p.Extents[minExIdx:])
+		p.Extents[minExIdx] = Extent{
+			OffLo: off,
+			OffHi: offPlusWrite,
+		}
+
 		return
 	}
 

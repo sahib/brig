@@ -26,6 +26,6 @@
 // page cache implementation it's also possible to edit large files and
 // make edits persistent.
 //
-// NOTE: Whenever int32 is used in this code, it refers to per-page offsets or
+// NOTE: Whenever uint32 is used in this code, it refers to per-page offsets or
 // size. When int64 is used the content is an offset of the underlying offset.
 package overlay

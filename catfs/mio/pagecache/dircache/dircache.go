@@ -12,6 +12,22 @@ import (
 type Options struct {
 	MaxMemoryUsage int64
 	SwapDirectory  string
+
+	// TODO: Those need to be still implemented.
+
+	// L1Compress will compress the memory with snappy compression and
+	// decompress on fetch. Reduces memory, but increases CPU usage.
+	L1Compress bool
+
+	// L2Compress will compress on-disk pages with snappy and decompress them
+	// on load. Reduces storage, but increases CPU usage if you're swapping.
+	// Since swapping is slow anyways this is recommended.
+	L2Compress bool
+
+	// L1CacheMissRefill will propagate
+	// data from L2 to L1 if it could be found
+	// successfully.
+	L1CacheMissRefill bool
 }
 
 type DirCache struct {
@@ -21,8 +37,8 @@ type DirCache struct {
 }
 
 type pageKey struct {
-	inode   int32
-	pageIdx int32
+	inode   uint32
+	pageIdx uint32
 }
 
 func (pk pageKey) String() string {
@@ -36,15 +52,12 @@ func (pk pageKey) String() string {
 }
 
 func NewDirCache(opts Options) (*DirCache, error) {
-	// TODO: Support setting no l2 cache?
-	// TODO: No memory limit makes no sense. Just set more than you have.
-
-	l2, err := NewL2Cache(opts.SwapDirectory)
+	l2, err := newL2Cache(opts.SwapDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	l1, err := NewL1Cache(l2, opts.MaxMemoryUsage)
+	l1, err := newL1Cache(l2, opts.MaxMemoryUsage)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +68,7 @@ func NewDirCache(opts Options) (*DirCache, error) {
 	}, nil
 }
 
-func (dc *DirCache) Lookup(inode, pageIdx int32) (*page.Page, error) {
+func (dc *DirCache) Lookup(inode, pageIdx uint32) (*page.Page, error) {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 
@@ -66,7 +79,6 @@ func (dc *DirCache) get(pk pageKey) (*page.Page, error) {
 	p, err := dc.l1.Get(pk)
 	if err != nil {
 		if err == page.ErrCacheMiss {
-			// TODO: attempt propagate to l1?
 			return dc.l2.Get(pk)
 		}
 
@@ -76,7 +88,7 @@ func (dc *DirCache) get(pk pageKey) (*page.Page, error) {
 	return p, nil
 }
 
-func (dc *DirCache) Merge(inode, pageIdx, off int32, write []byte) error {
+func (dc *DirCache) Merge(inode, pageIdx, off uint32, write []byte) error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 
@@ -85,7 +97,7 @@ func (dc *DirCache) Merge(inode, pageIdx, off int32, write []byte) error {
 		return nil
 	}
 
-	if off+int32(len(write)) > page.Size {
+	if off+uint32(len(write)) > page.Size {
 		return fmt.Errorf("merge: write overflows page bounds")
 	}
 
@@ -99,20 +111,19 @@ func (dc *DirCache) Merge(inode, pageIdx, off int32, write []byte) error {
 		// Page was not cached yet.
 		// Create an almost empty page.
 		p = page.New(off, write)
-	} else {
-		p.AddExtent(off, write)
 	}
 
+	p.AddExtent(off, write)
 	return dc.l1.Set(pk, p)
 }
 
-func (dc *DirCache) Evict(inode int32, size int64) error {
+func (dc *DirCache) Evict(inode uint32, size int64) error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 
 	pks := []pageKey{}
-	pageHi := int32(size / page.Size)
-	for pageIdx := int32(0); pageIdx <= pageHi; pageIdx++ {
+	pageHi := uint32(size / page.Size)
+	for pageIdx := uint32(0); pageIdx <= pageHi; pageIdx++ {
 		pks = append(pks, pageKey{inode: inode, pageIdx: pageIdx})
 	}
 

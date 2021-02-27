@@ -41,7 +41,7 @@ type l1cache struct {
 	maxMemory int64
 }
 
-func NewL1Cache(l2 *l2cache, maxMemory int64) (*l1cache, error) {
+func newL1Cache(l2 *l2cache, maxMemory int64) (*l1cache, error) {
 	return &l1cache{
 		maxMemory: maxMemory,
 		l2:        l2,

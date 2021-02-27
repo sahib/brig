@@ -35,7 +35,7 @@ type zeroPadReader struct {
 
 func memzero(buf []byte) {
 	// TODO: Check if the for loop is faster or
-	//       if we should copy() from a zero buf.
+	//       if we should copy() from a pre-allocated zero buf.
 	for idx := range buf {
 		buf[idx] = 0
 	}

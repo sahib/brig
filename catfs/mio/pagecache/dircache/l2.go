@@ -13,7 +13,13 @@ type l2cache struct {
 	dir string
 }
 
-func NewL2Cache(dir string) (*l2cache, error) {
+// NOTE: an empty (nil) l2cache is valid, but will not do anything. If an
+// empty string for `dir` is given, such an empty l2cache will be returned.
+func newL2Cache(dir string) (*l2cache, error) {
+	if dir == "" {
+		return nil, nil
+	}
+
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
@@ -33,16 +39,19 @@ func (c *l2cache) Set(pk pageKey, p *page.Page) error {
 }
 
 func (c *l2cache) SetData(key string, pdata []byte) error {
-	// TODO: Think about using snappy here.
-	//       That might speed up file io if data is well compressible,
-	//       with the cost of some extra cycles...
-	//       possible heuristic: if there's no compression for an inode,
-	//       assume that other blocks of this inode are not easy to compress.
+	if c == nil {
+		return nil
+	}
+
 	path := filepath.Join(c.dir, key)
 	return ioutil.WriteFile(path, pdata, 0600)
 }
 
 func (c *l2cache) Get(pk pageKey) (*page.Page, error) {
+	if c == nil {
+		return nil, page.ErrCacheMiss
+	}
+
 	path := filepath.Join(c.dir, pk.String())
 	pdata, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -53,6 +62,10 @@ func (c *l2cache) Get(pk pageKey) (*page.Page, error) {
 }
 
 func (c *l2cache) Del(pks []pageKey) error {
+	if c == nil {
+		return nil
+	}
+
 	for _, pk := range pks {
 		path := filepath.Join(c.dir, pk.String())
 		if err := os.Remove(path); err != nil {
@@ -64,5 +77,9 @@ func (c *l2cache) Del(pks []pageKey) error {
 }
 
 func (c *l2cache) Close() error {
+	if c == nil {
+		return nil
+	}
+
 	return os.RemoveAll(c.dir)
 }

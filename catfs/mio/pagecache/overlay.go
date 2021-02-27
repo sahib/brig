@@ -45,6 +45,10 @@ type PageLayer struct {
 
 // NOTE: assumption: `rs` is at read offset zero.
 func NewPageLayer(rs io.ReadSeeker, cache Cache, inode, size int64) (*PageLayer, error) {
+	if err := cache.Evict(int32(inode)); err != nil {
+		return nil, err
+	}
+
 	return &PageLayer{
 		rs:     rs,
 		inode:  int32(inode),
@@ -136,7 +140,7 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 		length: l.length,
 	}
 
-	pageOff := int32(off % page.Size)
+	pageOff := uint32(off % page.Size)
 
 	// keep the copybuf around between GC runs.
 	copyBuf := copyBufPool.Get().([]byte)
@@ -190,7 +194,7 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 				l.overlayOffset+page.Size,
 			) - l.overlayOffset
 
-			occludesStream := p.OccludesStream(pageOff, int32(fullLen))
+			occludesStream := p.OccludesStream(pageOff, uint32(fullLen))
 			if !occludesStream {
 				// only seek if we have to.
 				if err := l.ensureOffset(); err != nil {
