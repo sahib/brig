@@ -128,6 +128,12 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		return fmt.Errorf("failed to create sub directories: %v", err)
 	}
 
+	if len(toBeStaged) == 0 {
+		// This might happen if ask to stage a symlink pointing to a dir
+		// but Walk does not travel symlinks and we end up with empty list.
+		return nil
+	}
+
 	width, err := terminal.Width()
 	if err != nil {
 		fmt.Printf("warning: failed to get terminal size: %s\n", err)
