@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli"
 
 	e "github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
 	terminal "github.com/wayneashleyberry/terminal-dimensions"
@@ -76,6 +77,39 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
+
+		if info.Mode() & os.ModeSymlink != 0 {
+			resolvedPath, err := filepath.EvalSymlinks(childPath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					log.Warningf("%v symlink points to non existing file or directory", childPath)
+					return nil
+				}
+				if err.Error() == "EvalSymlinks: too many links" {
+					log.Warningf("%v too many links needed to be followed", childPath)
+					return nil
+				}
+				return fmt.Errorf("Failed to resolve: %v: %v", childPath, err)
+			}
+			info, err = os.Stat(resolvedPath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					log.Warningf("%v resolved %v which points to non existing file or directory", childPath, resolvedPath)
+					return nil
+				}
+				return fmt.Errorf("Failed to do os.Stat(%v): %v", resolvedPath, err)
+			}
+			if !info.Mode().IsRegular() {
+				// We are staging only links which resolve in regular files
+				// Since Walk does not travel symlinks, there is no point
+				// to stage links pointing to a directory. None of its files
+				// will be walked and staged.
+				log.Warningf("Not staging %v which point to a non regular file: %v %v", childPath, info.Mode(), resolvedPath)
+				return nil
+			}
+
+			childPath = resolvedPath
+		}
 
 		if info.IsDir() {
 			if err := ctl.Mkdir(repoPath, true); err != nil {
