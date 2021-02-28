@@ -46,20 +46,12 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("Failed to retrieve absolute path: %v", err)
 	}
 
-	info, err := os.Stat(absLocalPath)
+	_, err = os.Stat(absLocalPath)
 	if err != nil {
 		return err
 	}
 
-	if info.IsDir() {
-		return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
-	}
-
-	if !info.Mode().IsRegular() {
-		return fmt.Errorf("not adding non-regular file: %s", absLocalPath)
-	}
-
-	return ctl.Stage(absLocalPath, repoPath)
+	return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
 }
 
 type stagePair struct {
