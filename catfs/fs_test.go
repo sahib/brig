@@ -219,20 +219,20 @@ func TestStageBasic(t *testing.T) {
 			withDummyFS(t, func(fs *FS) {
 				tc := testutil.CreateDummyBuf(size)
 				buf := chunkbuf.NewChunkBuffer(tc)
-				require.Nil(t, fs.Stage("/x", buf))
+				require.NoError(t, fs.Stage("/x", buf))
 
 				stream, err := fs.Cat("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				data, err := ioutil.ReadAll(stream)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				require.Equal(t, len(tc), len(data))
 				require.Equal(t, tc, data)
-				require.Nil(t, stream.Close())
+				require.NoError(t, stream.Close())
 
 				file, err := fs.lkr.LookupFile("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				key := file.Key()
 				oldKey := make([]byte, len(key))
@@ -241,19 +241,19 @@ func TestStageBasic(t *testing.T) {
 
 				// Also insert some more data to modify an existing file.
 				nextData := []byte{6, 6, 6, 6, 6, 6}
-				require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer((nextData))))
+				require.NoError(t, fs.Stage("/x", chunkbuf.NewChunkBuffer((nextData))))
 				stream, err = fs.Cat("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 				data, err = ioutil.ReadAll(stream)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, data, nextData)
-				require.Nil(t, stream.Close())
+				require.NoError(t, stream.Close())
 
 				// Check that the key did not change during modifying an existing file.
 				// This is only true if both of the sizes are not equal to zero
 				// Recall that 0 sized file has defaultEncryptionKey 
 				file, err = fs.lkr.LookupFile("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 				if (oldSize != 0 && file.Size() != 0) || (oldSize == file.Size()) {
 					require.Equal(t, file.Key(), oldKey)
 				} else {
