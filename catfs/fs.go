@@ -36,7 +36,7 @@ const (
 	defaultEncryptionKeyLength = 32
 )
 
-func defaultEncryptionKey() []byte {
+func emptyFileEncryptionKey() []byte {
 	return make([]byte, defaultEncryptionKeyLength)
 }
 
@@ -892,7 +892,7 @@ func (fs *FS) Touch(path string) error {
 	// Nothing or a ghost there, stage an empty file
 	// 0 sized (newly touched) files should have the same key
 	// to point to the same backend file
-	key := defaultEncryptionKey()
+	key := emptyFileEncryptionKey()
 	return fs.stageWithKey(prefixSlash(path), bytes.NewReader([]byte{}), key)
 }
 
@@ -992,7 +992,7 @@ func (fs *FS) preStageKeyGen(path string) ([]byte, error) {
 
 	// only create a new key for new files.
 	// The key depends on the content hash and the size.
-	key := defaultEncryptionKey()
+	key := make([]byte, defaultEncryptionKeyLength)
 	if _, err := rand.Read(key); err != nil {
 		return nil, e.Wrapf(err, "failed to generate random key")
 	}
