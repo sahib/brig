@@ -603,16 +603,16 @@ func TestTouch(t *testing.T) {
 	t.Parallel()
 
 	withDummyFS(t, func(fs *FS) {
-		require.Nil(t, fs.Touch("/y"))
+		require.NoError(t, fs.Touch("/y"))
 		yInfo, err := fs.Stat("/y")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// Check that the empty file has defaultEncryptionKey
 		require.Equal(t, yInfo.Key, defaultEncryptionKey())
 
-		require.Nil(t, fs.Touch("/x"))
+		require.NoError(t, fs.Touch("/x"))
 		oldInfo, err := fs.Stat("/x")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// Double Check that the empty file has defaultEncryptionKey
 		require.Equal(t, oldInfo.Key, defaultEncryptionKey())
@@ -623,11 +623,11 @@ func TestTouch(t *testing.T) {
 		// Check that two empty files have same conternt hash
 		require.Equal(t, oldInfo.ContentHash, yInfo.ContentHash)
 
-		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
+		require.NoError(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
 
-		require.Nil(t, fs.Touch("/x"))
+		require.NoError(t, fs.Touch("/x"))
 		newInfo, err := fs.Stat("/x")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// Check that the non empty file encryption key is different from defaultEncryptionKey 
 		require.NotEqual(t, newInfo.Key, defaultEncryptionKey())
@@ -637,13 +637,13 @@ func TestTouch(t *testing.T) {
 
 		// Also check that the content was not deleted:
 		stream, err := fs.Cat("/x")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		data, err := ioutil.ReadAll(stream)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, data, []byte{1, 2, 3})
 
-		require.Nil(t, stream.Close())
+		require.NoError(t, stream.Close())
 	})
 }
 
