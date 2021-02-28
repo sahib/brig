@@ -1016,7 +1016,6 @@ func (fs *FS) stageWithKey(path string, r io.Reader, key []byte) error {
 	if fs.readOnly {
 		return ErrReadOnly
 	}
-	log.Errorf("Key for %v is %v", path, key)
 	path = prefixSlash(path)
 
 	// NOTE: fs.mu is not locked here since I/O can be done in parallel.
