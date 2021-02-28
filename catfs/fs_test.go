@@ -236,6 +236,7 @@ func TestStageBasic(t *testing.T) {
 
 				key := file.Key()
 				oldKey := make([]byte, len(key))
+				oldSize := file.Size()
 				copy(oldKey, key)
 
 				// Also insert some more data to modify an existing file.
@@ -249,9 +250,15 @@ func TestStageBasic(t *testing.T) {
 				require.Nil(t, stream.Close())
 
 				// Check that the key did not change during modifying an existing file.
+				// This is only true if both of the sizes are not equal to zero
+				// Recall that 0 sized file has defaultEncryptionKey 
 				file, err = fs.lkr.LookupFile("/x")
 				require.Nil(t, err)
-				require.Equal(t, file.Key(), oldKey)
+				if (oldSize != 0 && file.Size() != 0) || (oldSize == file.Size()) {
+					require.Equal(t, file.Key(), oldKey)
+				} else {
+					require.NotEqual(t, file.Key(), oldKey)
+				}
 			})
 		})
 	}
