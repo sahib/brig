@@ -884,8 +884,11 @@ func (fs *FS) Touch(path string) error {
 	// We may not call Stage() with a lock.
 	fs.mu.Unlock()
 
-	// Nothing or a ghost there, stage an empty file.
-	return fs.Stage(prefixSlash(path), bytes.NewReader([]byte{}))
+	// Nothing or a ghost there, stage an empty file
+	// 0 sized (newly touched) files should have the same key 
+	// to point to the same backend file
+	key := make([]byte, 32)
+	return fs.stageWithKey(prefixSlash(path), bytes.NewReader([]byte{}), key)
 }
 
 // Truncate cuts of the output of the file at `path` to `size`.
@@ -982,7 +985,7 @@ func (fs *FS) preStageKeyGen(path string) ([]byte, error) {
 		return nil, err
 	}
 
-	if oldFile != nil {
+	if oldFile != nil && oldFile.Size() != 0{
 		return oldFile.Key(), nil
 	}
 
@@ -999,11 +1002,26 @@ func (fs *FS) preStageKeyGen(path string) ([]byte, error) {
 // Stage reads all data from `r` and stores as content of the node at `path`.
 // If `path` already exists, it will be updated.
 func (fs *FS) Stage(path string, r io.Reader) error {
+	if fs.readOnly {
+		return ErrReadOnly
+	}
 	path = prefixSlash(path)
 	key, err := fs.preStageKeyGen(path)
 	if err != nil {
+		return err
+	}
+	return fs.stageWithKey(path, r, key)
+}
+
+// stageWithKey reads all data from `r` and stores as content of the node at `path`.
+// It uses provided encryption key
+// If `path` already exists, it will be updated.
+func (fs *FS) stageWithKey(path string, r io.Reader, key []byte) error {
+	if fs.readOnly {
 		return ErrReadOnly
 	}
+	log.Errorf("Key for %v is %v", path, key)
+	path = prefixSlash(path)
 
 	// NOTE: fs.mu is not locked here since I/O can be done in parallel.
 	//       If you need locking, you can do it at the bottom of this method.
