@@ -85,13 +85,8 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 			if err != nil {
 				return fmt.Errorf("Failed to do os.Stat(%v): %v", resolvedPath, err)
 			}
-			if !info.Mode().IsRegular() {
-				// We are staging only links which resolve in regular files
-				// Since Walk does not travel symlinks, there is no point
-				// to stage links pointing to a directory. None of its files
-				// will be walked and staged.
-				log.Warningf("Not staging %v which point to a non regular file: %v %v", childPath, info.Mode(), resolvedPath)
-				return nil
+			if info.Mode().IsDir() {
+				return handleStageDirectory(ctx, ctl, resolvedPath, repoPath)
 			}
 
 			childPath = resolvedPath
