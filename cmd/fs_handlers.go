@@ -59,8 +59,8 @@ type stagePair struct {
 }
 
 func walk(root, repoRoot string, depth int) ([]stagePair, error) {
-	toBeStaged := make([]stagePair,0)
-	toBeDereferenced := make([]stagePair,0)
+	toBeStaged := make([]stagePair, 0)
+	toBeDereferenced := make([]stagePair, 0)
 	depth++
 	if depth > 255 {
 		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth")
@@ -70,7 +70,7 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
 
-		if info.Mode() & os.ModeSymlink != 0 {
+		if info.Mode()&os.ModeSymlink != 0 {
 			resolvedPath, err := filepath.EvalSymlinks(childPath)
 			if err != nil {
 				return fmt.Errorf("Failed to resolve: %v: %v", childPath, err)
@@ -95,8 +95,8 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 	if err != nil {
 		return toBeStaged, err
 	}
-	for _, child :=  range toBeDereferenced {
-		extra, err := walk( child.local, child.repo, depth)
+	for _, child := range toBeDereferenced {
+		extra, err := walk(child.local, child.repo, depth)
 		if err != nil {
 			return toBeStaged, err
 		}
@@ -116,7 +116,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	toBeStaged, err := walk(root, repoRoot, 0)
 	if err != nil {
-		return fmt.Errorf("failed to walk dir: %v: %v", root,  err)
+		return fmt.Errorf("failed to walk dir: %v: %v", root, err)
 	}
 
 	if len(toBeStaged) == 0 {
