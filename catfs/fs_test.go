@@ -603,15 +603,34 @@ func TestTouch(t *testing.T) {
 	t.Parallel()
 
 	withDummyFS(t, func(fs *FS) {
+		require.Nil(t, fs.Touch("/y"))
+		yInfo, err := fs.Stat("/y")
+		require.Nil(t, err)
+
+		// Check that the empty file has defaultEncryptionKey
+		require.Equal(t, yInfo.Key, defaultEncryptionKey())
+
 		require.Nil(t, fs.Touch("/x"))
 		oldInfo, err := fs.Stat("/x")
 		require.Nil(t, err)
+
+		// Double Check that the empty file has defaultEncryptionKey
+		require.Equal(t, oldInfo.Key, defaultEncryptionKey())
+
+		// Check that two empty files have same backend hash
+		require.Equal(t, oldInfo.BackendHash, yInfo.BackendHash)
+
+		// Check that two empty files have same conternt hash
+		require.Equal(t, oldInfo.ContentHash, yInfo.ContentHash)
 
 		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
 
 		require.Nil(t, fs.Touch("/x"))
 		newInfo, err := fs.Stat("/x")
 		require.Nil(t, err)
+
+		// Check that the non empty file encryption key is different from defaultEncryptionKey 
+		require.NotEqual(t, newInfo.Key, defaultEncryptionKey())
 
 		// Check that the timestamp advanced only.
 		require.True(t, oldInfo.ModTime.Before(newInfo.ModTime))
