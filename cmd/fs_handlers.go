@@ -81,22 +81,10 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		if info.Mode() & os.ModeSymlink != 0 {
 			resolvedPath, err := filepath.EvalSymlinks(childPath)
 			if err != nil {
-				if os.IsNotExist(err) {
-					log.Warningf("%v symlink points to non existing file or directory", childPath)
-					return nil
-				}
-				if err.Error() == "EvalSymlinks: too many links" {
-					log.Warningf("%v too many links needed to be followed", childPath)
-					return nil
-				}
 				return fmt.Errorf("Failed to resolve: %v: %v", childPath, err)
 			}
 			info, err = os.Stat(resolvedPath)
 			if err != nil {
-				if os.IsNotExist(err) {
-					log.Warningf("%v resolved %v which points to non existing file or directory", childPath, resolvedPath)
-					return nil
-				}
 				return fmt.Errorf("Failed to do os.Stat(%v): %v", resolvedPath, err)
 			}
 			if !info.Mode().IsRegular() {
