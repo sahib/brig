@@ -19,8 +19,6 @@ import (
 	"github.com/sahib/brig/client"
 	"github.com/urfave/cli"
 
-	e "github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
 	terminal "github.com/wayneashleyberry/terminal-dimensions"
@@ -97,12 +95,6 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 			}
 
 			childPath = resolvedPath
-		}
-
-		if info.IsDir() {
-			if err := ctl.Mkdir(repoPath, true); err != nil {
-				return e.Wrapf(err, "mkdir: %s", repoPath)
-			}
 		}
 
 		if info.Mode().IsRegular() {
