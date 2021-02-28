@@ -219,39 +219,46 @@ func TestStageBasic(t *testing.T) {
 			withDummyFS(t, func(fs *FS) {
 				tc := testutil.CreateDummyBuf(size)
 				buf := chunkbuf.NewChunkBuffer(tc)
-				require.Nil(t, fs.Stage("/x", buf))
+				require.NoError(t, fs.Stage("/x", buf))
 
 				stream, err := fs.Cat("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				data, err := ioutil.ReadAll(stream)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				require.Equal(t, len(tc), len(data))
 				require.Equal(t, tc, data)
-				require.Nil(t, stream.Close())
+				require.NoError(t, stream.Close())
 
 				file, err := fs.lkr.LookupFile("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				key := file.Key()
 				oldKey := make([]byte, len(key))
+				oldSize := file.Size()
 				copy(oldKey, key)
 
 				// Also insert some more data to modify an existing file.
 				nextData := []byte{6, 6, 6, 6, 6, 6}
-				require.Nil(t, fs.Stage("/x", chunkbuf.NewChunkBuffer((nextData))))
+				require.NoError(t, fs.Stage("/x", chunkbuf.NewChunkBuffer((nextData))))
 				stream, err = fs.Cat("/x")
-				require.Nil(t, err)
+				require.NoError(t, err)
 				data, err = ioutil.ReadAll(stream)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, data, nextData)
-				require.Nil(t, stream.Close())
+				require.NoError(t, stream.Close())
 
 				// Check that the key did not change during modifying an existing file.
+				// This is only true if both of the sizes are not equal to zero
+				// Recall that 0 sized file has emptyFileEncryptionKey
 				file, err = fs.lkr.LookupFile("/x")
-				require.Nil(t, err)
-				require.Equal(t, file.Key(), oldKey)
+				require.NoError(t, err)
+				if (oldSize != 0 && file.Size() != 0) || (oldSize == file.Size()) {
+					require.Equal(t, file.Key(), oldKey)
+				} else {
+					require.NotEqual(t, file.Key(), oldKey)
+				}
 			})
 		})
 	}
@@ -603,28 +610,47 @@ func TestTouch(t *testing.T) {
 	t.Parallel()
 
 	withDummyFS(t, func(fs *FS) {
-		require.Nil(t, fs.Touch("/x"))
+		require.NoError(t, fs.Touch("/y"))
+		yInfo, err := fs.Stat("/y")
+		require.NoError(t, err)
+
+		// Check that the empty file has emptyFileEncryptionKey
+		require.Equal(t, yInfo.Key, emptyFileEncryptionKey())
+
+		require.NoError(t, fs.Touch("/x"))
 		oldInfo, err := fs.Stat("/x")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
-		require.Nil(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
+		// Double Check that the empty file has emptyFileEncryptionKey
+		require.Equal(t, oldInfo.Key, emptyFileEncryptionKey())
 
-		require.Nil(t, fs.Touch("/x"))
+		// Check that two empty files have same backend hash
+		require.Equal(t, oldInfo.BackendHash, yInfo.BackendHash)
+
+		// Check that two empty files have same conternt hash
+		require.Equal(t, oldInfo.ContentHash, yInfo.ContentHash)
+
+		require.NoError(t, fs.Stage("/x", bytes.NewReader([]byte{1, 2, 3})))
+
+		require.NoError(t, fs.Touch("/x"))
 		newInfo, err := fs.Stat("/x")
-		require.Nil(t, err)
+		require.NoError(t, err)
+
+		// Check that the non empty file encryption key is different from emptyFileEncryptionKey
+		require.NotEqual(t, newInfo.Key, emptyFileEncryptionKey())
 
 		// Check that the timestamp advanced only.
 		require.True(t, oldInfo.ModTime.Before(newInfo.ModTime))
 
 		// Also check that the content was not deleted:
 		stream, err := fs.Cat("/x")
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		data, err := ioutil.ReadAll(stream)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, data, []byte{1, 2, 3})
 
-		require.Nil(t, stream.Close())
+		require.NoError(t, stream.Close())
 	})
 }
 
