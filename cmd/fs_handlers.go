@@ -62,17 +62,19 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	return ctl.Stage(absLocalPath, repoPath)
 }
 
-func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
-	// First create all directories:
-	type stagePair struct {
-		local, repo string
+type stagePair struct {
+	local, repo string
+}
+
+func walk(root, repoRoot string, depth int) ([]stagePair, error) {
+	toBeStaged := make([]stagePair,0)
+	toBeDereferenced := make([]stagePair,0)
+	depth++
+	if depth > 255 {
+		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth")
 	}
-
-	toBeStaged := []stagePair{}
-
 	root = filepath.Clean(root)
 	repoRoot = filepath.Clean(repoRoot)
-
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
 
@@ -85,11 +87,11 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 			if err != nil {
 				return fmt.Errorf("Failed to do os.Stat(%v): %v", resolvedPath, err)
 			}
-			if info.Mode().IsDir() {
-				return handleStageDirectory(ctx, ctl, resolvedPath, repoPath)
-			}
-
 			childPath = resolvedPath
+			if info.Mode().IsDir() {
+				toBeDereferenced = append(toBeDereferenced, stagePair{childPath, repoPath})
+				return nil
+			}
 		}
 
 		if info.Mode().IsRegular() {
@@ -98,9 +100,31 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 		return nil
 	})
-
 	if err != nil {
-		return fmt.Errorf("failed to create sub directories: %v", err)
+		return toBeStaged, err
+	}
+	for _, child :=  range toBeDereferenced {
+		extra, err := walk( child.local, child.repo, depth)
+		if err != nil {
+			return toBeStaged, err
+		}
+		toBeStaged = append(toBeStaged, extra...)
+	}
+	return toBeStaged, nil
+}
+
+func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
+	// First create all directories:
+	type stagePair struct {
+		local, repo string
+	}
+
+	root = filepath.Clean(root)
+	repoRoot = filepath.Clean(repoRoot)
+
+	toBeStaged, err := walk(root, repoRoot, 0)
+	if err != nil {
+		return fmt.Errorf("failed to walk dir: %v: %v", root,  err)
 	}
 
 	if len(toBeStaged) == 0 {
@@ -170,7 +194,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	// Send the jobs onward:
 	for _, child := range toBeStaged {
-		jobs <- child
+		jobs <- stagePair{child.local, child.repo}
 	}
 
 	close(jobs)
