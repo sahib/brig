@@ -952,10 +952,6 @@ func (fs *FS) preStageKeyGen(path string) ([]byte, error) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
-	if fs.readOnly {
-		return nil, ErrReadOnly
-	}
-
 	// See if we already have such a file.
 	// If not we gonna need to generate new key for it
 	// based on the content hash.
