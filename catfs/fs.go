@@ -32,14 +32,13 @@ import (
 )
 
 const (
-	abiVersion = 1
+	abiVersion                 = 1
 	defaultEncryptionKeyLength = 32
 )
 
 func defaultEncryptionKey() []byte {
-	return make([]byte,defaultEncryptionKeyLength)
+	return make([]byte, defaultEncryptionKeyLength)
 }
-
 
 // HintManager is the API for looking up hints.
 type HintManager interface {
@@ -891,7 +890,7 @@ func (fs *FS) Touch(path string) error {
 	fs.mu.Unlock()
 
 	// Nothing or a ghost there, stage an empty file
-	// 0 sized (newly touched) files should have the same key 
+	// 0 sized (newly touched) files should have the same key
 	// to point to the same backend file
 	key := defaultEncryptionKey()
 	return fs.stageWithKey(prefixSlash(path), bytes.NewReader([]byte{}), key)
@@ -987,7 +986,7 @@ func (fs *FS) preStageKeyGen(path string) ([]byte, error) {
 		return nil, err
 	}
 
-	if oldFile != nil && oldFile.Size() != 0{
+	if oldFile != nil && oldFile.Size() != 0 {
 		return oldFile.Key(), nil
 	}
 

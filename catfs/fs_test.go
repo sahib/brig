@@ -251,7 +251,7 @@ func TestStageBasic(t *testing.T) {
 
 				// Check that the key did not change during modifying an existing file.
 				// This is only true if both of the sizes are not equal to zero
-				// Recall that 0 sized file has defaultEncryptionKey 
+				// Recall that 0 sized file has defaultEncryptionKey
 				file, err = fs.lkr.LookupFile("/x")
 				require.NoError(t, err)
 				if (oldSize != 0 && file.Size() != 0) || (oldSize == file.Size()) {
@@ -636,7 +636,7 @@ func TestTouch(t *testing.T) {
 		newInfo, err := fs.Stat("/x")
 		require.NoError(t, err)
 
-		// Check that the non empty file encryption key is different from defaultEncryptionKey 
+		// Check that the non empty file encryption key is different from defaultEncryptionKey
 		require.NotEqual(t, newInfo.Key, defaultEncryptionKey())
 
 		// Check that the timestamp advanced only.
