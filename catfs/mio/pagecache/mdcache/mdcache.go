@@ -1,4 +1,4 @@
-package dircache
+package mdcache
 
 import (
 	"fmt"
@@ -30,18 +30,29 @@ type Options struct {
 	L1CacheMissRefill bool
 }
 
-type DirCache struct {
-	mu sync.Mutex
-	l1 *l1cache
-	l2 *l2cache
+type cacheLayer interface {
+	Get(pk pageKey) (*page.Page, error)
+	Set(pk pageKey, p *page.Page) error
+	Del(pks []pageKey) error
+	Close() error
+}
+
+// MDCache is a leveled Memory/Disk cache combination.
+type MDCache struct {
+	mu   sync.Mutex
+	l1   cacheLayer
+	l2   cacheLayer
+	opts Options
 }
 
 type pageKey struct {
-	inode   uint32
+	inode   int64
 	pageIdx uint32
 }
 
 func (pk pageKey) String() string {
+	// TODO: That's pointless right now, it starts with 00 most of the time.
+
 	// NOTE: Could be implemented with less allocations, but effect is
 	// probably not noticeable. Only used in slow l2 cache anyways.
 	s := []byte(fmt.Sprintf("%08x-%08x", pk.inode, pk.pageIdx))
@@ -51,44 +62,65 @@ func (pk pageKey) String() string {
 	return filepath.Join(string(s[:2]), string(s[2:]))
 }
 
-func NewDirCache(opts Options) (*DirCache, error) {
+func NewDirCache(opts Options) (*MDCache, error) {
 	l2, err := newL2Cache(opts.SwapDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	l1, err := newL1Cache(l2, opts.MaxMemoryUsage)
+	var l2Iface cacheLayer = l2
+	if l2 == nil {
+		// special case: when we don't have a l2 cache
+		// then use another memory cache as backing,
+		// with infinite memory.
+		maxMemory := int64(^uint64(0) >> 1)
+		l2Iface, _ = newL1Cache(nil, maxMemory)
+	}
+
+	l1, err := newL1Cache(l2Iface, opts.MaxMemoryUsage)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DirCache{
-		l1: l1,
-		l2: l2,
+	return &MDCache{
+		l1:   l1,
+		l2:   l2Iface,
+		opts: opts,
 	}, nil
 }
 
-func (dc *DirCache) Lookup(inode, pageIdx uint32) (*page.Page, error) {
+func (dc *MDCache) Lookup(inode int64, pageIdx uint32) (*page.Page, error) {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 
 	return dc.get(pageKey{inode: inode, pageIdx: pageIdx})
 }
 
-func (dc *DirCache) get(pk pageKey) (*page.Page, error) {
+func (dc *MDCache) get(pk pageKey) (*page.Page, error) {
 	p, err := dc.l1.Get(pk)
-	if err != nil {
-		if err == page.ErrCacheMiss {
-			return dc.l2.Get(pk)
+	switch err {
+	case nil:
+		return p, nil
+	case page.ErrCacheMiss:
+		p, err = dc.l2.Get(pk)
+		if err != nil {
+			return p, err
 		}
 
+		if dc.opts.L1CacheMissRefill {
+			// propagate back to l1 cache:
+			if err := dc.l1.Set(pk, p); err != nil {
+				return p, err
+			}
+		}
+
+		return p, err
+	default:
 		return nil, err
 	}
-
-	return p, nil
 }
 
-func (dc *DirCache) Merge(inode, pageIdx, off uint32, write []byte) error {
+func (dc *MDCache) Merge(inode int64, pageIdx, off uint32, write []byte) error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 
@@ -113,17 +145,22 @@ func (dc *DirCache) Merge(inode, pageIdx, off uint32, write []byte) error {
 		p = page.New(off, write)
 	}
 
-	p.AddExtent(off, write)
+	p.Overlay(off, write)
 	return dc.l1.Set(pk, p)
 }
 
-func (dc *DirCache) Evict(inode uint32, size int64) error {
+func (dc *MDCache) Evict(inode, size int64) error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 
+	// Figure out all possible indices from size:
 	pks := []pageKey{}
 	pageHi := uint32(size / page.Size)
-	for pageIdx := uint32(0); pageIdx <= pageHi; pageIdx++ {
+	if size%page.Size > 0 {
+		pageHi++
+	}
+
+	for pageIdx := uint32(0); pageIdx < pageHi; pageIdx++ {
 		pks = append(pks, pageKey{inode: inode, pageIdx: pageIdx})
 	}
 
@@ -131,6 +168,7 @@ func (dc *DirCache) Evict(inode uint32, size int64) error {
 		log.WithError(err).Warnf("l1 delete failed for %v", pks)
 	}
 
+	// TODO: This will spam logs in case of no page:
 	if err := dc.l2.Del(pks); err != nil {
 		log.WithError(err).Warnf("l2 delete failed for %v", pks)
 	}
@@ -138,7 +176,7 @@ func (dc *DirCache) Evict(inode uint32, size int64) error {
 	return nil
 }
 
-func (dc *DirCache) Close() error {
+func (dc *MDCache) Close() error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
 

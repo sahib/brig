@@ -1,8 +1,7 @@
-package dircache
+package mdcache
 
 import (
 	"container/list"
-	"errors"
 	"fmt"
 
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
@@ -37,31 +36,41 @@ type l1item struct {
 type l1cache struct {
 	m         map[pageKey]l1item
 	k         *list.List
-	l2        *l2cache
+	l2        cacheLayer
 	maxMemory int64
 }
 
-func newL1Cache(l2 *l2cache, maxMemory int64) (*l1cache, error) {
+func newL1Cache(l2 cacheLayer, maxMemory int64) (*l1cache, error) {
 	return &l1cache{
 		maxMemory: maxMemory,
 		l2:        l2,
 		k:         list.New(),
+		m:         make(map[pageKey]l1item),
 	}, nil
 }
 
 func (c *l1cache) Set(pk pageKey, p *page.Page) error {
-	c.m[pk] = l1item{
-		Page: p,
-		Link: c.k.PushBack(pk),
+	existingItem, ok := c.m[pk]
+	if !ok {
+		// new content:
+		c.m[pk] = l1item{
+			Page: p,
+			Link: c.k.PushBack(pk),
+		}
+	} else {
+		// do not push another page key,
+		// c.k needs to have unique keys only.
+		c.m[pk] = l1item{
+			Page: p,
+			Link: existingItem.Link,
+		}
+
+		// prioritize this one more.
+		c.k.MoveToBack(existingItem.Link)
 	}
 
 	maxPages := c.maxMemory / (page.Size + page.Meta)
 	if int64(len(c.m)) > maxPages {
-		if c.l2 == nil {
-			// just in case l2 cache was not given:
-			return errors.New("cache is full")
-		}
-
 		oldPkIface := c.k.Remove(c.k.Front())
 		oldPk, ok := oldPkIface.(pageKey)
 		if !ok {
@@ -73,7 +82,13 @@ func (c *l1cache) Set(pk pageKey, p *page.Page) error {
 		if !ok {
 			// c.m and c.k got out of sync.
 			// this is very likely a bug.
-			return fmt.Errorf("l1: key in key list, but not in map")
+			return fmt.Errorf("l1: key in key list, but not in map: %v", oldPk)
+		}
+
+		if c.l2 == nil {
+			// nil-interface for l2: loose pages in that case.
+			// that may be valid if no disk can be used.
+			return nil
 		}
 
 		// move old page to more persistent cache layer:
@@ -107,5 +122,8 @@ func (c *l1cache) Del(pks []pageKey) error {
 }
 
 func (c *l1cache) Close() error {
+	// help GC if caller somehow still retains a reference:
+	c.m = nil
+	c.k = nil
 	return nil
 }

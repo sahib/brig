@@ -1,4 +1,4 @@
-package dircache
+package mdcache
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
+	log "github.com/sirupsen/logrus"
 )
 
 type l2cache struct {
@@ -35,16 +36,12 @@ func newL2Cache(dir string) (*l2cache, error) {
 }
 
 func (c *l2cache) Set(pk pageKey, p *page.Page) error {
-	return c.SetData(pk.String(), p.AsBytes())
-}
-
-func (c *l2cache) SetData(key string, pdata []byte) error {
 	if c == nil {
 		return nil
 	}
 
-	path := filepath.Join(c.dir, key)
-	return ioutil.WriteFile(path, pdata, 0600)
+	path := filepath.Join(c.dir, pk.String())
+	return ioutil.WriteFile(path, p.AsBytes(), 0600)
 }
 
 func (c *l2cache) Get(pk pageKey) (*page.Page, error) {
@@ -70,6 +67,7 @@ func (c *l2cache) Del(pks []pageKey) error {
 		path := filepath.Join(c.dir, pk.String())
 		if err := os.Remove(path); err != nil {
 			// only log, we want to get rid of more old data.
+			log.Warnf("page l2: failed to delete %s", path)
 		}
 	}
 
