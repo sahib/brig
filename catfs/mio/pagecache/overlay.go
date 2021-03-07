@@ -122,15 +122,6 @@ func (l *Layer) WriteAt(buf []byte, off int64) (n int, err error) {
 			return -1, err
 		}
 
-		// fmt.Println("MAY", mayWrite)
-		// if pageIdx >= 2 {
-		// 	fmt.Println("!!! PAGE IDX", pageIdx, "may write", mayWrite, pageOff)
-		// 	fmt.Println("WRITE", len(buf), "bytes at off", off, pageOff)
-		// }
-
-		// xxx, _ := l.cache.Lookup(l.inode, uint32(pageIdx))
-		// fmt.Println("WRITE IDX", pageIdx, off, mayWrite, xxx)
-
 		// starting from the second block the page offset will
 		// be always zero. That's only relevant for len(buf) > page.Size.
 		pageOff = 0
@@ -197,7 +188,6 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 		pageHi--
 	}
 
-	// fmt.Println("READ", off, len(buf), pageLo, pageHi, l.size, l.length)
 	for pageIdx := pageLo; pageIdx <= pageHi && ib.Left() > 0; pageIdx++ {
 		p, err := l.cache.Lookup(l.inode, uint32(pageIdx))
 		switch err {
@@ -209,7 +199,6 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 			}
 
 			n, err := copyNBuffer(ib, zpr, int64(ib.Left()), copyBuf)
-			//fmt.Println("PAGE MISS", pageIdx, n)
 			l.overlayOffset += n
 			l.streamOffset += n
 
@@ -221,7 +210,6 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 			//       been read often. We could even hook in things like
 			//       fadvise() into this layer.
 		case nil:
-			// fmt.Println("PAGE HIT", pageIdx, p.Extents)
 			// In this case we know that the page is cached.
 			// We can fill `buf` with the page of the data,
 			// (provided by page.Reader()), but have to watch
@@ -246,24 +234,16 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 
 			occludesStream := p.OccludesStream(pageOff, uint32(fullLen))
 			if !occludesStream {
-				// fmt.Println("DOES NOT OCCLUDE", pageOff, l.overlayOffset)
 				// only seek if we have to.
 				if err := l.ensureOffset(zpr); err != nil {
 					return ib.Len(), err
 				}
 
 				// NOTE: Here we read the complete page (if possible)
-				// pageN, err := io.ReadFull(zpr, p.Data[pageOff:])
 				pageN, err := io.ReadFull(zpr, copyBuf[pageOff:])
 				if pageN > 0 {
 					p.Underlay(pageOff, copyBuf[pageOff:pageOff+uint32(pageN)])
 					l.streamOffset += int64(pageN)
-
-					// if pageIdx == 1 {
-					// 	fmt.Println(l.size, l.length)
-					// 	// fmt.Println(copyBuf[pageOff : pageOff+uint32(pageN)])
-					// 	fmt.Println(p.Data[63739:])
-					// }
 				}
 
 				if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
