@@ -311,8 +311,10 @@ func (l *Layer) Read(buf []byte) (int, error) {
 }
 
 // Write writes `buf` at the current offset.
+// It does NOT modify the read position.
 func (l *Layer) Write(buf []byte) (int, error) {
-	return l.WriteAt(buf, l.overlayOffset)
+	n, err := l.WriteAt(buf, l.overlayOffset)
+	return n, err
 }
 
 // Seek changes the current offset for Write and Read.

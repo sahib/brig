@@ -14,7 +14,7 @@ import (
 var (
 	// ErrIsClosed is returned when an operation is performed on an already
 	// closed file.
-	ErrIsClosed = errors.New("File handle is closed")
+	ErrIsClosed = errors.New("file handle is closed")
 )
 
 // Handle is a emulation of a os.File handle, as returned by os.Open()
@@ -122,6 +122,10 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 		return 0, ErrIsClosed
 	}
 
+	if err := hdl.initStreamIfNeeded(); err != nil {
+		return 0, err
+	}
+
 	hdl.wasModified = true
 	return hdl.layer.Write(buf)
 }
@@ -145,8 +149,7 @@ func (hdl *Handle) WriteAt(buf []byte, off int64) (n int, err error) {
 	}
 
 	hdl.wasModified = true
-	n, err = hdl.layer.WriteAt(buf, off)
-	return n, err
+	return hdl.layer.WriteAt(buf, off)
 }
 
 // Seek will jump to the `offset` relative to `whence`.
