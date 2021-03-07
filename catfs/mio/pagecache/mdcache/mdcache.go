@@ -1,3 +1,4 @@
+// Package mdcache implements a leveled memory/disk cache combination.
 package mdcache
 
 import (
@@ -9,9 +10,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Options give room for finetuning the behavior of Memory/Disk cache.
 type Options struct {
+	// MaxMemoryUsage of L1 in bytes
 	MaxMemoryUsage int64
-	SwapDirectory  string
+
+	// SwapDirectory specifies where L2 pages are stored.
+	// If empty, no l2 cache is used. Instead another l1 cache
+	// is used in its place, rendering MaxMemoryUsage useless.
+	// You have to set both for an effect.
+	SwapDirectory string
+
+	// L1CacheMissRefill will propagate
+	// data from L2 to L1 if it could be found
+	// successfully.
+	L1CacheMissRefill bool
 
 	// TODO: Those need to be still implemented.
 
@@ -23,17 +36,12 @@ type Options struct {
 	// on load. Reduces storage, but increases CPU usage if you're swapping.
 	// Since swapping is slow anyways this is recommended.
 	L2Compress bool
-
-	// L1CacheMissRefill will propagate
-	// data from L2 to L1 if it could be found
-	// successfully.
-	L1CacheMissRefill bool
 }
 
 type cacheLayer interface {
 	Get(pk pageKey) (*page.Page, error)
 	Set(pk pageKey, p *page.Page) error
-	Del(pks []pageKey) error
+	Del(pks []pageKey)
 	Close() error
 }
 
@@ -62,7 +70,8 @@ func (pk pageKey) String() string {
 	return filepath.Join(string(s[:2]), string(s[2:]))
 }
 
-func NewDirCache(opts Options) (*MDCache, error) {
+// New returns a new Memory/Disk cache
+func New(opts Options) (*MDCache, error) {
 	l2, err := newL2Cache(opts.SwapDirectory)
 	if err != nil {
 		return nil, err
@@ -89,6 +98,7 @@ func NewDirCache(opts Options) (*MDCache, error) {
 	}, nil
 }
 
+// Lookup implements pagecache.Cache
 func (dc *MDCache) Lookup(inode int64, pageIdx uint32) (*page.Page, error) {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
@@ -120,6 +130,7 @@ func (dc *MDCache) get(pk pageKey) (*page.Page, error) {
 	}
 }
 
+// Merge implements pagecache.Cache
 func (dc *MDCache) Merge(inode int64, pageIdx, off uint32, write []byte) error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
@@ -149,6 +160,7 @@ func (dc *MDCache) Merge(inode int64, pageIdx, off uint32, write []byte) error {
 	return dc.l1.Set(pk, p)
 }
 
+// Evict implements pagecache.Cache
 func (dc *MDCache) Evict(inode, size int64) error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()
@@ -164,18 +176,12 @@ func (dc *MDCache) Evict(inode, size int64) error {
 		pks = append(pks, pageKey{inode: inode, pageIdx: pageIdx})
 	}
 
-	if err := dc.l1.Del(pks); err != nil {
-		log.WithError(err).Warnf("l1 delete failed for %v", pks)
-	}
-
-	// TODO: This will spam logs in case of no page:
-	if err := dc.l2.Del(pks); err != nil {
-		log.WithError(err).Warnf("l2 delete failed for %v", pks)
-	}
-
+	dc.l1.Del(pks)
+	dc.l2.Del(pks)
 	return nil
 }
 
+// Close closes the cache contents and cleans up resources.
 func (dc *MDCache) Close() error {
 	dc.mu.Lock()
 	defer dc.mu.Unlock()

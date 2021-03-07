@@ -18,11 +18,10 @@ import (
 
 // Handle is an open Entry.
 type Handle struct {
-	mu                    sync.Mutex
-	fd                    *catfs.Handle
-	m                     *Mount
-	wasModified           bool
-	currentFileReadOffset int64
+	mu          sync.Mutex
+	fd          *catfs.Handle
+	m           *Mount
+	wasModified bool
 }
 
 // Read is called to read a block of data at a certain offset.
@@ -38,24 +37,10 @@ func (hd *Handle) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.Re
 		req.Size,
 	)
 
-	newOff := hd.currentFileReadOffset
-	if req.Offset != hd.currentFileReadOffset {
-		var err error
-		newOff, err = hd.fd.Seek(req.Offset, io.SeekStart)
-		if err != nil {
-			return errorize("handle-read-seek", err)
-		}
-	}
-
-	if newOff != req.Offset {
-		log.Warningf("read/seek offset differs (want %d, got %d)", req.Offset, newOff)
-	}
-
-	n, err := hd.fd.Read(resp.Data[:req.Size])
+	n, err := hd.fd.ReadAt(resp.Data[:req.Size], req.Offset)
 	if err != nil && err != io.EOF {
 		return errorize("handle-read-io", err)
 	}
-	hd.currentFileReadOffset = newOff + int64(n)
 
 	resp.Data = resp.Data[:n]
 	return nil

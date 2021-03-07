@@ -1,4 +1,4 @@
-package overlay
+package pagecache
 
 import (
 	"github.com/sahib/brig/catfs/mio/pagecache/page"

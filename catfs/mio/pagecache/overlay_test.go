@@ -1,4 +1,4 @@
-package overlay
+package pagecache
 
 import (
 	"bytes"
@@ -14,8 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func withPageLayer(t *testing.T, size int64, fn func(expected []byte, p *PageLayer)) {
-	md, err := mdcache.NewDirCache(mdcache.Options{
+func withLayer(t *testing.T, size int64, fn func(expected []byte, p *Layer)) {
+	md, err := mdcache.New(mdcache.Options{
 		MaxMemoryUsage: 4 * page.Size,
 		SwapDirectory:  "",
 	})
@@ -23,7 +23,7 @@ func withPageLayer(t *testing.T, size int64, fn func(expected []byte, p *PageLay
 	require.NoError(t, err)
 
 	data := testutil.CreateDummyBuf(size)
-	p, err := NewPageLayer(bytes.NewReader(data), md, 42, size)
+	p, err := NewLayer(bytes.NewReader(data), md, 42, size)
 	require.NoError(t, err)
 
 	fn(data, p)
@@ -47,7 +47,7 @@ var (
 func TestReadOnly(t *testing.T) {
 	for _, testSize := range testSizes {
 		t.Run(fmt.Sprintf("%d", testSize), func(t *testing.T) {
-			withPageLayer(t, testSize, func(expected []byte, p *PageLayer) {
+			withLayer(t, testSize, func(expected []byte, p *Layer) {
 				got := bytes.NewBuffer([]byte{})
 				n, err := p.WriteTo(got)
 				require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestReadOnlyTruncate(t *testing.T) {
 				}
 
 				t.Run(fmt.Sprintf("trunc-to-%d", length), func(t *testing.T) {
-					withPageLayer(t, testSize, func(expected []byte, p *PageLayer) {
+					withLayer(t, testSize, func(expected []byte, p *Layer) {
 						got := bytes.NewBuffer([]byte{})
 						p.Truncate(length)
 
@@ -124,7 +124,7 @@ func TestWriteSingle(t *testing.T) {
 		t.Run(fmt.Sprintf("read-%d", testReadSize), func(t *testing.T) {
 			for _, testWriteSize := range testSizes {
 				t.Run(fmt.Sprintf("write-%d", testWriteSize), func(t *testing.T) {
-					withPageLayer(t, testReadSize, func(expected []byte, p *PageLayer) {
+					withLayer(t, testReadSize, func(expected []byte, p *Layer) {
 						expected = testutil.CreateRandomDummyBuf(testWriteSize, 23)
 						wn, err := p.WriteAt(expected, 0)
 						require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestWriteSingle(t *testing.T) {
 
 func TestWriteRandomOffset(t *testing.T) {
 	// Randomly generate writes and write them to the layer.
-	// The randomness is controlled by seed to be reproducable.
+	// The randomness is controlled by seed to be reproducible.
 	// The generated data is also copy()'d to a slice which
 	// serves as way to check the overlay on the final read.
 
@@ -161,7 +161,7 @@ func TestWriteRandomOffset(t *testing.T) {
 				}
 
 				t.Run(fmt.Sprintf("size-%d", testReadSize*2), func(t *testing.T) {
-					withPageLayer(t, testReadSize, func(expected []byte, p *PageLayer) {
+					withLayer(t, testReadSize, func(expected []byte, p *Layer) {
 
 						// NOTE: We do not write beyond p.Length()
 						// to make this test easier to check.
@@ -192,7 +192,7 @@ func TestWriteRandomOffset(t *testing.T) {
 
 						// This for loop here is just for easier digest
 						// debug output. require.Equal() outputs huge
-						// diffs that are seldomly helpful.
+						// diffs that are seldom helpful.
 						for idx := 0; idx < got.Len(); idx++ {
 							if expected[idx] != got.Bytes()[idx] {
 								require.Equal(

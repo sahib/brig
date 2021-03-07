@@ -46,7 +46,7 @@ func TestL2GetSetDel(t *testing.T) {
 		require.Equal(t, pset.Data, pgot.Data)
 		require.Equal(t, pset.Extents, pgot.Extents)
 
-		require.NoError(t, l2.Del([]pageKey{pk}))
+		l2.Del([]pageKey{pk})
 		_, err = l2.Get(pk)
 		require.Error(t, page.ErrCacheMiss)
 	})
@@ -61,5 +61,5 @@ func TestL2Nil(t *testing.T) {
 	require.Error(t, page.ErrCacheMiss)
 
 	require.NoError(t, l2.Set(pageKey{0, 1}, dummyPage(0, 1024)))
-	require.NoError(t, l2.Del([]pageKey{{0, 1}}))
+	l2.Del([]pageKey{{0, 1}})
 }

@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/sahib/brig/catfs/mio"
-	"github.com/sahib/brig/catfs/mio/overlay"
+	"github.com/sahib/brig/catfs/mio/pagecache"
 	n "github.com/sahib/brig/catfs/nodes"
 )
 
@@ -24,7 +24,7 @@ type Handle struct {
 	fs          *FS
 	file        *n.File
 	lock        sync.Mutex
-	layer       *overlay.Layer
+	layer       *pagecache.Layer
 	stream      mio.Stream
 	wasModified bool
 	isClosed    bool
@@ -40,6 +40,10 @@ func newHandle(fs *FS, file *n.File, readOnly bool) *Handle {
 }
 
 func (hdl *Handle) initStreamIfNeeded() error {
+	if hdl.fs.pageCache == nil {
+		return errors.New("no page cache was initialized")
+	}
+
 	if hdl.stream != nil {
 		return nil
 	}
@@ -60,18 +64,20 @@ func (hdl *Handle) initStreamIfNeeded() error {
 		return err
 	}
 
-	hdl.layer = overlay.NewLayer(hdl.stream)
-	hdl.layer.Truncate(int64(hdl.file.Size()))
-	hdl.layer.SetSize(int64(hdl.file.Size()))
-	return nil
+	hdl.layer, err = pagecache.NewLayer(
+		hdl.stream,
+		hdl.fs.pageCache,
+		int64(hdl.file.Inode()),
+		int64(hdl.file.Size()),
+	)
+
+	return err
 }
 
 // Read will try to fill `buf` as much as possible.
 // The seek pointer will be advanced by the number of bytes written.
 // Take care, `buf` might still have contents, even if io.EOF was returned.
 func (hdl *Handle) Read(buf []byte) (int, error) {
-	var err error
-
 	hdl.lock.Lock()
 	defer hdl.lock.Unlock()
 
@@ -83,19 +89,23 @@ func (hdl *Handle) Read(buf []byte) (int, error) {
 		return 0, err
 	}
 
-	// TODO: not sure if that makes sense...
-	// we should just read whatever the underlying stream thinks it has.
-	n, err := io.ReadFull(hdl.layer, buf)
-	isEOF := (err == io.ErrUnexpectedEOF || err == io.EOF)
-	if err != nil && !isEOF {
+	return hdl.layer.Read(buf)
+}
+
+// ReadAt reads from the overlay at `off` into `buf`.
+func (hdl *Handle) ReadAt(buf []byte, off int64) (int, error) {
+	hdl.lock.Lock()
+	defer hdl.lock.Unlock()
+
+	if hdl.isClosed {
+		return 0, ErrIsClosed
+	}
+
+	if err := hdl.initStreamIfNeeded(); err != nil {
 		return 0, err
 	}
 
-	if isEOF {
-		return n, io.EOF
-	}
-
-	return n, nil
+	return hdl.layer.ReadAt(buf, off)
 }
 
 // Write will write the contents of `buf` to the current position.
@@ -112,42 +122,8 @@ func (hdl *Handle) Write(buf []byte) (int, error) {
 		return 0, ErrIsClosed
 	}
 
-	if err := hdl.initStreamIfNeeded(); err != nil {
-		return 0, err
-	}
-
-	// Currently, we do not check if the file was actually modified
-	// (i.e. data changed compared to before)
 	hdl.wasModified = true
-
-	n, err := hdl.layer.Write(buf)
-	if err != nil {
-		return n, err
-	}
-
-	// Advance the write pointer when writing things to the buffer.
-	if _, err := hdl.stream.Seek(int64(n), io.SeekCurrent); err != nil && err != io.EOF {
-		return n, err
-	}
-
-	minSize := uint64(hdl.layer.MinSize())
-	if hdl.file.Size() < minSize {
-		hdl.fs.mu.Lock()
-		hdl.file.SetSize(minSize)
-
-		// Make sure to save the size change:
-		if err := hdl.fs.lkr.StageNode(hdl.file); err != nil {
-			hdl.fs.mu.Unlock()
-			return 0, err
-		}
-
-		hdl.fs.mu.Unlock()
-
-		// Also auto-truncate on every write.
-		hdl.layer.Truncate(int64(minSize))
-	}
-
-	return n, nil
+	return hdl.layer.Write(buf)
 }
 
 // WriteAt writes data from `buf` at offset `off` counted from the start (0 offset).

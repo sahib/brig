@@ -37,7 +37,7 @@ func TestL1GetSetDel(t *testing.T) {
 		require.Equal(t, pset.Data, pgot.Data)
 		require.Equal(t, pset.Extents, pgot.Extents)
 
-		require.NoError(t, l1.Del([]pageKey{pk}))
+		l1.Del([]pageKey{pk})
 		_, err = l1.Get(pk)
 		require.Error(t, page.ErrCacheMiss)
 	})

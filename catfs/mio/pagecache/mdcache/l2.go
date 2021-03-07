@@ -58,9 +58,9 @@ func (c *l2cache) Get(pk pageKey) (*page.Page, error) {
 	return page.FromBytes(pdata)
 }
 
-func (c *l2cache) Del(pks []pageKey) error {
+func (c *l2cache) Del(pks []pageKey) {
 	if c == nil {
-		return nil
+		return
 	}
 
 	for _, pk := range pks {
@@ -70,8 +70,6 @@ func (c *l2cache) Del(pks []pageKey) error {
 			log.Warnf("page l2: failed to delete %s", path)
 		}
 	}
-
-	return nil
 }
 
 func (c *l2cache) Close() error {

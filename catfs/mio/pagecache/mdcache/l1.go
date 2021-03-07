@@ -18,7 +18,7 @@ import (
 // 2. We must be able to set a max memory bound.
 // 3. We must avoid copying of pages due to performance reasons.
 //
-// The most popular libraries fail always one of the criterias:
+// The most popular libraries fail always one of the criteria:
 //
 // - fastcache: fails 1 and 3.
 // - ristretto: fails 1.
@@ -109,7 +109,7 @@ func (c *l1cache) Get(pk pageKey) (*page.Page, error) {
 	return item.Page, nil
 }
 
-func (c *l1cache) Del(pks []pageKey) error {
+func (c *l1cache) Del(pks []pageKey) {
 	for _, pk := range pks {
 		delItem, ok := c.m[pk]
 		if ok {
@@ -117,8 +117,6 @@ func (c *l1cache) Del(pks []pageKey) error {
 			delete(c.m, pk)
 		}
 	}
-
-	return nil
 }
 
 func (c *l1cache) Close() error {

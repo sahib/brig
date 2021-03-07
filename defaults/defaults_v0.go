@@ -203,6 +203,13 @@ var DefaultsV0 = config.DefaultMapping{
 				Docs:         "pre-cache files up-on pinning.",
 			},
 		},
+		"pagecache": config.DefaultMapping{
+			"max_memory": config.DefaultEntry{
+				Default:      "1G",
+				NeedsRestart: true,
+				Docs:         "Consume at max this amount of memory for the pagecache",
+			},
+		},
 		"repin": config.DefaultMapping{
 			"enabled": config.DefaultEntry{
 				Default:      true,

@@ -24,12 +24,13 @@ const (
 	// (4k is the typical page size on linux)
 	Meta = 4 * 1024
 
-	// Size needed to store a single extent.
+	// ExtentSize needed to store a single extent.
 	ExtentSize = 8
 )
 
 var (
-	// not a real error, do not pass to outside.
+	// ErrCacheMiss indicates that a page is missing from the cache.
+	// Not a real error, but a sentinel to indicate this state.
 	ErrCacheMiss = errors.New("cache miss")
 )
 
@@ -53,6 +54,10 @@ func (e Extent) String() string {
 	return fmt.Sprintf("[%d-%d)", e.OffLo, e.OffHi)
 }
 
+// TODO: Verify assumption that make([]byte, Size)
+// does not increase residual memory until usage.
+
+// Page is a single cached page
 type Page struct {
 	// Extents is a list describing where
 	// `Data` contains valid data.
@@ -130,6 +135,8 @@ func FromBytes(data []byte) (*Page, error) {
 	return &p, nil
 }
 
+// AsBytes encodes the extents at the end of the page data
+// and returns the full sized page array.
 func (p *Page) AsBytes() []byte {
 	if cap(p.Data) < Size+Meta {
 		// this is a programming error:

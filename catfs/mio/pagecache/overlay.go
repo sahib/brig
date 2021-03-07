@@ -1,4 +1,4 @@
-package overlay
+package pagecache
 
 import (
 	"bytes"
@@ -10,7 +10,8 @@ import (
 	"github.com/sahib/brig/util"
 )
 
-type PageLayer struct {
+// Layer is a layer above a read-only stream with write support.
+type Layer struct {
 	// underlying stream
 	rs io.ReadSeeker
 
@@ -46,18 +47,18 @@ type PageLayer struct {
 	streamOffset int64
 }
 
-// NewPageLayer returns a paged overlay for `rs`, reading and storing data from
+// NewLayer returns a paged overlay for `rs`, reading and storing data from
 // `cache`. `inode` will be used as cache identifier for this file. The only
 // need is that it is unique to this file, otherwise it does not need any
 // inode-like semantics. `size` must be known in advance and reflects the size
 // of `rs`. This cannot be used for pure streaming. `rs` is assumed to be positioned
 // at the zero offset. If not, subtract the offset from `size`.
-func NewPageLayer(rs io.ReadSeeker, cache Cache, inode, size int64) (*PageLayer, error) {
+func NewLayer(rs io.ReadSeeker, cache Cache, inode, size int64) (*Layer, error) {
 	if err := cache.Evict(inode, size); err != nil {
 		return nil, err
 	}
 
-	return &PageLayer{
+	return &Layer{
 		rs:     rs,
 		inode:  inode,
 		size:   size,
@@ -66,7 +67,7 @@ func NewPageLayer(rs io.ReadSeeker, cache Cache, inode, size int64) (*PageLayer,
 	}, nil
 }
 
-func (l *PageLayer) ensureOffset(zpr *zeroPadReader) error {
+func (l *Layer) ensureOffset(zpr *zeroPadReader) error {
 	if l.overlayOffset == l.streamOffset {
 		return nil
 	}
@@ -80,8 +81,9 @@ func (l *PageLayer) ensureOffset(zpr *zeroPadReader) error {
 	return nil
 }
 
-// NOTE: WriteAt never moves the read offset.
-func (l *PageLayer) WriteAt(buf []byte, off int64) (n int, err error) {
+// WriteAt writes `buf` to `off`. It will appear on the next
+// read operation.
+func (l *Layer) WriteAt(buf []byte, off int64) (n int, err error) {
 	// If `buf` is large enough to span over several writes then we
 	// have to calculate the offset of the first page, so that new
 	// data is written to the correct place.
@@ -153,11 +155,13 @@ var (
 	}
 )
 
+// ReadAt reads into `buf` from the position `off`.
+//
 // TODO: go docs state:
 //  * ReadAt() must be allowed to call in parallel.
 //    We cannot guarantee that at the moment since sometimes
 //    we have to seek the underlying stream - mutex?
-func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
+func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 	// when requesting reads beyond the size of the overlay,
 	// we should immediately cancel the request.
 	if off >= l.length {
@@ -292,7 +296,72 @@ func (l *PageLayer) ReadAt(buf []byte, off int64) (int, error) {
 	return ib.Len(), nil
 }
 
-func (l *PageLayer) WriteTo(w io.Writer) (int64, error) {
+// Truncate sets the size of the stream.
+// There are three cases:
+//
+// - `size` is equal to Length(): Nothing happens.
+// - `size` is less than Length(): The stream will return io.EOF earlier.
+// - `size` is more than Length(): The stream will be padded with zeros.
+//
+// This matches the behavior of the equally confusingly named POSIX
+// ftruncate() function. Note that Truncate() is a very fast operation.
+func (l *Layer) Truncate(size int64) {
+	l.length = size
+}
+
+// Length is the current truncated length of the overlay.
+// When you did not call Truncate() it will be the size you
+// passed to NewLayer(). Otherwise it is what you passed
+// to the last call of Truncate().
+func (l *Layer) Length() int64 {
+	return l.length
+}
+
+/////////////////////////////////////
+// FILE I/O COMPATIBILITY METHODS  //
+//                                 //
+// Do not use, unless you have to. //
+// Prefer WriteAt() & ReadAt()     //
+/////////////////////////////////////
+
+// Read implements io.Reader by calling ReadAt()
+// with the current offset.
+func (l *Layer) Read(buf []byte) (int, error) {
+	return l.ReadAt(buf, l.overlayOffset)
+}
+
+// Write writes `buf` at the current offset.
+func (l *Layer) Write(buf []byte) (int, error) {
+	return l.WriteAt(buf, l.overlayOffset)
+}
+
+// Seek changes the current offset for Write and Read.
+// Note that in this implementation calling ReadAt.
+// *does* change the seek offset. Use Seek() to make
+// sure you're reading from the right spot.
+func (l *Layer) Seek(off int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		l.overlayOffset = off
+	case io.SeekCurrent:
+		l.overlayOffset += off
+	case io.SeekEnd:
+		l.overlayOffset = l.length + off
+	default:
+		return 0, fmt.Errorf("invalid whence %d", whence)
+	}
+
+	return l.overlayOffset, nil
+}
+
+// Close will close the overlay and free up all resources,
+// including pages in the cache.
+func (l *Layer) Close() error {
+	return l.cache.Evict(l.inode, l.length)
+}
+
+// WriteTo implements io.WriterTo
+func (l *Layer) WriteTo(w io.Writer) (int64, error) {
 	// NOTE: This method is mostly used in tests.
 	// but can be also used by io.Copy() internally.
 	// There is room for optimizations here:
@@ -327,31 +396,4 @@ func (l *PageLayer) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 
-}
-
-// Read implements io.Reader by calling ReadAt()
-// with the current offset.
-func (l *PageLayer) Read(buf []byte) (int, error) {
-	return l.ReadAt(buf, l.overlayOffset)
-}
-
-// Truncate sets the size of the stream.
-// There are three cases:
-//
-// - `size` is equal to Length(): Nothing happens.
-// - `size` is less than Length(): The stream will return io.EOF earlier.
-// - `size` is more than Length(): The stream will be padded with zeros.
-//
-// This matches the behavior of the equally confusingly named POSIX
-// ftruncate() function. Note that Truncate() is a very fast operation.
-func (l *PageLayer) Truncate(size int64) {
-	l.length = size
-}
-
-// Length is the current truncated length of the overlay.
-// When you did not call Truncate() it will be the size you
-// passed to NewPageLayer(). Otherwise it is what you passed
-// to the last call of Truncate().
-func (l *PageLayer) Length() int64 {
-	return l.length
 }

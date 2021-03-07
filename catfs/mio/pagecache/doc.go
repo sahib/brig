@@ -1,4 +1,4 @@
-// Package overlay implements a io.ReaderAt and io.WriterAt that is similar in
+// Package pagecache implements a io.ReaderAt and io.WriterAt that is similar in
 // function to the OverlayFS of Linux. It overlays a read-only stream and
 // enables write support. The writes will take priority on the data in stream
 // and will therefore be visible when calling ReadAt() of the overlay.
@@ -28,4 +28,4 @@
 //
 // NOTE: Whenever uint32 is used in this code, it refers to per-page offsets or
 // size. When int64 is used the content is an offset of the underlying offset.
-package overlay
+package pagecache

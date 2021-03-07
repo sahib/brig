@@ -46,6 +46,7 @@ func withState(t *testing.T, fn func(state *testState)) {
 		false,
 		cfg.Section("fs"),
 		nil,
+		nil,
 	)
 	require.Nil(t, err)
 

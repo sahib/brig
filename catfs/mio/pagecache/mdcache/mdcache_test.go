@@ -15,7 +15,7 @@ func withMDCache(t *testing.T, fn func(mdc *MDCache)) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	md, err := NewDirCache(Options{
+	md, err := New(Options{
 		MaxMemoryUsage:    4 * page.Size,
 		SwapDirectory:     tmpDir,
 		L1CacheMissRefill: true,
