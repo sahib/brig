@@ -34,8 +34,10 @@ type zeroPadReader struct {
 }
 
 func memzero(buf []byte) {
-	// TODO: Check if the for loop is faster or
-	//       if we should copy() from a pre-allocated zero buf.
+	// NOTE: This for-loop is optimized by the compiler:
+	// https://github.com/golang/go/issues/5373
+	//
+	// (copy with a pre-allocated zero page is 2x slower than this!)
 	for idx := range buf {
 		buf[idx] = 0
 	}

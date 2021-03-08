@@ -111,3 +111,20 @@ func TestIOBuf(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkZeroing(b *testing.B) {
+	b.Run("memzero", func(b *testing.B) {
+		buf := testutil.CreateDummyBuf(16 * 1024)
+		for idx := 0; idx < b.N; idx++ {
+			memzero(buf)
+		}
+	})
+
+	b.Run("zerocopy", func(b *testing.B) {
+		zero := make([]byte, 16*1024)
+		buf := testutil.CreateDummyBuf(16 * 1024)
+		for idx := 0; idx < b.N; idx++ {
+			copy(buf, zero)
+		}
+	})
+}
