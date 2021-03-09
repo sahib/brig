@@ -60,7 +60,6 @@ type stagePair struct {
 
 func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 	toBeStaged := make([]stagePair, 0)
-	toBeDereferenced := make([]stagePair, 0)
 	depth++
 	if depth > 255 {
 		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth for %v", root)
@@ -81,7 +80,11 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 			}
 			childPath = resolvedPath
 			if info.Mode().IsDir() {
-				toBeDereferenced = append(toBeDereferenced, stagePair{childPath, repoPath})
+				extra, err := walk(childPath, repoPath, depth)
+				if err != nil {
+					return err
+				}
+				toBeStaged = append(toBeStaged, extra...)
 				return nil
 			}
 		}
@@ -92,17 +95,7 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 
 		return nil
 	})
-	if err != nil {
-		return toBeStaged, err
-	}
-	for _, child := range toBeDereferenced {
-		extra, err := walk(child.local, child.repo, depth)
-		if err != nil {
-			return toBeStaged, err
-		}
-		toBeStaged = append(toBeStaged, extra...)
-	}
-	return toBeStaged, nil
+	return toBeStaged, err
 }
 
 func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
