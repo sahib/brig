@@ -70,6 +70,18 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
 
 		if info.Mode()&os.ModeSymlink != 0 {
+			// TODO: `brig` does not have concept of symlink
+			//       The lack of native symlinks in `brig` has the following potential issues
+			//       * Ignoring cycles limits valid use cases.
+			//       * Not ignoring cycles opens room for malicious input.
+			// 
+			//       Here we implement a dereference of symlinks as a temporary measure
+			//       which works in the most likely user scenarios (we assume that user
+			//       is not malicious to herself and does not create infinite symlinked loops).
+			//       If the level of recursion or cycles
+			//       (where link points to itself directly or indirectly) is exceeded,
+			//       we just fail on such link.
+			//       Currently, we have a depth limit of 255 (see couple line above).
 			resolvedPath, err := filepath.EvalSymlinks(childPath)
 			if err != nil {
 				return fmt.Errorf("Failed to resolve: %v: %v", childPath, err)
