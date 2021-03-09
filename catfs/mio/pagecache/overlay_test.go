@@ -26,7 +26,9 @@ func withLayer(t *testing.T, size int64, fn func(expected []byte, p *Layer)) {
 	p, err := NewLayer(bytes.NewReader(data), md, 42, size)
 	require.NoError(t, err)
 
-	fn(data, p)
+	expected := make([]byte, size)
+	copy(expected, data)
+	fn(expected, p)
 
 	require.NoError(t, md.Close())
 }
@@ -214,4 +216,80 @@ func TestWriteRandomOffset(t *testing.T) {
 	}
 }
 
-// TODO: Tests with random reads.
+func TestReadRandomOffset(t *testing.T) {
+	tcs := []struct {
+		size   int64
+		length int64
+		nops   int
+	}{
+		{page.Size, page.Size, 10},
+		{2 * page.Size, page.Size, 20},
+		{page.Size, 2 * page.Size, 30},
+
+		{16 * page.Size, 16 * page.Size, 30},
+		{16 * page.Size, 16*page.Size + 1, 20},
+		{16*page.Size + 1, 16 * page.Size, 10},
+	}
+	//		16*page.Size + 0,
+	//		16*page.Size - 1,
+	//		16*page.Size + 1,
+	//		page.Size + 0,
+	//		page.Size - 1,
+	//		page.Size + 1,
+	//		0,
+	//		1,
+
+	for _, tc := range tcs {
+		name := fmt.Sprintf("s%d-l%d-o%d", tc.size, tc.length, tc.nops)
+		t.Run(name, func(t *testing.T) {
+			// always use the same writing distribution,
+			// just increasingly more writes:
+
+			withLayer(t, tc.size, func(expected []byte, p *Layer) {
+				p.Truncate(tc.length)
+				expected = padOrCutToLength(expected, p.Length())
+				require.Equal(t, tc.length, p.Length())
+				rand.Seed(42)
+
+				overlayed := make([]byte, len(expected))
+				copy(overlayed, expected)
+
+				for idx := 0; idx < tc.nops; idx++ {
+					writeOff := rand.Int63n(p.Length())
+					writeLen := rand.Int63n(p.Length() - writeOff + 1)
+
+					// stream contains 0-254 data, overwrite with random:
+					buf := testutil.CreateRandomDummyBuf(writeLen, int64(42))
+					copy(overlayed[writeOff:writeOff+writeLen], buf)
+					wn, err := p.WriteAt(buf, writeOff)
+					require.NoError(t, err)
+					require.Equal(t, int(writeLen), wn)
+				}
+
+				for seed := 0; seed < 40; seed++ {
+					rand.Seed(int64(seed))
+					t.Run(fmt.Sprintf("seed-%d", seed), func(t *testing.T) {
+						for idx := 0; idx < tc.nops; idx++ {
+							readOff := rand.Int63n(p.Length())
+							readLen := rand.Int63n(p.Length() - readOff + 1)
+							readBuf := make([]byte, readLen)
+
+							rn, err := p.ReadAt(readBuf, readOff)
+							require.NoError(t, err)
+
+							require.Equal(t, readLen, int64(rn))
+							for idx := int64(0); idx < readLen; idx++ {
+								if overlayed[readOff+idx] != readBuf[idx] {
+									require.Failf(t, "bad data read", "first wrong offset: %d", readOff+idx)
+									return
+								}
+							}
+
+							require.Equal(t, overlayed[readOff:readOff+readLen], readBuf)
+						}
+					})
+				}
+			})
+		})
+	}
+}

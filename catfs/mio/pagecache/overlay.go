@@ -78,6 +78,8 @@ func (l *Layer) ensureOffset(zpr *zeroPadReader) error {
 		return err
 	}
 
+	// TODO: double check for wrong seeks here.
+
 	return nil
 }
 
@@ -148,7 +150,11 @@ var (
 
 // ReadAt reads into `buf` from the position `off`.
 //
-// TODO: go docs state:
+// NOTE: There are two things that are not implemented
+// according to the io.ReaderAt docs:
+//
+//  * ReadAt() should not modify the seek offset.
+//    This implementation however does this.
 //  * ReadAt() must be allowed to call in parallel.
 //    We cannot guarantee that at the moment since sometimes
 //    we have to seek the underlying stream - mutex?
@@ -158,6 +164,9 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 	if off >= l.length {
 		return 0, io.EOF
 	}
+
+	// set the desired offset
+	l.overlayOffset = off
 
 	// small helper for copying data to buf.
 	// we will never copy more than page.Size to buf.
@@ -189,6 +198,11 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 	}
 
 	for pageIdx := pageLo; pageIdx <= pageHi && ib.Left() > 0; pageIdx++ {
+		pageMax := uint32(util.Min64(l.length, l.overlayOffset+page.Size) - l.overlayOffset)
+		if pageMax+pageOff > page.Size {
+			pageMax = page.Size - pageOff
+		}
+
 		p, err := l.cache.Lookup(l.inode, uint32(pageIdx))
 		switch err {
 		case page.ErrCacheMiss:
@@ -198,7 +212,7 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 				return ib.Len(), err
 			}
 
-			n, err := copyNBuffer(ib, zpr, int64(ib.Left()), copyBuf)
+			n, err := copyNBuffer(ib, zpr, util.Min64(int64(ib.Left()), int64(pageMax)), copyBuf)
 			l.overlayOffset += n
 			l.streamOffset += n
 
@@ -212,48 +226,23 @@ func (l *Layer) ReadAt(buf []byte, off int64) (int, error) {
 		case nil:
 			// In this case we know that the page is cached.
 			// We can fill `buf` with the page of the data,
-			// (provided by page.Reader()), but have to watch
-			// out for some special cases:
-			//
-			// - `buf` might be not big enough to hold all of the page.
-			//   Therefore ib.Left() caps this number.
-			// - This might be the last page and `buf` might be bigger
-			//   than the page's contents. This is handled by making
-			//   page.Reader() return io.EOF when we would read over
-			//   the border.
-			// - When reading from cache alone we don't need to seek,
-			//   but we have to remember at what position we should
-			//   be for the next read and what the current position is.
-			//   For this we have l.{overlay,stream}Offset.
-
-			// check how many bytes we can read in total:
-			fullLen := util.Min64(
-				l.length,
-				l.overlayOffset+page.Size,
-			) - l.overlayOffset
-
-			occludesStream := p.OccludesStream(pageOff, uint32(fullLen))
+			// (provided by page.Reader()).
+			occludesStream := p.OccludesStream(pageOff, pageMax)
 			if !occludesStream {
 				// only seek if we have to.
 				if err := l.ensureOffset(zpr); err != nil {
 					return ib.Len(), err
 				}
 
-				// NOTE: Here we read the complete page (if possible)
 				pageN, err := io.ReadFull(zpr, copyBuf[pageOff:])
-				if pageN > 0 {
-					p.Underlay(pageOff, copyBuf[pageOff:pageOff+uint32(pageN)])
-					l.streamOffset += int64(pageN)
-				}
+
+				// Still handle the data even in case of errors.
+				p.Underlay(pageOff, copyBuf[pageOff:pageOff+uint32(pageN)])
+				l.streamOffset += int64(pageN)
 
 				if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
 					return ib.Len(), err
 				}
-			}
-
-			pageMax := uint32(fullLen)
-			if pageMax+pageOff > page.Size {
-				pageMax = page.Size - pageOff
 			}
 
 			r := bytes.NewReader(p.Data[pageOff : pageOff+pageMax])

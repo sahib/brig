@@ -54,9 +54,6 @@ func (e Extent) String() string {
 	return fmt.Sprintf("[%d-%d)", e.OffLo, e.OffHi)
 }
 
-// TODO: Verify assumption that make([]byte, Size)
-// does not increase residual memory until usage.
-
 // Page is a single cached page
 type Page struct {
 	// Extents is a list describing where
@@ -216,9 +213,21 @@ func (p *Page) OccludesStream(pageOff, length uint32) bool {
 	l := int64(length)
 	minExIdx, maxExIdx := p.affectedExtentIdxs(pageOff, pageOff+length)
 
+	// TODO: Add test for:
+	//    pageOff starts in extent
+	//    goes to another extent with gap in between.
 	for idx := minExIdx; idx < maxExIdx && l > 0; idx++ {
 		ex := p.Extents[idx]
-		if idx > minExIdx && p.Extents[idx-1].OffHi != ex.OffLo {
+		if ex.OffHi < pageOff {
+			continue
+		}
+
+		if ex.OffLo < pageOff {
+			l -= int64(ex.OffHi - pageOff)
+			continue
+		}
+
+		if idx > 0 && p.Extents[idx-1].OffHi != ex.OffLo {
 			// non adjacent; there must be a gap.
 			return false
 		}
@@ -334,9 +343,14 @@ func minUint32(a, b uint32) uint32 {
 // Underlay is like the "negative" of Overlay. It writes the data of `write`
 // (starting at pageOff) to the underlying buffer where *no* extent is.
 // It can be used to "cache" data from the underlying stream, but not
-// overwriting any overlay.
+// overwriting any overlay. If OccludesStream() returns true for the same
+// offsets, then Underlay() will be an (expensive) no-op.
 func (p *Page) Underlay(pageOff uint32, write []byte) {
 	pageOffPlusWrite := pageOff + uint32(len(write))
+	if pageOff == pageOffPlusWrite {
+		// zero underlay.
+		return
+	}
 
 	cursor := write
 	prevOff := pageOff
@@ -350,8 +364,9 @@ func (p *Page) Underlay(pageOff uint32, write []byte) {
 		if ex.OffLo < pageOff {
 			// Extent started before pageOff,
 			// but goes over it. We should not copy.
-			// Instead "loose" that data.
-			cursor = cursor[minUint32(pageOff-ex.OffLo, uint32(len(cursor))):]
+			// Instead "loose" the data of that extent.
+			cutoff := minUint32(ex.OffHi-pageOff, uint32(len(cursor)))
+			cursor = cursor[cutoff:]
 			prevOff = ex.OffHi
 			continue
 		}
