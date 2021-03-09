@@ -63,7 +63,7 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 	toBeDereferenced := make([]stagePair, 0)
 	depth++
 	if depth > 255 {
-		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth")
+		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth for %v", root)
 	}
 	root = filepath.Clean(root)
 	repoRoot = filepath.Clean(repoRoot)
