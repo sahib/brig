@@ -11,6 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// NOTE: Room for improvement:
+// Introduce heuristic for snappy compression:
+// When an inode does not yield any noticeable compression,
+// disable it for this specific inode. Protects against
+// wasting CPU on already compressed data.
+
 type l2cache struct {
 	mu       sync.Mutex
 	dir      string
