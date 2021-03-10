@@ -212,10 +212,6 @@ func (p *Page) affectedExtentIdxs(lo, hi uint32) (int, int) {
 func (p *Page) OccludesStream(pageOff, length uint32) bool {
 	l := int64(length)
 	minExIdx, maxExIdx := p.affectedExtentIdxs(pageOff, pageOff+length)
-
-	// TODO: Add test for:
-	//    pageOff starts in extent
-	//    goes to another extent with gap in between.
 	for idx := minExIdx; idx < maxExIdx && l > 0; idx++ {
 		ex := p.Extents[idx]
 		if ex.OffHi < pageOff {
@@ -225,11 +221,6 @@ func (p *Page) OccludesStream(pageOff, length uint32) bool {
 		if ex.OffLo < pageOff {
 			l -= int64(ex.OffHi - pageOff)
 			continue
-		}
-
-		if idx > 0 && p.Extents[idx-1].OffHi != ex.OffLo {
-			// non adjacent; there must be a gap.
-			return false
 		}
 
 		l -= int64(ex.OffHi - ex.OffLo)
