@@ -172,6 +172,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		MaxMemoryUsage:    int64(pageCacheMaxMemory),
 		SwapDirectory:     pageCachePath,
 		L1CacheMissRefill: true,
+		L2Compress:        fsCfg.Bool("pagecache.l2compress"),
 	})
 
 	if err != nil {

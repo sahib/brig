@@ -3,7 +3,6 @@ package mdcache
 
 import (
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
@@ -25,12 +24,6 @@ type Options struct {
 	// data from L2 to L1 if it could be found
 	// successfully.
 	L1CacheMissRefill bool
-
-	// TODO: Those need to be still implemented.
-
-	// L1Compress will compress the memory with snappy compression and
-	// decompress on fetch. Reduces memory, but increases CPU usage.
-	L1Compress bool
 
 	// L2Compress will compress on-disk pages with snappy and decompress them
 	// on load. Reduces storage, but increases CPU usage if you're swapping.
@@ -59,20 +52,12 @@ type pageKey struct {
 }
 
 func (pk pageKey) String() string {
-	// TODO: That's pointless right now, it starts with 00 most of the time.
-
-	// NOTE: Could be implemented with less allocations, but effect is
-	// probably not noticeable. Only used in slow l2 cache anyways.
-	s := []byte(fmt.Sprintf("%08x-%08x", pk.inode, pk.pageIdx))
-
-	// Idea here is to split numbers 00-FF into own directories.
-	// This can yield better lookup performance, depending on the fs.
-	return filepath.Join(string(s[:2]), string(s[2:]))
+	return fmt.Sprintf("%08x-%08x", pk.inode, pk.pageIdx)
 }
 
 // New returns a new Memory/Disk cache
 func New(opts Options) (*MDCache, error) {
-	l2, err := newL2Cache(opts.SwapDirectory)
+	l2, err := newL2Cache(opts.SwapDirectory, opts.L2Compress)
 	if err != nil {
 		return nil, err
 	}

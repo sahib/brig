@@ -16,19 +16,29 @@ func dummyPage(off, length uint32) *page.Page {
 }
 
 func withL2Cache(t *testing.T, fn func(l2 *l2cache)) {
-	tmpDir, err := ioutil.TempDir("", "brig-page-l2")
-	require.NoError(t, err)
-	defer os.RemoveAll(tmpDir)
+	for _, compress := range []bool{false, true} {
 
-	l2, err := newL2Cache(tmpDir)
-	require.NoError(t, err)
+		tmpDir, err := ioutil.TempDir("", "brig-page-l2")
+		require.NoError(t, err)
+		defer os.RemoveAll(tmpDir)
 
-	fn(l2)
+		l2, err := newL2Cache(tmpDir, compress)
+		require.NoError(t, err)
 
-	// double check we do not waste any storage:
-	require.NoError(t, l2.Close())
-	_, err = os.Stat(tmpDir)
-	require.True(t, os.IsNotExist(err))
+		tname := "no-compress"
+		if compress {
+			tname = "compress"
+		}
+
+		t.Run(tname, func(t *testing.T) {
+			fn(l2)
+		})
+
+		// double check we do not waste any storage:
+		require.NoError(t, l2.Close())
+		_, err = os.Stat(tmpDir)
+		require.True(t, os.IsNotExist(err))
+	}
 }
 
 func TestL2GetSetDel(t *testing.T) {
@@ -54,7 +64,7 @@ func TestL2GetSetDel(t *testing.T) {
 
 func TestL2Nil(t *testing.T) {
 	// l2 is optional, so a nil l2 cache should "work":
-	l2, err := newL2Cache("")
+	l2, err := newL2Cache("", false)
 	require.NoError(t, err)
 
 	_, err = l2.Get(pageKey{0, 1})
