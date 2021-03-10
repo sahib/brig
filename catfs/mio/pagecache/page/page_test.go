@@ -93,7 +93,7 @@ func TestPageSerializeWithManyWrites(t *testing.T) {
 	require.Equal(t, expected.Extents, got.Extents)
 }
 
-func TestPageOccludeStream(t *testing.T) {
+func TestPageOccludeStreamBasic(t *testing.T) {
 	// page with one extent:
 	p := New(0, testutil.CreateDummyBuf(Size/4))
 
@@ -108,6 +108,16 @@ func TestPageOccludeStream(t *testing.T) {
 	require.False(t, p.OccludesStream(0, 3*Size/4+1))
 	require.True(t, p.OccludesStream(2*Size/4, Size/4))
 	require.True(t, p.OccludesStream(2*Size/4, Size/4-1))
+}
+
+func TestPageOccludeStreamInExtent(t *testing.T) {
+	p := New(0, testutil.CreateDummyBuf(Size/4))
+	p.Overlay(2*Size/4, testutil.CreateDummyBuf(Size/4))
+
+	require.False(t, p.OccludesStream(Size/8, 5*Size/8))
+	require.False(t, p.OccludesStream(5*Size/8, Size/8+1))
+	require.True(t, p.OccludesStream(5*Size/8, Size/8))
+	require.True(t, p.OccludesStream(Size/8, Size/8))
 }
 
 func TestPageAddExtent(t *testing.T) {

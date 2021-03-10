@@ -72,13 +72,16 @@ func (l *Layer) ensureOffset(zpr *zeroPadReader) error {
 		return nil
 	}
 
-	l.streamOffset = l.overlayOffset
 	zpr.off = l.overlayOffset
-	if _, err := l.rs.Seek(l.overlayOffset, io.SeekStart); err != nil {
+	newOffset, err := l.rs.Seek(l.overlayOffset, io.SeekStart)
+	if err != nil {
 		return err
 	}
 
-	// TODO: double check for wrong seeks here.
+	l.streamOffset = newOffset
+	if newOffset != l.overlayOffset {
+		return fmt.Errorf("page: ensure offset failed (want: %d, got %d)", l.overlayOffset, newOffset)
+	}
 
 	return nil
 }
