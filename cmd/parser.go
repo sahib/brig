@@ -488,10 +488,6 @@ func RunCmdline(args []string) int {
 					Action: withDaemon(handleGatewayStatus, true),
 				},
 				{
-					Name:   "cert",
-					Action: handleGatewayCert,
-				},
-				{
 					Name:   "url",
 					Action: withArgCheck(needAtLeast(1), withDaemon(handleGatewayURL, true)),
 				},
