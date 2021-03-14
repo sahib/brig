@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/sahib/brig/catfs/mio/pagecache/page"
-	log "github.com/sirupsen/logrus"
 )
 
 // NOTE: Room for improvement:
@@ -94,10 +93,10 @@ func (c *l2cache) Del(pks []pageKey) {
 
 	for _, pk := range pks {
 		path := filepath.Join(c.dir, pk.String())
-		if err := os.Remove(path); err != nil {
-			// only log, we want to get rid of more old data.
-			log.Warnf("page l2: failed to delete %s", path)
-		}
+
+		// no error handling, just get rid of things.
+		// we can't do anything if it could not be deleted.
+		os.Remove(path)
 	}
 }
 
