@@ -194,8 +194,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 						}
 						continue
 					}
-					ctl.Copy(firstToStage, repoPath)
-					if err := ctl.Stage(pairSet.local, repoPath); err != nil {
+					if err := ctl.Copy(firstToStage, repoPath); err != nil {
 						fmt.Printf("failed to stage %s: %v\n", pairSet.local, err)
 						break
 					}
