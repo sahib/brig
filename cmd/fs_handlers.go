@@ -54,12 +54,9 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
 }
 
-type stagePair struct {
-	local, repo string
-}
-
-func walk(root, repoRoot string, depth int) ([]stagePair, error) {
-	toBeStaged := make([]stagePair, 0)
+func walk(root, repoRoot string, depth int) (map[string][]string, error) {
+	// toBeStaged map: key is local path, value is array of repoPaths using the local path
+	toBeStaged := make(map[string][]string)
 	depth++
 	if depth > 255 {
 		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth for %v", root)
@@ -74,7 +71,7 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 			//       The lack of native symlinks in `brig` has the following potential issues
 			//       * Ignoring cycles limits valid use cases.
 			//       * Not ignoring cycles opens room for malicious input.
-			// 
+			//
 			//       Here we implement a dereference of symlinks as a temporary measure
 			//       which works in the most likely user scenarios (we assume that user
 			//       is not malicious to herself and does not create infinite symlinked loops).
@@ -96,13 +93,25 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 				if err != nil {
 					return err
 				}
-				toBeStaged = append(toBeStaged, extra...)
+				for k, v := range extra {
+					list, ok := toBeStaged[k]
+					if !ok {
+						list = []string{}
+					}
+					list = append(list, v...)
+					toBeStaged[k] = list
+				}
 				return nil
 			}
 		}
 
 		if info.Mode().IsRegular() {
-			toBeStaged = append(toBeStaged, stagePair{childPath, repoPath})
+			list, ok := toBeStaged[childPath]
+			if !ok {
+				list = []string{}
+			}
+			list = append(list, repoPath)
+			toBeStaged[childPath] = list
 		}
 
 		return nil
@@ -111,10 +120,8 @@ func walk(root, repoRoot string, depth int) ([]stagePair, error) {
 }
 
 func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
-	// First create all directories:
-	type stagePair struct {
-		local, repo string
-	}
+	// Links will be reflinked in the `man cp` sense,
+	// i.e. resolved repoPaths will point to the same content and backend hash
 
 	root = filepath.Clean(root)
 	repoRoot = filepath.Clean(repoRoot)
@@ -158,21 +165,40 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		mpb.AppendDecorators(decor.Percentage()),
 	)
 
+	type stageList struct {
+		local    string
+		repoList []string
+	}
+
 	nWorkers := 20
 	start := time.Now()
-	jobs := make(chan stagePair, nWorkers)
+	jobs := make(chan stageList, nWorkers)
 
 	// Start a bunch of workers that will do the actual adding:
 	for idx := 0; idx < nWorkers; idx++ {
 		go func() {
 			for {
-				pair, ok := <-jobs
+				pairSet, ok := <-jobs
 				if !ok {
 					return
 				}
 
-				if err := ctl.Stage(pair.local, pair.repo); err != nil {
-					fmt.Printf("failed to stage %s: %v\n", pair.local, err)
+				firstToStage := ""
+				for i, repoPath := range pairSet.repoList {
+					if i == 0 {
+						firstToStage = repoPath
+						// first occurrence is staged
+						if err := ctl.Stage(pairSet.local, repoPath); err != nil {
+							fmt.Printf("failed to stage %s: %v\n", pairSet.local, err)
+							break
+						}
+						continue
+					}
+					ctl.Copy(firstToStage, repoPath)
+					if err := ctl.Stage(pairSet.local, repoPath); err != nil {
+						fmt.Printf("failed to stage %s: %v\n", pairSet.local, err)
+						break
+					}
 				}
 
 				// Notify the bar. The op time is used for the ETA.
@@ -190,8 +216,8 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 	}
 
 	// Send the jobs onward:
-	for _, child := range toBeStaged {
-		jobs <- stagePair{child.local, child.repo}
+	for k, v := range toBeStaged {
+		jobs <- stageList{k, v}
 	}
 
 	close(jobs)
