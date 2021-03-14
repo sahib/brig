@@ -76,9 +76,6 @@ func main() {
 	cfg.SetString("gateway.cert.domain", "")
 	cfg.SetString("gateway.cert.certfile", "")
 	cfg.SetString("gateway.cert.keyfile", "")
-	// cfg.SetString("gateway.cert.domain", "nwzmlh4iouqikobq.myfritz.net")
-	// cfg.SetString("gateway.cert.certfile", "/tmp/fullchain.pem")
-	// cfg.SetString("gateway.cert.keyfile", "/tmp/privkey.pem")
 
 	bk, err := NewTmpFsBackend(filepath.Join(dbPath, "backend"))
 	if err != nil {
@@ -86,7 +83,15 @@ func main() {
 	}
 
 	fsPath := filepath.Join(dbPath, "metadata")
-	fs, err := catfs.NewFilesystem(bk, fsPath, "ali", false, cfg.Section("fs"), nil)
+	fs, err := catfs.NewFilesystem(
+		bk,
+		fsPath,
+		"ali",
+		false,
+		cfg.Section("fs"),
+		nil,
+		nil,
+	)
 	if err != nil {
 		log.Fatalf("failed to open fs: %v", err)
 	}

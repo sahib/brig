@@ -101,7 +101,7 @@ func (fi *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.Open
 
 	fi.mu.Lock()
 	if fi.hd == nil {
-		hd := Handle{fd: fd, m: fi.m, wasModified: false, currentFileReadOffset: -1}
+		hd := Handle{fd: fd, m: fi.m, wasModified: false}
 		fi.hd = &hd
 	}
 	fi.hd.fd = fd

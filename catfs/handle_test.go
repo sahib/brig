@@ -42,7 +42,8 @@ func TestOpenWrite(t *testing.T) {
 
 		data, err := ioutil.ReadAll(fd)
 		require.Nil(t, err)
-		require.Equal(t, rawData[3:], data)
+		// require.Equal(t, rawData[3:], data)
+		require.Equal(t, []byte{3, 2, 1, 4, 5, 6, 7, 8, 9, 10}, data)
 
 		// Check that we can also seek back to start after reading to the end.
 		// (and also check if the write overlay actually did work)
@@ -52,7 +53,7 @@ func TestOpenWrite(t *testing.T) {
 
 		data, err = ioutil.ReadAll(fd)
 		require.Nil(t, err)
-		require.Equal(t, data, []byte{3, 2, 1, 4, 5, 6, 7, 8, 9, 10})
+		require.Equal(t, []byte{3, 2, 1, 4, 5, 6, 7, 8, 9, 10}, data)
 		require.Nil(t, fd.Close())
 	})
 }

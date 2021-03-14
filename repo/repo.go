@@ -5,9 +5,11 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/dustin/go-humanize"
 	e "github.com/pkg/errors"
 	"github.com/sahib/brig/catfs"
 	fserr "github.com/sahib/brig/catfs/errors"
+	"github.com/sahib/brig/catfs/mio/pagecache/mdcache"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo/hints"
 	"github.com/sahib/config"
@@ -141,6 +143,7 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 	defer rp.mu.Unlock()
 
 	if fs, ok := rp.fsMap[owner]; ok {
+		// return cached:
 		return fs, nil
 	}
 
@@ -154,7 +157,38 @@ func (rp *Repository) FS(owner string, bk catfs.FsBackend) (*catfs.FS, error) {
 		return nil, err
 	}
 
-	fs, err := catfs.NewFilesystem(bk, fsDbPath, owner, isReadOnly, fsCfg, rp.Hints)
+	pageCachePath := filepath.Join(rp.BaseFolder, "pages", owner)
+	if err := os.MkdirAll(pageCachePath, 0700); err != nil && err != os.ErrExist {
+		return nil, err
+	}
+
+	pageCacheMaxMemorySrc := fsCfg.String("pagecache.max_memory")
+	pageCacheMaxMemory, err := humanize.ParseBytes(pageCacheMaxMemorySrc)
+	if err != nil {
+		return nil, e.Wrapf(err, "failed to parse fs.pagecache.max_memory")
+	}
+
+	pageCache, err := mdcache.New(mdcache.Options{
+		MaxMemoryUsage:    int64(pageCacheMaxMemory),
+		SwapDirectory:     pageCachePath,
+		L1CacheMissRefill: true,
+		L2Compress:        fsCfg.Bool("pagecache.l2compress"),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	fs, err := catfs.NewFilesystem(
+		bk,
+		fsDbPath,
+		owner,
+		isReadOnly,
+		fsCfg,
+		rp.Hints,
+		pageCache,
+	)
+
 	if err != nil {
 		return nil, err
 	}
