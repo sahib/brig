@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -119,6 +120,22 @@ func walk(root, repoRoot string, depth int) (map[string][]string, error) {
 	return toBeStaged, err
 }
 
+func makeParentDirIfNeeded(ctx *cli.Context, ctl *client.Client, path string) error {
+	parent := filepath.Dir(path)
+	info, err := ctl.Stat(parent)
+	if err != nil {
+		if yes, _ := regexp.MatchString("No such file or directory:", err.Error()); yes {
+			createParents := true
+			err = ctl.Mkdir(parent, createParents)
+		}
+		return err
+	}
+	if info.IsDir {
+		return nil
+	}
+	return fmt.Errorf("Cannot make dir from existing non dir node %s", parent)
+}
+
 func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
 	// Links will be reflinked in the `man cp` sense,
 	// i.e. resolved repoPaths will point to the same content and backend hash
@@ -187,12 +204,18 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 				for i, repoPath := range pairSet.repoList {
 					if i == 0 {
 						firstToStage = repoPath
-						// first occurrence is staged
+						// First occurrence is staged.
+						// Stage creates all needed parent directories.
 						if err := ctl.Stage(pairSet.local, repoPath); err != nil {
 							fmt.Printf("failed to stage '%s' as '%s': %v\n", pairSet.local, repoPath, err)
 							break
 						}
 						continue
+					}
+					// Copy does not create parent directories. We take care of it.
+					if err := makeParentDirIfNeeded(ctx, ctl, repoPath); err != nil {
+						fmt.Printf("failed to make the parent dir for '%s': %v\n", repoPath, err)
+						break
 					}
 					if err := ctl.Copy(firstToStage, repoPath); err != nil {
 						fmt.Printf("failed copy of '%s' to '%s': %v\n", firstToStage, repoPath, err)
