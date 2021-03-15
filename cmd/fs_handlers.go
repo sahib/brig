@@ -189,13 +189,13 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 						firstToStage = repoPath
 						// first occurrence is staged
 						if err := ctl.Stage(pairSet.local, repoPath); err != nil {
-							fmt.Printf("failed to stage %s: %v\n", pairSet.local, err)
+							fmt.Printf("failed to stage '%s' as '%s': %v\n", pairSet.local, repoPath, err)
 							break
 						}
 						continue
 					}
 					if err := ctl.Copy(firstToStage, repoPath); err != nil {
-						fmt.Printf("failed to stage %s: %v\n", pairSet.local, err)
+						fmt.Printf("failed copy of '%s' to '%s': %v\n", firstToStage, repoPath, err)
 						break
 					}
 				}
