@@ -9,3 +9,4 @@ ipfs
 repo/setup/ipfs
 .task
 tags
+cov.out
