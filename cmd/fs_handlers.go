@@ -55,9 +55,15 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 	return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
 }
 
-func walk(root, repoRoot string, depth int) (map[string][]string, error) {
+// holds brig repoPaths twins (by content) to a OS file system localPath
+type twins struct {
+	localPath string
+	repoPaths []string
+}
+
+func walk(root, repoRoot string, depth int) (map[string]twins, error) {
 	// toBeStaged map: key is local path, value is array of repoPaths using the local path
-	toBeStaged := make(map[string][]string)
+	toBeStaged := make(map[string]twins)
 	depth++
 	if depth > 255 {
 		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth for %v", root)
@@ -95,24 +101,32 @@ func walk(root, repoRoot string, depth int) (map[string][]string, error) {
 					return err
 				}
 				for k, v := range extra {
-					list, ok := toBeStaged[k]
+					t, ok := toBeStaged[k]
 					if !ok {
-						list = []string{}
+						t = twins{
+							v.localPath,
+							[]string{},
+						}
 					}
-					list = append(list, v...)
-					toBeStaged[k] = list
+					t.repoPaths = append(t.repoPaths, v.repoPaths...)
+					toBeStaged[k] = t
 				}
 				return nil
 			}
 		}
 
 		if info.Mode().IsRegular() {
-			list, ok := toBeStaged[childPath]
+			k, _ := inodeString(childPath)
+			fmt.Printf("%s key %s\n", childPath, k)
+			t, ok := toBeStaged[k]
 			if !ok {
-				list = []string{}
+				t = twins{
+					childPath,
+					[]string{},
+				}
 			}
-			list = append(list, repoPath)
-			toBeStaged[childPath] = list
+			t.repoPaths = append(t.repoPaths, repoPath)
+			toBeStaged[k] = t
 		}
 
 		return nil
@@ -189,25 +203,25 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	nWorkers := 20
 	start := time.Now()
-	jobs := make(chan stageList, nWorkers)
+	jobs := make(chan twins, nWorkers)
 
 	// Start a bunch of workers that will do the actual adding:
 	for idx := 0; idx < nWorkers; idx++ {
 		go func() {
 			for {
-				pairSet, ok := <-jobs
+				twinsSet, ok := <-jobs
 				if !ok {
 					return
 				}
 
 				firstToStage := ""
-				for i, repoPath := range pairSet.repoList {
+				for i, repoPath := range twinsSet.repoPaths {
 					if i == 0 {
 						firstToStage = repoPath
 						// First occurrence is staged.
 						// Stage creates all needed parent directories.
-						if err := ctl.Stage(pairSet.local, repoPath); err != nil {
-							fmt.Printf("failed to stage '%s' as '%s': %v\n", pairSet.local, repoPath, err)
+						if err := ctl.Stage(twinsSet.localPath, repoPath); err != nil {
+							fmt.Printf("failed to stage '%s' as '%s': %v\n", twinsSet.localPath, repoPath, err)
 							break
 						}
 						continue
@@ -238,8 +252,8 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 	}
 
 	// Send the jobs onward:
-	for k, v := range toBeStaged {
-		jobs <- stageList{k, v}
+	for _, v := range toBeStaged {
+		jobs <- v
 	}
 
 	close(jobs)
