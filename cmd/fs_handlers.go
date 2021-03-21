@@ -117,7 +117,6 @@ func walk(root, repoRoot string, depth int) (map[string]twins, error) {
 
 		if info.Mode().IsRegular() {
 			k, _ := inodeString(childPath)
-			fmt.Printf("%s key %s\n", childPath, k)
 			t, ok := toBeStaged[k]
 			if !ok {
 				t = twins{
