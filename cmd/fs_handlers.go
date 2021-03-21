@@ -61,7 +61,11 @@ type twins struct {
 	repoPaths []string
 }
 
-func walk(root, repoRoot string, depth int) (map[string]twins, error) {
+type walkOptions struct {
+	dereference     bool
+}
+
+func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, error) {
 	// toBeStaged map: key is local path, value is array of repoPaths using the local path
 	toBeStaged := make(map[string]twins)
 	depth++
@@ -73,7 +77,7 @@ func walk(root, repoRoot string, depth int) (map[string]twins, error) {
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
 
-		if info.Mode()&os.ModeSymlink != 0 {
+		if opt.dereference && info.Mode()&os.ModeSymlink != 0 {
 			// TODO: `brig` does not have concept of symlink
 			//       The lack of native symlinks in `brig` has the following potential issues
 			//       * Ignoring cycles limits valid use cases.
@@ -96,7 +100,7 @@ func walk(root, repoRoot string, depth int) (map[string]twins, error) {
 			}
 			childPath = resolvedPath
 			if info.Mode().IsDir() {
-				extra, err := walk(childPath, repoPath, depth)
+				extra, err := walk(childPath, repoPath, depth, opt)
 				if err != nil {
 					return err
 				}
@@ -156,7 +160,11 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 	root = filepath.Clean(root)
 	repoRoot = filepath.Clean(repoRoot)
 
-	toBeStaged, err := walk(root, repoRoot, 0)
+	opt := walkOptions{
+		dereference:     !ctx.Bool("no-dereference"),
+	}
+
+	toBeStaged, err := walk(root, repoRoot, 0, opt)
 	if err != nil {
 		return fmt.Errorf("failed to walk dir: %v: %v", root, err)
 	}
