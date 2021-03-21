@@ -817,6 +817,10 @@ EXAMPLES:
 				Name:  "no-dereference,P",
 				Usage: "Never follow symbolic links.",
 			},
+			cli.BoolFlag{
+				Name:  "continue-on-error,c",
+				Usage: "Continue staging even if some parts fail to stage.",
+			},
 		},
 		Description: `Read a local file (given by »local-path«) and try to read
    it. This is the conceptual equivalent of »git add«. The stream will be encrypted

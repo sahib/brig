@@ -63,6 +63,7 @@ type twins struct {
 
 type walkOptions struct {
 	dereference     bool
+	continueOnError bool
 }
 
 func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, error) {
@@ -92,11 +93,21 @@ func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, 
 			//       Currently, we have a depth limit of 255 (see couple line above).
 			resolvedPath, err := filepath.EvalSymlinks(childPath)
 			if err != nil {
-				return fmt.Errorf("Failed to resolve: %v: %v", childPath, err)
+				msg := fmt.Sprintf("Failed to resolve: %v: %v", childPath, err)
+				if opt.continueOnError {
+					fmt.Printf("WARNING: %s\n", msg)
+					return nil
+				}
+				return fmt.Errorf(msg)
 			}
 			info, err = os.Stat(resolvedPath)
 			if err != nil {
-				return fmt.Errorf("Failed to do os.Stat(%v): %v", resolvedPath, err)
+				msg := fmt.Sprintf("Failed to do os.Stat(%v): %v", resolvedPath, err)
+				if opt.continueOnError {
+					fmt.Printf("WARNING: %s\n", msg)
+					return nil
+				}
+				return fmt.Errorf(msg)
 			}
 			childPath = resolvedPath
 			if info.Mode().IsDir() {
@@ -162,6 +173,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	opt := walkOptions{
 		dereference:     !ctx.Bool("no-dereference"),
+		continueOnError: ctx.Bool("continue-on-error"),
 	}
 
 	toBeStaged, err := walk(root, repoRoot, 0, opt)
