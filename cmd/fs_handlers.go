@@ -113,6 +113,10 @@ func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, 
 			if info.Mode().IsDir() {
 				extra, err := walk(childPath, repoPath, depth, opt)
 				if err != nil {
+					if opt.continueOnError {
+						fmt.Printf("WARNING: %s\n", err.Error())
+						return nil
+					}
 					return err
 				}
 				for k, v := range extra {
