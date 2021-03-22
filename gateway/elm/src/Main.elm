@@ -716,7 +716,8 @@ viewLoginButton username password isLoading =
 
 viewLoginForm : Model -> Html Msg
 viewLoginForm model =
-    Grid.containerFluid []
+    Grid.containerFluid 
+        [ class "login-background" ]
         [ Grid.row []
             [ Grid.col
                 [ Col.lg8

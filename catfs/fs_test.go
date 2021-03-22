@@ -16,6 +16,7 @@ import (
 	"github.com/sahib/brig/catfs/mio"
 	"github.com/sahib/brig/catfs/mio/chunkbuf"
 	"github.com/sahib/brig/catfs/mio/compress"
+	"github.com/sahib/brig/catfs/mio/pagecache/mdcache"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/repo/hints"
@@ -50,7 +51,20 @@ func withDummyFSReadOnly(t *testing.T, readOnly bool, fn func(fs *FS)) {
 
 	fsCfg := cfg.Section("fs")
 
-	fs, err := NewFilesystem(backend, dbPath, owner, readOnly, fsCfg, nil)
+	mdc, err := mdcache.New(mdcache.Options{
+		MaxMemoryUsage: 1024 * 1024,
+	})
+	require.NoError(t, err)
+
+	fs, err := NewFilesystem(
+		backend,
+		dbPath,
+		owner,
+		readOnly,
+		fsCfg,
+		nil,
+		mdc,
+	)
 	if err != nil {
 		t.Fatalf("Failed to create filesystem: %v", err)
 	}

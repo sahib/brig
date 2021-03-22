@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/catfs/mio/pagecache/mdcache"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/util/testutil"
 	"github.com/sahib/config"
@@ -82,7 +83,25 @@ func makeDummyCatFS(dbPath string) (catfsFuseInfo, error) {
 		return catfsFuseInfo{}, err
 	}
 
-	cfs, err := catfs.NewFilesystem(backend, dbPath, owner, false, cfg.Section("fs"), nil)
+	mdc, err := mdcache.New(mdcache.Options{
+		MaxMemoryUsage: 1024 * 1024 * 1024,
+	})
+
+	if err != nil {
+		log.Fatalf("unable to instance : %v", err)
+		return catfsFuseInfo{}, err
+	}
+
+	cfs, err := catfs.NewFilesystem(
+		backend,
+		dbPath,
+		owner,
+		false,
+		cfg.Section("fs"),
+		nil,
+		mdc,
+	)
+
 	if err != nil {
 		log.Fatalf("Failed to create catfs filesystem: %v", err)
 		return catfsFuseInfo{}, err

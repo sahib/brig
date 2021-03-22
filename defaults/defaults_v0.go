@@ -105,38 +105,6 @@ var DefaultsV0 = config.DefaultMapping{
 				Docs:         "Enable debug mode (load resources from filesystem).",
 			},
 		},
-		"cert": config.DefaultMapping{
-			"certfile": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: false,
-				Docs:         "Path to an existing .cert file. Ignored if empty.",
-			},
-			"keyfile": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: false,
-				Docs:         "Path to an existing key file.",
-			},
-			"domain": config.DefaultEntry{
-				Default:      "",
-				NeedsRestart: false,
-				Docs: `What domain to use for getting a certificate from LetsEncrypt
-
-  Setting this will restart the gateway and make it look for a certificate in $HOME/.cache/brig.
-`,
-			},
-			"redirect": config.DefaultMapping{
-				"enabled": config.DefaultEntry{
-					Default:      true,
-					NeedsRestart: false,
-					Docs:         "Wether http request should be forwarded to https.",
-				},
-				"http_port": config.DefaultEntry{
-					Default:      6002,
-					NeedsRestart: false,
-					Docs:         "What port the http redirect server should run on.",
-				},
-			},
-		},
 		"auth": config.DefaultMapping{
 			"anon_allowed": config.DefaultEntry{
 				Default:      false,
@@ -201,6 +169,18 @@ var DefaultsV0 = config.DefaultMapping{
 				Default:      false,
 				NeedsRestart: false,
 				Docs:         "pre-cache files up-on pinning.",
+			},
+		},
+		"pagecache": config.DefaultMapping{
+			"max_memory": config.DefaultEntry{
+				Default:      "1G",
+				NeedsRestart: true,
+				Docs:         "Consume at max this amount of memory for the pagecache",
+			},
+			"l2compress": config.DefaultEntry{
+				Default:      true,
+				NeedsRestart: true,
+				Docs:         "Compress swapped pages over max_memory before going to disk",
 			},
 		},
 		"repin": config.DefaultMapping{

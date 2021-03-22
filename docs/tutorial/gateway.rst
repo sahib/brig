@@ -122,13 +122,6 @@ The gateway can be stopped anytime with the following command:
 
     $ brig gateway stop
 
-.. note::
-
-    If you want to forward the gateway to the outside, but do not own
-    a dedicated server, you can forward port 6001 to your computer. With this
-    setup you should also get a certficate which in turn requires a DNS name.
-    An easy way to get one is to use dynamic DNS.
-
 There is also a small helper that will print you a nice hyperlink to a certain
 file called ``brig gateway url``:
 
@@ -181,100 +174,31 @@ For your convenience there are a bunch of presets which will do the work for you
 Running the gateway with HTTPS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The gateway has built-in support for `LetsEncrypt <https://letsencrypt.org/>`_.
-If the gateway is reachable under a DNS name, it is straightforward to get
-a TLS certificate for it. In total there are three methods:
+By default, we run with ``http`` only. If you want to expose the gateway under
+a domain to the internet you should secure it with ``https``. Since brig's
+gateway might is likely not the only service you want to expose we recommend a
+webserver like `Caddy`_ (which is great software in general!) that
+automatically fetches certificates and reverse-proxies traffic to the gateway.
+A minimal ``Caddyfile`` can look like this:
 
-**Method one: Automatic:** This works by telling the gateway the domain name.
-Since the retrieval process for getting a certificate involves binding on port 80,
-you need to prepare the brig binary to allow that without running as root:
+.. code-block::
 
-.. code-block:: bash
+    # Assumption:
+    # brig gateway runs on the same server as Caddy
+    # and is reachable under localhost:6001.
+    your.domain.org {
+        route /gateway/* {
+            uri strip_prefix /gateway
+            reverse_proxy http://localhost:6001
+        }
+    }
 
-    # You need to restart the brig daemon for that.
-    # Every next brig command will restart it.
-    $ brig daemon quit
-    $ sudo setcap CAP_NET_BIND_SERVICE=+ep $(which brig)
+With this setup, your gateway would be reachable under
+``https://your.domain.org/gateway``.  You can of course choose a different
+route or even a sub-domain. Maybe you also want to setup compression or require
+a client certificate. Refer to the Caddy documentation for more information.
 
-Afterwards you can set the domain in the config. If the gateway is already running,
-it will restart immediately.
-
-.. code-block:: bash
-
-    $ brig cfg set gateway.cert.domain your.domain.org
-
-You can check after a few seconds if it worked by checking if the ``certfile`` and ``keyfile``
-was set:
-
-.. code-block:: bash
-
-    $ brig cfg get gateway.cert.certfile
-    /home/user/.cache/brig/your.domain.org_cert.pem
-    $ brig cfg get gateway.cert.keyfile
-    /home/user/.cache/brig/your.domain.org_key.pem
-    $ curl -i https://your.domain.org:6001
-    HTTP/2 200
-    vary: Accept-Encoding
-    content-type: text/plain; charset=utf-8
-    content-length: 38
-    date: Wed, 05 Dec 2018 11:53:57 GMT
-
-    <html>
-    ...
-    </html>
-
-
-This method has the advantage that the certificate can be updated automatically
-before it expires.
-
-**Method two: Half-Automated:**
-
-If the above did not work for whatever reasons, you can try to get a certificate manually.
-There is a built-in helper called ``brig gateway cert`` that can help you doing that:
-
-.. code-block:: bash
-
-    $ brig gateway cert your.domain.org
-    You are not root. We need root rights to bind to port 80.
-    I will re-execute this command for you as:
-    $ sudo brig gateway cert nwzmlh4iouqikobq.myfritz.net --cache-dir /home/sahib/.cache/brig
-
-    A certificate was downloaded successfully.
-    Successfully set the gateway config to use the certificate.
-    Note that you have to re-run this command every 90 days currently.
-
-If successful, this command will set the ``certfile`` and ``keyfile`` config
-values for you. You can test if the change worked by doing the same procedure
-as in *method one*. Sadly, you have to re-execute once the certificate expires.
-
-**Method three: Manual:**
-
-If you already own a certificate you can make the gateway use it by setting the path
-to the public certificate and the private key file:
-
-.. code-block:: bash
-
-    $ brig cfg set gateway.cert.certfile /path/to/cert.pem
-    $ brig cfg set gateway.cert.keyfile /path/to/key.pem
-
-If you do not own a certificate yet, but want to setup an automated way to
-download one for usages outside of brig, you should look into
-`certbot <https://certbot.eff.org/docs/>`_.
-
-Redirecting HTTP traffic
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-This section only applies to you if you choose **method one** from above and
-want to run the gateway on port 80 (http) and port 443 (https). This has the
-advantage that a user does not need to specify the port in a gateway URL have
-which looks a little bit less *»scary«*. With this setup all traffic on port 80
-will be redirected directly to port 443.
-
-.. code-block:: bash
-
-    $ brig cfg set gateway.port 443
-    $ brig cfg set gateway.cert.redirect.enabled true
-    $ brig cfg set gateway.cert.redirect.http_port 80
+.. _Caddy: https://caddyserver.com/docs/getting-started
 
 Allowing anonymous access
 ~~~~~~~~~~~~~~~~~~~~~~~~~

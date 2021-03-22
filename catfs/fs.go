@@ -24,6 +24,7 @@ import (
 	"github.com/sahib/brig/catfs/db"
 	ie "github.com/sahib/brig/catfs/errors"
 	"github.com/sahib/brig/catfs/mio"
+	"github.com/sahib/brig/catfs/mio/pagecache"
 	n "github.com/sahib/brig/catfs/nodes"
 	"github.com/sahib/brig/catfs/vcs"
 	"github.com/sahib/brig/repo/hints"
@@ -106,6 +107,10 @@ type FS struct {
 
 	// interface to load stream hints
 	hintManager HintManager
+
+	// cache for storing pages written to catfs.Handle
+	// (may be nil if not used, e.g. for tests)
+	pageCache pagecache.Cache
 }
 
 // ErrReadOnly is returned when a file system was created in read only mode
@@ -359,6 +364,7 @@ func NewFilesystem(
 	readOnly bool,
 	fsCfg *config.Config,
 	hintManager HintManager,
+	pageCache pagecache.Cache,
 ) (*FS, error) {
 	kv, err := db.NewBadgerDatabase(dbPath)
 	if err != nil {
@@ -399,6 +405,7 @@ func NewFilesystem(
 		repinControl:      make(chan string, 1),
 		pinner:            pinCache,
 		hintManager:       hintManager,
+		pageCache:         pageCache,
 	}
 
 	// Start the garbage collection background task.

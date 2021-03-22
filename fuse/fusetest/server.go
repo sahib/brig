@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sahib/brig/backend/httpipfs"
 	"github.com/sahib/brig/catfs"
+	"github.com/sahib/brig/catfs/mio/pagecache/mdcache"
 	"github.com/sahib/brig/defaults"
 	"github.com/sahib/brig/fuse"
 	"github.com/sahib/brig/repo/hints"
@@ -35,6 +36,14 @@ func makeFS(dbPath string, backend catfs.FsBackend) (*catfs.FS, error) {
 		return nil, err
 	}
 
+	pageCache, err := mdcache.New(mdcache.Options{
+		MaxMemoryUsage:    1024 * 1024 * 1024,
+		L1CacheMissRefill: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	cfs, err := catfs.NewFilesystem(
 		backend,
 		dbPath,
@@ -42,6 +51,7 @@ func makeFS(dbPath string, backend catfs.FsBackend) (*catfs.FS, error) {
 		false,
 		cfg.Section("fs"),
 		hintMgr,
+		pageCache,
 	)
 
 	if err != nil {
