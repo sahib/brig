@@ -41,8 +41,7 @@ type Gateway struct {
 	state       *endpoints.State
 	evHdl       *endpoints.EventsHandler
 
-	srv      *http.Server
-	redirSrv *http.Server
+	srv *http.Server
 }
 
 // NewGateway returns a newly built gateway.
@@ -89,11 +88,6 @@ func NewGateway(fs *catfs.FS, rapi remotesapi.RemotesAPI, cfg *config.Config, ev
 	// All other config values are read on-demand anyways.
 	cfg.AddEvent("enabled", reloader)
 	cfg.AddEvent("port", reloader)
-	cfg.AddEvent("cert.certfile", reloader)
-	cfg.AddEvent("cert.keyfile", reloader)
-	cfg.AddEvent("cert.domain", reloader)
-	cfg.AddEvent("cert.redirect.enabled", reloader)
-	cfg.AddEvent("cert.redirect.http_port", reloader)
 	cfg.AddEvent("auth.session-encryption-key", reloader)
 	cfg.AddEvent("auth.session-authentication-key", reloader)
 	cfg.AddEvent("auth.session-csrf-key", reloader)
@@ -113,14 +107,6 @@ func (gw *Gateway) Stop() error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-
-	if gw.redirSrv != nil {
-		if err := gw.redirSrv.Shutdown(ctx); err != nil {
-			return err
-		}
-
-		gw.redirSrv = nil
-	}
 
 	if gw.srv != nil {
 		return gw.srv.Shutdown(ctx)
@@ -156,33 +142,6 @@ func (gw *Gateway) Start() {
 		gw.isReloading = false
 	}()
 
-	tlsConfig, err := getTLSConfig(gw.cfg)
-	if err != nil {
-		log.Errorf("failed to read TLS config: %v", err)
-		return
-	}
-
-	// If requested, forward all http requests from a different port
-	// to the normal https port.
-	if tlsConfig != nil && gw.cfg.Bool("cert.redirect.enabled") {
-		httpPort := gw.cfg.Int("cert.redirect.http_port")
-		gw.redirSrv = &http.Server{
-			ReadHeaderTimeout: 10 * time.Second,
-			WriteTimeout:      10 * time.Second,
-			IdleTimeout:       360 * time.Second,
-			Addr:              fmt.Sprintf(":%d", httpPort),
-			Handler:           endpoints.NewHTTPRedirectHandler(port),
-		}
-
-		go func() {
-			if err := gw.redirSrv.ListenAndServe(); err != nil {
-				if err != http.ErrServerClosed {
-					log.Errorf("failed to start http redirecter: %v", err)
-				}
-			}
-		}()
-	}
-
 	uiEnabled := gw.cfg.Bool("ui.enabled")
 
 	// Use csrf protection for all routes by default.
@@ -195,9 +154,8 @@ func (gw *Gateway) Start() {
 		csrf.ErrorHandler(&csrfErrorHandler{}),
 	}
 
-	if tlsConfig == nil {
-		csrfOpts = append(csrfOpts, csrf.Secure(false))
-	}
+	// TODO: We don't use HTTPS but recommend to use something like caddy.
+	csrfOpts = append(csrfOpts, csrf.Secure(false))
 
 	if uiEnabled {
 		csrfKey := []byte(gw.cfg.String("auth.session-csrf-key"))
@@ -285,7 +243,6 @@ func (gw *Gateway) Start() {
 	gw.srv = &http.Server{
 		Addr:              addr,
 		Handler:           gziphandler.GzipHandler(router),
-		TLSConfig:         tlsConfig,
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       360 * time.Second,
 		// We cant' really enable write timeout, since upload will break then.
@@ -294,12 +251,7 @@ func (gw *Gateway) Start() {
 	}
 
 	go func() {
-		if tlsConfig != nil {
-			err = gw.srv.ListenAndServeTLS("", "")
-		} else {
-			err = gw.srv.ListenAndServe()
-		}
-
+		err := gw.srv.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			log.Errorf("serve failed: %v", err)
 		}

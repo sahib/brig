@@ -67,8 +67,8 @@ type UserDatabase struct {
 // an existing one.
 func NewUserDatabase(path string) (*UserDatabase, error) {
 	opts := badger.DefaultOptions(path).
-		WithValueLogFileSize(10*1024*1024). //default is 2GB we should not need 2GB
-		WithMemTableSize(10*1024*1024).     //default is 64MB
+		WithValueLogFileSize(10 * 1024 * 1024). //default is 2GB we should not need 2GB
+		WithMemTableSize(10 * 1024 * 1024).     //default is 64MB
 		WithSyncWrites(false).
 		WithLogger(nil)
 

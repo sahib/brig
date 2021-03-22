@@ -1287,26 +1287,6 @@ CAVEATS
 	"gateway.status": {
 		Usage: "Print a diagnostic report on the status of the gateway.",
 	},
-	"gateway.cert": {
-		Usage: "Helper to get a LetsEncrypt certificate. Needs root.",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "cache-dir,d",
-				Usage: "In what directory to save the certificates in. Defaults to $HOME/.cache/brig",
-			},
-		},
-		Description: `
-
-   This will start an HTTP Server on port 80 (thus requiring root access) and
-   negotiates a LetsEncrypt over it.  For this to work you need to set
-   »gateway.cert.domain« to a valid domain name.
-
-EXAMPLES:
-
-   $ brig cfg set gateway.cert.domain your.domain.org
-   $ sudo brig gw cert
-`,
-	},
 	"gateway.url": {
 		Usage: "Helper to print the URL to a named file or directory.",
 	},
