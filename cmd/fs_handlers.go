@@ -95,7 +95,7 @@ func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, 
 			if err != nil {
 				msg := fmt.Sprintf("Failed to resolve: %v: %v", childPath, err)
 				if opt.continueOnError {
-					fmt.Printf("WARNING: %s\n", msg)
+					fmt.Fprintf(os.Stderr, "WARNING: %s\n", msg)
 					return nil
 				}
 				return fmt.Errorf(msg)
@@ -104,7 +104,7 @@ func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, 
 			if err != nil {
 				msg := fmt.Sprintf("Failed to do os.Stat(%v): %v", resolvedPath, err)
 				if opt.continueOnError {
-					fmt.Printf("WARNING: %s\n", msg)
+					fmt.Fprintf(os.Stderr, "WARNING: %s\n", msg)
 					return nil
 				}
 				return fmt.Errorf(msg)
@@ -114,7 +114,7 @@ func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, 
 				extra, err := walk(childPath, repoPath, depth, opt)
 				if err != nil {
 					if opt.continueOnError {
-						fmt.Printf("WARNING: %s\n", err.Error())
+						fmt.Fprintf(os.Stderr, "WARNING: %s\n", err.Error())
 						return nil
 					}
 					return err
@@ -193,7 +193,7 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 
 	width, err := terminal.Width()
 	if err != nil {
-		fmt.Printf("warning: failed to get terminal size: %s\n", err)
+		fmt.Fprintf(os.Stderr, "warning: failed to get terminal size: %s\n", err)
 		width = 80
 	}
 
@@ -244,18 +244,18 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 						// First occurrence is staged.
 						// Stage creates all needed parent directories.
 						if err := ctl.Stage(twinsSet.localPath, repoPath); err != nil {
-							fmt.Printf("failed to stage '%s' as '%s': %v\n", twinsSet.localPath, repoPath, err)
+							fmt.Fprintf(os.Stderr, "failed to stage '%s' as '%s': %v\n", twinsSet.localPath, repoPath, err)
 							break
 						}
 						continue
 					}
 					// Copy does not create parent directories. We take care of it.
 					if err := makeParentDirIfNeeded(ctx, ctl, repoPath); err != nil {
-						fmt.Printf("failed to make the parent dir for '%s': %v\n", repoPath, err)
+						fmt.Fprintf(os.Stderr, "failed to make the parent dir for '%s': %v\n", repoPath, err)
 						break
 					}
 					if err := ctl.Copy(firstToStage, repoPath); err != nil {
-						fmt.Printf("failed copy of '%s' to '%s': %v\n", firstToStage, repoPath, err)
+						fmt.Fprintf(os.Stderr, "failed copy of '%s' to '%s': %v\n", firstToStage, repoPath, err)
 						break
 					}
 				}
