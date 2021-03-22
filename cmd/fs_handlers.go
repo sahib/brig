@@ -79,7 +79,7 @@ func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, 
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
 
 		if opt.dereference && info.Mode()&os.ModeSymlink != 0 {
-			// TODO: `brig` does not have concept of symlink
+			// NOTE: `brig` does not have concept of symlink
 			//       The lack of native symlinks in `brig` has the following potential issues
 			//       * Ignoring cycles limits valid use cases.
 			//       * Not ignoring cycles opens room for malicious input.
