@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/sahib/brig/client"
 	"github.com/urfave/cli"
 
-	e "github.com/pkg/errors"
 	"github.com/vbauerster/mpb"
 	"github.com/vbauerster/mpb/decor"
 	terminal "github.com/wayneashleyberry/terminal-dimensions"
@@ -47,56 +47,153 @@ func handleStage(ctx *cli.Context, ctl *client.Client) error {
 		return fmt.Errorf("Failed to retrieve absolute path: %v", err)
 	}
 
-	info, err := os.Stat(absLocalPath)
+	_, err = os.Stat(absLocalPath)
 	if err != nil {
 		return err
 	}
 
-	if info.IsDir() {
-		return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
-	}
-
-	if !info.Mode().IsRegular() {
-		return fmt.Errorf("not adding non-regular file: %s", absLocalPath)
-	}
-
-	return ctl.Stage(absLocalPath, repoPath)
+	return handleStageDirectory(ctx, ctl, absLocalPath, repoPath)
 }
 
-func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
-	// First create all directories:
-	type stagePair struct {
-		local, repo string
+// holds brig repoPaths twins (by content) to a OS file system localPath
+type twins struct {
+	localPath string
+	repoPaths []string
+}
+
+type walkOptions struct {
+	dereference     bool
+	continueOnError bool
+}
+
+func walk(root, repoRoot string, depth int, opt walkOptions) (map[string]twins, error) {
+	// toBeStaged map: key is local path, value is array of repoPaths using the local path
+	toBeStaged := make(map[string]twins)
+	depth++
+	if depth > 255 {
+		return toBeStaged, fmt.Errorf("Exceeded allowed dereferencing depth for %v", root)
 	}
-
-	toBeStaged := []stagePair{}
-
 	root = filepath.Clean(root)
 	repoRoot = filepath.Clean(repoRoot)
-
 	err := filepath.Walk(root, func(childPath string, info os.FileInfo, err error) error {
 		repoPath := filepath.Join("/", repoRoot, childPath[len(root):])
 
-		if info.IsDir() {
-			if err := ctl.Mkdir(repoPath, true); err != nil {
-				return e.Wrapf(err, "mkdir: %s", repoPath)
+		if opt.dereference && info.Mode()&os.ModeSymlink != 0 {
+			// NOTE: `brig` does not have concept of symlink
+			//       The lack of native symlinks in `brig` has the following potential issues
+			//       * Ignoring cycles limits valid use cases.
+			//       * Not ignoring cycles opens room for malicious input.
+			//
+			//       Here we implement a dereference of symlinks as a temporary measure
+			//       which works in the most likely user scenarios (we assume that user
+			//       is not malicious to herself and does not create infinite symlinked loops).
+			//       If the level of recursion or cycles
+			//       (where link points to itself directly or indirectly) is exceeded,
+			//       we just fail on such link.
+			//       Currently, we have a depth limit of 255 (see couple line above).
+			resolvedPath, err := filepath.EvalSymlinks(childPath)
+			if err != nil {
+				msg := fmt.Sprintf("Failed to resolve: %v: %v", childPath, err)
+				if opt.continueOnError {
+					fmt.Fprintf(os.Stderr, "WARNING: %s\n", msg)
+					return nil
+				}
+				return fmt.Errorf(msg)
+			}
+			info, err = os.Stat(resolvedPath)
+			if err != nil {
+				msg := fmt.Sprintf("Failed to do os.Stat(%v): %v", resolvedPath, err)
+				if opt.continueOnError {
+					fmt.Fprintf(os.Stderr, "WARNING: %s\n", msg)
+					return nil
+				}
+				return fmt.Errorf(msg)
+			}
+			childPath = resolvedPath
+			if info.Mode().IsDir() {
+				extra, err := walk(childPath, repoPath, depth, opt)
+				if err != nil {
+					if opt.continueOnError {
+						fmt.Fprintf(os.Stderr, "WARNING: %s\n", err.Error())
+						return nil
+					}
+					return err
+				}
+				for k, v := range extra {
+					t, ok := toBeStaged[k]
+					if !ok {
+						t = twins{
+							v.localPath,
+							[]string{},
+						}
+					}
+					t.repoPaths = append(t.repoPaths, v.repoPaths...)
+					toBeStaged[k] = t
+				}
+				return nil
 			}
 		}
 
 		if info.Mode().IsRegular() {
-			toBeStaged = append(toBeStaged, stagePair{childPath, repoPath})
+			k, _ := inodeString(childPath)
+			t, ok := toBeStaged[k]
+			if !ok {
+				t = twins{
+					childPath,
+					[]string{},
+				}
+			}
+			t.repoPaths = append(t.repoPaths, repoPath)
+			toBeStaged[k] = t
 		}
 
 		return nil
 	})
+	return toBeStaged, err
+}
 
+func makeParentDirIfNeeded(ctx *cli.Context, ctl *client.Client, path string) error {
+	parent := filepath.Dir(path)
+	info, err := ctl.Stat(parent)
 	if err != nil {
-		return fmt.Errorf("failed to create sub directories: %v", err)
+		if yes, _ := regexp.MatchString("No such file or directory:", err.Error()); yes {
+			createParents := true
+			err = ctl.Mkdir(parent, createParents)
+		}
+		return err
+	}
+	if info.IsDir {
+		return nil
+	}
+	return fmt.Errorf("Cannot make dir from existing non dir node %s", parent)
+}
+
+func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot string) error {
+	// Links will be reflinked in the `man cp` sense,
+	// i.e. resolved repoPaths will point to the same content and backend hash
+
+	root = filepath.Clean(root)
+	repoRoot = filepath.Clean(repoRoot)
+
+	opt := walkOptions{
+		dereference:     !ctx.Bool("no-dereference"),
+		continueOnError: ctx.Bool("continue-on-error"),
+	}
+
+	toBeStaged, err := walk(root, repoRoot, 0, opt)
+	if err != nil {
+		return fmt.Errorf("failed to walk dir: %v: %v", root, err)
+	}
+
+	if len(toBeStaged) == 0 {
+		// This might happen if ask to stage a symlink pointing to a dir
+		// but Walk does not travel symlinks and we end up with empty list.
+		return nil
 	}
 
 	width, err := terminal.Width()
 	if err != nil {
-		fmt.Printf("warning: failed to get terminal size: %s\n", err)
+		fmt.Fprintf(os.Stderr, "warning: failed to get terminal size: %s\n", err)
 		width = 80
 	}
 
@@ -122,21 +219,45 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 		mpb.AppendDecorators(decor.Percentage()),
 	)
 
+	type stageList struct {
+		local    string
+		repoList []string
+	}
+
 	nWorkers := 20
 	start := time.Now()
-	jobs := make(chan stagePair, nWorkers)
+	jobs := make(chan twins, nWorkers)
 
 	// Start a bunch of workers that will do the actual adding:
 	for idx := 0; idx < nWorkers; idx++ {
 		go func() {
 			for {
-				pair, ok := <-jobs
+				twinsSet, ok := <-jobs
 				if !ok {
 					return
 				}
 
-				if err := ctl.Stage(pair.local, pair.repo); err != nil {
-					fmt.Printf("failed to stage %s: %v\n", pair.local, err)
+				firstToStage := ""
+				for i, repoPath := range twinsSet.repoPaths {
+					if i == 0 {
+						firstToStage = repoPath
+						// First occurrence is staged.
+						// Stage creates all needed parent directories.
+						if err := ctl.Stage(twinsSet.localPath, repoPath); err != nil {
+							fmt.Fprintf(os.Stderr, "failed to stage '%s' as '%s': %v\n", twinsSet.localPath, repoPath, err)
+							break
+						}
+						continue
+					}
+					// Copy does not create parent directories. We take care of it.
+					if err := makeParentDirIfNeeded(ctx, ctl, repoPath); err != nil {
+						fmt.Fprintf(os.Stderr, "failed to make the parent dir for '%s': %v\n", repoPath, err)
+						break
+					}
+					if err := ctl.Copy(firstToStage, repoPath); err != nil {
+						fmt.Fprintf(os.Stderr, "failed copy of '%s' to '%s': %v\n", firstToStage, repoPath, err)
+						break
+					}
 				}
 
 				// Notify the bar. The op time is used for the ETA.
@@ -154,8 +275,8 @@ func handleStageDirectory(ctx *cli.Context, ctl *client.Client, root, repoRoot s
 	}
 
 	// Send the jobs onward:
-	for _, child := range toBeStaged {
-		jobs <- child
+	for _, v := range toBeStaged {
+		jobs <- v
 	}
 
 	close(jobs)
