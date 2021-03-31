@@ -1,7 +1,7 @@
 argh==0.26.2
 docutils==0.14
 hovercraft==2.5
-lxml==4.6.2
+lxml==4.6.3
 pathtools==0.1.2
 Pygments==2.2.0
 PyYAML>=4.2b1
