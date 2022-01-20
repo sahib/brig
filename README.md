@@ -44,24 +44,25 @@ Also take a look [at the documentation](http://brig.readthedocs.io/en/latest/ind
 
 ## Installation
 
-You can download the latest script with the following oneliner:
+You can use the installer script with the following oneliner:
 
 ```bash
 # Before you execute this, ask yourself if you trust me.
 $ bash <(curl -s https://raw.githubusercontent.com/sahib/brig/master/scripts/install.sh)
 ```
 
-Alternatively, you can simply grab the latest binary from the [release tab](https://github.com/sahib/brig/releases).
+Alternatively, you can simply grab the **latest binary** from the [release tab](https://github.com/sahib/brig/releases).
 
-Development versions can be installed easily by compiling yourself. If you have
-a recent version of `go` (`>= 1.10`) installed, it should be as easy as this:
+**Development versions** can be installed easily by compiling yourself.
+Requirements:
+- `bash` (in PATH, doesn't have to be your shell of choice)
+- a recent version of `go` (`>= 1.10`)
+- [taskfile](https://taskfile.dev/#/installation)
 
 ```bash
-$ go get -d -v -u github.com/sahib/brig  # Download the sources.
-$ cd $GOPATH/src/github.com/sahib/brig   # Go to the source directory.
-$ git checkout develop                   # Checkout the develop branch.
-$ go run mage.go                         # Build the software.
-$ $GOPATH/bin/brig help                  # Run the binary.
+git clone https://github.com/sahib/brig  # Download the sources.
+task build                               # run build task
+$GOPATH/bin/brig help                    # Run the binary.
 ```
 
 Please refer to the [install docs](https://brig.readthedocs.io/en/latest/installation.html) for more details.
